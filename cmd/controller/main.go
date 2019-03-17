@@ -21,7 +21,6 @@ import (
 	"log"
 	"time"
 
-	"k8s.io/client-go/dynamic"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -31,26 +30,20 @@ import (
 	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
-	cachingclientset "github.com/knative/caching/pkg/client/clientset/versioned"
-	cachinginformers "github.com/knative/caching/pkg/client/informers/externalversions"
-	sharedclientset "github.com/knative/pkg/client/clientset/versioned"
-	sharedinformers "github.com/knative/pkg/client/informers/externalversions"
 	"github.com/knative/pkg/configmap"
 	"github.com/knative/pkg/controller"
 	"github.com/knative/pkg/signals"
 	"github.com/knative/pkg/system"
 	"github.com/knative/pkg/version"
-	clientset "github.com/knative/serving/pkg/client/clientset/versioned"
-	informers "github.com/knative/serving/pkg/client/informers/externalversions"
-	"github.com/knative/serving/pkg/logging"
-	"github.com/knative/serving/pkg/metrics"
-	"github.com/knative/serving/pkg/reconciler"
-	"github.com/knative/serving/pkg/reconciler/v1alpha1/clusteringress"
-	"github.com/knative/serving/pkg/reconciler/v1alpha1/configuration"
-	"github.com/knative/serving/pkg/reconciler/v1alpha1/labeler"
-	"github.com/knative/serving/pkg/reconciler/v1alpha1/revision"
-	"github.com/knative/serving/pkg/reconciler/v1alpha1/route"
-	"github.com/knative/serving/pkg/reconciler/v1alpha1/service"
+	servingclientset "github.com/knative/serving/pkg/client/clientset/versioned"
+	servinginformers "github.com/knative/serving/pkg/client/informers/externalversions"
+	projectriffclientset "github.com/projectriff/system/pkg/client/clientset/versioned"
+	projectriffinformers "github.com/projectriff/system/pkg/client/informers/externalversions"
+	"github.com/projectriff/system/pkg/logging"
+	"github.com/projectriff/system/pkg/metrics"
+	"github.com/projectriff/system/pkg/reconciler"
+	"github.com/projectriff/system/pkg/reconciler/v1alpha1/application"
+	"github.com/projectriff/system/pkg/reconciler/v1alpha1/function"
 	"go.uber.org/zap"
 )
 
@@ -94,24 +87,14 @@ func main() {
 		logger.Fatalw("Error building kubernetes clientset", zap.Error(err))
 	}
 
-	sharedClient, err := sharedclientset.NewForConfig(cfg)
+	projectriffClient, err := projectriffclientset.NewForConfig(cfg)
 	if err != nil {
-		logger.Fatalw("Error building shared clientset", zap.Error(err))
+		logger.Fatalw("Error building projectriff clientset", zap.Error(err))
 	}
 
-	servingClient, err := clientset.NewForConfig(cfg)
+	servingClient, err := servingclientset.NewForConfig(cfg)
 	if err != nil {
 		logger.Fatalw("Error building serving clientset", zap.Error(err))
-	}
-
-	dynamicClient, err := dynamic.NewForConfig(cfg)
-	if err != nil {
-		logger.Fatalw("Error building build clientset", zap.Error(err))
-	}
-
-	cachingClient, err := cachingclientset.NewForConfig(cfg)
-	if err != nil {
-		logger.Fatalw("Error building caching clientset", zap.Error(err))
 	}
 
 	if err := version.CheckMinimumVersion(kubeClient.Discovery()); err != nil {
@@ -121,79 +104,35 @@ func main() {
 	configMapWatcher := configmap.NewInformedWatcher(kubeClient, system.Namespace())
 
 	opt := reconciler.Options{
-		KubeClientSet:    kubeClient,
-		SharedClientSet:  sharedClient,
-		ServingClientSet: servingClient,
-		CachingClientSet: cachingClient,
-		DynamicClientSet: dynamicClient,
-		ConfigMapWatcher: configMapWatcher,
-		Logger:           logger,
-		ResyncPeriod:     10 * time.Hour, // Based on controller-runtime default.
-		StopChannel:      stopCh,
+		KubeClientSet:        kubeClient,
+		ProjectriffClientSet: projectriffClient,
+		ServingClientSet:     servingClient,
+		ConfigMapWatcher:     configMapWatcher,
+		Logger:               logger,
+		ResyncPeriod:         10 * time.Hour, // Based on controller-runtime default.
+		StopChannel:          stopCh,
 	}
 
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, opt.ResyncPeriod)
-	sharedInformerFactory := sharedinformers.NewSharedInformerFactory(sharedClient, opt.ResyncPeriod)
-	servingInformerFactory := informers.NewSharedInformerFactory(servingClient, opt.ResyncPeriod)
-	cachingInformerFactory := cachinginformers.NewSharedInformerFactory(cachingClient, opt.ResyncPeriod)
-	buildInformerFactory := revision.KResourceTypedInformerFactory(opt)
+	projectriffInformerFactory := projectriffinformers.NewSharedInformerFactory(projectriffClient, opt.ResyncPeriod)
+	servingInformerFactory := servinginformers.NewSharedInformerFactory(servingClient, opt.ResyncPeriod)
 
+	applicationInformer := projectriffInformerFactory.Projectriff().V1alpha1().Applications()
+	functionInformer := projectriffInformerFactory.Projectriff().V1alpha1().Functions()
 	serviceInformer := servingInformerFactory.Serving().V1alpha1().Services()
-	routeInformer := servingInformerFactory.Serving().V1alpha1().Routes()
-	configurationInformer := servingInformerFactory.Serving().V1alpha1().Configurations()
-	revisionInformer := servingInformerFactory.Serving().V1alpha1().Revisions()
-	kpaInformer := servingInformerFactory.Autoscaling().V1alpha1().PodAutoscalers()
-	clusterIngressInformer := servingInformerFactory.Networking().V1alpha1().ClusterIngresses()
-	deploymentInformer := kubeInformerFactory.Apps().V1().Deployments()
-	coreServiceInformer := kubeInformerFactory.Core().V1().Services()
-	endpointsInformer := kubeInformerFactory.Core().V1().Endpoints()
-	configMapInformer := kubeInformerFactory.Core().V1().ConfigMaps()
-	virtualServiceInformer := sharedInformerFactory.Networking().V1alpha3().VirtualServices()
-	imageInformer := cachingInformerFactory.Caching().V1alpha1().Images()
 
 	// Build all of our controllers, with the clients constructed above.
 	// Add new controllers to this array.
 	controllers := []*controller.Impl{
-		configuration.NewController(
+		application.NewController(
 			opt,
-			configurationInformer,
-			revisionInformer,
-		),
-		revision.NewController(
-			opt,
-			revisionInformer,
-			kpaInformer,
-			imageInformer,
-			deploymentInformer,
-			coreServiceInformer,
-			endpointsInformer,
-			configMapInformer,
-			buildInformerFactory,
-		),
-		route.NewController(
-			opt,
-			routeInformer,
-			configurationInformer,
-			revisionInformer,
-			coreServiceInformer,
-			clusterIngressInformer,
-		),
-		labeler.NewRouteToConfigurationController(
-			opt,
-			routeInformer,
-			configurationInformer,
-			revisionInformer,
-		),
-		service.NewController(
-			opt,
+			applicationInformer,
 			serviceInformer,
-			configurationInformer,
-			routeInformer,
 		),
-		clusteringress.NewController(
+		function.NewController(
 			opt,
-			clusterIngressInformer,
-			virtualServiceInformer,
+			functionInformer,
+			applicationInformer,
 		),
 	}
 
@@ -204,9 +143,8 @@ func main() {
 
 	// These are non-blocking.
 	kubeInformerFactory.Start(stopCh)
-	sharedInformerFactory.Start(stopCh)
+	projectriffInformerFactory.Start(stopCh)
 	servingInformerFactory.Start(stopCh)
-	cachingInformerFactory.Start(stopCh)
 	if err := configMapWatcher.Start(stopCh); err != nil {
 		logger.Fatalw("failed to start configuration manager", zap.Error(err))
 	}
@@ -214,18 +152,9 @@ func main() {
 	// Wait for the caches to be synced before starting controllers.
 	logger.Info("Waiting for informer caches to sync")
 	for i, synced := range []cache.InformerSynced{
+		applicationInformer.Informer().HasSynced,
+		functionInformer.Informer().HasSynced,
 		serviceInformer.Informer().HasSynced,
-		routeInformer.Informer().HasSynced,
-		configurationInformer.Informer().HasSynced,
-		revisionInformer.Informer().HasSynced,
-		kpaInformer.Informer().HasSynced,
-		clusterIngressInformer.Informer().HasSynced,
-		imageInformer.Informer().HasSynced,
-		deploymentInformer.Informer().HasSynced,
-		coreServiceInformer.Informer().HasSynced,
-		endpointsInformer.Informer().HasSynced,
-		configMapInformer.Informer().HasSynced,
-		virtualServiceInformer.Informer().HasSynced,
 	} {
 		if ok := cache.WaitForCacheSync(stopCh, synced); !ok {
 			logger.Fatalf("Failed to wait for cache at index %d to sync", i)

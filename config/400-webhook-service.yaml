@@ -17,9 +17,9 @@ kind: Service
 metadata:
   labels:
     role: webhook
-    serving.knative.dev/release: devel
+    projectriff.io/release: devel
   name: webhook
-  namespace: knative-serving
+  namespace: riff-system
 spec:
   ports:
     - port: 443

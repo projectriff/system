@@ -19,25 +19,24 @@ package reconciler
 import (
 	"testing"
 
-	fakesharedclientset "github.com/knative/pkg/client/clientset/versioned/fake"
 	logtesting "github.com/knative/pkg/logging/testing"
+	fakeservingclientset "github.com/knative/serving/pkg/client/clientset/versioned/fake"
+	fakeprojectriffclientset "github.com/projectriff/system/pkg/client/clientset/versioned/fake"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
-
-	fakeclientset "github.com/knative/serving/pkg/client/clientset/versioned/fake"
 )
 
 var reconcilerName = "test-reconciler"
 
 func TestNew(t *testing.T) {
 	kubeClient := fakekubeclientset.NewSimpleClientset()
-	sharedClient := fakesharedclientset.NewSimpleClientset()
-	servingClient := fakeclientset.NewSimpleClientset()
+	projectriffClient := fakeprojectriffclientset.NewSimpleClientset()
+	servingClient := fakeservingclientset.NewSimpleClientset()
 
 	r := NewBase(Options{
-		KubeClientSet:    kubeClient,
-		SharedClientSet:  sharedClient,
-		ServingClientSet: servingClient,
-		Logger:           logtesting.TestLogger(t),
+		KubeClientSet:        kubeClient,
+		ProjectriffClientSet: projectriffClient,
+		ServingClientSet:     servingClient,
+		Logger:               logtesting.TestLogger(t),
 	}, reconcilerName)
 
 	if r == nil {
@@ -45,8 +44,5 @@ func TestNew(t *testing.T) {
 	}
 	if r.Recorder == nil {
 		t.Fatal("Expected NewBase to add a Recorder")
-	}
-	if r.StatsReporter == nil {
-		t.Fatal("Expected NewBase to add a StatsReporter")
 	}
 }

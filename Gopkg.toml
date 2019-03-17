@@ -3,6 +3,7 @@
 
 required = [
   "k8s.io/apimachinery/pkg/util/sets/types",
+  "k8s.io/client-go/dynamic/fake",
   "k8s.io/code-generator/cmd/deepcopy-gen",
   "k8s.io/code-generator/cmd/defaulter-gen",
   "k8s.io/code-generator/cmd/client-gen",
@@ -19,12 +20,11 @@ required = [
 
 [[override]]
   name = "github.com/knative/build"
-  version = "v0.3.0"
+  version = "v0.4.0"
 
-[[constraint]]
-  name = "github.com/knative/build-pipeline"
-  # HEAD as of 2019-01-24
-  revision = "e5aaa6f3a3fb568054f24dd6670894b4192bb71c"
+[[override]]
+  name = "github.com/knative/serving"
+  version = "v0.4.1"
 
 [[override]]
   name = "github.com/knative/pkg"
@@ -38,11 +38,6 @@ required = [
 [[constraint]]
   name = "github.com/knative/caching"
   revision = "06e9787157505a649b07677e77d26202ac91431c"
-
-[[constraint]]
-  name = "github.com/google/go-containerregistry"
-  # HEAD as of 2019-02-06
-  revision = "dbc4da98389f9d0c42eb314c2b346bf1d2a27310"
 
 [[override]]
   name = "k8s.io/api"

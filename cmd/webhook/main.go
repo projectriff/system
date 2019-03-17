@@ -30,10 +30,8 @@ import (
 	"github.com/knative/pkg/system"
 	"github.com/knative/pkg/version"
 	"github.com/knative/pkg/webhook"
-	kpa "github.com/knative/serving/pkg/apis/autoscaling/v1alpha1"
-	net "github.com/knative/serving/pkg/apis/networking/v1alpha1"
-	"github.com/knative/serving/pkg/apis/serving/v1alpha1"
-	"github.com/knative/serving/pkg/logging"
+	"github.com/projectriff/system/pkg/apis/projectriff/v1alpha1"
+	"github.com/projectriff/system/pkg/logging"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 )
@@ -93,18 +91,14 @@ func main() {
 		Namespace:      system.Namespace(),
 		Port:           443,
 		SecretName:     "webhook-certs",
-		WebhookName:    "webhook.serving.knative.dev",
+		WebhookName:    "webhook.system.projectriff.io",
 	}
 	controller := webhook.AdmissionController{
 		Client:  kubeClient,
 		Options: options,
 		Handlers: map[schema.GroupVersionKind]webhook.GenericCRD{
-			v1alpha1.SchemeGroupVersion.WithKind("Revision"):      &v1alpha1.Revision{},
-			v1alpha1.SchemeGroupVersion.WithKind("Configuration"): &v1alpha1.Configuration{},
-			v1alpha1.SchemeGroupVersion.WithKind("Route"):         &v1alpha1.Route{},
-			v1alpha1.SchemeGroupVersion.WithKind("Service"):       &v1alpha1.Service{},
-			kpa.SchemeGroupVersion.WithKind("PodAutoscaler"):      &kpa.PodAutoscaler{},
-			net.SchemeGroupVersion.WithKind("ClusterIngress"):     &net.ClusterIngress{},
+			v1alpha1.SchemeGroupVersion.WithKind("Application"): &v1alpha1.Application{},
+			v1alpha1.SchemeGroupVersion.WithKind("Function"):    &v1alpha1.Function{},
 		},
 		Logger: logger,
 	}

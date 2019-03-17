@@ -21,31 +21,26 @@ import (
 
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/record"
 
-	cachingclientset "github.com/knative/caching/pkg/client/clientset/versioned"
-	sharedclientset "github.com/knative/pkg/client/clientset/versioned"
 	"github.com/knative/pkg/configmap"
 	"github.com/knative/pkg/logging/logkey"
-	clientset "github.com/knative/serving/pkg/client/clientset/versioned"
-	servingScheme "github.com/knative/serving/pkg/client/clientset/versioned/scheme"
+	servingclientset "github.com/knative/serving/pkg/client/clientset/versioned"
+	projectriffclientset "github.com/projectriff/system/pkg/client/clientset/versioned"
+	projectriffScheme "github.com/projectriff/system/pkg/client/clientset/versioned/scheme"
 )
 
 // Options defines the common reconciler options.
 // We define this to reduce the boilerplate argument list when
 // creating our controllers.
 type Options struct {
-	KubeClientSet    kubernetes.Interface
-	SharedClientSet  sharedclientset.Interface
-	ServingClientSet clientset.Interface
-	DynamicClientSet dynamic.Interface
-	CachingClientSet cachingclientset.Interface
-	Recorder         record.EventRecorder
-	StatsReporter    StatsReporter
+	KubeClientSet        kubernetes.Interface
+	ProjectriffClientSet projectriffclientset.Interface
+	ServingClientSet     servingclientset.Interface
+	Recorder             record.EventRecorder
 
 	ConfigMapWatcher configmap.Watcher
 	Logger           *zap.SugaredLogger
@@ -67,17 +62,11 @@ type Base struct {
 	// KubeClientSet allows us to talk to the k8s for core APIs
 	KubeClientSet kubernetes.Interface
 
-	// SharedClientSet allows us to configure shared objects
-	SharedClientSet sharedclientset.Interface
+	// ProjectriffClientSet allows us to configure projectriff objects
+	ProjectriffClientSet projectriffclientset.Interface
 
 	// ServingClientSet allows us to configure Serving objects
-	ServingClientSet clientset.Interface
-
-	// DynamicClientSet allows us to configure pluggable Build objects
-	DynamicClientSet dynamic.Interface
-
-	// CachingClientSet allows us to instantiate Image objects
-	CachingClientSet cachingclientset.Interface
+	ServingClientSet servingclientset.Interface
 
 	// ConfigMapWatcher allows us to watch for ConfigMap changes.
 	ConfigMapWatcher configmap.Watcher
@@ -85,9 +74,6 @@ type Base struct {
 	// Recorder is an event recorder for recording Event resources to the
 	// Kubernetes API.
 	Recorder record.EventRecorder
-
-	// StatsReporter reports reconciler's metrics.
-	StatsReporter StatsReporter
 
 	// Sugared logger is easier to use but is not as performant as the
 	// raw logger. In performance critical paths, call logger.Desugar()
@@ -114,33 +100,20 @@ func NewBase(opt Options, controllerAgentName string) *Base {
 			scheme.Scheme, corev1.EventSource{Component: controllerAgentName})
 	}
 
-	statsReporter := opt.StatsReporter
-	if statsReporter == nil {
-		logger.Debug("Creating stats reporter")
-		var err error
-		statsReporter, err = NewStatsReporter(controllerAgentName)
-		if err != nil {
-			panic(err)
-		}
-	}
-
 	base := &Base{
-		KubeClientSet:    opt.KubeClientSet,
-		SharedClientSet:  opt.SharedClientSet,
-		ServingClientSet: opt.ServingClientSet,
-		DynamicClientSet: opt.DynamicClientSet,
-		CachingClientSet: opt.CachingClientSet,
-		ConfigMapWatcher: opt.ConfigMapWatcher,
-		Recorder:         recorder,
-		StatsReporter:    statsReporter,
-		Logger:           logger,
+		KubeClientSet:        opt.KubeClientSet,
+		ProjectriffClientSet: opt.ProjectriffClientSet,
+		ServingClientSet:     opt.ServingClientSet,
+		ConfigMapWatcher:     opt.ConfigMapWatcher,
+		Recorder:             recorder,
+		Logger:               logger,
 	}
 
 	return base
 }
 
 func init() {
-	// Add serving types to the default Kubernetes Scheme so Events can be
-	// logged for serving types.
-	servingScheme.AddToScheme(scheme.Scheme)
+	// Add projectriff types to the default Kubernetes Scheme so Events can be
+	// logged for projectriff types.
+	projectriffScheme.AddToScheme(scheme.Scheme)
 }

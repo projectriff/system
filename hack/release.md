@@ -1,6 +1,6 @@
-# Creating a new Knative Serving release
+# Creating a new riff System release
 
-The `release.sh` script automates the creation of Knative Serving releases,
+The `release.sh` script automates the creation of riff System releases,
 either nightly or versioned ones.
 
 By default, the script creates a nightly release but does not publish it

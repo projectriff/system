@@ -33,7 +33,7 @@ function remove_broken_symlinks() {
     target="${target##* -> }"
     [[ ${target} == /* ]] || target="./${target}"
     target="$(cd `dirname ${link}` && cd ${target%/*} && echo $PWD/${target##*/})"
-    if [[ ${target} != *github.com/knative/* ]]; then
+    if [[ ${target} != *github.com/projectriff/* ]]; then
       unlink ${link}
       continue
     fi
