@@ -40,6 +40,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	coreinformers "k8s.io/client-go/informers/core/v1"
+	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -56,6 +58,7 @@ type Reconciler struct {
 	// listers index properties about resources
 	applicationLister projectrifflisters.ApplicationLister
 	serviceLister     servinglisters.ServiceLister
+	pvcLister         corelisters.PersistentVolumeClaimLister
 }
 
 // Check that our Reconciler implements controller.Reconciler
@@ -67,12 +70,14 @@ func NewController(
 	opt reconciler.Options,
 	applicationInformer projectriffinformers.ApplicationInformer,
 	serviceInformer servinginformers.ServiceInformer,
+	pvcInformer coreinformers.PersistentVolumeClaimInformer,
 ) *controller.Impl {
 
 	c := &Reconciler{
 		Base:              reconciler.NewBase(opt, controllerAgentName),
 		applicationLister: applicationInformer.Lister(),
 		serviceLister:     serviceInformer.Lister(),
+		pvcLister:         pvcInformer.Lister(),
 	}
 	impl := controller.NewImpl(c, c.Logger, ReconcilerName, reconciler.MustNewStatsReporter(ReconcilerName, c.Logger))
 
@@ -156,6 +161,33 @@ func (c *Reconciler) reconcile(ctx context.Context, application *projectriffv1al
 
 	application.Status.InitializeConditions()
 
+	buildCacheName := resourcenames.BuildCache(application)
+	buildCache, err := c.pvcLister.PersistentVolumeClaims(application.Namespace).Get(buildCacheName)
+	if errors.IsNotFound(err) {
+		buildCache, err = c.createBuildCache(application)
+		if err != nil {
+			logger.Errorf("Failed to create PersistentVolumeClaim %q: %v", buildCacheName, err)
+			c.Recorder.Eventf(application, corev1.EventTypeWarning, "CreationFailed", "Failed to create PersistentVolumeClaim %q: %v", buildCacheName, err)
+			return err
+		}
+		if buildCache != nil {
+			c.Recorder.Eventf(application, corev1.EventTypeNormal, "Created", "Created PersistentVolumeClaim %q", buildCacheName)
+		}
+	} else if err != nil {
+		logger.Errorf("Failed to reconcile Application: %q failed to Get PersistentVolumeClaim: %q; %v", application.Name, buildCacheName, zap.Error(err))
+		return err
+	} else if !metav1.IsControlledBy(buildCache, application) {
+		// Surface an error in the application's status,and return an error.
+		application.Status.MarkBuildCacheNotOwned(buildCacheName)
+		return fmt.Errorf("Application: %q does not own PersistentVolumeClaim: %q", application.Name, buildCacheName)
+	} else if buildCache, err = c.reconcileBuildCache(ctx, application, buildCache); err != nil {
+		logger.Errorf("Failed to reconcile Application: %q failed to reconcile PersistentVolumeClaim: %q; %v", application.Name, buildCache, zap.Error(err))
+		return err
+	}
+
+	// Update our Status based on the state of our underlying PersistentVolumeClaim.
+	application.Status.PropagateBuildCacheStatus(buildCache)
+
 	serviceName := resourcenames.Service(application)
 	service, err := c.serviceLister.Services(application.Namespace).Get(serviceName)
 	if errors.IsNotFound(err) {
@@ -173,7 +205,7 @@ func (c *Reconciler) reconcile(ctx context.Context, application *projectriffv1al
 		// Surface an error in the application's status,and return an error.
 		application.Status.MarkServiceNotOwned(serviceName)
 		return fmt.Errorf("Application: %q does not own Service: %q", application.Name, serviceName)
-	} else if service, err = c.reconcileService(ctx, application, service); err != nil {
+	} else if service, err = c.reconcileService(ctx, application, buildCache, service); err != nil {
 		logger.Errorf("Failed to reconcile Application: %q failed to reconcile Service: %q; %v", application.Name, serviceName, zap.Error(err))
 		return err
 	}
@@ -209,7 +241,7 @@ func (c *Reconciler) updateStatus(desired *projectriffv1alpha1.Application) (*pr
 	return svc, err
 }
 
-func (c *Reconciler) reconcileService(ctx context.Context, application *projectriffv1alpha1.Application, service *servingv1alpha1.Service) (*servingv1alpha1.Service, error) {
+func (c *Reconciler) reconcileService(ctx context.Context, application *projectriffv1alpha1.Application, buildCache *corev1.PersistentVolumeClaim, service *servingv1alpha1.Service) (*servingv1alpha1.Service, error) {
 	logger := logging.FromContext(ctx)
 	desiredService, err := resources.MakeService(application)
 	if err != nil {
@@ -245,4 +277,53 @@ func (c *Reconciler) createService(application *projectriffv1alpha1.Application)
 func serviceSemanticEquals(desiredService, service *servingv1alpha1.Service) bool {
 	return equality.Semantic.DeepEqual(desiredService.Spec, service.Spec) &&
 		equality.Semantic.DeepEqual(desiredService.ObjectMeta.Labels, service.ObjectMeta.Labels)
+}
+
+func (c *Reconciler) reconcileBuildCache(ctx context.Context, application *projectriffv1alpha1.Application, buildCache *corev1.PersistentVolumeClaim) (*corev1.PersistentVolumeClaim, error) {
+	logger := logging.FromContext(ctx)
+	desiredBuildCache, err := resources.MakeBuildCache(application)
+	if err != nil {
+		return nil, err
+	}
+
+	if buildCache != nil && desiredBuildCache == nil {
+		// TODO drop an existing buildCache
+		// return nil, c.KubeClientSet.CoreV1().PersistentVolumeClaims(application.Namespace).Delete(buildCache.Name)
+		return nil, nil
+	}
+
+	if buildCacheSemanticEquals(desiredBuildCache, buildCache) {
+		// No differences to reconcile.
+		return buildCache, nil
+	}
+	diff, err := kmp.SafeDiff(desiredBuildCache.Spec, buildCache.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("failed to diff PersistentVolumeClaim: %v", err)
+	}
+	logger.Infof("Reconciling build cache diff (-desired, +observed): %s", diff)
+
+	// Don't modify the informers copy.
+	existing := desiredBuildCache.DeepCopy()
+	// Preserve the rest of the object (e.g. PersistentVolumeClaimSpec except for resources).
+	existing.Spec.Resources = desiredBuildCache.Spec.Resources
+	// Preserve the rest of the object (e.g. ObjectMeta except for labels).
+	existing.ObjectMeta.Labels = desiredBuildCache.ObjectMeta.Labels
+	return c.KubeClientSet.CoreV1().PersistentVolumeClaims(application.Namespace).Update(existing)
+}
+
+func (c *Reconciler) createBuildCache(application *projectriffv1alpha1.Application) (*corev1.PersistentVolumeClaim, error) {
+	buildCache, err := resources.MakeBuildCache(application)
+	if err != nil {
+		return nil, err
+	}
+	if buildCache == nil {
+		// nothing to create
+		return buildCache, nil
+	}
+	return c.KubeClientSet.CoreV1().PersistentVolumeClaims(application.Namespace).Create(buildCache)
+}
+
+func buildCacheSemanticEquals(desiredBuildCache, buildCache *corev1.PersistentVolumeClaim) bool {
+	return equality.Semantic.DeepEqual(desiredBuildCache.Spec.Resources, buildCache.Spec.Resources) &&
+		equality.Semantic.DeepEqual(desiredBuildCache.ObjectMeta.Labels, buildCache.ObjectMeta.Labels)
 }

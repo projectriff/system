@@ -120,6 +120,7 @@ func main() {
 	applicationInformer := projectriffInformerFactory.Projectriff().V1alpha1().Applications()
 	functionInformer := projectriffInformerFactory.Projectriff().V1alpha1().Functions()
 	serviceInformer := servingInformerFactory.Serving().V1alpha1().Services()
+	pvcInformer := kubeInformerFactory.Core().V1().PersistentVolumeClaims()
 
 	// Build all of our controllers, with the clients constructed above.
 	// Add new controllers to this array.
@@ -128,6 +129,7 @@ func main() {
 			opt,
 			applicationInformer,
 			serviceInformer,
+			pvcInformer,
 		),
 		function.NewController(
 			opt,

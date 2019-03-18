@@ -44,6 +44,7 @@ func MakeService(application *projectriffv1alpha1.Application) (*servingv1alpha1
 					RevisionTemplate: servingv1alpha1.RevisionTemplateSpec{
 						Spec: servingv1alpha1.RevisionSpec{
 							Container: corev1.Container{
+								Image:     application.Spec.Image,
 								EnvFrom:   application.Spec.Run.EnvFrom,
 								Env:       application.Spec.Run.Env,
 								Resources: application.Spec.Run.Resources,
@@ -54,7 +55,6 @@ func MakeService(application *projectriffv1alpha1.Application) (*servingv1alpha1
 			},
 		},
 	}
-	s.Spec.RunLatest.Configuration.RevisionTemplate.Spec.Container.Image = application.Spec.Image
 
 	return s, nil
 }
@@ -77,15 +77,7 @@ func makeServiceBuild(application *projectriffv1alpha1.Application) *servingv1al
 					Kind:      "ClusterBuildTemplate",
 					Arguments: makeBuildArguments(application),
 				},
-				// TODO support cache volumes
-				// Volumes: []corev1.Volume{
-				// 	{
-				// 		Name: "cache",
-				// 		VolumeSource: corev1.VolumeSource{
-				// 			PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{ClaimName: buildCache.Name},
-				// 		},
-				// 	},
-				// },
+				Volumes: makeBuildVolumes(application),
 			},
 		},
 	}
@@ -108,13 +100,25 @@ func makeBuildSource(application *projectriffv1alpha1.Application) *buildv1alpha
 func makeBuildArguments(application *projectriffv1alpha1.Application) []buildv1alpha1.ArgumentSpec {
 	args := []buildv1alpha1.ArgumentSpec{
 		{Name: "IMAGE", Value: application.Spec.Image},
-		// {Name: "CACHE", Value: "cache"},
+	}
+	if application.Status.BuildCacheName != "" {
+		args = append(args, buildv1alpha1.ArgumentSpec{Name: "CACHE", Value: "cache"})
 	}
 	for _, arg := range application.Spec.Build.Arguments {
-		args = append(args, buildv1alpha1.ArgumentSpec{
-			Name:  arg.Name,
-			Value: arg.Value,
-		})
+		args = append(args, buildv1alpha1.ArgumentSpec{Name: arg.Name, Value: arg.Value})
 	}
 	return args
+}
+
+func makeBuildVolumes(application *projectriffv1alpha1.Application) []corev1.Volume {
+	volumes := []corev1.Volume{}
+	if application.Status.BuildCacheName != "" {
+		volumes = append(volumes, corev1.Volume{
+			Name: "cache",
+			VolumeSource: corev1.VolumeSource{
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{ClaimName: application.Status.BuildCacheName},
+			},
+		})
+	}
+	return volumes
 }

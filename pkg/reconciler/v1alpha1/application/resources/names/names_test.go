@@ -31,6 +31,16 @@ func TestNamer(t *testing.T) {
 		f    func(*projectriffv1alpha1.Application) string
 		want string
 	}{{
+		name: "BuildCache",
+		app: &projectriffv1alpha1.Application{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "foo",
+				Namespace: "default",
+			},
+		},
+		f:    BuildCache,
+		want: "build-cache-foo",
+	}, {
 		name: "Service",
 		app: &projectriffv1alpha1.Application{
 			ObjectMeta: metav1.ObjectMeta{

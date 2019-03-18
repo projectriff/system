@@ -43,7 +43,8 @@ func MakeApplication(function *projectriffv1alpha1.Function) (*projectriffv1alph
 					{Name: "FUNCTION_HANDLER", Value: function.Spec.Build.Handler},
 					{Name: "FUNCTION_LANGUAGE", Value: function.Spec.Build.Invoker},
 				},
-				Source: function.Spec.Build.Source,
+				CacheSize: function.Spec.Build.CacheSize,
+				Source:    function.Spec.Build.Source,
 			},
 			Run: projectriffv1alpha1.ApplicationRun{
 				EnvFrom:   function.Spec.Run.EnvFrom,

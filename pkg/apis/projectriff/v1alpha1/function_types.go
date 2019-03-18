@@ -21,6 +21,7 @@ import (
 
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -43,10 +44,11 @@ type FunctionSpec struct {
 }
 
 type FunctionBuild struct {
-	Artifact string  `json:"artifact,omitempty"`
-	Handler  string  `json:"handler,omitempty"`
-	Invoker  string  `json:"invoker,omitempty"`
-	Source   *Source `json:"source,omitempty"`
+	Artifact  string             `json:"artifact,omitempty"`
+	Handler   string             `json:"handler,omitempty"`
+	Invoker   string             `json:"invoker,omitempty"`
+	CacheSize *resource.Quantity `json:"cacheSize,omitempty"`
+	Source    *Source            `json:"source,omitempty"`
 }
 
 type FunctionRun ApplicationRun

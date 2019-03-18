@@ -34,6 +34,8 @@ const (
 	testLabelKey             = "test-label-key"
 	testLabelValue           = "test-label-value"
 	testImage                = "test-image"
+	testBuildCacheName       = "build-cache-test-application"
+	testBuildCacheSize       = "8Gi"
 )
 
 func expectOwnerReferencesSetCorrectly(t *testing.T, ownerRefs []metav1.OwnerReference) {

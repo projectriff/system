@@ -22,6 +22,7 @@ import (
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	servingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -44,9 +45,10 @@ type ApplicationSpec struct {
 }
 
 type ApplicationBuild struct {
-	Template  string          `json:"template"`
-	Arguments []BuildArgument `json:"arguments,omitempty"`
-	Source    *Source         `json:"source,omitempty"`
+	Template  string             `json:"template"`
+	CacheSize *resource.Quantity `json:"cacheSize,omitempty"`
+	Arguments []BuildArgument    `json:"arguments,omitempty"`
+	Source    *Source            `json:"source,omitempty"`
 }
 
 type BuildArgument struct {
@@ -71,15 +73,17 @@ type ApplicationRun struct {
 }
 
 const (
-	ApplicationConditionReady                                   = duckv1alpha1.ConditionReady
-	ApplicationConditionServiceReady duckv1alpha1.ConditionType = "ServiceReady"
+	ApplicationConditionReady                                      = duckv1alpha1.ConditionReady
+	ApplicationConditionServiceReady    duckv1alpha1.ConditionType = "ServiceReady"
+	ApplicationConditionBuildCacheReady duckv1alpha1.ConditionType = "BuildCacheReady"
 )
 
-var applicationCondSet = duckv1alpha1.NewLivingConditionSet(ApplicationConditionServiceReady)
+var applicationCondSet = duckv1alpha1.NewLivingConditionSet(ApplicationConditionServiceReady, ApplicationConditionBuildCacheReady)
 
 type ApplicationStatus struct {
 	Conditions         duckv1alpha1.Conditions   `json:"conditions,omitempty"`
 	Address            *duckv1alpha1.Addressable `json:"address,omitempty"`
+	BuildCacheName     string                    `json:"cacheVolumeName"`
 	ObservedGeneration int64                     `json:"observedGeneration,omitempty"`
 }
 
@@ -115,6 +119,12 @@ func (as *ApplicationStatus) MarkServiceNotOwned(name string) {
 }
 
 // TODO move into application reconciler
+func (as *ApplicationStatus) MarkBuildCacheNotOwned(name string) {
+	applicationCondSet.Manage(as).MarkFalse(ApplicationConditionBuildCacheReady, "NotOwned",
+		fmt.Sprintf("There is an existing PersistentVolumeClaim %q that we do not own.", name))
+}
+
+// TODO move into application reconciler
 func (as *ApplicationStatus) PropagateServiceStatus(ss *servingv1alpha1.ServiceStatus) {
 	as.Address = ss.Address
 
@@ -129,5 +139,28 @@ func (as *ApplicationStatus) PropagateServiceStatus(ss *servingv1alpha1.ServiceS
 		applicationCondSet.Manage(as).MarkTrue(ApplicationConditionServiceReady)
 	case sc.Status == corev1.ConditionFalse:
 		applicationCondSet.Manage(as).MarkFalse(ApplicationConditionServiceReady, sc.Reason, sc.Message)
+	}
+}
+
+// TODO move into application reconciler
+func (as *ApplicationStatus) PropagateBuildCacheStatus(pvc *corev1.PersistentVolumeClaim) {
+	if pvc == nil {
+		as.BuildCacheName = ""
+		applicationCondSet.Manage(as).MarkTrue(ApplicationConditionBuildCacheReady)
+		return
+	}
+
+	as.BuildCacheName = pvc.Name
+
+	switch pvc.Status.Phase {
+	case corev1.ClaimPending:
+		// used for PersistentVolumeClaims that are not yet bound
+		applicationCondSet.Manage(as).MarkUnknown(ApplicationConditionBuildCacheReady, string(pvc.Status.Phase), "volume claim is not yet bound")
+	case corev1.ClaimBound:
+		// used for PersistentVolumeClaims that are bound
+		applicationCondSet.Manage(as).MarkTrue(ApplicationConditionBuildCacheReady)
+	case corev1.ClaimLost:
+		// used for PersistentVolumeClaims that lost their underlying PersistentVolume
+		applicationCondSet.Manage(as).MarkFalse(ApplicationConditionBuildCacheReady, string(pvc.Status.Phase), "volume claim lost its underlying volume")
 	}
 }

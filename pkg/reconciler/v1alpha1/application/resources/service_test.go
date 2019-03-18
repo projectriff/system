@@ -22,7 +22,7 @@ import (
 	"github.com/projectriff/system/pkg/apis/projectriff"
 )
 
-func TestApplication(t *testing.T) {
+func TestService(t *testing.T) {
 	a := createApplicationMeta()
 	a.Labels = map[string]string{testLabelKey: testLabelValue}
 	a.Spec.Image = testImage
@@ -57,7 +57,7 @@ func TestApplication(t *testing.T) {
 }
 
 // TODO reenable
-// func TestMalformed(t *testing.T) {
+// func TestService_Malformed(t *testing.T) {
 // 	a := createApplicationMeta()
 // 	s, err := MakeService(a)
 // 	if err == nil {
