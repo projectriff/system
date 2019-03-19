@@ -63,6 +63,7 @@ var functionCondSet = duckv1alpha1.NewLivingConditionSet(FunctionConditionApplic
 type FunctionStatus struct {
 	Conditions         duckv1alpha1.Conditions   `json:"conditions,omitempty"`
 	Address            *duckv1alpha1.Addressable `json:"address,omitempty"`
+	Domain             string                    `json:"domain,omitempty"`
 	ObservedGeneration int64                     `json:"observedGeneration,omitempty"`
 }
 
@@ -100,6 +101,7 @@ func (fs *FunctionStatus) MarkApplicationNotOwned(name string) {
 // TODO move into function reconciler
 func (fs *FunctionStatus) PropagateApplicationStatus(as *ApplicationStatus) {
 	fs.Address = as.Address
+	fs.Domain = as.Domain
 
 	ac := as.GetCondition(ApplicationConditionReady)
 	if ac == nil {

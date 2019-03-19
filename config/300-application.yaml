@@ -34,9 +34,9 @@ spec:
   subresources:
     status: {}
   additionalPrinterColumns:
-  - name: Hostname
+  - name: Domain
     type: string
-    JSONPath: .status.address.hostname
+    JSONPath: .status.domain
   - name: Ready
     type: string
     JSONPath: ".status.conditions[?(@.type==\"Ready\")].status"

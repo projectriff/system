@@ -45,10 +45,11 @@ type ApplicationSpec struct {
 }
 
 type ApplicationBuild struct {
-	Template  string             `json:"template"`
-	CacheSize *resource.Quantity `json:"cacheSize,omitempty"`
-	Arguments []BuildArgument    `json:"arguments,omitempty"`
-	Source    *Source            `json:"source,omitempty"`
+	Annotations map[string]string  `json:"annotations,omitempty"`
+	Template    string             `json:"template"`
+	CacheSize   *resource.Quantity `json:"cacheSize,omitempty"`
+	Arguments   []BuildArgument    `json:"arguments,omitempty"`
+	Source      *Source            `json:"source,omitempty"`
 }
 
 type BuildArgument struct {
@@ -83,6 +84,7 @@ var applicationCondSet = duckv1alpha1.NewLivingConditionSet(ApplicationCondition
 type ApplicationStatus struct {
 	Conditions         duckv1alpha1.Conditions   `json:"conditions,omitempty"`
 	Address            *duckv1alpha1.Addressable `json:"address,omitempty"`
+	Domain             string                    `json:"domain,omitempty"`
 	BuildCacheName     string                    `json:"cacheVolumeName"`
 	ObservedGeneration int64                     `json:"observedGeneration,omitempty"`
 }
@@ -127,6 +129,7 @@ func (as *ApplicationStatus) MarkBuildCacheNotOwned(name string) {
 // TODO move into application reconciler
 func (as *ApplicationStatus) PropagateServiceStatus(ss *servingv1alpha1.ServiceStatus) {
 	as.Address = ss.Address
+	as.Domain = ss.Domain
 
 	sc := ss.GetCondition(servingv1alpha1.ServiceConditionReady)
 	if sc == nil {
