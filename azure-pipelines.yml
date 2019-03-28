@@ -25,17 +25,24 @@ steps:
     mv !(gopath) '$(modulePath)'
     echo '##vso[task.prependpath]$(GOBIN)'
     echo '##vso[task.prependpath]$(GOROOT)/bin'
+    go version
   displayName: 'Set up the Go workspace'
 
 - script: |
-    go version
-    go get -v -t -d ./...
     if [ -f Gopkg.toml ]; then
         curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-        dep ensure
+        dep check
     fi
+  workingDirectory: '$(modulePath)'
+  displayName: 'Check dependencies'
+
+- script: |
     go build -v ./cmd/controller
     go build -v ./cmd/webhook
+  workingDirectory: '$(modulePath)'
+  displayName: 'Build commands'
+
+- script: |
     go test -v ./...
   workingDirectory: '$(modulePath)'
-  displayName: 'Get dependencies, then build'
+  displayName: 'Run tests'
