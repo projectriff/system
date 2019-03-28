@@ -29,12 +29,10 @@ steps:
   displayName: 'Set up the Go workspace'
 
 - script: |
-    if [ -f Gopkg.toml ]; then
-        curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-        dep check
-    fi
+    curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+    ./hack/verify-codegen.sh
   workingDirectory: '$(modulePath)'
-  displayName: 'Check dependencies'
+  displayName: 'Verify dependencies and generated code'
 
 - script: |
     go build -v ./cmd/controller
