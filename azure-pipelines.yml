@@ -36,6 +36,6 @@ steps:
     fi
     go build -v ./cmd/controller
     go build -v ./cmd/webhook
-    go test -v .
+    go test -v ./...
   workingDirectory: '$(modulePath)'
   displayName: 'Get dependencies, then build'
