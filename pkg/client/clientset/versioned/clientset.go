@@ -17,6 +17,7 @@ package versioned
 
 import (
 	projectriffv1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/projectriff/v1alpha1"
+	streamsv1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/streams/v1alpha1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
@@ -27,6 +28,9 @@ type Interface interface {
 	ProjectriffV1alpha1() projectriffv1alpha1.ProjectriffV1alpha1Interface
 	// Deprecated: please explicitly pick a version if possible.
 	Projectriff() projectriffv1alpha1.ProjectriffV1alpha1Interface
+	StreamsV1alpha1() streamsv1alpha1.StreamsV1alpha1Interface
+	// Deprecated: please explicitly pick a version if possible.
+	Streams() streamsv1alpha1.StreamsV1alpha1Interface
 }
 
 // Clientset contains the clients for groups. Each group has exactly one
@@ -34,6 +38,7 @@ type Interface interface {
 type Clientset struct {
 	*discovery.DiscoveryClient
 	projectriffV1alpha1 *projectriffv1alpha1.ProjectriffV1alpha1Client
+	streamsV1alpha1     *streamsv1alpha1.StreamsV1alpha1Client
 }
 
 // ProjectriffV1alpha1 retrieves the ProjectriffV1alpha1Client
@@ -45,6 +50,17 @@ func (c *Clientset) ProjectriffV1alpha1() projectriffv1alpha1.ProjectriffV1alpha
 // Please explicitly pick a version.
 func (c *Clientset) Projectriff() projectriffv1alpha1.ProjectriffV1alpha1Interface {
 	return c.projectriffV1alpha1
+}
+
+// StreamsV1alpha1 retrieves the StreamsV1alpha1Client
+func (c *Clientset) StreamsV1alpha1() streamsv1alpha1.StreamsV1alpha1Interface {
+	return c.streamsV1alpha1
+}
+
+// Deprecated: Streams retrieves the default version of StreamsClient.
+// Please explicitly pick a version.
+func (c *Clientset) Streams() streamsv1alpha1.StreamsV1alpha1Interface {
+	return c.streamsV1alpha1
 }
 
 // Discovery retrieves the DiscoveryClient
@@ -67,6 +83,10 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	if err != nil {
 		return nil, err
 	}
+	cs.streamsV1alpha1, err = streamsv1alpha1.NewForConfig(&configShallowCopy)
+	if err != nil {
+		return nil, err
+	}
 
 	cs.DiscoveryClient, err = discovery.NewDiscoveryClientForConfig(&configShallowCopy)
 	if err != nil {
@@ -80,6 +100,7 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 func NewForConfigOrDie(c *rest.Config) *Clientset {
 	var cs Clientset
 	cs.projectriffV1alpha1 = projectriffv1alpha1.NewForConfigOrDie(c)
+	cs.streamsV1alpha1 = streamsv1alpha1.NewForConfigOrDie(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClientForConfigOrDie(c)
 	return &cs
@@ -89,6 +110,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
 	cs.projectriffV1alpha1 = projectriffv1alpha1.New(c)
+	cs.streamsV1alpha1 = streamsv1alpha1.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
 	return &cs

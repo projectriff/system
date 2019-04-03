@@ -19,6 +19,8 @@ import (
 	clientset "github.com/projectriff/system/pkg/client/clientset/versioned"
 	projectriffv1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/projectriff/v1alpha1"
 	fakeprojectriffv1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/projectriff/v1alpha1/fake"
+	streamsv1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/streams/v1alpha1"
+	fakestreamsv1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/streams/v1alpha1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -76,4 +78,14 @@ func (c *Clientset) ProjectriffV1alpha1() projectriffv1alpha1.ProjectriffV1alpha
 // Projectriff retrieves the ProjectriffV1alpha1Client
 func (c *Clientset) Projectriff() projectriffv1alpha1.ProjectriffV1alpha1Interface {
 	return &fakeprojectriffv1alpha1.FakeProjectriffV1alpha1{Fake: &c.Fake}
+}
+
+// StreamsV1alpha1 retrieves the StreamsV1alpha1Client
+func (c *Clientset) StreamsV1alpha1() streamsv1alpha1.StreamsV1alpha1Interface {
+	return &fakestreamsv1alpha1.FakeStreamsV1alpha1{Fake: &c.Fake}
+}
+
+// Streams retrieves the StreamsV1alpha1Client
+func (c *Clientset) Streams() streamsv1alpha1.StreamsV1alpha1Interface {
+	return &fakestreamsv1alpha1.FakeStreamsV1alpha1{Fake: &c.Fake}
 }

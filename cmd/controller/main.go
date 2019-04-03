@@ -44,6 +44,8 @@ import (
 	"github.com/projectriff/system/pkg/reconciler"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/application"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/function"
+	"github.com/projectriff/system/pkg/reconciler/v1alpha1/processor"
+	"github.com/projectriff/system/pkg/reconciler/v1alpha1/stream"
 	"go.uber.org/zap"
 )
 
@@ -119,6 +121,8 @@ func main() {
 
 	applicationInformer := projectriffInformerFactory.Projectriff().V1alpha1().Applications()
 	functionInformer := projectriffInformerFactory.Projectriff().V1alpha1().Functions()
+	streamInformer := projectriffInformerFactory.Streams().V1alpha1().Streams()
+	processorInformer := projectriffInformerFactory.Streams().V1alpha1().Processors()
 	configurationInformer := servingInformerFactory.Serving().V1alpha1().Configurations()
 	routeInformer := servingInformerFactory.Serving().V1alpha1().Routes()
 	pvcInformer := kubeInformerFactory.Core().V1().PersistentVolumeClaims()
@@ -137,6 +141,14 @@ func main() {
 			opt,
 			functionInformer,
 			applicationInformer,
+		),
+		stream.NewController(
+			opt,
+			streamInformer,
+		),
+		processor.NewController(
+			opt,
+			processorInformer,
 		),
 	}
 

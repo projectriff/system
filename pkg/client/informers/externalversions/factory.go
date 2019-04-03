@@ -23,6 +23,7 @@ import (
 	versioned "github.com/projectriff/system/pkg/client/clientset/versioned"
 	internalinterfaces "github.com/projectriff/system/pkg/client/informers/externalversions/internalinterfaces"
 	projectriff "github.com/projectriff/system/pkg/client/informers/externalversions/projectriff"
+	streams "github.com/projectriff/system/pkg/client/informers/externalversions/streams"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -170,8 +171,13 @@ type SharedInformerFactory interface {
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
 	Projectriff() projectriff.Interface
+	Streams() streams.Interface
 }
 
 func (f *sharedInformerFactory) Projectriff() projectriff.Interface {
 	return projectriff.New(f, f.namespace, f.tweakListOptions)
+}
+
+func (f *sharedInformerFactory) Streams() streams.Interface {
+	return streams.New(f, f.namespace, f.tweakListOptions)
 }

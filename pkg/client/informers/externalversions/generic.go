@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	v1alpha1 "github.com/projectriff/system/pkg/apis/projectriff/v1alpha1"
+	streams_v1alpha1 "github.com/projectriff/system/pkg/apis/streams/v1alpha1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )
@@ -54,6 +55,12 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Projectriff().V1alpha1().Applications().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("functions"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Projectriff().V1alpha1().Functions().Informer()}, nil
+
+		// Group=streams.projectriff.io, Version=v1alpha1
+	case streams_v1alpha1.SchemeGroupVersion.WithResource("processors"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Streams().V1alpha1().Processors().Informer()}, nil
+	case streams_v1alpha1.SchemeGroupVersion.WithResource("streams"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Streams().V1alpha1().Streams().Informer()}, nil
 
 	}
 
