@@ -56,9 +56,10 @@ type Reconciler struct {
 	*reconciler.Base
 
 	// listers index properties about resources
-	applicationLister projectrifflisters.ApplicationLister
-	serviceLister     servinglisters.ServiceLister
-	pvcLister         corelisters.PersistentVolumeClaimLister
+	applicationLister   projectrifflisters.ApplicationLister
+	configurationLister servinglisters.ConfigurationLister
+	routeLister         servinglisters.RouteLister
+	pvcLister           corelisters.PersistentVolumeClaimLister
 }
 
 // Check that our Reconciler implements controller.Reconciler
@@ -69,15 +70,17 @@ var _ controller.Reconciler = (*Reconciler)(nil)
 func NewController(
 	opt reconciler.Options,
 	applicationInformer projectriffinformers.ApplicationInformer,
-	serviceInformer servinginformers.ServiceInformer,
+	configurationInformer servinginformers.ConfigurationInformer,
+	routeInformer servinginformers.RouteInformer,
 	pvcInformer coreinformers.PersistentVolumeClaimInformer,
 ) *controller.Impl {
 
 	c := &Reconciler{
-		Base:              reconciler.NewBase(opt, controllerAgentName),
-		applicationLister: applicationInformer.Lister(),
-		serviceLister:     serviceInformer.Lister(),
-		pvcLister:         pvcInformer.Lister(),
+		Base:                reconciler.NewBase(opt, controllerAgentName),
+		applicationLister:   applicationInformer.Lister(),
+		configurationLister: configurationInformer.Lister(),
+		routeLister:         routeInformer.Lister(),
+		pvcLister:           pvcInformer.Lister(),
 	}
 	impl := controller.NewImpl(c, c.Logger, ReconcilerName, reconciler.MustNewStatsReporter(ReconcilerName, c.Logger))
 
@@ -88,7 +91,23 @@ func NewController(
 		DeleteFunc: impl.Enqueue,
 	})
 
-	serviceInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+	configurationInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: controller.Filter(projectriffv1alpha1.SchemeGroupVersion.WithKind("Application")),
+		Handler: cache.ResourceEventHandlerFuncs{
+			AddFunc:    impl.EnqueueControllerOf,
+			UpdateFunc: controller.PassNew(impl.EnqueueControllerOf),
+			DeleteFunc: impl.EnqueueControllerOf,
+		},
+	})
+	routeInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: controller.Filter(projectriffv1alpha1.SchemeGroupVersion.WithKind("Application")),
+		Handler: cache.ResourceEventHandlerFuncs{
+			AddFunc:    impl.EnqueueControllerOf,
+			UpdateFunc: controller.PassNew(impl.EnqueueControllerOf),
+			DeleteFunc: impl.EnqueueControllerOf,
+		},
+	})
+	pvcInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(projectriffv1alpha1.SchemeGroupVersion.WithKind("Application")),
 		Handler: cache.ResourceEventHandlerFuncs{
 			AddFunc:    impl.EnqueueControllerOf,
@@ -188,30 +207,55 @@ func (c *Reconciler) reconcile(ctx context.Context, application *projectriffv1al
 	// Update our Status based on the state of our underlying PersistentVolumeClaim.
 	application.Status.PropagateBuildCacheStatus(buildCache)
 
-	serviceName := resourcenames.Service(application)
-	service, err := c.serviceLister.Services(application.Namespace).Get(serviceName)
+	configurationName := resourcenames.Configuration(application)
+	configuration, err := c.configurationLister.Configurations(application.Namespace).Get(configurationName)
 	if errors.IsNotFound(err) {
-		service, err = c.createService(application)
+		configuration, err = c.createConfiguration(application)
 		if err != nil {
-			logger.Errorf("Failed to create Service %q: %v", serviceName, err)
-			c.Recorder.Eventf(application, corev1.EventTypeWarning, "CreationFailed", "Failed to create Service %q: %v", serviceName, err)
+			logger.Errorf("Failed to create Configuration %q: %v", configurationName, err)
+			c.Recorder.Eventf(application, corev1.EventTypeWarning, "CreationFailed", "Failed to create Configuration %q: %v", configurationName, err)
 			return err
 		}
-		c.Recorder.Eventf(application, corev1.EventTypeNormal, "Created", "Created Service %q", serviceName)
+		c.Recorder.Eventf(application, corev1.EventTypeNormal, "Created", "Created Configuration %q", configurationName)
 	} else if err != nil {
-		logger.Errorf("Failed to reconcile Application: %q failed to Get Service: %q; %v", application.Name, serviceName, zap.Error(err))
+		logger.Errorf("Failed to reconcile Application: %q failed to Get Configuration: %q; %v", application.Name, configurationName, zap.Error(err))
 		return err
-	} else if !metav1.IsControlledBy(service, application) {
+	} else if !metav1.IsControlledBy(configuration, application) {
 		// Surface an error in the application's status,and return an error.
-		application.Status.MarkServiceNotOwned(serviceName)
-		return fmt.Errorf("Application: %q does not own Service: %q", application.Name, serviceName)
-	} else if service, err = c.reconcileService(ctx, application, buildCache, service); err != nil {
-		logger.Errorf("Failed to reconcile Application: %q failed to reconcile Service: %q; %v", application.Name, serviceName, zap.Error(err))
+		application.Status.MarkConfigurationNotOwned(configurationName)
+		return fmt.Errorf("Application: %q does not own Configuration: %q", application.Name, configurationName)
+	} else if configuration, err = c.reconcileConfiguration(ctx, application, buildCache, configuration); err != nil {
+		logger.Errorf("Failed to reconcile Application: %q failed to reconcile Configuration: %q; %v", application.Name, configurationName, zap.Error(err))
 		return err
 	}
 
-	// Update our Status based on the state of our underlying Service.
-	application.Status.PropagateServiceStatus(&service.Status)
+	// Update our Status based on the state of our underlying Configuration.
+	application.Status.PropagateConfigurationStatus(&configuration.Status)
+
+	routeName := resourcenames.Route(application)
+	route, err := c.routeLister.Routes(application.Namespace).Get(routeName)
+	if errors.IsNotFound(err) {
+		route, err = c.createRoute(application)
+		if err != nil {
+			logger.Errorf("Failed to create Route %q: %v", routeName, err)
+			c.Recorder.Eventf(application, corev1.EventTypeWarning, "CreationFailed", "Failed to create Route %q: %v", routeName, err)
+			return err
+		}
+		c.Recorder.Eventf(application, corev1.EventTypeNormal, "Created", "Created Route %q", routeName)
+	} else if err != nil {
+		logger.Errorf("Failed to reconcile Application: %q failed to Get Route: %q; %v", application.Name, routeName, zap.Error(err))
+		return err
+	} else if !metav1.IsControlledBy(route, application) {
+		// Surface an error in the application's status,and return an error.
+		application.Status.MarkRouteNotOwned(routeName)
+		return fmt.Errorf("Application: %q does not own Route: %q", application.Name, routeName)
+	} else if route, err = c.reconcileRoute(ctx, application, route); err != nil {
+		logger.Errorf("Failed to reconcile Application: %q failed to reconcile Route: %q; %v", application.Name, routeName, zap.Error(err))
+		return err
+	}
+
+	// Update our Status based on the state of our underlying Route.
+	application.Status.PropagateRouteStatus(&route.Status)
 
 	application.Status.ObservedGeneration = application.Generation
 
@@ -241,42 +285,80 @@ func (c *Reconciler) updateStatus(desired *projectriffv1alpha1.Application) (*pr
 	return svc, err
 }
 
-func (c *Reconciler) reconcileService(ctx context.Context, application *projectriffv1alpha1.Application, buildCache *corev1.PersistentVolumeClaim, service *servingv1alpha1.Service) (*servingv1alpha1.Service, error) {
+func (c *Reconciler) reconcileConfiguration(ctx context.Context, application *projectriffv1alpha1.Application, buildCache *corev1.PersistentVolumeClaim, configuration *servingv1alpha1.Configuration) (*servingv1alpha1.Configuration, error) {
 	logger := logging.FromContext(ctx)
-	desiredService, err := resources.MakeService(application)
+	desiredConfiguration, err := resources.MakeConfiguration(application)
 	if err != nil {
 		return nil, err
 	}
 
-	if serviceSemanticEquals(desiredService, service) {
+	if configurationSemanticEquals(desiredConfiguration, configuration) {
 		// No differences to reconcile.
-		return service, nil
+		return configuration, nil
 	}
-	diff, err := kmp.SafeDiff(desiredService.Spec, service.Spec)
+	diff, err := kmp.SafeDiff(desiredConfiguration.Spec, configuration.Spec)
 	if err != nil {
-		return nil, fmt.Errorf("failed to diff Service: %v", err)
+		return nil, fmt.Errorf("failed to diff Configuration: %v", err)
 	}
-	logger.Infof("Reconciling service diff (-desired, +observed): %s", diff)
+	logger.Infof("Reconciling configuration diff (-desired, +observed): %s", diff)
 
 	// Don't modify the informers copy.
-	existing := service.DeepCopy()
+	existing := configuration.DeepCopy()
 	// Preserve the rest of the object (e.g. ObjectMeta except for labels).
-	existing.Spec = desiredService.Spec
-	existing.ObjectMeta.Labels = desiredService.ObjectMeta.Labels
-	return c.ServingClientSet.ServingV1alpha1().Services(application.Namespace).Update(existing)
+	existing.Spec = desiredConfiguration.Spec
+	existing.ObjectMeta.Labels = desiredConfiguration.ObjectMeta.Labels
+	return c.ServingClientSet.ServingV1alpha1().Configurations(application.Namespace).Update(existing)
 }
 
-func (c *Reconciler) createService(application *projectriffv1alpha1.Application) (*servingv1alpha1.Service, error) {
-	cfg, err := resources.MakeService(application)
+func (c *Reconciler) createConfiguration(application *projectriffv1alpha1.Application) (*servingv1alpha1.Configuration, error) {
+	configuration, err := resources.MakeConfiguration(application)
 	if err != nil {
 		return nil, err
 	}
-	return c.ServingClientSet.ServingV1alpha1().Services(application.Namespace).Create(cfg)
+	return c.ServingClientSet.ServingV1alpha1().Configurations(application.Namespace).Create(configuration)
 }
 
-func serviceSemanticEquals(desiredService, service *servingv1alpha1.Service) bool {
-	return equality.Semantic.DeepEqual(desiredService.Spec, service.Spec) &&
-		equality.Semantic.DeepEqual(desiredService.ObjectMeta.Labels, service.ObjectMeta.Labels)
+func configurationSemanticEquals(desiredConfiguration, configuration *servingv1alpha1.Configuration) bool {
+	return equality.Semantic.DeepEqual(desiredConfiguration.Spec, configuration.Spec) &&
+		equality.Semantic.DeepEqual(desiredConfiguration.ObjectMeta.Labels, configuration.ObjectMeta.Labels)
+}
+
+func (c *Reconciler) reconcileRoute(ctx context.Context, application *projectriffv1alpha1.Application, route *servingv1alpha1.Route) (*servingv1alpha1.Route, error) {
+	logger := logging.FromContext(ctx)
+	desiredRoute, err := resources.MakeRoute(application)
+	if err != nil {
+		return nil, err
+	}
+
+	if routeSemanticEquals(desiredRoute, route) {
+		// No differences to reconcile.
+		return route, nil
+	}
+	diff, err := kmp.SafeDiff(desiredRoute.Spec, route.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("failed to diff Route: %v", err)
+	}
+	logger.Infof("Reconciling route diff (-desired, +observed): %s", diff)
+
+	// Don't modify the informers copy.
+	existing := route.DeepCopy()
+	// Preserve the rest of the object (e.g. ObjectMeta except for labels).
+	existing.Spec = desiredRoute.Spec
+	existing.ObjectMeta.Labels = desiredRoute.ObjectMeta.Labels
+	return c.ServingClientSet.ServingV1alpha1().Routes(application.Namespace).Update(existing)
+}
+
+func (c *Reconciler) createRoute(application *projectriffv1alpha1.Application) (*servingv1alpha1.Route, error) {
+	route, err := resources.MakeRoute(application)
+	if err != nil {
+		return nil, err
+	}
+	return c.ServingClientSet.ServingV1alpha1().Routes(application.Namespace).Create(route)
+}
+
+func routeSemanticEquals(desiredRoute, route *servingv1alpha1.Route) bool {
+	return equality.Semantic.DeepEqual(desiredRoute.Spec, route.Spec) &&
+		equality.Semantic.DeepEqual(desiredRoute.ObjectMeta.Labels, route.ObjectMeta.Labels)
 }
 
 func (c *Reconciler) reconcileBuildCache(ctx context.Context, application *projectriffv1alpha1.Application, buildCache *corev1.PersistentVolumeClaim) (*corev1.PersistentVolumeClaim, error) {

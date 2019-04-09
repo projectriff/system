@@ -28,7 +28,6 @@ import (
 const (
 	testApplicationName      = "test-application"
 	testApplicationNamespace = "test-application-namespace"
-	testServiceName          = "test-service"
 	testBuildArgName         = "test-build-arg-name"
 	testBuildArgValue        = "test-build-arg-value"
 	testLabelKey             = "test-label-key"
