@@ -3,9 +3,6 @@
 # Add steps that test, save build artifacts, deploy, and more:
 # https://docs.microsoft.com/azure/devops/pipelines/languages/go
 
-trigger:
-- master
-
 pool:
   vmImage: 'Ubuntu-16.04'
 
@@ -16,6 +13,10 @@ variables:
   modulePath: '$(GOPATH)/src/github.com/$(build.repository.name)' # Path to the module's code
 
 steps:
+- task: GoTool@0
+  inputs:
+    version: '1.12'
+
 - script: |
     mkdir -p '$(GOBIN)'
     mkdir -p '$(GOPATH)/pkg'
