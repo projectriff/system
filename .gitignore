@@ -8,3 +8,4 @@
 # Temporary output of build tools
 bazel-*
 *.out
+coverage.txt
