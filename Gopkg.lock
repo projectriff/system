@@ -272,15 +272,15 @@
   revision = "f2b4162afba35581b6d4a50d3b8f34e33c144682"
 
 [[projects]]
-  digest = "1:29482b529c45596aea647a5d3b8eda036eccc2b4752bdf6979f1c1ce0645b93a"
+  digest = "1:0836bde83bdc49aae7710e22d04e2555d9bd25cd133fbb78508c492307081aea"
   name = "github.com/knative/build"
   packages = [
     "pkg/apis/build",
     "pkg/apis/build/v1alpha1",
   ]
   pruneopts = "NUT"
-  revision = "ee63efca9865c41732883f4eb0aef3be13becedd"
-  version = "v0.4.0"
+  revision = "4fc8663ff9c48a66c52684b2e4cdf06ec83117c8"
+  version = "v0.5.0"
 
 [[projects]]
   digest = "1:ad0cca2383dc5678f6711c51cd38594906701e07d713998e3c9240e926f22867"
@@ -290,7 +290,7 @@
   revision = "06e9787157505a649b07677e77d26202ac91431c"
 
 [[projects]]
-  digest = "1:0a4a643c1685e902c930053adb53a53feeb14cd0c85bb850b95f4741f1f8b735"
+  digest = "1:9f7ddeb95c92203cceb3e458a9d76c9509c623e809b189ba7f5b7c754710749b"
   name = "github.com/knative/pkg"
   packages = [
     "apis",
@@ -313,14 +313,15 @@
     "webhook",
   ]
   pruneopts = "NUT"
-  revision = "729d5ada5f62642351b3420fd2e7bc1897c54943"
+  revision = "916205998db9d085aaff357221b208bc89290ea5"
 
 [[projects]]
-  digest = "1:75522c324fd13eedbec19accebfd6f4afb92de6bd2353f904b344c4e85763e8d"
+  digest = "1:94c1404fff90fb098b1a59fa7a8647360c6787c06d72a924edf6826edf6ce50b"
   name = "github.com/knative/serving"
   packages = [
     "pkg/apis/autoscaling",
     "pkg/apis/autoscaling/v1alpha1",
+    "pkg/apis/config",
     "pkg/apis/networking",
     "pkg/apis/networking/v1alpha1",
     "pkg/apis/serving",
@@ -347,8 +348,8 @@
     "pkg/client/listers/serving/v1alpha1",
   ]
   pruneopts = "NUT"
-  revision = "4913b81a4305b174ed07c54298be6ddeb3dd874e"
-  version = "v0.4.1"
+  revision = "ca4fffb4743924c58e98badcf5bd3f17a3634d43"
+  version = "v0.5.0"
 
 [[projects]]
   branch = "master"

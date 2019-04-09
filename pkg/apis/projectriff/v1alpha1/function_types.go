@@ -19,7 +19,9 @@ package v1alpha1
 import (
 	"fmt"
 
+	"github.com/knative/pkg/apis"
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
+	"github.com/knative/pkg/kmeta"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,6 +38,12 @@ type Function struct {
 	Spec   FunctionSpec   `json:"spec"`
 	Status FunctionStatus `json:"status"`
 }
+
+var (
+	_ apis.Validatable   = (*Function)(nil)
+	_ apis.Defaultable   = (*Function)(nil)
+	_ kmeta.OwnerRefable = (*Function)(nil)
+)
 
 type FunctionSpec struct {
 	Image string        `json:"image"`
@@ -61,10 +69,9 @@ const (
 var functionCondSet = duckv1alpha1.NewLivingConditionSet(FunctionConditionApplicationReady)
 
 type FunctionStatus struct {
-	Conditions         duckv1alpha1.Conditions   `json:"conditions,omitempty"`
-	Address            *duckv1alpha1.Addressable `json:"address,omitempty"`
-	Domain             string                    `json:"domain,omitempty"`
-	ObservedGeneration int64                     `json:"observedGeneration,omitempty"`
+	duckv1alpha1.Status `json:",inline"`
+	Address             *duckv1alpha1.Addressable `json:"address,omitempty"`
+	Domain              string                    `json:"domain,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

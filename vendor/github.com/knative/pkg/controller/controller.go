@@ -39,6 +39,14 @@ const (
 	trueString  = "true"
 )
 
+var (
+	// DefaultThreadsPerController is the number of threads to use
+	// when processing the controller's workqueue.  Controller binaries
+	// may adjust this process-wide default.  For finer control, invoke
+	// Run on the controller directly.
+	DefaultThreadsPerController = 2
+)
+
 // Reconciler is the interface that controller implementations are expected
 // to implement, so that the shared controller.Impl can drive work through it.
 type Reconciler interface {
@@ -114,7 +122,7 @@ func NewImpl(r Reconciler, logger *zap.SugaredLogger, workQueueName string, repo
 func (c *Impl) Enqueue(obj interface{}) {
 	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
-		c.logger.Error(zap.Error(err))
+		c.logger.Errorw("Enqueue", zap.Error(err))
 		return
 	}
 	c.EnqueueKey(key)
@@ -258,7 +266,7 @@ func (c *Impl) processNextWorkItem() bool {
 		if err != nil {
 			status = falseString
 		}
-		c.statsReporter.ReportReconcile(time.Now().Sub(startTime), key, status)
+		c.statsReporter.ReportReconcile(time.Since(startTime), key, status)
 	}()
 
 	// Embed the key into the logger and attach that to the context we pass
@@ -270,20 +278,20 @@ func (c *Impl) processNextWorkItem() bool {
 	// resource to be synced.
 	if err = c.Reconciler.Reconcile(ctx, key); err != nil {
 		c.handleErr(err, key)
-		logger.Errorf("Reconcile failed. Time taken: %v.", time.Now().Sub(startTime))
+		logger.Infof("Reconcile failed. Time taken: %v.", time.Since(startTime))
 		return true
 	}
 
 	// Finally, if no error occurs we Forget this item so it does not
 	// have any delay when another change happens.
 	c.WorkQueue.Forget(key)
-	logger.Infof("Reconcile succeeded. Time taken: %v.", time.Now().Sub(startTime))
+	logger.Infof("Reconcile succeeded. Time taken: %v.", time.Since(startTime))
 
 	return true
 }
 
 func (c *Impl) handleErr(err error, key string) {
-	c.logger.Error(zap.Error(err))
+	c.logger.Errorw("Reconcile error", zap.Error(err))
 
 	// Re-queue the key if it's an transient error.
 	if !IsPermanentError(err) {
@@ -331,4 +339,41 @@ func (err permanentError) Error() string {
 	}
 
 	return err.e.Error()
+}
+
+// Informer is the group of methods that a type must implement to be passed to
+// StartInformers.
+type Informer interface {
+	Run(<-chan struct{})
+	HasSynced() bool
+}
+
+// StartInformers kicks off all of the passed informers and then waits for all
+// of them to synchronize.
+func StartInformers(stopCh <-chan struct{}, informers ...Informer) error {
+	for _, informer := range informers {
+		informer := informer
+		go informer.Run(stopCh)
+	}
+
+	for i, informer := range informers {
+		if ok := cache.WaitForCacheSync(stopCh, informer.HasSynced); !ok {
+			return fmt.Errorf("Failed to wait for cache at index %d to sync", i)
+		}
+	}
+	return nil
+}
+
+// StartAll kicks off all of the passed controllers with DefaultThreadsPerController.
+func StartAll(stopCh <-chan struct{}, controllers ...*Impl) {
+	wg := sync.WaitGroup{}
+	// Start all of the controllers.
+	for _, ctrlr := range controllers {
+		wg.Add(1)
+		go func(c *Impl) {
+			defer wg.Done()
+			c.Run(DefaultThreadsPerController, stopCh)
+		}(ctrlr)
+	}
+	wg.Wait()
 }

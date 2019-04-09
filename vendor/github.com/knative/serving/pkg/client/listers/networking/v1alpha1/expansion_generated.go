@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Knative Authors
+Copyright 2019 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,6 +15,22 @@ limitations under the License.
 */
 package v1alpha1
 
+// CertificateListerExpansion allows custom methods to be added to
+// CertificateLister.
+type CertificateListerExpansion interface{}
+
+// CertificateNamespaceListerExpansion allows custom methods to be added to
+// CertificateNamespaceLister.
+type CertificateNamespaceListerExpansion interface{}
+
 // ClusterIngressListerExpansion allows custom methods to be added to
 // ClusterIngressLister.
 type ClusterIngressListerExpansion interface{}
+
+// ServerlessServiceListerExpansion allows custom methods to be added to
+// ServerlessServiceLister.
+type ServerlessServiceListerExpansion interface{}
+
+// ServerlessServiceNamespaceListerExpansion allows custom methods to be added to
+// ServerlessServiceNamespaceLister.
+type ServerlessServiceNamespaceListerExpansion interface{}

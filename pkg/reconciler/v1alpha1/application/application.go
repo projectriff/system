@@ -157,7 +157,7 @@ func (c *Reconciler) reconcile(ctx context.Context, application *projectriffv1al
 	// and may not have had all of the assumed defaults specified.  This won't result
 	// in this getting written back to the API Server, but lets downstream logic make
 	// assumptions about defaulting.
-	application.SetDefaults()
+	application.SetDefaults(context.Background())
 
 	application.Status.InitializeConditions()
 

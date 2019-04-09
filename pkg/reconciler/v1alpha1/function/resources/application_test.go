@@ -17,6 +17,7 @@ limitations under the License.
 package resources
 
 import (
+	"context"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -35,7 +36,7 @@ func TestFunction(t *testing.T) {
 
 	a, _ := MakeApplication(f)
 
-	if errs := a.Validate(); errs != nil {
+	if errs := a.Validate(context.Background()); errs != nil {
 		t.Errorf("expected valid application got errors %+v", errs)
 	}
 

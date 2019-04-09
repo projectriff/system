@@ -17,10 +17,12 @@
 package v1alpha1
 
 import (
+	"context"
+
 	"github.com/knative/pkg/apis"
 )
 
-func (a *Application) Validate() *apis.FieldError {
+func (a *Application) Validate(ctx context.Context) *apis.FieldError {
 	// TODO
 	return nil
 }

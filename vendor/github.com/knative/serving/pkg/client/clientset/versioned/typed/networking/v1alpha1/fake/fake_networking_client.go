@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Knative Authors
+Copyright 2019 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -25,8 +25,16 @@ type FakeNetworkingV1alpha1 struct {
 	*testing.Fake
 }
 
+func (c *FakeNetworkingV1alpha1) Certificates(namespace string) v1alpha1.CertificateInterface {
+	return &FakeCertificates{c, namespace}
+}
+
 func (c *FakeNetworkingV1alpha1) ClusterIngresses() v1alpha1.ClusterIngressInterface {
 	return &FakeClusterIngresses{c}
+}
+
+func (c *FakeNetworkingV1alpha1) ServerlessServices(namespace string) v1alpha1.ServerlessServiceInterface {
+	return &FakeServerlessServices{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

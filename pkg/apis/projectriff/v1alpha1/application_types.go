@@ -19,7 +19,9 @@ package v1alpha1
 import (
 	"fmt"
 
+	"github.com/knative/pkg/apis"
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
+	"github.com/knative/pkg/kmeta"
 	servingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -37,6 +39,12 @@ type Application struct {
 	Spec   ApplicationSpec   `json:"spec"`
 	Status ApplicationStatus `json:"status"`
 }
+
+var (
+	_ apis.Validatable   = (*Application)(nil)
+	_ apis.Defaultable   = (*Application)(nil)
+	_ kmeta.OwnerRefable = (*Application)(nil)
+)
 
 type ApplicationSpec struct {
 	Image string           `json:"image"`
@@ -82,11 +90,10 @@ const (
 var applicationCondSet = duckv1alpha1.NewLivingConditionSet(ApplicationConditionServiceReady, ApplicationConditionBuildCacheReady)
 
 type ApplicationStatus struct {
-	Conditions         duckv1alpha1.Conditions   `json:"conditions,omitempty"`
-	Address            *duckv1alpha1.Addressable `json:"address,omitempty"`
-	Domain             string                    `json:"domain,omitempty"`
-	BuildCacheName     string                    `json:"cacheVolumeName"`
-	ObservedGeneration int64                     `json:"observedGeneration,omitempty"`
+	duckv1alpha1.Status `json:",inline"`
+	Address             *duckv1alpha1.Addressable `json:"address,omitempty"`
+	Domain              string                    `json:"domain,omitempty"`
+	BuildCacheName      string                    `json:"cacheVolumeName"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

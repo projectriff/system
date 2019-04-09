@@ -16,10 +16,12 @@
 
 package v1alpha1
 
-func (a *Application) SetDefaults() {
-	a.Spec.SetDefaults()
+import "context"
+
+func (a *Application) SetDefaults(ctx context.Context) {
+	a.Spec.SetDefaults(ctx)
 }
 
-func (as *ApplicationSpec) SetDefaults() {
+func (as *ApplicationSpec) SetDefaults(ctx context.Context) {
 	// TODO
 }

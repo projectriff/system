@@ -17,6 +17,7 @@ limitations under the License.
 package resources
 
 import (
+	"context"
 	"testing"
 
 	"github.com/projectriff/system/pkg/apis/projectriff"
@@ -29,7 +30,7 @@ func TestService(t *testing.T) {
 
 	s, _ := MakeService(a)
 
-	if errs := s.Validate(); errs != nil {
+	if errs := s.Validate(context.Background()); errs != nil {
 		t.Errorf("expected valid service got errors %+v", errs)
 	}
 
