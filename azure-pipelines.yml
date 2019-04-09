@@ -17,10 +17,13 @@ steps:
 
 - script: |
     mkdir -p '$(GOPATH)/bin'
+    echo '##vso[task.prependpath]$(GOPATH)/bin'
+
     mkdir -p '$(modulePath)'
     shopt -s extglob
     shopt -s dotglob
     mv !(gopath) '$(modulePath)'
+
     go version
   displayName: 'Set up the Go workspace'
 
