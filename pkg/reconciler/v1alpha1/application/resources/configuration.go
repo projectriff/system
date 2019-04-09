@@ -26,59 +26,59 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// MakeService creates a Service from a Application object.
-func MakeService(application *projectriffv1alpha1.Application) (*servingv1alpha1.Service, error) {
-	s := &servingv1alpha1.Service{
+// MakeConfiguration creates a Configuration from a Application object.
+func MakeConfiguration(application *projectriffv1alpha1.Application) (*servingv1alpha1.Configuration, error) {
+	configuration := &servingv1alpha1.Configuration{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      names.Service(application),
+			Name:      names.Configuration(application),
 			Namespace: application.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
 				*kmeta.NewControllerRef(application),
 			},
 			Labels: makeLabels(application),
 		},
-		Spec: servingv1alpha1.ServiceSpec{
-			RunLatest: &servingv1alpha1.RunLatestType{
-				Configuration: servingv1alpha1.ConfigurationSpec{
-					Build: makeServiceBuild(application),
-					RevisionTemplate: servingv1alpha1.RevisionTemplateSpec{
-						Spec: servingv1alpha1.RevisionSpec{
-							Container: corev1.Container{
-								Image:     application.Spec.Image,
-								EnvFrom:   application.Spec.Run.EnvFrom,
-								Env:       application.Spec.Run.Env,
-								Resources: application.Spec.Run.Resources,
-							},
-						},
+		Spec: servingv1alpha1.ConfigurationSpec{
+			Build: makeConfigurationBuild(application),
+			RevisionTemplate: servingv1alpha1.RevisionTemplateSpec{
+				Spec: servingv1alpha1.RevisionSpec{
+					Container: corev1.Container{
+						Image:     application.Spec.Image,
+						EnvFrom:   application.Spec.Run.EnvFrom,
+						Env:       application.Spec.Run.Env,
+						Resources: application.Spec.Run.Resources,
 					},
 				},
 			},
 		},
 	}
 
-	return s, nil
+	return configuration, nil
 }
 
-func makeServiceBuild(application *projectriffv1alpha1.Application) *servingv1alpha1.RawExtension {
+func makeConfigurationBuild(application *projectriffv1alpha1.Application) *servingv1alpha1.RawExtension {
 	if application.Spec.Build.Source == nil {
 		return nil
 	}
 	return &servingv1alpha1.RawExtension{
-		Object: &buildv1alpha1.Build{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: "build.knative.dev/v1alpha1",
-				Kind:       "Build",
+		Object: makeBuild(application),
+	}
+}
+
+func makeBuild(application *projectriffv1alpha1.Application) *buildv1alpha1.Build {
+	return &buildv1alpha1.Build{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "build.knative.dev/v1alpha1",
+			Kind:       "Build",
+		},
+		Spec: buildv1alpha1.BuildSpec{
+			ServiceAccountName: "riff-build",
+			Source:             makeBuildSource(application),
+			Template: &buildv1alpha1.TemplateInstantiationSpec{
+				Name:      application.Spec.Build.Template,
+				Kind:      "ClusterBuildTemplate",
+				Arguments: makeBuildArguments(application),
 			},
-			Spec: buildv1alpha1.BuildSpec{
-				ServiceAccountName: "riff-build",
-				Source:             makeBuildSource(application),
-				Template: &buildv1alpha1.TemplateInstantiationSpec{
-					Name:      application.Spec.Build.Template,
-					Kind:      "ClusterBuildTemplate",
-					Arguments: makeBuildArguments(application),
-				},
-				Volumes: makeBuildVolumes(application),
-			},
+			Volumes: makeBuildVolumes(application),
 		},
 	}
 }

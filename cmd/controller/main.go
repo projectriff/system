@@ -119,7 +119,8 @@ func main() {
 
 	applicationInformer := projectriffInformerFactory.Projectriff().V1alpha1().Applications()
 	functionInformer := projectriffInformerFactory.Projectriff().V1alpha1().Functions()
-	serviceInformer := servingInformerFactory.Serving().V1alpha1().Services()
+	configurationInformer := servingInformerFactory.Serving().V1alpha1().Configurations()
+	routeInformer := servingInformerFactory.Serving().V1alpha1().Routes()
 	pvcInformer := kubeInformerFactory.Core().V1().PersistentVolumeClaims()
 
 	// Build all of our controllers, with the clients constructed above.
@@ -128,7 +129,8 @@ func main() {
 		application.NewController(
 			opt,
 			applicationInformer,
-			serviceInformer,
+			configurationInformer,
+			routeInformer,
 			pvcInformer,
 		),
 		function.NewController(
@@ -156,7 +158,9 @@ func main() {
 	for i, synced := range []cache.InformerSynced{
 		applicationInformer.Informer().HasSynced,
 		functionInformer.Informer().HasSynced,
-		serviceInformer.Informer().HasSynced,
+		configurationInformer.Informer().HasSynced,
+		routeInformer.Informer().HasSynced,
+		pvcInformer.Informer().HasSynced,
 	} {
 		if ok := cache.WaitForCacheSync(stopCh, synced); !ok {
 			logger.Fatalf("Failed to wait for cache at index %d to sync", i)

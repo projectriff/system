@@ -81,12 +81,13 @@ type ApplicationRun struct {
 }
 
 const (
-	ApplicationConditionReady                                      = duckv1alpha1.ConditionReady
-	ApplicationConditionServiceReady    duckv1alpha1.ConditionType = "ServiceReady"
-	ApplicationConditionBuildCacheReady duckv1alpha1.ConditionType = "BuildCacheReady"
+	ApplicationConditionReady                                         = duckv1alpha1.ConditionReady
+	ApplicationConditionConfigurationReady duckv1alpha1.ConditionType = "ConfigurationReady"
+	ApplicationConditionRouteReady         duckv1alpha1.ConditionType = "RouteReady"
+	ApplicationConditionBuildCacheReady    duckv1alpha1.ConditionType = "BuildCacheReady"
 )
 
-var applicationCondSet = duckv1alpha1.NewLivingConditionSet(ApplicationConditionServiceReady, ApplicationConditionBuildCacheReady)
+var applicationCondSet = duckv1alpha1.NewLivingConditionSet(ApplicationConditionConfigurationReady, ApplicationConditionRouteReady, ApplicationConditionBuildCacheReady)
 
 type ApplicationStatus struct {
 	duckv1alpha1.Status `json:",inline"`
@@ -121,9 +122,15 @@ func (as *ApplicationStatus) InitializeConditions() {
 }
 
 // TODO move into application reconciler
-func (as *ApplicationStatus) MarkServiceNotOwned(name string) {
-	applicationCondSet.Manage(as).MarkFalse(ApplicationConditionServiceReady, "NotOwned",
-		fmt.Sprintf("There is an existing Service %q that we do not own.", name))
+func (as *ApplicationStatus) MarkConfigurationNotOwned(name string) {
+	applicationCondSet.Manage(as).MarkFalse(ApplicationConditionConfigurationReady, "NotOwned",
+		fmt.Sprintf("There is an existing Configuration %q that we do not own.", name))
+}
+
+// TODO move into application reconciler
+func (as *ApplicationStatus) MarkRouteNotOwned(name string) {
+	applicationCondSet.Manage(as).MarkFalse(ApplicationConditionRouteReady, "NotOwned",
+		fmt.Sprintf("There is an existing Route %q that we do not own.", name))
 }
 
 // TODO move into application reconciler
@@ -133,21 +140,37 @@ func (as *ApplicationStatus) MarkBuildCacheNotOwned(name string) {
 }
 
 // TODO move into application reconciler
-func (as *ApplicationStatus) PropagateServiceStatus(ss *servingv1alpha1.ServiceStatus) {
-	as.Address = ss.Address
-	as.Domain = ss.Domain
-
-	sc := ss.GetCondition(servingv1alpha1.ServiceConditionReady)
+func (as *ApplicationStatus) PropagateConfigurationStatus(cs *servingv1alpha1.ConfigurationStatus) {
+	sc := cs.GetCondition(servingv1alpha1.ConfigurationConditionReady)
 	if sc == nil {
 		return
 	}
 	switch {
 	case sc.Status == corev1.ConditionUnknown:
-		applicationCondSet.Manage(as).MarkUnknown(ApplicationConditionServiceReady, sc.Reason, sc.Message)
+		applicationCondSet.Manage(as).MarkUnknown(servingv1alpha1.ConfigurationConditionReady, sc.Reason, sc.Message)
 	case sc.Status == corev1.ConditionTrue:
-		applicationCondSet.Manage(as).MarkTrue(ApplicationConditionServiceReady)
+		applicationCondSet.Manage(as).MarkTrue(servingv1alpha1.ConfigurationConditionReady)
 	case sc.Status == corev1.ConditionFalse:
-		applicationCondSet.Manage(as).MarkFalse(ApplicationConditionServiceReady, sc.Reason, sc.Message)
+		applicationCondSet.Manage(as).MarkFalse(servingv1alpha1.ConfigurationConditionReady, sc.Reason, sc.Message)
+	}
+}
+
+// TODO move into application reconciler
+func (as *ApplicationStatus) PropagateRouteStatus(rs *servingv1alpha1.RouteStatus) {
+	as.Address = rs.Address
+	as.Domain = rs.Domain
+
+	sc := rs.GetCondition(servingv1alpha1.RouteConditionReady)
+	if sc == nil {
+		return
+	}
+	switch {
+	case sc.Status == corev1.ConditionUnknown:
+		applicationCondSet.Manage(as).MarkUnknown(servingv1alpha1.RouteConditionReady, sc.Reason, sc.Message)
+	case sc.Status == corev1.ConditionTrue:
+		applicationCondSet.Manage(as).MarkTrue(servingv1alpha1.RouteConditionReady)
+	case sc.Status == corev1.ConditionFalse:
+		applicationCondSet.Manage(as).MarkFalse(servingv1alpha1.RouteConditionReady, sc.Reason, sc.Message)
 	}
 }
 
