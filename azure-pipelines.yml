@@ -3,28 +3,27 @@
 # Add steps that test, save build artifacts, deploy, and more:
 # https://docs.microsoft.com/azure/devops/pipelines/languages/go
 
-trigger:
-- master
-
 pool:
   vmImage: 'Ubuntu-16.04'
 
 variables:
-  GOBIN:  '$(GOPATH)/bin' # Go binaries path
-  GOROOT: '/usr/local/go1.11' # Go installation path
   GOPATH: '$(system.defaultWorkingDirectory)/gopath' # Go workspace path
   modulePath: '$(GOPATH)/src/github.com/$(build.repository.name)' # Path to the module's code
 
 steps:
+- task: GoTool@0
+  inputs:
+    version: '1.12.3'
+
 - script: |
-    mkdir -p '$(GOBIN)'
-    mkdir -p '$(GOPATH)/pkg'
+    mkdir -p '$(GOPATH)/bin'
+    echo '##vso[task.prependpath]$(GOPATH)/bin'
+
     mkdir -p '$(modulePath)'
     shopt -s extglob
     shopt -s dotglob
     mv !(gopath) '$(modulePath)'
-    echo '##vso[task.prependpath]$(GOBIN)'
-    echo '##vso[task.prependpath]$(GOROOT)/bin'
+
     go version
   displayName: 'Set up the Go workspace'
 
@@ -35,8 +34,8 @@ steps:
   displayName: 'Verify dependencies and generated code'
 
 - script: |
-    go build -v ./cmd/controller
-    go build -v ./cmd/webhook
+    go get github.com/google/ko/cmd/ko
+    ko resolve -L -f config/ > /dev/null
   workingDirectory: '$(modulePath)'
   displayName: 'Build commands'
 
