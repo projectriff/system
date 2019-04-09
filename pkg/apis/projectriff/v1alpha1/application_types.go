@@ -53,11 +53,10 @@ type ApplicationSpec struct {
 }
 
 type ApplicationBuild struct {
-	Annotations map[string]string  `json:"annotations,omitempty"`
-	Template    string             `json:"template"`
-	CacheSize   *resource.Quantity `json:"cacheSize,omitempty"`
-	Arguments   []BuildArgument    `json:"arguments,omitempty"`
-	Source      *Source            `json:"source,omitempty"`
+	Template  string             `json:"template"`
+	CacheSize *resource.Quantity `json:"cacheSize,omitempty"`
+	Arguments []BuildArgument    `json:"arguments,omitempty"`
+	Source    *Source            `json:"source,omitempty"`
 }
 
 type BuildArgument struct {
