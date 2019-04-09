@@ -35,8 +35,8 @@ steps:
   displayName: 'Verify dependencies and generated code'
 
 - script: |
-    go build -v ./cmd/controller
-    go build -v ./cmd/webhook
+    go get github.com/google/ko/cmd/ko
+    ko resolve -L -f config/ > /dev/null
   workingDirectory: '$(modulePath)'
   displayName: 'Build commands'
 
