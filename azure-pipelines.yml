@@ -16,6 +16,7 @@ steps:
     version: '1.12'
 
 - script: |
+    mkdir -p '$(GOPATH)/bin'
     mkdir -p '$(modulePath)'
     shopt -s extglob
     shopt -s dotglob
