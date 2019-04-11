@@ -51,9 +51,14 @@ func MakeDeployment(proc *v1alpha1.Processor) *appsv1.Deployment {
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
 						corev1.Container{
-							Name:  "main",
-							Image: "gcr.io/cf-sandbox-mfisher/processor",
+							Name:  "processor",
+							Image: "ericbottard/processor:grpc",
 							Env: []corev1.EnvVar{
+								{
+									Name: "GATEWAY",
+									// TODO: get the gateway from the Stream (actually should be per input/output)
+									Value: "liiklus.default.svc.cluster.local:6565",
+								},
 								{
 									Name:  "INPUTS",
 									Value: proc.Spec.Inputs,
@@ -63,8 +68,21 @@ func MakeDeployment(proc *v1alpha1.Processor) *appsv1.Deployment {
 									Value: proc.Spec.Outputs,
 								},
 								{
+									Name:  "GROUP",
+									Value: proc.Name,
+								},
+								{
 									Name:  "FUNCTION",
-									Value: proc.Spec.Function,
+									Value: "localhost:8080",
+								},
+							},
+						},
+						corev1.Container{
+							Name:  "function",
+							Image: proc.Spec.Function,
+							Ports: []corev1.ContainerPort{
+								{
+									ContainerPort: 8080,
 								},
 							},
 						},
