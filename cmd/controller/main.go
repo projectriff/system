@@ -149,6 +149,7 @@ func main() {
 		processor.NewController(
 			opt,
 			processorInformer,
+			streamInformer,
 		),
 	}
 

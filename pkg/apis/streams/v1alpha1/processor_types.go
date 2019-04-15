@@ -34,10 +34,9 @@ type Processor struct {
 }
 
 type ProcessorSpec struct {
-	// TODO use arrays for inputs/outputs
-	Inputs   string `json:"inputs"`
-	Outputs  string `json:"outputs"`
-	Function string `json:"function"`
+	Inputs   []string `json:"inputs"`
+	Outputs  []string `json:"outputs"`
+	Function string   `json:"function"`
 }
 
 const (

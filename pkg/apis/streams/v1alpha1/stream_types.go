@@ -17,6 +17,7 @@
 package v1alpha1
 
 import (
+	"fmt"
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -53,6 +54,10 @@ type StreamStatus struct {
 type StreamAddress struct {
 	Gateway string `json:"gateway,omitempty"`
 	Topic   string `json:"topic,omitempty"`
+}
+
+func (a StreamAddress) String() string {
+	return fmt.Sprintf("%s/%s", a.Gateway, a.Topic)
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

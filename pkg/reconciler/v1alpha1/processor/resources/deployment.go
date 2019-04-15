@@ -21,13 +21,14 @@ import (
 	"github.com/knative/pkg/kmeta"
 	"github.com/projectriff/system/pkg/apis/streams/v1alpha1"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/processor/resources/names"
+	"strings"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func MakeDeployment(proc *v1alpha1.Processor) *appsv1.Deployment {
+func MakeDeployment(proc *v1alpha1.Processor, inputAddresses []v1alpha1.StreamAddress , outputAddresses []v1alpha1.StreamAddress) *appsv1.Deployment {
 	one := int32(1)
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -52,20 +53,15 @@ func MakeDeployment(proc *v1alpha1.Processor) *appsv1.Deployment {
 					Containers: []corev1.Container{
 						corev1.Container{
 							Name:  "processor",
-							Image: "ericbottard/processor:grpc",
+							Image: "ericbottard/processor:grpc-be83df8",
 							Env: []corev1.EnvVar{
 								{
-									Name: "GATEWAY",
-									// TODO: get the gateway from the Stream (actually should be per input/output)
-									Value: "liiklus.default.svc.cluster.local:6565",
-								},
-								{
 									Name:  "INPUTS",
-									Value: proc.Spec.Inputs,
+									Value: formatAddresses(inputAddresses),
 								},
 								{
 									Name:  "OUTPUTS",
-									Value: proc.Spec.Outputs,
+									Value: formatAddresses(outputAddresses),
 								},
 								{
 									Name:  "GROUP",
@@ -91,4 +87,12 @@ func MakeDeployment(proc *v1alpha1.Processor) *appsv1.Deployment {
 			},
 		},
 	}
+}
+
+func formatAddresses(addresses []v1alpha1.StreamAddress) string {
+	as := make([]string, len(addresses))
+	for i, a := range addresses {
+		as[i] = a.String()
+	}
+	return strings.Join(as, ",")
 }

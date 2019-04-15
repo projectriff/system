@@ -48,6 +48,7 @@ type Reconciler struct {
 
 	// listers index properties about resources
 	processorLister streamslisters.ProcessorLister
+	streamLister    streamslisters.StreamLister
 }
 
 // Check that our Reconciler implements controller.Reconciler
@@ -58,11 +59,13 @@ var _ controller.Reconciler = (*Reconciler)(nil)
 func NewController(
 	opt reconciler.Options,
 	processorInformer streamsinformers.ProcessorInformer,
+	streamInformer streamsinformers.StreamInformer,
 ) *controller.Impl {
 
 	c := &Reconciler{
 		Base:            reconciler.NewBase(opt, controllerAgentName),
 		processorLister: processorInformer.Lister(),
+		streamLister:    streamInformer.Lister(),
 	}
 	impl := controller.NewImpl(c, c.Logger, ReconcilerName, reconciler.MustNewStatsReporter(ReconcilerName, c.Logger))
 
@@ -174,6 +177,22 @@ func (c *Reconciler) updateStatus(desired *streamsv1alpha1.Processor) (*streamsv
 }
 
 func (c *Reconciler) createDeployment(processor *streamsv1alpha1.Processor) (*appsv1.Deployment, error) {
-	deployment := resources.MakeDeployment(processor)
+	var  inputAddresses, outputAddresses []streamsv1alpha1.StreamAddress = nil, nil
+	for _, inputName := range processor.Spec.Inputs {
+		input, err := c.streamLister.Streams(processor.Namespace).Get(inputName)
+		if err != nil {
+			return nil, err
+		}
+		inputAddresses = append(inputAddresses, input.Status.Address)
+	}
+	for _, outputName := range processor.Spec.Outputs {
+		output, err := c.streamLister.Streams(processor.Namespace).Get(outputName)
+		if err != nil {
+			return nil, err
+		}
+		outputAddresses = append(outputAddresses, output.Status.Address)
+	}
+
+	deployment := resources.MakeDeployment(processor, inputAddresses, outputAddresses)
 	return c.KubeClientSet.AppsV1().Deployments(deployment.Namespace).Create(deployment)
 }
