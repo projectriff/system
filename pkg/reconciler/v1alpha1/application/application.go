@@ -22,6 +22,9 @@ import (
 	"reflect"
 	"time"
 
+	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
+	buildinformers "github.com/knative/build/pkg/client/informers/externalversions/build/v1alpha1"
+	buildlisters "github.com/knative/build/pkg/client/listers/build/v1alpha1"
 	"github.com/knative/pkg/controller"
 	"github.com/knative/pkg/kmp"
 	"github.com/knative/pkg/logging"
@@ -57,9 +60,10 @@ type Reconciler struct {
 
 	// listers index properties about resources
 	applicationLister   projectrifflisters.ApplicationLister
+	pvcLister           corelisters.PersistentVolumeClaimLister
+	buildLister         buildlisters.BuildLister
 	configurationLister servinglisters.ConfigurationLister
 	routeLister         servinglisters.RouteLister
-	pvcLister           corelisters.PersistentVolumeClaimLister
 }
 
 // Check that our Reconciler implements controller.Reconciler
@@ -70,17 +74,19 @@ var _ controller.Reconciler = (*Reconciler)(nil)
 func NewController(
 	opt reconciler.Options,
 	applicationInformer projectriffinformers.ApplicationInformer,
+	pvcInformer coreinformers.PersistentVolumeClaimInformer,
+	buildInformer buildinformers.BuildInformer,
 	configurationInformer servinginformers.ConfigurationInformer,
 	routeInformer servinginformers.RouteInformer,
-	pvcInformer coreinformers.PersistentVolumeClaimInformer,
 ) *controller.Impl {
 
 	c := &Reconciler{
 		Base:                reconciler.NewBase(opt, controllerAgentName),
 		applicationLister:   applicationInformer.Lister(),
+		pvcLister:           pvcInformer.Lister(),
+		buildLister:         buildInformer.Lister(),
 		configurationLister: configurationInformer.Lister(),
 		routeLister:         routeInformer.Lister(),
-		pvcLister:           pvcInformer.Lister(),
 	}
 	impl := controller.NewImpl(c, c.Logger, ReconcilerName, reconciler.MustNewStatsReporter(ReconcilerName, c.Logger))
 
@@ -91,6 +97,22 @@ func NewController(
 		DeleteFunc: impl.Enqueue,
 	})
 
+	pvcInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: controller.Filter(projectriffv1alpha1.SchemeGroupVersion.WithKind("Application")),
+		Handler: cache.ResourceEventHandlerFuncs{
+			AddFunc:    impl.EnqueueControllerOf,
+			UpdateFunc: controller.PassNew(impl.EnqueueControllerOf),
+			DeleteFunc: impl.EnqueueControllerOf,
+		},
+	})
+	buildInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: controller.Filter(projectriffv1alpha1.SchemeGroupVersion.WithKind("Application")),
+		Handler: cache.ResourceEventHandlerFuncs{
+			AddFunc:    impl.EnqueueControllerOf,
+			UpdateFunc: controller.PassNew(impl.EnqueueControllerOf),
+			DeleteFunc: impl.EnqueueControllerOf,
+		},
+	})
 	configurationInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(projectriffv1alpha1.SchemeGroupVersion.WithKind("Application")),
 		Handler: cache.ResourceEventHandlerFuncs{
@@ -100,14 +122,6 @@ func NewController(
 		},
 	})
 	routeInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(projectriffv1alpha1.SchemeGroupVersion.WithKind("Application")),
-		Handler: cache.ResourceEventHandlerFuncs{
-			AddFunc:    impl.EnqueueControllerOf,
-			UpdateFunc: controller.PassNew(impl.EnqueueControllerOf),
-			DeleteFunc: impl.EnqueueControllerOf,
-		},
-	})
-	pvcInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(projectriffv1alpha1.SchemeGroupVersion.WithKind("Application")),
 		Handler: cache.ResourceEventHandlerFuncs{
 			AddFunc:    impl.EnqueueControllerOf,
@@ -207,16 +221,46 @@ func (c *Reconciler) reconcile(ctx context.Context, application *projectriffv1al
 	// Update our Status based on the state of our underlying PersistentVolumeClaim.
 	application.Status.PropagateBuildCacheStatus(buildCache)
 
+	buildName := resourcenames.Build(application)
+	build, err := c.buildLister.Builds(application.Namespace).Get(buildName)
+	if errors.IsNotFound(err) {
+		build, err = c.createBuild(application)
+		if err != nil {
+			logger.Errorf("Failed to create Build %q: %v", buildName, err)
+			c.Recorder.Eventf(application, corev1.EventTypeWarning, "CreationFailed", "Failed to create Build %q: %v", buildName, err)
+			return err
+		}
+		if build != nil {
+			c.Recorder.Eventf(application, corev1.EventTypeNormal, "Created", "Created Build %q", buildName)
+		}
+	} else if err != nil {
+		logger.Errorf("Failed to reconcile Application: %q failed to Get Build: %q; %v", application.Name, buildName, zap.Error(err))
+		return err
+	} else if !metav1.IsControlledBy(build, application) {
+		// Surface an error in the application's status,and return an error.
+		application.Status.MarkBuildNotOwned(buildName)
+		return fmt.Errorf("Application: %q does not own Build: %q", application.Name, buildName)
+	} else if build, err = c.reconcileBuild(ctx, application, build); err != nil {
+		logger.Errorf("Failed to reconcile Application: %q failed to reconcile Build: %q; %v", application.Name, build, zap.Error(err))
+		return err
+	}
+
+	// Update our Status based on the state of our underlying Build.
+	application.Status.PropagateBuildStatus(build)
+
 	configurationName := resourcenames.Configuration(application)
 	configuration, err := c.configurationLister.Configurations(application.Namespace).Get(configurationName)
 	if errors.IsNotFound(err) {
-		configuration, err = c.createConfiguration(application)
-		if err != nil {
-			logger.Errorf("Failed to create Configuration %q: %v", configurationName, err)
-			c.Recorder.Eventf(application, corev1.EventTypeWarning, "CreationFailed", "Failed to create Configuration %q: %v", configurationName, err)
-			return err
+		// wait for the build to succeed before deploying image
+		if application.Status.GetCondition(projectriffv1alpha1.ApplicationConditionBuildSucceeded).IsTrue() {
+			configuration, err = c.createConfiguration(application)
+			if err != nil {
+				logger.Errorf("Failed to create Configuration %q: %v", configurationName, err)
+				c.Recorder.Eventf(application, corev1.EventTypeWarning, "CreationFailed", "Failed to create Configuration %q: %v", configurationName, err)
+				return err
+			}
+			c.Recorder.Eventf(application, corev1.EventTypeNormal, "Created", "Created Configuration %q", configurationName)
 		}
-		c.Recorder.Eventf(application, corev1.EventTypeNormal, "Created", "Created Configuration %q", configurationName)
 	} else if err != nil {
 		logger.Errorf("Failed to reconcile Application: %q failed to Get Configuration: %q; %v", application.Name, configurationName, zap.Error(err))
 		return err
@@ -229,8 +273,10 @@ func (c *Reconciler) reconcile(ctx context.Context, application *projectriffv1al
 		return err
 	}
 
-	// Update our Status based on the state of our underlying Configuration.
-	application.Status.PropagateConfigurationStatus(&configuration.Status)
+	if configuration != nil {
+		// Update our Status based on the state of our underlying Configuration.
+		application.Status.PropagateConfigurationStatus(&configuration.Status)
+	}
 
 	routeName := resourcenames.Route(application)
 	route, err := c.routeLister.Routes(application.Namespace).Get(routeName)
@@ -283,6 +329,103 @@ func (c *Reconciler) updateStatus(desired *projectriffv1alpha1.Application) (*pr
 	}
 
 	return svc, err
+}
+
+func (c *Reconciler) reconcileBuildCache(ctx context.Context, application *projectriffv1alpha1.Application, buildCache *corev1.PersistentVolumeClaim) (*corev1.PersistentVolumeClaim, error) {
+	logger := logging.FromContext(ctx)
+	desiredBuildCache, err := resources.MakeBuildCache(application)
+	if err != nil {
+		return nil, err
+	}
+
+	if buildCache != nil && desiredBuildCache == nil {
+		// TODO drop an existing buildCache
+		// return nil, c.KubeClientSet.CoreV1().PersistentVolumeClaims(application.Namespace).Delete(buildCache.Name)
+		return nil, nil
+	}
+
+	if buildCacheSemanticEquals(desiredBuildCache, buildCache) {
+		// No differences to reconcile.
+		return buildCache, nil
+	}
+	diff, err := kmp.SafeDiff(desiredBuildCache.Spec, buildCache.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("failed to diff PersistentVolumeClaim: %v", err)
+	}
+	logger.Infof("Reconciling build cache diff (-desired, +observed): %s", diff)
+
+	// Don't modify the informers copy.
+	existing := buildCache.DeepCopy()
+	// Preserve the rest of the object (e.g. PersistentVolumeClaimSpec except for resources).
+	existing.Spec.Resources = desiredBuildCache.Spec.Resources
+	// Preserve the rest of the object (e.g. ObjectMeta except for labels).
+	existing.ObjectMeta.Labels = desiredBuildCache.ObjectMeta.Labels
+	return c.KubeClientSet.CoreV1().PersistentVolumeClaims(application.Namespace).Update(existing)
+}
+
+func (c *Reconciler) createBuildCache(application *projectriffv1alpha1.Application) (*corev1.PersistentVolumeClaim, error) {
+	buildCache, err := resources.MakeBuildCache(application)
+	if err != nil {
+		return nil, err
+	}
+	if buildCache == nil {
+		// nothing to create
+		return buildCache, nil
+	}
+	return c.KubeClientSet.CoreV1().PersistentVolumeClaims(application.Namespace).Create(buildCache)
+}
+
+func buildCacheSemanticEquals(desiredBuildCache, buildCache *corev1.PersistentVolumeClaim) bool {
+	return equality.Semantic.DeepEqual(desiredBuildCache.Spec.Resources, buildCache.Spec.Resources) &&
+		equality.Semantic.DeepEqual(desiredBuildCache.ObjectMeta.Labels, buildCache.ObjectMeta.Labels)
+}
+
+func (c *Reconciler) reconcileBuild(ctx context.Context, application *projectriffv1alpha1.Application, build *buildv1alpha1.Build) (*buildv1alpha1.Build, error) {
+	logger := logging.FromContext(ctx)
+	desiredBuild, err := resources.MakeBuild(application)
+	if err != nil {
+		return nil, err
+	}
+
+	if build != nil && desiredBuild == nil {
+		// TODO drop a existing build
+		// return nil, c.buildClientSet.BuildV1alpha1().Builds(application.Namespace).Delete(build.Name)
+		return nil, nil
+	}
+
+	if buildSemanticEquals(desiredBuild, build) {
+		// No differences to reconcile.
+		return build, nil
+	}
+	diff, err := kmp.SafeDiff(desiredBuild.Spec, build.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("failed to diff Build: %v", err)
+	}
+	logger.Infof("Reconciling build diff (-desired, +observed): %s", diff)
+
+	// Don't modify the informers copy.
+	existing := build.DeepCopy()
+	// Preserve the rest of the object (e.g. ObjectMeta except for labels).
+	existing.Spec = desiredBuild.Spec
+	existing.ObjectMeta.Labels = desiredBuild.ObjectMeta.Labels
+	return c.BuildClientSet.BuildV1alpha1().Builds(application.Namespace).Update(existing)
+}
+
+func (c *Reconciler) createBuild(application *projectriffv1alpha1.Application) (*buildv1alpha1.Build, error) {
+	build, err := resources.MakeBuild(application)
+	if err != nil {
+		return nil, err
+	}
+	if build == nil {
+		// nothing to create
+		return build, nil
+	}
+	return c.BuildClientSet.BuildV1alpha1().Builds(application.Namespace).Create(build)
+}
+
+func buildSemanticEquals(desiredBuild, build *buildv1alpha1.Build) bool {
+	return equality.Semantic.DeepEqual(desiredBuild.Spec, build.Spec) &&
+		equality.Semantic.DeepEqual(desiredBuild.ObjectMeta.Labels, build.ObjectMeta.Labels)
 }
 
 func (c *Reconciler) reconcileConfiguration(ctx context.Context, application *projectriffv1alpha1.Application, buildCache *corev1.PersistentVolumeClaim, configuration *servingv1alpha1.Configuration) (*servingv1alpha1.Configuration, error) {
@@ -359,53 +502,4 @@ func (c *Reconciler) createRoute(application *projectriffv1alpha1.Application) (
 func routeSemanticEquals(desiredRoute, route *servingv1alpha1.Route) bool {
 	return equality.Semantic.DeepEqual(desiredRoute.Spec, route.Spec) &&
 		equality.Semantic.DeepEqual(desiredRoute.ObjectMeta.Labels, route.ObjectMeta.Labels)
-}
-
-func (c *Reconciler) reconcileBuildCache(ctx context.Context, application *projectriffv1alpha1.Application, buildCache *corev1.PersistentVolumeClaim) (*corev1.PersistentVolumeClaim, error) {
-	logger := logging.FromContext(ctx)
-	desiredBuildCache, err := resources.MakeBuildCache(application)
-	if err != nil {
-		return nil, err
-	}
-
-	if buildCache != nil && desiredBuildCache == nil {
-		// TODO drop an existing buildCache
-		// return nil, c.KubeClientSet.CoreV1().PersistentVolumeClaims(application.Namespace).Delete(buildCache.Name)
-		return nil, nil
-	}
-
-	if buildCacheSemanticEquals(desiredBuildCache, buildCache) {
-		// No differences to reconcile.
-		return buildCache, nil
-	}
-	diff, err := kmp.SafeDiff(desiredBuildCache.Spec, buildCache.Spec)
-	if err != nil {
-		return nil, fmt.Errorf("failed to diff PersistentVolumeClaim: %v", err)
-	}
-	logger.Infof("Reconciling build cache diff (-desired, +observed): %s", diff)
-
-	// Don't modify the informers copy.
-	existing := desiredBuildCache.DeepCopy()
-	// Preserve the rest of the object (e.g. PersistentVolumeClaimSpec except for resources).
-	existing.Spec.Resources = desiredBuildCache.Spec.Resources
-	// Preserve the rest of the object (e.g. ObjectMeta except for labels).
-	existing.ObjectMeta.Labels = desiredBuildCache.ObjectMeta.Labels
-	return c.KubeClientSet.CoreV1().PersistentVolumeClaims(application.Namespace).Update(existing)
-}
-
-func (c *Reconciler) createBuildCache(application *projectriffv1alpha1.Application) (*corev1.PersistentVolumeClaim, error) {
-	buildCache, err := resources.MakeBuildCache(application)
-	if err != nil {
-		return nil, err
-	}
-	if buildCache == nil {
-		// nothing to create
-		return buildCache, nil
-	}
-	return c.KubeClientSet.CoreV1().PersistentVolumeClaims(application.Namespace).Create(buildCache)
-}
-
-func buildCacheSemanticEquals(desiredBuildCache, buildCache *corev1.PersistentVolumeClaim) bool {
-	return equality.Semantic.DeepEqual(desiredBuildCache.Spec.Resources, buildCache.Spec.Resources) &&
-		equality.Semantic.DeepEqual(desiredBuildCache.ObjectMeta.Labels, buildCache.ObjectMeta.Labels)
 }

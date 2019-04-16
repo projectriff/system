@@ -26,6 +26,10 @@ func BuildCache(a *projectriffv1alpha1.Application) string {
 	return fmt.Sprintf("build-cache-%s", a.Name)
 }
 
+func Build(a *projectriffv1alpha1.Application) string {
+	return fmt.Sprintf("%s-build", a.Name)
+}
+
 func Configuration(a *projectriffv1alpha1.Application) string {
 	return a.Name
 }

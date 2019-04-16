@@ -30,6 +30,8 @@ import (
 	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
+	buildclientset "github.com/knative/build/pkg/client/clientset/versioned"
+	buildinformers "github.com/knative/build/pkg/client/informers/externalversions"
 	"github.com/knative/pkg/configmap"
 	"github.com/knative/pkg/controller"
 	"github.com/knative/pkg/signals"
@@ -92,6 +94,11 @@ func main() {
 		logger.Fatalw("Error building projectriff clientset", zap.Error(err))
 	}
 
+	buildClient, err := buildclientset.NewForConfig(cfg)
+	if err != nil {
+		logger.Fatalw("Error building build clientset", zap.Error(err))
+	}
+
 	servingClient, err := servingclientset.NewForConfig(cfg)
 	if err != nil {
 		logger.Fatalw("Error building serving clientset", zap.Error(err))
@@ -106,6 +113,7 @@ func main() {
 	opt := reconciler.Options{
 		KubeClientSet:        kubeClient,
 		ProjectriffClientSet: projectriffClient,
+		BuildClientSet:       buildClient,
 		ServingClientSet:     servingClient,
 		ConfigMapWatcher:     configMapWatcher,
 		Logger:               logger,
@@ -115,28 +123,33 @@ func main() {
 
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, opt.ResyncPeriod)
 	projectriffInformerFactory := projectriffinformers.NewSharedInformerFactory(projectriffClient, opt.ResyncPeriod)
+	buildInformerFactory := buildinformers.NewSharedInformerFactory(buildClient, opt.ResyncPeriod)
 	servingInformerFactory := servinginformers.NewSharedInformerFactory(servingClient, opt.ResyncPeriod)
 
-	applicationInformer := projectriffInformerFactory.Projectriff().V1alpha1().Applications()
 	functionInformer := projectriffInformerFactory.Projectriff().V1alpha1().Functions()
+	applicationInformer := projectriffInformerFactory.Projectriff().V1alpha1().Applications()
+	pvcInformer := kubeInformerFactory.Core().V1().PersistentVolumeClaims()
+	buildInformer := buildInformerFactory.Build().V1alpha1().Builds()
 	configurationInformer := servingInformerFactory.Serving().V1alpha1().Configurations()
 	routeInformer := servingInformerFactory.Serving().V1alpha1().Routes()
-	pvcInformer := kubeInformerFactory.Core().V1().PersistentVolumeClaims()
 
 	// Build all of our controllers, with the clients constructed above.
 	// Add new controllers to this array.
 	controllers := []*controller.Impl{
-		application.NewController(
-			opt,
-			applicationInformer,
-			configurationInformer,
-			routeInformer,
-			pvcInformer,
-		),
 		function.NewController(
 			opt,
 			functionInformer,
+
 			applicationInformer,
+		),
+		application.NewController(
+			opt,
+			applicationInformer,
+
+			pvcInformer,
+			buildInformer,
+			configurationInformer,
+			routeInformer,
 		),
 	}
 
@@ -148,6 +161,7 @@ func main() {
 	// These are non-blocking.
 	kubeInformerFactory.Start(stopCh)
 	projectriffInformerFactory.Start(stopCh)
+	buildInformerFactory.Start(stopCh)
 	servingInformerFactory.Start(stopCh)
 	if err := configMapWatcher.Start(stopCh); err != nil {
 		logger.Fatalw("failed to start configuration manager", zap.Error(err))
@@ -156,11 +170,12 @@ func main() {
 	// Wait for the caches to be synced before starting controllers.
 	logger.Info("Waiting for informer caches to sync")
 	for i, synced := range []cache.InformerSynced{
-		applicationInformer.Informer().HasSynced,
 		functionInformer.Informer().HasSynced,
+		applicationInformer.Informer().HasSynced,
+		pvcInformer.Informer().HasSynced,
+		buildInformer.Informer().HasSynced,
 		configurationInformer.Informer().HasSynced,
 		routeInformer.Informer().HasSynced,
-		pvcInformer.Informer().HasSynced,
 	} {
 		if ok := cache.WaitForCacheSync(stopCh, synced); !ok {
 			logger.Fatalf("Failed to wait for cache at index %d to sync", i)

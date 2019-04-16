@@ -28,11 +28,15 @@ import (
 const (
 	testApplicationName      = "test-application"
 	testApplicationNamespace = "test-application-namespace"
+	testBuildName            = "test-application-build"
+	testBuildTemplate        = "test-build-template"
 	testBuildArgName         = "test-build-arg-name"
 	testBuildArgValue        = "test-build-arg-value"
 	testLabelKey             = "test-label-key"
 	testLabelValue           = "test-label-value"
 	testImage                = "test-image"
+	testGitURL               = "https://example.com/repo.git"
+	testGitRevision          = "master"
 	testBuildCacheName       = "build-cache-test-application"
 	testBuildCacheSize       = "8Gi"
 )

@@ -26,6 +26,7 @@ import (
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/record"
 
+	buildclientset "github.com/knative/build/pkg/client/clientset/versioned"
 	"github.com/knative/pkg/configmap"
 	"github.com/knative/pkg/logging/logkey"
 	servingclientset "github.com/knative/serving/pkg/client/clientset/versioned"
@@ -39,6 +40,7 @@ import (
 type Options struct {
 	KubeClientSet        kubernetes.Interface
 	ProjectriffClientSet projectriffclientset.Interface
+	BuildClientSet       buildclientset.Interface
 	ServingClientSet     servingclientset.Interface
 	Recorder             record.EventRecorder
 
@@ -64,6 +66,9 @@ type Base struct {
 
 	// ProjectriffClientSet allows us to configure projectriff objects
 	ProjectriffClientSet projectriffclientset.Interface
+
+	// BuildClientSet allows us to configure Build objects
+	BuildClientSet buildclientset.Interface
 
 	// ServingClientSet allows us to configure Serving objects
 	ServingClientSet servingclientset.Interface
@@ -103,6 +108,7 @@ func NewBase(opt Options, controllerAgentName string) *Base {
 	base := &Base{
 		KubeClientSet:        opt.KubeClientSet,
 		ProjectriffClientSet: opt.ProjectriffClientSet,
+		BuildClientSet:       opt.BuildClientSet,
 		ServingClientSet:     opt.ServingClientSet,
 		ConfigMapWatcher:     opt.ConfigMapWatcher,
 		Recorder:             recorder,
