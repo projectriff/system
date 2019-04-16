@@ -13,27 +13,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+package v1alpha1
 
-package names
+type BuildExpansion interface{}
 
-import (
-	"fmt"
+type BuildTemplateExpansion interface{}
 
-	projectriffv1alpha1 "github.com/projectriff/system/pkg/apis/projectriff/v1alpha1"
-)
-
-func BuildCache(a *projectriffv1alpha1.Application) string {
-	return fmt.Sprintf("build-cache-%s", a.Name)
-}
-
-func Build(a *projectriffv1alpha1.Application) string {
-	return fmt.Sprintf("%s-build", a.Name)
-}
-
-func Configuration(a *projectriffv1alpha1.Application) string {
-	return a.Name
-}
-
-func Route(a *projectriffv1alpha1.Application) string {
-	return a.Name
-}
+type ClusterBuildTemplateExpansion interface{}
