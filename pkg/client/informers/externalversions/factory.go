@@ -22,6 +22,7 @@ import (
 
 	versioned "github.com/projectriff/system/pkg/client/clientset/versioned"
 	internalinterfaces "github.com/projectriff/system/pkg/client/informers/externalversions/internalinterfaces"
+	plan "github.com/projectriff/system/pkg/client/informers/externalversions/plan"
 	projectriff "github.com/projectriff/system/pkg/client/informers/externalversions/projectriff"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
@@ -169,7 +170,12 @@ type SharedInformerFactory interface {
 	ForResource(resource schema.GroupVersionResource) (GenericInformer, error)
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
+	Plan() plan.Interface
 	Projectriff() projectriff.Interface
+}
+
+func (f *sharedInformerFactory) Plan() plan.Interface {
+	return plan.New(f, f.namespace, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Projectriff() projectriff.Interface {

@@ -45,7 +45,10 @@ import (
 	"github.com/projectriff/system/pkg/metrics"
 	"github.com/projectriff/system/pkg/reconciler"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/application"
+	"github.com/projectriff/system/pkg/reconciler/v1alpha1/buildplan"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/function"
+	"github.com/projectriff/system/pkg/reconciler/v1alpha1/plan"
+	"github.com/projectriff/system/pkg/reconciler/v1alpha1/runplan"
 	"go.uber.org/zap"
 )
 
@@ -128,6 +131,9 @@ func main() {
 
 	functionInformer := projectriffInformerFactory.Projectriff().V1alpha1().Functions()
 	applicationInformer := projectriffInformerFactory.Projectriff().V1alpha1().Applications()
+	planInformer := projectriffInformerFactory.Plan().V1alpha1().Plans()
+	buildplanInformer := projectriffInformerFactory.Plan().V1alpha1().BuildPlans()
+	runplanInformer := projectriffInformerFactory.Plan().V1alpha1().RunPlans()
 	pvcInformer := kubeInformerFactory.Core().V1().PersistentVolumeClaims()
 	buildInformer := buildInformerFactory.Build().V1alpha1().Builds()
 	configurationInformer := servingInformerFactory.Serving().V1alpha1().Configurations()
@@ -151,6 +157,28 @@ func main() {
 			configurationInformer,
 			routeInformer,
 		),
+
+		plan.NewController(
+			opt,
+			planInformer,
+
+			buildplanInformer,
+			runplanInformer,
+			routeInformer,
+		),
+		buildplan.NewController(
+			opt,
+			buildplanInformer,
+
+			pvcInformer,
+			buildInformer,
+		),
+		runplan.NewController(
+			opt,
+			runplanInformer,
+
+			configurationInformer,
+		),
 	}
 
 	// Watch the logging config map and dynamically update logging levels.
@@ -172,6 +200,9 @@ func main() {
 	for i, synced := range []cache.InformerSynced{
 		functionInformer.Informer().HasSynced,
 		applicationInformer.Informer().HasSynced,
+		planInformer.Informer().HasSynced,
+		buildplanInformer.Informer().HasSynced,
+		runplanInformer.Informer().HasSynced,
 		pvcInformer.Informer().HasSynced,
 		buildInformer.Informer().HasSynced,
 		configurationInformer.Informer().HasSynced,

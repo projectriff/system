@@ -48,7 +48,7 @@ var (
 type FunctionSpec struct {
 	Image string        `json:"image"`
 	Build FunctionBuild `json:"build"`
-	Run   FunctionRun   `json:"run"`
+	Run   Run           `json:"run"`
 }
 
 type FunctionBuild struct {
@@ -58,8 +58,6 @@ type FunctionBuild struct {
 	CacheSize *resource.Quantity `json:"cacheSize,omitempty"`
 	Source    *Source            `json:"source,omitempty"`
 }
-
-type FunctionRun ApplicationRun
 
 const (
 	FunctionConditionReady                                       = duckv1alpha1.ConditionReady

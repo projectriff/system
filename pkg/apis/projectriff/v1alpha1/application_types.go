@@ -25,7 +25,6 @@ import (
 	"github.com/knative/pkg/kmeta"
 	servingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -48,37 +47,9 @@ var (
 )
 
 type ApplicationSpec struct {
-	Image string           `json:"image"`
-	Build ApplicationBuild `json:"build"`
-	Run   ApplicationRun   `json:"run"`
-}
-
-type ApplicationBuild struct {
-	Template  string             `json:"template"`
-	CacheSize *resource.Quantity `json:"cacheSize,omitempty"`
-	Arguments []BuildArgument    `json:"arguments,omitempty"`
-	Source    *Source            `json:"source,omitempty"`
-}
-
-type BuildArgument struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
-}
-
-type Source struct {
-	Git     *GitSource `json:"git"`
-	SubPath string     `json:"subPath,omitempty"`
-}
-
-type GitSource struct {
-	Revision string `json:"revision"`
-	URL      string `json:"url"`
-}
-
-type ApplicationRun struct {
-	EnvFrom   []corev1.EnvFromSource      `json:"envFrom,omitempty"`
-	Env       []corev1.EnvVar             `json:"env,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
-	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
+	Image string `json:"image"`
+	Build Build  `json:"build"`
+	Run   Run    `json:"run"`
 }
 
 const (

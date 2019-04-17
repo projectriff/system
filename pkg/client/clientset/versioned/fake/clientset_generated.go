@@ -17,6 +17,8 @@ package fake
 
 import (
 	clientset "github.com/projectriff/system/pkg/client/clientset/versioned"
+	planv1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/plan/v1alpha1"
+	fakeplanv1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/plan/v1alpha1/fake"
 	projectriffv1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/projectriff/v1alpha1"
 	fakeprojectriffv1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/projectriff/v1alpha1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -67,6 +69,16 @@ func (c *Clientset) Discovery() discovery.DiscoveryInterface {
 }
 
 var _ clientset.Interface = &Clientset{}
+
+// PlanV1alpha1 retrieves the PlanV1alpha1Client
+func (c *Clientset) PlanV1alpha1() planv1alpha1.PlanV1alpha1Interface {
+	return &fakeplanv1alpha1.FakePlanV1alpha1{Fake: &c.Fake}
+}
+
+// Plan retrieves the PlanV1alpha1Client
+func (c *Clientset) Plan() planv1alpha1.PlanV1alpha1Interface {
+	return &fakeplanv1alpha1.FakePlanV1alpha1{Fake: &c.Fake}
+}
 
 // ProjectriffV1alpha1 retrieves the ProjectriffV1alpha1Client
 func (c *Clientset) ProjectriffV1alpha1() projectriffv1alpha1.ProjectriffV1alpha1Interface {

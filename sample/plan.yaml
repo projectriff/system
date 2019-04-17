@@ -1,0 +1,15 @@
+apiVersion: plan.internal.projectriff.io/v1alpha1
+kind: Plan
+metadata:
+  name: square
+spec:
+  image: gcr.io/cf-sandbox-sandrews/square
+  build:
+    cacheSize: 8Gi
+    template: riff-cnb
+    source:
+      git:
+        url: https://github.com/projectriff/fats.git
+        revision: master
+      subPath: functions/uppercase/node
+  run: {}

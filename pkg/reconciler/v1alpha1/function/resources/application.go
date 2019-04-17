@@ -36,7 +36,7 @@ func MakeApplication(function *projectriffv1alpha1.Function) (*projectriffv1alph
 		},
 		Spec: projectriffv1alpha1.ApplicationSpec{
 			Image: function.Spec.Image,
-			Build: projectriffv1alpha1.ApplicationBuild{
+			Build: projectriffv1alpha1.Build{
 				Template: "riff-cnb",
 				Arguments: []projectriffv1alpha1.BuildArgument{
 					{Name: "FUNCTION_ARTIFACT", Value: function.Spec.Build.Artifact},
@@ -46,7 +46,7 @@ func MakeApplication(function *projectriffv1alpha1.Function) (*projectriffv1alph
 				CacheSize: function.Spec.Build.CacheSize,
 				Source:    function.Spec.Build.Source,
 			},
-			Run: projectriffv1alpha1.ApplicationRun{
+			Run: projectriffv1alpha1.Run{
 				EnvFrom:   function.Spec.Run.EnvFrom,
 				Env:       function.Spec.Run.Env,
 				Resources: function.Spec.Run.Resources,
