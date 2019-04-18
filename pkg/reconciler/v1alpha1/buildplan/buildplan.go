@@ -19,9 +19,11 @@ package buildplan
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"reflect"
 	"time"
 
+	"github.com/google/go-containerregistry/pkg/authn/k8schain"
 	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	buildinformers "github.com/knative/build/pkg/client/informers/externalversions/build/v1alpha1"
 	buildlisters "github.com/knative/build/pkg/client/listers/build/v1alpha1"
@@ -40,6 +42,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
@@ -59,6 +62,8 @@ type Reconciler struct {
 	buildplanLister planlisters.BuildPlanLister
 	pvcLister       corelisters.PersistentVolumeClaimLister
 	buildLister     buildlisters.BuildLister
+
+	resolver resolver
 }
 
 // Check that our Reconciler implements controller.Reconciler
@@ -72,12 +77,23 @@ func NewController(
 	pvcInformer coreinformers.PersistentVolumeClaimInformer,
 	buildInformer buildinformers.BuildInformer,
 ) *controller.Impl {
+	transport := http.DefaultTransport
+	if rt, err := newResolverTransport(k8sCertPath); err != nil {
+		opt.Logger.Errorf("Failed to create resolver transport: %v", err)
+	} else {
+		transport = rt
+	}
 
 	c := &Reconciler{
 		Base:            reconciler.NewBase(opt, controllerAgentName),
 		buildplanLister: buildplanInformer.Lister(),
 		pvcLister:       pvcInformer.Lister(),
 		buildLister:     buildInformer.Lister(),
+
+		resolver: &digestResolver{
+			client:    opt.KubeClientSet,
+			transport: transport,
+		},
 	}
 	impl := controller.NewImpl(c, c.Logger, ReconcilerName, reconciler.MustNewStatsReporter(ReconcilerName, c.Logger))
 
@@ -223,8 +239,20 @@ func (c *Reconciler) reconcile(ctx context.Context, buildplan *planv1alpha1.Buil
 	// Update our Status based on the state of our underlying Build.
 	buildplan.Status.PropagateBuildStatus(build)
 	if buildplan.Status.GetCondition(planv1alpha1.BuildPlanConditionBuildSucceeded).IsTrue() {
-		// TODO resolve image to digest
-		buildplan.Status.LatestBuiltImage = buildplan.Spec.Image
+		// resolve image to digest
+		opt := k8schain.Options{
+			Namespace:          build.Namespace,
+			ServiceAccountName: build.Spec.ServiceAccountName,
+		}
+		// TODO load registriesToSkip from a configmap
+		registriesToSkip := sets.String{}
+		registriesToSkip.Insert("ko.local", "dev.local")
+		digest, err := c.resolver.Resolve(buildplan.Spec.Image, opt, registriesToSkip)
+		if err != nil {
+			// rev.Status.MarkContainerMissing(v1alpha1.RevisionContainerMissingMessage(rev.Spec.Container.Image, err.Error()))
+			return err
+		}
+		buildplan.Status.LatestBuiltImage = digest
 	}
 
 	buildplan.Status.ObservedGeneration = buildplan.Generation
