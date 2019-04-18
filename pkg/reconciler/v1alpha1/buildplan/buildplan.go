@@ -54,6 +54,10 @@ const (
 	controllerAgentName = "buildplan-controller"
 )
 
+type resolver interface {
+	Resolve(string, k8schain.Options, sets.String) (string, error)
+}
+
 // Reconciler implements controller.Reconciler for BuildPlan resources.
 type Reconciler struct {
 	*reconciler.Base
@@ -252,7 +256,7 @@ func (c *Reconciler) reconcile(ctx context.Context, buildplan *planv1alpha1.Buil
 			// rev.Status.MarkContainerMissing(v1alpha1.RevisionContainerMissingMessage(rev.Spec.Container.Image, err.Error()))
 			return err
 		}
-		buildplan.Status.LatestBuiltImage = digest
+		buildplan.Status.LatestImage = digest
 	}
 
 	buildplan.Status.ObservedGeneration = buildplan.Generation

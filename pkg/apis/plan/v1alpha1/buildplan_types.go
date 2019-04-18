@@ -66,7 +66,7 @@ type BuildPlanStatus struct {
 	duckv1alpha1.Status `json:",inline"`
 	BuildCacheName      string `json:"buildCacheName"`
 	BuildName           string `json:"buildName"`
-	LatestBuiltImage    string `json:"latestBuiltImage,omitempty"`
+	LatestImage         string `json:"latestImage,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

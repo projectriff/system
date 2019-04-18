@@ -1,1 +1,1 @@
-defaultBaseImage: ubuntu:18.04
+defaultBaseImage: gcr.io/pivotal-knative/github.com/knative/ubuntu-base:latest

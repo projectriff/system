@@ -126,8 +126,8 @@ func (ps *PlanStatus) PropagateBuildPlanStatus(bp *BuildPlan) {
 	}
 	bps := bp.Status
 
-	if bps.LatestBuiltImage != "" {
-		ps.LatestImage = bps.LatestBuiltImage
+	if bps.LatestImage != "" {
+		ps.LatestImage = bps.LatestImage
 	}
 
 	rc := bps.GetCondition(BuildPlanConditionReady)
