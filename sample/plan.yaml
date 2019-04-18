@@ -1,9 +1,9 @@
 apiVersion: plan.internal.projectriff.io/v1alpha1
 kind: Plan
 metadata:
-  name: square
+  name: uppercase
 spec:
-  image: gcr.io/cf-sandbox-sandrews/square
+  image: gcr.io/cf-sandbox-sandrews/uppercase
   build:
     cacheSize: 8Gi
     template: riff-cnb

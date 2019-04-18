@@ -206,8 +206,11 @@ func (c *Reconciler) reconcile(ctx context.Context, plan *planv1alpha1.Plan) err
 
 	// Update our Status based on the state of our underlying BuildPlan.
 	plan.Status.PropagateBuildPlanStatus(buildplan)
+	if buildplan == nil && plan.Status.LatestImage == "" {
+		plan.Status.LatestImage = plan.Spec.Image
+	}
 
-	if plan.Spec.Run != nil && plan.Status.LatestImage != "" {
+	if plan.Status.LatestImage != "" {
 		runplanName := resourcenames.RunPlan(plan)
 		runplan, err := c.runplanLister.RunPlans(plan.Namespace).Get(runplanName)
 		if errors.IsNotFound(err) {
@@ -217,7 +220,11 @@ func (c *Reconciler) reconcile(ctx context.Context, plan *planv1alpha1.Plan) err
 				c.Recorder.Eventf(plan, corev1.EventTypeWarning, "CreationFailed", "Failed to create RunPlan %q: %v", runplanName, err)
 				return err
 			}
-			c.Recorder.Eventf(plan, corev1.EventTypeNormal, "Created", "Created RunPlan %q", runplanName)
+			if runplan == nil {
+				c.Recorder.Eventf(plan, corev1.EventTypeNormal, "Skipped", "Skipped creating RunPlan")
+			} else {
+				c.Recorder.Eventf(plan, corev1.EventTypeNormal, "Created", "Created RunPlan %q", runplanName)
+			}
 		} else if err != nil {
 			logger.Errorf("Failed to reconcile Plan: %q failed to Get RunPlan: %q; %v", plan.Name, runplanName, zap.Error(err))
 			return err
@@ -234,32 +241,36 @@ func (c *Reconciler) reconcile(ctx context.Context, plan *planv1alpha1.Plan) err
 		plan.Status.PropagateRunPlanStatus(runplan)
 	}
 
-	if plan.Spec.Run != nil && plan.Status.ConfigurationName != "" {
-		routeName := resourcenames.Route(plan)
-		route, err := c.routeLister.Routes(plan.Namespace).Get(routeName)
-		if errors.IsNotFound(err) {
+	routeName := resourcenames.Route(plan)
+	route, err := c.routeLister.Routes(plan.Namespace).Get(routeName)
+	if errors.IsNotFound(err) {
+		if plan.Status.ConfigurationName != "" {
 			route, err = c.createRoute(plan)
 			if err != nil {
 				logger.Errorf("Failed to create Route %q: %v", routeName, err)
 				c.Recorder.Eventf(plan, corev1.EventTypeWarning, "CreationFailed", "Failed to create Route %q: %v", routeName, err)
 				return err
 			}
-			c.Recorder.Eventf(plan, corev1.EventTypeNormal, "Created", "Created Route %q", routeName)
-		} else if err != nil {
-			logger.Errorf("Failed to reconcile Plan: %q failed to Get Route: %q; %v", plan.Name, routeName, zap.Error(err))
-			return err
-		} else if !metav1.IsControlledBy(route, plan) {
-			// Surface an error in the plan's status,and return an error.
-			plan.Status.MarkRouteNotOwned(routeName)
-			return fmt.Errorf("Plan: %q does not own Route: %q", plan.Name, routeName)
-		} else if route, err = c.reconcileRoute(ctx, plan, route); err != nil {
-			logger.Errorf("Failed to reconcile Plan: %q failed to reconcile Route: %q; %v", plan.Name, routeName, zap.Error(err))
-			return err
+			if route == nil {
+				c.Recorder.Eventf(plan, corev1.EventTypeNormal, "Skipped", "Skipped creating Route")
+			} else {
+				c.Recorder.Eventf(plan, corev1.EventTypeNormal, "Created", "Created Route %q", routeName)
+			}
 		}
-
-		// Update our Status based on the state of our underlying Route.
-		plan.Status.PropagateRouteStatus(route)
+	} else if err != nil {
+		logger.Errorf("Failed to reconcile Plan: %q failed to Get Route: %q; %v", plan.Name, routeName, zap.Error(err))
+		return err
+	} else if !metav1.IsControlledBy(route, plan) {
+		// Surface an error in the plan's status,and return an error.
+		plan.Status.MarkRouteNotOwned(routeName)
+		return fmt.Errorf("Plan: %q does not own Route: %q", plan.Name, routeName)
+	} else if route, err = c.reconcileRoute(ctx, plan, route); err != nil {
+		logger.Errorf("Failed to reconcile Plan: %q failed to reconcile Route: %q; %v", plan.Name, routeName, zap.Error(err))
+		return err
 	}
+
+	// Update our Status based on the state of our underlying Route.
+	plan.Status.PropagateRouteStatus(route)
 
 	plan.Status.ObservedGeneration = plan.Generation
 
@@ -296,9 +307,14 @@ func (c *Reconciler) reconcileBuildPlan(ctx context.Context, plan *planv1alpha1.
 		return nil, err
 	}
 
-	if buildplan != nil && desiredBuildplan == nil {
-		// TODO drop a existing buildplan
-		// return nil, c.buildClientSet.BuildV1alpha1().Builds(plan.Namespace).Delete(build.Name)
+	if desiredBuildplan == nil {
+		err = c.ProjectriffClientSet.PlanV1alpha1().BuildPlans(plan.Namespace).Delete(buildplan.Name, &metav1.DeleteOptions{
+			Preconditions: &metav1.Preconditions{UID: &buildplan.UID},
+		})
+		if err != nil {
+			return nil, err
+		}
+		c.Recorder.Eventf(plan, corev1.EventTypeNormal, "Deleted", "Deleted BuildPlan %q", buildplan.Name)
 		return nil, nil
 	}
 
@@ -344,6 +360,17 @@ func (c *Reconciler) reconcileRunPlan(ctx context.Context, plan *planv1alpha1.Pl
 		return nil, err
 	}
 
+	if desiredRunplan == nil {
+		err = c.ProjectriffClientSet.PlanV1alpha1().RunPlans(plan.Namespace).Delete(runplan.Name, &metav1.DeleteOptions{
+			Preconditions: &metav1.Preconditions{UID: &runplan.UID},
+		})
+		if err != nil {
+			return nil, err
+		}
+		c.Recorder.Eventf(plan, corev1.EventTypeNormal, "Deleted", "Deleted RunPlan %q", runplan.Name)
+		return nil, nil
+	}
+
 	if runplanSemanticEquals(desiredRunplan, runplan) {
 		// No differences to reconcile.
 		return runplan, nil
@@ -367,6 +394,10 @@ func (c *Reconciler) createRunPlan(plan *planv1alpha1.Plan) (*planv1alpha1.RunPl
 	if err != nil {
 		return nil, err
 	}
+	if runplan == nil {
+		// nothing to create
+		return runplan, nil
+	}
 	return c.ProjectriffClientSet.PlanV1alpha1().RunPlans(plan.Namespace).Create(runplan)
 }
 
@@ -380,6 +411,17 @@ func (c *Reconciler) reconcileRoute(ctx context.Context, plan *planv1alpha1.Plan
 	desiredRoute, err := resources.MakeRoute(plan)
 	if err != nil {
 		return nil, err
+	}
+
+	if desiredRoute == nil {
+		err = c.ServingClientSet.ServingV1alpha1().Routes(route.Namespace).Delete(route.Name, &metav1.DeleteOptions{
+			Preconditions: &metav1.Preconditions{UID: &route.UID},
+		})
+		if err != nil {
+			return nil, err
+		}
+		c.Recorder.Eventf(plan, corev1.EventTypeNormal, "Deleted", "Deleted Route %q", route.Name)
+		return nil, nil
 	}
 
 	if routeSemanticEquals(desiredRoute, route) {
@@ -404,6 +446,10 @@ func (c *Reconciler) createRoute(plan *planv1alpha1.Plan) (*servingv1alpha1.Rout
 	route, err := resources.MakeRoute(plan)
 	if err != nil {
 		return nil, err
+	}
+	if route == nil {
+		// nothing to create
+		return route, nil
 	}
 	return c.ServingClientSet.ServingV1alpha1().Routes(plan.Namespace).Create(route)
 }

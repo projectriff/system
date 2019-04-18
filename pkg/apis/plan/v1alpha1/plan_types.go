@@ -120,7 +120,6 @@ func (ps *PlanStatus) MarkRouteNotOwned(name string) {
 func (ps *PlanStatus) PropagateBuildPlanStatus(bp *BuildPlan) {
 	if bp == nil {
 		// no build is defined
-		ps.LatestImage = bp.Spec.Image
 		planCondSet.Manage(ps).MarkTrue(PlanConditionBuildPlanReady)
 		return
 	}

@@ -1,9 +1,9 @@
 apiVersion: serving.knative.dev/v1alpha1
 kind: Configuration
 metadata:
-  name: square
+  name: uppercase
 spec:
   revisionTemplate:
     spec:
       container:
-        image: gcr.io/cf-sandbox-sandrews/square
+        image: gcr.io/cf-sandbox-sandrews/uppercase

@@ -26,6 +26,11 @@ import (
 
 // MakeRoute creates a Route from a Plan object.
 func MakeRoute(plan *planv1alpha1.Plan) (*servingv1alpha1.Route, error) {
+	if plan.Spec.Run == nil {
+		// no route is needed
+		return nil, nil
+	}
+
 	route := &servingv1alpha1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      names.Route(plan),
