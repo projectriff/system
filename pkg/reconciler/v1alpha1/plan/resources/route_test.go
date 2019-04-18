@@ -20,14 +20,14 @@ import (
 	"context"
 	"testing"
 
+	commonv1alpha1 "github.com/projectriff/system/pkg/apis/common/v1alpha1"
 	"github.com/projectriff/system/pkg/apis/plan"
-	projectriffv1alpha1 "github.com/projectriff/system/pkg/apis/projectriff/v1alpha1"
 )
 
 func TestRoute(t *testing.T) {
 	p := createPlanMeta()
 	p.Labels = map[string]string{testLabelKey: testLabelValue}
-	p.Spec.Run = &projectriffv1alpha1.Run{}
+	p.Spec.Run = &commonv1alpha1.Run{}
 	p.Status.LatestImage = testImage
 	p.Status.ConfigurationName = testConfigurationName
 

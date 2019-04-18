@@ -31,14 +31,14 @@ func TestNamer(t *testing.T) {
 		f    func(*projectriffv1alpha1.Function) string
 		want string
 	}{{
-		name: "Application",
+		name: "AppliPlancation",
 		fn: &projectriffv1alpha1.Function{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "foo",
 				Namespace: "default",
 			},
 		},
-		f:    Application,
+		f:    Plan,
 		want: "foo",
 	}}
 

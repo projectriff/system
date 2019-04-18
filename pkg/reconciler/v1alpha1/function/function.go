@@ -25,8 +25,11 @@ import (
 	"github.com/knative/pkg/controller"
 	"github.com/knative/pkg/kmp"
 	"github.com/knative/pkg/logging"
+	planv1alpha1 "github.com/projectriff/system/pkg/apis/plan/v1alpha1"
 	projectriffv1alpha1 "github.com/projectriff/system/pkg/apis/projectriff/v1alpha1"
+	planinformers "github.com/projectriff/system/pkg/client/informers/externalversions/plan/v1alpha1"
 	projectriffinformers "github.com/projectriff/system/pkg/client/informers/externalversions/projectriff/v1alpha1"
+	planlisters "github.com/projectriff/system/pkg/client/listers/plan/v1alpha1"
 	projectrifflisters "github.com/projectriff/system/pkg/client/listers/projectriff/v1alpha1"
 	"github.com/projectriff/system/pkg/reconciler"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/function/resources"
@@ -51,8 +54,8 @@ type Reconciler struct {
 	*reconciler.Base
 
 	// listers index properties about resources
-	functionLister    projectrifflisters.FunctionLister
-	applicationLister projectrifflisters.ApplicationLister
+	functionLister projectrifflisters.FunctionLister
+	planLister     planlisters.PlanLister
 }
 
 // Check that our Reconciler implements controller.Reconciler
@@ -63,13 +66,13 @@ var _ controller.Reconciler = (*Reconciler)(nil)
 func NewController(
 	opt reconciler.Options,
 	functionInformer projectriffinformers.FunctionInformer,
-	applicationInformer projectriffinformers.ApplicationInformer,
+	planInformer planinformers.PlanInformer,
 ) *controller.Impl {
 
 	c := &Reconciler{
-		Base:              reconciler.NewBase(opt, controllerAgentName),
-		functionLister:    functionInformer.Lister(),
-		applicationLister: applicationInformer.Lister(),
+		Base:           reconciler.NewBase(opt, controllerAgentName),
+		functionLister: functionInformer.Lister(),
+		planLister:     planInformer.Lister(),
 	}
 	impl := controller.NewImpl(c, c.Logger, ReconcilerName, reconciler.MustNewStatsReporter(ReconcilerName, c.Logger))
 
@@ -80,7 +83,7 @@ func NewController(
 		DeleteFunc: impl.Enqueue,
 	})
 
-	applicationInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+	planInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(projectriffv1alpha1.SchemeGroupVersion.WithKind("Function")),
 		Handler: cache.ResourceEventHandlerFuncs{
 			AddFunc:    impl.EnqueueControllerOf,
@@ -153,30 +156,30 @@ func (c *Reconciler) reconcile(ctx context.Context, function *projectriffv1alpha
 
 	function.Status.InitializeConditions()
 
-	applicationName := resourcenames.Application(function)
-	application, err := c.applicationLister.Applications(function.Namespace).Get(applicationName)
+	planName := resourcenames.Plan(function)
+	plan, err := c.planLister.Plans(function.Namespace).Get(planName)
 	if errors.IsNotFound(err) {
-		application, err = c.createApplication(function)
+		plan, err = c.createPlan(function)
 		if err != nil {
-			logger.Errorf("Failed to create Application %q: %v", applicationName, err)
-			c.Recorder.Eventf(function, corev1.EventTypeWarning, "CreationFailed", "Failed to create Application %q: %v", applicationName, err)
+			logger.Errorf("Failed to create Plan %q: %v", planName, err)
+			c.Recorder.Eventf(function, corev1.EventTypeWarning, "CreationFailed", "Failed to create Plan %q: %v", planName, err)
 			return err
 		}
-		c.Recorder.Eventf(function, corev1.EventTypeNormal, "Created", "Created Application %q", applicationName)
+		c.Recorder.Eventf(function, corev1.EventTypeNormal, "Created", "Created Plan %q", planName)
 	} else if err != nil {
-		logger.Errorf("Failed to reconcile Function: %q failed to Get Application: %q; %v", function.Name, applicationName, zap.Error(err))
+		logger.Errorf("Failed to reconcile Function: %q failed to Get Plan: %q; %v", function.Name, planName, zap.Error(err))
 		return err
-	} else if !metav1.IsControlledBy(application, function) {
+	} else if !metav1.IsControlledBy(plan, function) {
 		// Surface an error in the function's status,and return an error.
-		function.Status.MarkApplicationNotOwned(applicationName)
-		return fmt.Errorf("Function: %q does not own Application: %q", function.Name, applicationName)
-	} else if application, err = c.reconcileApplication(ctx, function, application); err != nil {
-		logger.Errorf("Failed to reconcile Function: %q failed to reconcile Application: %q; %v", function.Name, applicationName, zap.Error(err))
+		function.Status.MarkPlanNotOwned(planName)
+		return fmt.Errorf("Function: %q does not own Plan: %q", function.Name, planName)
+	} else if plan, err = c.reconcilePlan(ctx, function, plan); err != nil {
+		logger.Errorf("Failed to reconcile Function: %q failed to reconcile Plan: %q; %v", function.Name, planName, zap.Error(err))
 		return err
 	}
 
-	// Update our Status based on the state of our underlying Application.
-	function.Status.PropagateApplicationStatus(&application.Status)
+	// Update our Status based on the state of our underlying Plan.
+	function.Status.PropagatePlanStatus(plan)
 
 	function.Status.ObservedGeneration = function.Generation
 
@@ -206,40 +209,40 @@ func (c *Reconciler) updateStatus(desired *projectriffv1alpha1.Function) (*proje
 	return fn, err
 }
 
-func (c *Reconciler) reconcileApplication(ctx context.Context, function *projectriffv1alpha1.Function, application *projectriffv1alpha1.Application) (*projectriffv1alpha1.Application, error) {
+func (c *Reconciler) reconcilePlan(ctx context.Context, function *projectriffv1alpha1.Function, plan *planv1alpha1.Plan) (*planv1alpha1.Plan, error) {
 	logger := logging.FromContext(ctx)
-	desiredApplication, err := resources.MakeApplication(function)
+	desiredPlan, err := resources.MakePlan(function)
 	if err != nil {
 		return nil, err
 	}
 
-	if applicationSemanticEquals(desiredApplication, application) {
+	if planSemanticEquals(desiredPlan, plan) {
 		// No differences to reconcile.
-		return application, nil
+		return plan, nil
 	}
-	diff, err := kmp.SafeDiff(desiredApplication.Spec, application.Spec)
+	diff, err := kmp.SafeDiff(desiredPlan.Spec, plan.Spec)
 	if err != nil {
-		return nil, fmt.Errorf("failed to diff Application: %v", err)
+		return nil, fmt.Errorf("failed to diff Plan: %v", err)
 	}
-	logger.Infof("Reconciling application diff (-desired, +observed): %s", diff)
+	logger.Infof("Reconciling plan diff (-desired, +observed): %s", diff)
 
 	// Don't modify the informers copy.
-	existing := application.DeepCopy()
+	existing := plan.DeepCopy()
 	// Preserve the rest of the object (e.g. ObjectMeta except for labels).
-	existing.Spec = desiredApplication.Spec
-	existing.ObjectMeta.Labels = desiredApplication.ObjectMeta.Labels
-	return c.ProjectriffClientSet.ProjectriffV1alpha1().Applications(function.Namespace).Update(existing)
+	existing.Spec = desiredPlan.Spec
+	existing.ObjectMeta.Labels = desiredPlan.ObjectMeta.Labels
+	return c.ProjectriffClientSet.PlanV1alpha1().Plans(function.Namespace).Update(existing)
 }
 
-func (c *Reconciler) createApplication(function *projectriffv1alpha1.Function) (*projectriffv1alpha1.Application, error) {
-	cfg, err := resources.MakeApplication(function)
+func (c *Reconciler) createPlan(function *projectriffv1alpha1.Function) (*planv1alpha1.Plan, error) {
+	plan, err := resources.MakePlan(function)
 	if err != nil {
 		return nil, err
 	}
-	return c.ProjectriffClientSet.ProjectriffV1alpha1().Applications(function.Namespace).Create(cfg)
+	return c.ProjectriffClientSet.PlanV1alpha1().Plans(function.Namespace).Create(plan)
 }
 
-func applicationSemanticEquals(desiredApplication, application *projectriffv1alpha1.Application) bool {
-	return equality.Semantic.DeepEqual(desiredApplication.Spec, application.Spec) &&
-		equality.Semantic.DeepEqual(desiredApplication.ObjectMeta.Labels, application.ObjectMeta.Labels)
+func planSemanticEquals(desiredPlan, plan *planv1alpha1.Plan) bool {
+	return equality.Semantic.DeepEqual(desiredPlan.Spec, plan.Spec) &&
+		equality.Semantic.DeepEqual(desiredPlan.ObjectMeta.Labels, plan.ObjectMeta.Labels)
 }

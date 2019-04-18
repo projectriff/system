@@ -23,7 +23,7 @@ import (
 	"github.com/knative/pkg/apis"
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	"github.com/knative/pkg/kmeta"
-	projectriffv1alpha1 "github.com/projectriff/system/pkg/apis/projectriff/v1alpha1"
+	commonv1alpha1 "github.com/projectriff/system/pkg/apis/common/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -47,8 +47,8 @@ var (
 )
 
 type BuildPlanSpec struct {
-	Image string                    `json:"image"`
-	Build projectriffv1alpha1.Build `json:",inline"`
+	Image string               `json:"image"`
+	Build commonv1alpha1.Build `json:",inline"`
 }
 
 const (

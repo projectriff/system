@@ -18,10 +18,6 @@ package v1alpha1
 
 import "context"
 
-func (b *Build) SetDefaults(ctx context.Context) {
-	// TODO
-}
-
 func (r *Run) SetDefaults(ctx context.Context) {
 	// TODO
 }

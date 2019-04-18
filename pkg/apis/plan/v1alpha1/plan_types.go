@@ -23,7 +23,7 @@ import (
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	"github.com/knative/pkg/kmeta"
 	servingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
-	projectriffv1alpha1 "github.com/projectriff/system/pkg/apis/projectriff/v1alpha1"
+	commonv1alpha1 "github.com/projectriff/system/pkg/apis/common/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -47,9 +47,9 @@ var (
 )
 
 type PlanSpec struct {
-	Image string                     `json:"image"`
-	Build *projectriffv1alpha1.Build `json:"build,omitempty"`
-	Run   *projectriffv1alpha1.Run   `json:"run"`
+	Image string                `json:"image"`
+	Build *commonv1alpha1.Build `json:"build,omitempty"`
+	Run   *commonv1alpha1.Run   `json:"run"`
 }
 
 const (

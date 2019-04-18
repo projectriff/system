@@ -39,6 +39,7 @@ ${CODEGEN_PKG}/generate-groups.sh "deepcopy,client,informer,lister" \
 ${GOPATH}/bin/deepcopy-gen \
   -O zz_generated.deepcopy \
   --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt \
+  -i github.com/projectriff/system/pkg/apis/common/v1alpha1 \
   -i github.com/projectriff/system/pkg/logging
 
 # Make sure our dependencies are up-to-date

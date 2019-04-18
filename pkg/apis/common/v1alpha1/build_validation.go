@@ -26,8 +26,3 @@ func (b *Build) Validate(ctx context.Context) *apis.FieldError {
 	// TODO
 	return nil
 }
-
-func (r *Run) Validate(ctx context.Context) *apis.FieldError {
-	// TODO
-	return nil
-}

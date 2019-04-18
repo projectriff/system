@@ -146,16 +146,13 @@ func main() {
 			opt,
 			functionInformer,
 
-			applicationInformer,
+			planInformer,
 		),
 		application.NewController(
 			opt,
 			applicationInformer,
 
-			pvcInformer,
-			buildInformer,
-			configurationInformer,
-			routeInformer,
+			planInformer,
 		),
 
 		plan.NewController(

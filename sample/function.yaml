@@ -1,9 +1,9 @@
 apiVersion: projectriff.io/v1alpha1
 kind: Function
 metadata:
-  name: square
+  name: uppercase
 spec:
-  image: gcr.io/cf-sandbox-sandrews/square
+  image: gcr.io/cf-sandbox-sandrews/uppercase
   build:
     cacheSize: 8Gi
     source:
@@ -11,3 +11,4 @@ spec:
         url: https://github.com/projectriff/fats.git
         revision: master
       subPath: functions/uppercase/node
+  run: {}

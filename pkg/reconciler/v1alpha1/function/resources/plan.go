@@ -18,41 +18,42 @@ package resources
 
 import (
 	"github.com/knative/pkg/kmeta"
+	commonv1alpha1 "github.com/projectriff/system/pkg/apis/common/v1alpha1"
+	planv1alpha1 "github.com/projectriff/system/pkg/apis/plan/v1alpha1"
 	projectriffv1alpha1 "github.com/projectriff/system/pkg/apis/projectriff/v1alpha1"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/function/resources/names"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// MakeApplication creates a Application from a Function object.
-func MakeApplication(function *projectriffv1alpha1.Function) (*projectriffv1alpha1.Application, error) {
-	a := &projectriffv1alpha1.Application{
+// MakePlan creates a Plan from a Function object.
+func MakePlan(function *projectriffv1alpha1.Function) (*planv1alpha1.Plan, error) {
+	plan := &planv1alpha1.Plan{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      names.Application(function),
+			Name:      names.Plan(function),
 			Namespace: function.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
 				*kmeta.NewControllerRef(function),
 			},
 			Labels: makeLabels(function),
 		},
-		Spec: projectriffv1alpha1.ApplicationSpec{
+		Spec: planv1alpha1.PlanSpec{
 			Image: function.Spec.Image,
-			Build: projectriffv1alpha1.Build{
-				Template: "riff-cnb",
-				Arguments: []projectriffv1alpha1.BuildArgument{
-					{Name: "FUNCTION_ARTIFACT", Value: function.Spec.Build.Artifact},
-					{Name: "FUNCTION_HANDLER", Value: function.Spec.Build.Handler},
-					{Name: "FUNCTION_LANGUAGE", Value: function.Spec.Build.Invoker},
-				},
-				CacheSize: function.Spec.Build.CacheSize,
-				Source:    function.Spec.Build.Source,
-			},
-			Run: projectriffv1alpha1.Run{
-				EnvFrom:   function.Spec.Run.EnvFrom,
-				Env:       function.Spec.Run.Env,
-				Resources: function.Spec.Run.Resources,
-			},
+			Run:   function.Spec.Run,
 		},
 	}
 
-	return a, nil
+	if function.Spec.Build != nil {
+		plan.Spec.Build = &commonv1alpha1.Build{
+			Template: "riff-cnb",
+			Arguments: []commonv1alpha1.BuildArgument{
+				{Name: "FUNCTION_ARTIFACT", Value: function.Spec.Build.Artifact},
+				{Name: "FUNCTION_HANDLER", Value: function.Spec.Build.Handler},
+				{Name: "FUNCTION_LANGUAGE", Value: function.Spec.Build.Invoker},
+			},
+			CacheSize: function.Spec.Build.CacheSize,
+			Source:    function.Spec.Build.Source,
+		}
+	}
+
+	return plan, nil
 }

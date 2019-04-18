@@ -18,7 +18,6 @@ package v1alpha1
 
 import (
 	"github.com/knative/pkg/apis"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
@@ -48,14 +47,3 @@ type GitSource struct {
 	Revision string `json:"revision"`
 	URL      string `json:"url"`
 }
-
-type Run struct {
-	EnvFrom   []corev1.EnvFromSource      `json:"envFrom,omitempty"`
-	Env       []corev1.EnvVar             `json:"env,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
-	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
-}
-
-var (
-	_ apis.Validatable = (*Run)(nil)
-	_ apis.Defaultable = (*Run)(nil)
-)

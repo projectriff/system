@@ -22,6 +22,8 @@ import (
 	"github.com/knative/pkg/apis"
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	"github.com/knative/pkg/kmeta"
+	commonv1alpha1 "github.com/projectriff/system/pkg/apis/common/v1alpha1"
+	planv1alpha1 "github.com/projectriff/system/pkg/apis/plan/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -46,30 +48,31 @@ var (
 )
 
 type FunctionSpec struct {
-	Image string        `json:"image"`
-	Build FunctionBuild `json:"build"`
-	Run   Run           `json:"run"`
+	Image string              `json:"image"`
+	Build *FunctionBuild      `json:"build,omitempty"`
+	Run   *commonv1alpha1.Run `json:"run,omitempty"`
 }
 
 type FunctionBuild struct {
-	Artifact  string             `json:"artifact,omitempty"`
-	Handler   string             `json:"handler,omitempty"`
-	Invoker   string             `json:"invoker,omitempty"`
-	CacheSize *resource.Quantity `json:"cacheSize,omitempty"`
-	Source    *Source            `json:"source,omitempty"`
+	Artifact  string                 `json:"artifact,omitempty"`
+	Handler   string                 `json:"handler,omitempty"`
+	Invoker   string                 `json:"invoker,omitempty"`
+	CacheSize *resource.Quantity     `json:"cacheSize,omitempty"`
+	Source    *commonv1alpha1.Source `json:"source,omitempty"`
 }
 
 const (
-	FunctionConditionReady                                       = duckv1alpha1.ConditionReady
-	FunctionConditionApplicationReady duckv1alpha1.ConditionType = "ApplicationReady"
+	FunctionConditionReady                                = duckv1alpha1.ConditionReady
+	FunctionConditionPlanReady duckv1alpha1.ConditionType = "PlanReady"
 )
 
-var functionCondSet = duckv1alpha1.NewLivingConditionSet(FunctionConditionApplicationReady)
+var functionCondSet = duckv1alpha1.NewLivingConditionSet(FunctionConditionPlanReady)
 
 type FunctionStatus struct {
 	duckv1alpha1.Status `json:",inline"`
 	Address             *duckv1alpha1.Addressable `json:"address,omitempty"`
 	Domain              string                    `json:"domain,omitempty"`
+	PlanName            string                    `json:"domain,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -98,26 +101,29 @@ func (fs *FunctionStatus) InitializeConditions() {
 }
 
 // TODO move into function reconciler
-func (fs *FunctionStatus) MarkApplicationNotOwned(name string) {
-	functionCondSet.Manage(fs).MarkFalse(FunctionConditionApplicationReady, "NotOwned",
-		fmt.Sprintf("There is an existing Application %q that we do not own.", name))
+func (fs *FunctionStatus) MarkPlanNotOwned(name string) {
+	functionCondSet.Manage(fs).MarkFalse(FunctionConditionPlanReady, "NotOwned",
+		fmt.Sprintf("There is an existing Plan %q that we do not own.", name))
 }
 
 // TODO move into function reconciler
-func (fs *FunctionStatus) PropagateApplicationStatus(as *ApplicationStatus) {
-	fs.Address = as.Address
-	fs.Domain = as.Domain
+func (fs *FunctionStatus) PropagatePlanStatus(p *planv1alpha1.Plan) {
+	ps := p.Status
 
-	ac := as.GetCondition(ApplicationConditionReady)
-	if ac == nil {
+	fs.Address = ps.Address
+	fs.Domain = ps.Domain
+	fs.PlanName = p.Name
+
+	sc := ps.GetCondition(planv1alpha1.PlanConditionReady)
+	if sc == nil {
 		return
 	}
 	switch {
-	case ac.Status == corev1.ConditionUnknown:
-		functionCondSet.Manage(fs).MarkUnknown(FunctionConditionApplicationReady, ac.Reason, ac.Message)
-	case ac.Status == corev1.ConditionTrue:
-		functionCondSet.Manage(fs).MarkTrue(FunctionConditionApplicationReady)
-	case ac.Status == corev1.ConditionFalse:
-		functionCondSet.Manage(fs).MarkFalse(FunctionConditionApplicationReady, ac.Reason, ac.Message)
+	case sc.Status == corev1.ConditionUnknown:
+		functionCondSet.Manage(fs).MarkUnknown(FunctionConditionPlanReady, sc.Reason, sc.Message)
+	case sc.Status == corev1.ConditionTrue:
+		functionCondSet.Manage(fs).MarkTrue(FunctionConditionPlanReady)
+	case sc.Status == corev1.ConditionFalse:
+		functionCondSet.Manage(fs).MarkFalse(FunctionConditionPlanReady, sc.Reason, sc.Message)
 	}
 }

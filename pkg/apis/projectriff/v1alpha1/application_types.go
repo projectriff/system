@@ -19,12 +19,13 @@ package v1alpha1
 import (
 	"fmt"
 
-	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	"github.com/knative/pkg/apis"
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	"github.com/knative/pkg/kmeta"
-	servingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
+	commonv1alpha1 "github.com/projectriff/system/pkg/apis/common/v1alpha1"
+	planv1alpha1 "github.com/projectriff/system/pkg/apis/plan/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -47,32 +48,30 @@ var (
 )
 
 type ApplicationSpec struct {
-	Image string `json:"image"`
-	Build Build  `json:"build"`
-	Run   Run    `json:"run"`
+	Image string              `json:"image"`
+	Build *ApplicationBuild   `json:"build,omitempty"`
+	Run   *commonv1alpha1.Run `json:"run,omitempty"`
+}
+
+type ApplicationBuild struct {
+	CacheSize *resource.Quantity     `json:"cacheSize,omitempty"`
+	Source    *commonv1alpha1.Source `json:"source,omitempty"`
 }
 
 const (
-	ApplicationConditionReady                                         = duckv1alpha1.ConditionReady
-	ApplicationConditionBuildCacheReady    duckv1alpha1.ConditionType = "BuildCacheReady"
-	ApplicationConditionBuildSucceeded     duckv1alpha1.ConditionType = "BuildSucceeded"
-	ApplicationConditionConfigurationReady duckv1alpha1.ConditionType = "ConfigurationReady"
-	ApplicationConditionRouteReady         duckv1alpha1.ConditionType = "RouteReady"
+	ApplicationConditionReady                                = duckv1alpha1.ConditionReady
+	ApplicationConditionPlanReady duckv1alpha1.ConditionType = "PlanReady"
 )
 
 var applicationCondSet = duckv1alpha1.NewLivingConditionSet(
-	ApplicationConditionBuildCacheReady,
-	ApplicationConditionBuildSucceeded,
-	ApplicationConditionConfigurationReady,
-	ApplicationConditionRouteReady,
+	ApplicationConditionPlanReady,
 )
 
 type ApplicationStatus struct {
 	duckv1alpha1.Status `json:",inline"`
 	Address             *duckv1alpha1.Addressable `json:"address,omitempty"`
 	Domain              string                    `json:"domain,omitempty"`
-	BuildCacheName      string                    `json:"buildCacheName"`
-	BuildName           string                    `json:"buildName"`
+	PlanName            string                    `json:"planName"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -101,107 +100,29 @@ func (as *ApplicationStatus) InitializeConditions() {
 }
 
 // TODO move into application reconciler
-func (as *ApplicationStatus) MarkBuildCacheNotOwned(name string) {
-	applicationCondSet.Manage(as).MarkFalse(ApplicationConditionBuildCacheReady, "NotOwned",
-		fmt.Sprintf("There is an existing PersistentVolumeClaim %q that we do not own.", name))
+func (as *ApplicationStatus) MarkPlanNotOwned(name string) {
+	applicationCondSet.Manage(as).MarkFalse(ApplicationConditionPlanReady, "NotOwned",
+		fmt.Sprintf("There is an existing Plan %q that we do not own.", name))
 }
 
 // TODO move into application reconciler
-func (as *ApplicationStatus) MarkBuildNotOwned(name string) {
-	applicationCondSet.Manage(as).MarkFalse(ApplicationConditionBuildSucceeded, "NotOwned",
-		fmt.Sprintf("There is an existing Build %q that we do not own.", name))
-}
+func (as *ApplicationStatus) PropagatePlanStatus(p *planv1alpha1.Plan) {
+	ps := p.Status
 
-// TODO move into application reconciler
-func (as *ApplicationStatus) MarkConfigurationNotOwned(name string) {
-	applicationCondSet.Manage(as).MarkFalse(ApplicationConditionConfigurationReady, "NotOwned",
-		fmt.Sprintf("There is an existing Configuration %q that we do not own.", name))
-}
+	as.Address = ps.Address
+	as.Domain = ps.Domain
+	as.PlanName = p.Name
 
-// TODO move into application reconciler
-func (as *ApplicationStatus) MarkRouteNotOwned(name string) {
-	applicationCondSet.Manage(as).MarkFalse(ApplicationConditionRouteReady, "NotOwned",
-		fmt.Sprintf("There is an existing Route %q that we do not own.", name))
-}
-
-// TODO move into application reconciler
-func (as *ApplicationStatus) PropagateBuildCacheStatus(pvc *corev1.PersistentVolumeClaim) {
-	if pvc == nil {
-		as.BuildCacheName = ""
-		applicationCondSet.Manage(as).MarkTrue(ApplicationConditionBuildCacheReady)
-		return
-	}
-
-	as.BuildCacheName = pvc.Name
-
-	switch pvc.Status.Phase {
-	case corev1.ClaimPending:
-		// used for PersistentVolumeClaims that are not yet bound
-		applicationCondSet.Manage(as).MarkUnknown(ApplicationConditionBuildCacheReady, string(pvc.Status.Phase), "volume claim is not yet bound")
-	case corev1.ClaimBound:
-		// used for PersistentVolumeClaims that are bound
-		applicationCondSet.Manage(as).MarkTrue(ApplicationConditionBuildCacheReady)
-	case corev1.ClaimLost:
-		// used for PersistentVolumeClaims that lost their underlying PersistentVolume
-		applicationCondSet.Manage(as).MarkFalse(ApplicationConditionBuildCacheReady, string(pvc.Status.Phase), "volume claim lost its underlying volume")
-	}
-}
-
-// TODO move into application reconciler
-func (as *ApplicationStatus) PropagateBuildStatus(build *buildv1alpha1.Build) {
-	if build == nil {
-		as.BuildName = ""
-		applicationCondSet.Manage(as).MarkTrue(ApplicationConditionBuildSucceeded)
-		return
-	}
-
-	as.BuildName = build.Name
-
-	sc := build.Status.GetCondition(buildv1alpha1.BuildSucceeded)
+	sc := ps.GetCondition(planv1alpha1.PlanConditionReady)
 	if sc == nil {
 		return
 	}
 	switch {
 	case sc.Status == corev1.ConditionUnknown:
-		applicationCondSet.Manage(as).MarkUnknown(ApplicationConditionBuildSucceeded, sc.Reason, sc.Message)
+		applicationCondSet.Manage(as).MarkUnknown(ApplicationConditionPlanReady, sc.Reason, sc.Message)
 	case sc.Status == corev1.ConditionTrue:
-		applicationCondSet.Manage(as).MarkTrue(ApplicationConditionBuildSucceeded)
+		applicationCondSet.Manage(as).MarkTrue(ApplicationConditionPlanReady)
 	case sc.Status == corev1.ConditionFalse:
-		applicationCondSet.Manage(as).MarkFalse(ApplicationConditionBuildSucceeded, sc.Reason, sc.Message)
-	}
-}
-
-// TODO move into application reconciler
-func (as *ApplicationStatus) PropagateConfigurationStatus(cs *servingv1alpha1.ConfigurationStatus) {
-	sc := cs.GetCondition(servingv1alpha1.ConfigurationConditionReady)
-	if sc == nil {
-		return
-	}
-	switch {
-	case sc.Status == corev1.ConditionUnknown:
-		applicationCondSet.Manage(as).MarkUnknown(ApplicationConditionConfigurationReady, sc.Reason, sc.Message)
-	case sc.Status == corev1.ConditionTrue:
-		applicationCondSet.Manage(as).MarkTrue(ApplicationConditionConfigurationReady)
-	case sc.Status == corev1.ConditionFalse:
-		applicationCondSet.Manage(as).MarkFalse(ApplicationConditionConfigurationReady, sc.Reason, sc.Message)
-	}
-}
-
-// TODO move into application reconciler
-func (as *ApplicationStatus) PropagateRouteStatus(rs *servingv1alpha1.RouteStatus) {
-	as.Address = rs.Address
-	as.Domain = rs.Domain
-
-	sc := rs.GetCondition(servingv1alpha1.RouteConditionReady)
-	if sc == nil {
-		return
-	}
-	switch {
-	case sc.Status == corev1.ConditionUnknown:
-		applicationCondSet.Manage(as).MarkUnknown(ApplicationConditionRouteReady, sc.Reason, sc.Message)
-	case sc.Status == corev1.ConditionTrue:
-		applicationCondSet.Manage(as).MarkTrue(ApplicationConditionRouteReady)
-	case sc.Status == corev1.ConditionFalse:
-		applicationCondSet.Manage(as).MarkFalse(ApplicationConditionRouteReady, sc.Reason, sc.Message)
+		applicationCondSet.Manage(as).MarkFalse(ApplicationConditionPlanReady, sc.Reason, sc.Message)
 	}
 }

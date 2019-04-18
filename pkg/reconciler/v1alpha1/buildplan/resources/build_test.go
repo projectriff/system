@@ -20,8 +20,8 @@ import (
 	"context"
 	"testing"
 
+	commonv1alpha1 "github.com/projectriff/system/pkg/apis/common/v1alpha1"
 	"github.com/projectriff/system/pkg/apis/plan"
-	projectriffv1alpha1 "github.com/projectriff/system/pkg/apis/projectriff/v1alpha1"
 )
 
 func TestBuild(t *testing.T) {
@@ -29,11 +29,11 @@ func TestBuild(t *testing.T) {
 	bp.Labels = map[string]string{testLabelKey: testLabelValue}
 	bp.Spec.Image = testImage
 	bp.Spec.Build.Template = testBuildTemplate
-	bp.Spec.Build.Arguments = []projectriffv1alpha1.BuildArgument{
+	bp.Spec.Build.Arguments = []commonv1alpha1.BuildArgument{
 		{Name: testBuildArgName, Value: testBuildArgValue},
 	}
-	bp.Spec.Build.Source = &projectriffv1alpha1.Source{
-		Git: &projectriffv1alpha1.GitSource{
+	bp.Spec.Build.Source = &commonv1alpha1.Source{
+		Git: &commonv1alpha1.GitSource{
 			URL:      testGitURL,
 			Revision: testGitRevision,
 		},

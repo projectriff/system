@@ -21,14 +21,14 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	commonv1alpha1 "github.com/projectriff/system/pkg/apis/common/v1alpha1"
 	"github.com/projectriff/system/pkg/apis/plan"
-	projectriffv1alpha1 "github.com/projectriff/system/pkg/apis/projectriff/v1alpha1"
 )
 
 func TestRunPlan(t *testing.T) {
 	p := createPlanMeta()
 	p.Labels = map[string]string{testLabelKey: testLabelValue}
-	p.Spec.Run = &projectriffv1alpha1.Run{}
+	p.Spec.Run = &commonv1alpha1.Run{}
 	p.Status.LatestImage = testImage
 
 	rp, _ := MakeRunPlan(p)

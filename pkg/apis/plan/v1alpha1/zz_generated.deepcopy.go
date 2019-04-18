@@ -22,7 +22,7 @@ package v1alpha1
 
 import (
 	duck_v1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
-	projectriff_v1alpha1 "github.com/projectriff/system/pkg/apis/projectriff/v1alpha1"
+	common_v1alpha1 "github.com/projectriff/system/pkg/apis/common/v1alpha1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -194,7 +194,7 @@ func (in *PlanSpec) DeepCopyInto(out *PlanSpec) {
 		if *in == nil {
 			*out = nil
 		} else {
-			*out = new(projectriff_v1alpha1.Build)
+			*out = new(common_v1alpha1.Build)
 			(*in).DeepCopyInto(*out)
 		}
 	}
@@ -203,7 +203,7 @@ func (in *PlanSpec) DeepCopyInto(out *PlanSpec) {
 		if *in == nil {
 			*out = nil
 		} else {
-			*out = new(projectriff_v1alpha1.Run)
+			*out = new(common_v1alpha1.Run)
 			(*in).DeepCopyInto(*out)
 		}
 	}

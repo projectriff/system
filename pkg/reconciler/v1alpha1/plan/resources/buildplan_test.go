@@ -21,15 +21,15 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	commonv1alpha1 "github.com/projectriff/system/pkg/apis/common/v1alpha1"
 	"github.com/projectriff/system/pkg/apis/plan"
-	projectriffv1alpha1 "github.com/projectriff/system/pkg/apis/projectriff/v1alpha1"
 )
 
 func TestBuildPlan(t *testing.T) {
 	p := createPlanMeta()
 	p.Labels = map[string]string{testLabelKey: testLabelValue}
 	p.Spec.Image = testImage
-	p.Spec.Build = &projectriffv1alpha1.Build{}
+	p.Spec.Build = &commonv1alpha1.Build{}
 
 	bp, _ := MakeBuildPlan(p)
 

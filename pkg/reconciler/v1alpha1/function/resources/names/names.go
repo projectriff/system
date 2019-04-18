@@ -20,6 +20,6 @@ import (
 	projectriffv1alpha1 "github.com/projectriff/system/pkg/apis/projectriff/v1alpha1"
 )
 
-func Application(f *projectriffv1alpha1.Function) string {
+func Plan(f *projectriffv1alpha1.Function) string {
 	return f.Name
 }
