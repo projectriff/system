@@ -17,14 +17,10 @@
 package v1alpha1
 
 import (
-	"fmt"
-
 	"github.com/knative/pkg/apis"
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	"github.com/knative/pkg/kmeta"
-	servingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
 	commonv1alpha1 "github.com/projectriff/system/pkg/apis/common/v1alpha1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -56,10 +52,6 @@ const (
 	RunPlanConditionConfigurationReady duckv1alpha1.ConditionType = "ConfigurationReady"
 )
 
-var runplanCondSet = duckv1alpha1.NewLivingConditionSet(
-	RunPlanConditionConfigurationReady,
-)
-
 type RunPlanStatus struct {
 	duckv1alpha1.Status `json:",inline"`
 	ConfigurationName   string `json:"configurationName,omitempty"`
@@ -76,42 +68,4 @@ type RunPlanList struct {
 
 func (*RunPlan) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("RunPlan")
-}
-
-func (rps *RunPlanStatus) IsReady() bool {
-	return runplanCondSet.Manage(rps).IsHappy()
-}
-
-func (rps *RunPlanStatus) GetCondition(t duckv1alpha1.ConditionType) *duckv1alpha1.Condition {
-	return runplanCondSet.Manage(rps).GetCondition(t)
-}
-
-func (rps *RunPlanStatus) InitializeConditions() {
-	runplanCondSet.Manage(rps).InitializeConditions()
-}
-
-// TODO move into workload reconciler
-func (rps *RunPlanStatus) MarkConfigurationNotOwned(name string) {
-	runplanCondSet.Manage(rps).MarkFalse(RunPlanConditionConfigurationReady, "NotOwned",
-		fmt.Sprintf("There is an existing Configuration %q that we do not own.", name))
-}
-
-// TODO move into workload reconciler
-func (rps *RunPlanStatus) PropagateConfigurationStatus(c *servingv1alpha1.Configuration) {
-	cs := c.Status
-
-	rps.ConfigurationName = c.Name
-
-	rc := cs.GetCondition(servingv1alpha1.ConfigurationConditionReady)
-	if rc == nil {
-		return
-	}
-	switch {
-	case rc.Status == corev1.ConditionUnknown:
-		runplanCondSet.Manage(rps).MarkUnknown(RunPlanConditionConfigurationReady, rc.Reason, rc.Message)
-	case rc.Status == corev1.ConditionTrue:
-		runplanCondSet.Manage(rps).MarkTrue(RunPlanConditionConfigurationReady)
-	case rc.Status == corev1.ConditionFalse:
-		runplanCondSet.Manage(rps).MarkFalse(RunPlanConditionConfigurationReady, rc.Reason, rc.Message)
-	}
 }

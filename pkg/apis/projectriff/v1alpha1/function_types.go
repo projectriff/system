@@ -17,14 +17,10 @@
 package v1alpha1
 
 import (
-	"fmt"
-
 	"github.com/knative/pkg/apis"
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	"github.com/knative/pkg/kmeta"
 	commonv1alpha1 "github.com/projectriff/system/pkg/apis/common/v1alpha1"
-	planv1alpha1 "github.com/projectriff/system/pkg/apis/plan/v1alpha1"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -66,8 +62,6 @@ const (
 	FunctionConditionPlanReady duckv1alpha1.ConditionType = "PlanReady"
 )
 
-var functionCondSet = duckv1alpha1.NewLivingConditionSet(FunctionConditionPlanReady)
-
 type FunctionStatus struct {
 	duckv1alpha1.Status `json:",inline"`
 	Address             *duckv1alpha1.Addressable `json:"address,omitempty"`
@@ -87,45 +81,4 @@ type FunctionList struct {
 
 func (*Function) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("Function")
-}
-
-func (fs *FunctionStatus) IsReady() bool {
-	return functionCondSet.Manage(fs).IsHappy()
-}
-
-func (fs *FunctionStatus) GetCondition(t duckv1alpha1.ConditionType) *duckv1alpha1.Condition {
-	return functionCondSet.Manage(fs).GetCondition(t)
-}
-
-func (fs *FunctionStatus) InitializeConditions() {
-	functionCondSet.Manage(fs).InitializeConditions()
-}
-
-// TODO move into function reconciler
-func (fs *FunctionStatus) MarkPlanNotOwned(name string) {
-	functionCondSet.Manage(fs).MarkFalse(FunctionConditionPlanReady, "NotOwned",
-		fmt.Sprintf("There is an existing Plan %q that we do not own.", name))
-}
-
-// TODO move into function reconciler
-func (fs *FunctionStatus) PropagatePlanStatus(p *planv1alpha1.Plan) {
-	ps := p.Status
-
-	fs.Address = ps.Address
-	fs.Domain = ps.Domain
-	fs.PlanName = p.Name
-	fs.LatestImage = ps.LatestImage
-
-	sc := ps.GetCondition(planv1alpha1.PlanConditionReady)
-	if sc == nil {
-		return
-	}
-	switch {
-	case sc.Status == corev1.ConditionUnknown:
-		functionCondSet.Manage(fs).MarkUnknown(FunctionConditionPlanReady, sc.Reason, sc.Message)
-	case sc.Status == corev1.ConditionTrue:
-		functionCondSet.Manage(fs).MarkTrue(FunctionConditionPlanReady)
-	case sc.Status == corev1.ConditionFalse:
-		functionCondSet.Manage(fs).MarkFalse(FunctionConditionPlanReady, sc.Reason, sc.Message)
-	}
 }

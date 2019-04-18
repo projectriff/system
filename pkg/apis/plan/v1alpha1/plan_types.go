@@ -17,14 +17,10 @@
 package v1alpha1
 
 import (
-	"fmt"
-
 	"github.com/knative/pkg/apis"
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	"github.com/knative/pkg/kmeta"
-	servingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
 	commonv1alpha1 "github.com/projectriff/system/pkg/apis/common/v1alpha1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -59,12 +55,6 @@ const (
 	PlanConditionRouteReady     duckv1alpha1.ConditionType = "RouteReady"
 )
 
-var planCondSet = duckv1alpha1.NewLivingConditionSet(
-	PlanConditionBuildPlanReady,
-	PlanConditionRunPlanReady,
-	PlanConditionRouteReady,
-)
-
 type PlanStatus struct {
 	duckv1alpha1.Status `json:",inline"`
 	Address             *duckv1alpha1.Addressable `json:"address,omitempty"`
@@ -84,114 +74,4 @@ type PlanList struct {
 
 func (*Plan) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("Plan")
-}
-
-func (ps *PlanStatus) IsReady() bool {
-	return planCondSet.Manage(ps).IsHappy()
-}
-
-func (ps *PlanStatus) GetCondition(t duckv1alpha1.ConditionType) *duckv1alpha1.Condition {
-	return planCondSet.Manage(ps).GetCondition(t)
-}
-
-func (ps *PlanStatus) InitializeConditions() {
-	planCondSet.Manage(ps).InitializeConditions()
-}
-
-// TODO move into workload reconciler
-func (ps *PlanStatus) MarkBuildPlanNotOwned(name string) {
-	planCondSet.Manage(ps).MarkFalse(PlanConditionBuildPlanReady, "NotOwned",
-		fmt.Sprintf("There is an existing BuildPlan %q that we do not own.", name))
-}
-
-// TODO move into workload reconciler
-func (ps *PlanStatus) MarkRunPlanNotOwned(name string) {
-	planCondSet.Manage(ps).MarkFalse(PlanConditionRunPlanReady, "NotOwned",
-		fmt.Sprintf("There is an existing RunPlan %q that we do not own.", name))
-}
-
-// TODO move into workload reconciler
-func (ps *PlanStatus) MarkRouteNotOwned(name string) {
-	planCondSet.Manage(ps).MarkFalse(PlanConditionRouteReady, "NotOwned",
-		fmt.Sprintf("There is an existing Route %q that we do not own.", name))
-}
-
-// TODO move into workload reconciler
-func (ps *PlanStatus) PropagateBuildPlanStatus(bp *BuildPlan) {
-	if bp == nil {
-		// no build is defined
-		planCondSet.Manage(ps).MarkTrue(PlanConditionBuildPlanReady)
-		return
-	}
-	bps := bp.Status
-
-	if bps.LatestImage != "" {
-		ps.LatestImage = bps.LatestImage
-	}
-
-	rc := bps.GetCondition(BuildPlanConditionReady)
-	if rc == nil {
-		return
-	}
-	switch {
-	case rc.Status == corev1.ConditionUnknown:
-		planCondSet.Manage(ps).MarkUnknown(PlanConditionBuildPlanReady, rc.Reason, rc.Message)
-	case rc.Status == corev1.ConditionTrue:
-		planCondSet.Manage(ps).MarkTrue(PlanConditionBuildPlanReady)
-	case rc.Status == corev1.ConditionFalse:
-		planCondSet.Manage(ps).MarkFalse(PlanConditionBuildPlanReady, rc.Reason, rc.Message)
-	}
-}
-
-// TODO move into workload reconciler
-func (ps *PlanStatus) PropagateRunPlanStatus(rp *RunPlan) {
-	if rp == nil {
-		// no run is defined
-		ps.ConfigurationName = ""
-		planCondSet.Manage(ps).MarkTrue(PlanConditionRunPlanReady)
-		return
-	}
-	rps := rp.Status
-
-	ps.ConfigurationName = rps.ConfigurationName
-
-	rc := rps.GetCondition(RunPlanConditionReady)
-	if rc == nil {
-		return
-	}
-	switch {
-	case rc.Status == corev1.ConditionUnknown:
-		planCondSet.Manage(ps).MarkUnknown(PlanConditionRunPlanReady, rc.Reason, rc.Message)
-	case rc.Status == corev1.ConditionTrue:
-		planCondSet.Manage(ps).MarkTrue(PlanConditionRunPlanReady)
-	case rc.Status == corev1.ConditionFalse:
-		planCondSet.Manage(ps).MarkFalse(PlanConditionRunPlanReady, rc.Reason, rc.Message)
-	}
-}
-
-// TODO move into workload reconciler
-func (ps *PlanStatus) PropagateRouteStatus(r *servingv1alpha1.Route) {
-	if r == nil {
-		ps.Address = nil
-		ps.Domain = ""
-		planCondSet.Manage(ps).MarkTrue(PlanConditionRouteReady)
-		return
-	}
-	rs := r.Status
-
-	ps.Address = rs.Address
-	ps.Domain = rs.Domain
-
-	rc := rs.GetCondition(servingv1alpha1.RouteConditionReady)
-	if rc == nil {
-		return
-	}
-	switch {
-	case rc.Status == corev1.ConditionUnknown:
-		planCondSet.Manage(ps).MarkUnknown(PlanConditionRouteReady, rc.Reason, rc.Message)
-	case rc.Status == corev1.ConditionTrue:
-		planCondSet.Manage(ps).MarkTrue(PlanConditionRouteReady)
-	case rc.Status == corev1.ConditionFalse:
-		planCondSet.Manage(ps).MarkFalse(PlanConditionRouteReady, rc.Reason, rc.Message)
-	}
 }
