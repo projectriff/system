@@ -73,6 +73,7 @@ type FunctionStatus struct {
 	Address             *duckv1alpha1.Addressable `json:"address,omitempty"`
 	Domain              string                    `json:"domain,omitempty"`
 	PlanName            string                    `json:"domain,omitempty"`
+	LatestImage         string                    `json:"latestImage,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -113,6 +114,7 @@ func (fs *FunctionStatus) PropagatePlanStatus(p *planv1alpha1.Plan) {
 	fs.Address = ps.Address
 	fs.Domain = ps.Domain
 	fs.PlanName = p.Name
+	fs.LatestImage = ps.LatestImage
 
 	sc := ps.GetCondition(planv1alpha1.PlanConditionReady)
 	if sc == nil {
