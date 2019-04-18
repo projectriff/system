@@ -37,9 +37,9 @@ type Plan struct {
 }
 
 var (
-	_ apis.Validatable   = (*RunPlan)(nil)
-	_ apis.Defaultable   = (*RunPlan)(nil)
-	_ kmeta.OwnerRefable = (*RunPlan)(nil)
+	_ apis.Validatable   = (*Plan)(nil)
+	_ apis.Defaultable   = (*Plan)(nil)
+	_ kmeta.OwnerRefable = (*Plan)(nil)
 )
 
 type PlanSpec struct {
