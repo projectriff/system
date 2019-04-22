@@ -39,6 +39,11 @@ required = [
   name = "github.com/knative/caching"
   revision = "06e9787157505a649b07677e77d26202ac91431c"
 
+[[constraint]]
+  name = "github.com/google/go-containerregistry"
+  # HEAD as of 2019-02-06
+  revision = "dbc4da98389f9d0c42eb314c2b346bf1d2a27310"
+
 [[override]]
   name = "k8s.io/api"
   version = "kubernetes-1.11.3"
@@ -66,6 +71,11 @@ required = [
   # HEAD as of 2019-01-09
   # Needed because release 1.0.0 does not contain a LICENSE file
   revision = "4bbc89b6501cca7dd6b5557d78d70c8d2c6e8b97"
+
+[[override]]
+  name = "github.com/census-instrumentation/opencensus-proto"
+  # Needed to downgrade protobuf to v2
+  version = "v0.1.0"
 
 [prune]
   go-tests = true
