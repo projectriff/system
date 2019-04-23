@@ -48,7 +48,6 @@ import (
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/applicationbuild"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/function"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/functionbuild"
-	"github.com/projectriff/system/pkg/reconciler/v1alpha1/internalbuild"
 	"go.uber.org/zap"
 )
 
@@ -133,7 +132,6 @@ func main() {
 	functionInformer := projectriffInformerFactory.Projectriff().V1alpha1().Functions()
 	applicationbuildInformer := projectriffInformerFactory.Build().V1alpha1().ApplicationBuilds()
 	functionbuildInformer := projectriffInformerFactory.Build().V1alpha1().FunctionBuilds()
-	internalbuildInformer := projectriffInformerFactory.Build().V1alpha1().InternalBuilds()
 	pvcInformer := kubeInformerFactory.Core().V1().PersistentVolumeClaims()
 	knbuildInformer := knbuildInformerFactory.Build().V1alpha1().Builds()
 	knconfigurationInformer := knservingInformerFactory.Serving().V1alpha1().Configurations()
@@ -162,17 +160,12 @@ func main() {
 			opt,
 			applicationbuildInformer,
 
-			internalbuildInformer,
+			pvcInformer,
+			knbuildInformer,
 		),
 		functionbuild.NewController(
 			opt,
 			functionbuildInformer,
-
-			internalbuildInformer,
-		),
-		internalbuild.NewController(
-			opt,
-			internalbuildInformer,
 
 			pvcInformer,
 			knbuildInformer,
@@ -198,6 +191,8 @@ func main() {
 	for i, synced := range []cache.InformerSynced{
 		functionInformer.Informer().HasSynced,
 		applicationInformer.Informer().HasSynced,
+		functionbuildInformer.Informer().HasSynced,
+		applicationbuildInformer.Informer().HasSynced,
 		pvcInformer.Informer().HasSynced,
 		knbuildInformer.Informer().HasSynced,
 		knconfigurationInformer.Informer().HasSynced,

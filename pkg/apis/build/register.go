@@ -22,5 +22,4 @@ const (
 
 	ApplicationBuildLabelKey = GroupName + "/application"
 	FunctionBuildLabelKey    = GroupName + "/function"
-	InternalBuildLabelKey    = GroupName + "/internal"
 )

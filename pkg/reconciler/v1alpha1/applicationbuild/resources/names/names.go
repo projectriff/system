@@ -22,6 +22,10 @@ import (
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 )
 
-func InternalBuild(ab *buildv1alpha1.ApplicationBuild) string {
+func BuildCache(ab *buildv1alpha1.ApplicationBuild) string {
+	return fmt.Sprintf("build-cache-%s-application", ab.Name)
+}
+
+func Build(ab *buildv1alpha1.ApplicationBuild) string {
 	return fmt.Sprintf("%s-application", ab.Name)
 }

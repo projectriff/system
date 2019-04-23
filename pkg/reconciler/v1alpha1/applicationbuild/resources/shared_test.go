@@ -26,15 +26,16 @@ import (
 )
 
 const (
-	testApplicationBuildName      = "test-functionbuild"
-	testApplicationBuildNamespace = "test-functionbuild-namespace"
-	testInternalBuildName         = "test-functionbuild-application"
+	testApplicationBuildName      = "test-applicationbuild"
+	testApplicationBuildNamespace = "test-applicationbuild-namespace"
+	testBuildName                 = "test-applicationbuild-application"
 	testLabelKey                  = "test-label-key"
 	testLabelValue                = "test-label-value"
 	testImage                     = "test-image"
 	testGitURL                    = "https://example.com/repo.git"
 	testGitRevision               = "master"
 	testBuildCacheSize            = "8Gi"
+	testBuildCacheName            = "build-cache-test-applicationbuild-application"
 )
 
 func expectOwnerReferencesSetCorrectly(t *testing.T, ownerRefs []metav1.OwnerReference) {
@@ -49,7 +50,7 @@ func expectOwnerReferencesSetCorrectly(t *testing.T, ownerRefs []metav1.OwnerRef
 		Name:       testApplicationBuildName,
 	}}
 	if diff := cmp.Diff(expectedRefs, ownerRefs, cmpopts.IgnoreFields(expectedRefs[0], "Controller", "BlockOwnerDeletion")); diff != "" {
-		t.Errorf("Unexpected function owner refs diff (-want +got): %v", diff)
+		t.Errorf("Unexpected applicationbuild owner refs diff (-want +got): %v", diff)
 	}
 }
 

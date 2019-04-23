@@ -33,10 +33,6 @@ func (c *FakeBuildV1alpha1) FunctionBuilds(namespace string) v1alpha1.FunctionBu
 	return &FakeFunctionBuilds{c, namespace}
 }
 
-func (c *FakeBuildV1alpha1) InternalBuilds(namespace string) v1alpha1.InternalBuildInterface {
-	return &FakeInternalBuilds{c, namespace}
-}
-
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
 func (c *FakeBuildV1alpha1) RESTClient() rest.Interface {

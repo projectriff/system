@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package internalbuild
+package digest
 
 import (
 	"crypto/tls"
@@ -29,20 +29,39 @@ import (
 	"github.com/google/go-containerregistry/pkg/authn/k8schain"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
+	"github.com/projectriff/system/pkg/reconciler"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/kubernetes"
 )
-
-type digestResolver struct {
-	client    kubernetes.Interface
-	transport http.RoundTripper
-}
 
 const (
 	// Kubernetes CA certificate bundle is mounted into the pod here, see:
 	// https://kubernetes.io/docs/tasks/tls/managing-tls-in-a-cluster/#trusting-tls-in-a-cluster
 	k8sCertPath = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
 )
+
+type Resolver interface {
+	Resolve(image string, opt k8schain.Options, registriesToSkip sets.String) (string, error)
+}
+
+func NewDefaultResolver(opt reconciler.Options) Resolver {
+	transport := http.DefaultTransport
+	if rt, err := newResolverTransport(k8sCertPath); err != nil {
+		opt.Logger.Errorf("Failed to create resolver transport: %v", err)
+	} else {
+		transport = rt
+	}
+
+	return &digestResolver{
+		client:    opt.KubeClientSet,
+		transport: transport,
+	}
+}
+
+type digestResolver struct {
+	client    kubernetes.Interface
+	transport http.RoundTripper
+}
 
 // newResolverTransport returns an http.Transport that appends the certs bundle
 // at path to the system cert pool.
@@ -103,7 +122,7 @@ func (r *digestResolver) Resolve(
 	}
 
 	if registriesToSkip.Has(tag.Registry.RegistryStr()) {
-		return "", nil
+		return image, nil
 	}
 
 	img, err := remote.Image(tag, remote.WithTransport(r.transport), remote.WithAuthFromKeychain(kc))

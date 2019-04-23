@@ -25,17 +25,17 @@ import (
 )
 
 func TestBuildCache(t *testing.T) {
-	ib := createInternalBuildMeta()
-	ib.Labels = map[string]string{testLabelKey: testLabelValue}
+	ab := createApplicationBuildMeta()
+	ab.Labels = map[string]string{testLabelKey: testLabelValue}
 	cacheSize := resource.MustParse(testBuildCacheSize)
-	ib.Spec.CacheSize = &cacheSize
+	ab.Spec.CacheSize = &cacheSize
 
-	c, _ := MakeBuildCache(ib)
+	c, _ := MakeBuildCache(ab)
 
 	if got, want := c.Name, testBuildCacheName; got != want {
 		t.Errorf("expected %q for build cache name got %q", want, got)
 	}
-	if got, want := c.Namespace, testInternalBuildNamespace; got != want {
+	if got, want := c.Namespace, testApplicationBuildNamespace; got != want {
 		t.Errorf("expected %q for build cache namespace got %q", want, got)
 	}
 	expectOwnerReferencesSetCorrectly(t, c.OwnerReferences)
@@ -46,7 +46,7 @@ func TestBuildCache(t *testing.T) {
 	if got, want := c.Labels[testLabelKey], testLabelValue; got != want {
 		t.Errorf("expected %q labels got %q", want, got)
 	}
-	if got, want := c.Labels[build.InternalBuildLabelKey], testInternalBuildName; got != want {
+	if got, want := c.Labels[build.ApplicationBuildLabelKey], testApplicationBuildName; got != want {
 		t.Errorf("expected %q labels got %q", want, got)
 	}
 

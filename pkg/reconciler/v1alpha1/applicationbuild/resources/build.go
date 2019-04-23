@@ -20,39 +20,39 @@ import (
 	knbuildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	"github.com/knative/pkg/kmeta"
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
-	"github.com/projectriff/system/pkg/reconciler/v1alpha1/internalbuild/resources/names"
+	"github.com/projectriff/system/pkg/reconciler/v1alpha1/applicationbuild/resources/names"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// MakeBuild creates a Build from an InternalBuild object.
-func MakeBuild(ib *buildv1alpha1.InternalBuild) (*knbuildv1alpha1.Build, error) {
+// MakeBuild creates a Build from an ApplicationBuild object.
+func MakeBuild(ab *buildv1alpha1.ApplicationBuild) (*knbuildv1alpha1.Build, error) {
 	build := &knbuildv1alpha1.Build{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      names.Build(ib),
-			Namespace: ib.Namespace,
+			Name:      names.Build(ab),
+			Namespace: ab.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
-				*kmeta.NewControllerRef(ib),
+				*kmeta.NewControllerRef(ab),
 			},
-			Labels: makeLabels(ib),
+			Labels: makeLabels(ab),
 		},
 		Spec: knbuildv1alpha1.BuildSpec{
 			ServiceAccountName: "riff-build",
-			Source:             makeBuildSource(ib),
+			Source:             makeBuildSource(ab),
 			Template: &knbuildv1alpha1.TemplateInstantiationSpec{
-				Name:      ib.Spec.Template,
+				Name:      "cf-cnb",
 				Kind:      "ClusterBuildTemplate",
-				Arguments: makeBuildArguments(ib),
+				Arguments: makeBuildArguments(ab),
 			},
-			Volumes: makeBuildVolumes(ib),
+			Volumes: makeBuildVolumes(ab),
 		},
 	}
 
 	return build, nil
 }
 
-func makeBuildSource(ib *buildv1alpha1.InternalBuild) *knbuildv1alpha1.SourceSpec {
-	as := ib.Spec.Source
+func makeBuildSource(ab *buildv1alpha1.ApplicationBuild) *knbuildv1alpha1.SourceSpec {
+	as := ab.Spec.Source
 	s := &knbuildv1alpha1.SourceSpec{
 		SubPath: as.SubPath,
 	}
@@ -65,26 +65,23 @@ func makeBuildSource(ib *buildv1alpha1.InternalBuild) *knbuildv1alpha1.SourceSpe
 	return s
 }
 
-func makeBuildArguments(ib *buildv1alpha1.InternalBuild) []knbuildv1alpha1.ArgumentSpec {
+func makeBuildArguments(ab *buildv1alpha1.ApplicationBuild) []knbuildv1alpha1.ArgumentSpec {
 	args := []knbuildv1alpha1.ArgumentSpec{
-		{Name: "IMAGE", Value: ib.Spec.Image},
+		{Name: "IMAGE", Value: ab.Spec.Image},
 	}
-	if ib.Status.BuildCacheName != "" {
+	if ab.Status.BuildCacheName != "" {
 		args = append(args, knbuildv1alpha1.ArgumentSpec{Name: "CACHE", Value: "cache"})
-	}
-	for _, arg := range ib.Spec.Arguments {
-		args = append(args, knbuildv1alpha1.ArgumentSpec{Name: arg.Name, Value: arg.Value})
 	}
 	return args
 }
 
-func makeBuildVolumes(ib *buildv1alpha1.InternalBuild) []corev1.Volume {
+func makeBuildVolumes(ab *buildv1alpha1.ApplicationBuild) []corev1.Volume {
 	volumes := []corev1.Volume{}
-	if ib.Status.BuildCacheName != "" {
+	if ab.Status.BuildCacheName != "" {
 		volumes = append(volumes, corev1.Volume{
 			Name: "cache",
 			VolumeSource: corev1.VolumeSource{
-				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{ClaimName: ib.Status.BuildCacheName},
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{ClaimName: ab.Status.BuildCacheName},
 			},
 		})
 	}

@@ -103,7 +103,6 @@ func main() {
 
 			buildv1alpha1.SchemeGroupVersion.WithKind("ApplicationBuild"): &buildv1alpha1.ApplicationBuild{},
 			buildv1alpha1.SchemeGroupVersion.WithKind("FunctionBuild"):    &buildv1alpha1.FunctionBuild{},
-			buildv1alpha1.SchemeGroupVersion.WithKind("InternalBuild"):    &buildv1alpha1.InternalBuild{},
 		},
 		Logger: logger,
 	}

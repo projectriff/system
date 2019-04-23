@@ -30,3 +30,9 @@ type GitSource struct {
 	Revision string `json:"revision"`
 	URL      string `json:"url"`
 }
+
+type BuildStatus struct {
+	BuildCacheName string `json:"buildCacheName,omitempty"`
+	BuildName      string `json:"buildName,omitempty"`
+	LatestImage    string `json:"latestImage,omitempty"`
+}

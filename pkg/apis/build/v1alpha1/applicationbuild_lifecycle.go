@@ -19,49 +19,78 @@ package v1alpha1
 import (
 	"fmt"
 
+	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 )
 
 const (
-	ApplicationBuildConditionSucceeded                                         = duckv1alpha1.ConditionSucceeded
-	ApplicationBuildConditionInternalBuildSucceeded duckv1alpha1.ConditionType = "InternalBuildSucceeded"
+	ApplicationBuildConditionSucceeded                                  = duckv1alpha1.ConditionSucceeded
+	ApplicationBuildConditionBuildCacheReady duckv1alpha1.ConditionType = "BuildCacheReady"
+	ApplicationBuildConditionBuildSucceeded  duckv1alpha1.ConditionType = "BuildSucceeded"
 )
 
 var applicationbuildCondSet = duckv1alpha1.NewBatchConditionSet(
-	ApplicationBuildConditionInternalBuildSucceeded,
+	ApplicationBuildConditionBuildCacheReady,
+	ApplicationBuildConditionBuildSucceeded,
 )
 
-func (abs *ApplicationBuildStatus) IsReady() bool {
-	return applicationbuildCondSet.Manage(abs).IsHappy()
+func (ibs *ApplicationBuildStatus) IsReady() bool {
+	return applicationbuildCondSet.Manage(ibs).IsHappy()
 }
 
-func (abs *ApplicationBuildStatus) GetCondition(t duckv1alpha1.ConditionType) *duckv1alpha1.Condition {
-	return applicationbuildCondSet.Manage(abs).GetCondition(t)
+func (ibs *ApplicationBuildStatus) GetCondition(t duckv1alpha1.ConditionType) *duckv1alpha1.Condition {
+	return applicationbuildCondSet.Manage(ibs).GetCondition(t)
 }
 
-func (abs *ApplicationBuildStatus) InitializeConditions() {
-	applicationbuildCondSet.Manage(abs).InitializeConditions()
+func (ibs *ApplicationBuildStatus) InitializeConditions() {
+	applicationbuildCondSet.Manage(ibs).InitializeConditions()
 }
 
-func (abs *ApplicationBuildStatus) MarkInternalBuildNotOwned(name string) {
-	applicationbuildCondSet.Manage(abs).MarkFalse(ApplicationBuildConditionInternalBuildSucceeded, "NotOwned",
-		fmt.Sprintf("There is an existing InternalBuild %q that we do not own.", name))
+func (ibs *ApplicationBuildStatus) MarkBuildCacheNotOwned(name string) {
+	applicationbuildCondSet.Manage(ibs).MarkFalse(ApplicationBuildConditionBuildCacheReady, "NotOwned",
+		fmt.Sprintf("There is an existing PersistentVolumeClaim %q that we do not own.", name))
 }
 
-func (abs *ApplicationBuildStatus) PropagateInternalBuildStatus(ibs *InternalBuildStatus) {
-	abs.LatestImage = ibs.LatestImage
+func (ibs *ApplicationBuildStatus) MarkBuildCacheNotUsed() {
+	ibs.BuildCacheName = ""
+	applicationbuildCondSet.Manage(ibs).MarkTrue(ApplicationBuildConditionBuildCacheReady)
+}
 
-	sc := ibs.GetCondition(InternalBuildConditionSucceeded)
+func (ibs *ApplicationBuildStatus) MarkBuildNotOwned(name string) {
+	applicationbuildCondSet.Manage(ibs).MarkFalse(ApplicationBuildConditionBuildSucceeded, "NotOwned",
+		fmt.Sprintf("There is an existing Build %q that we do not own.", name))
+}
+
+func (ibs *ApplicationBuildStatus) MarkImageMissing(message string) {
+	applicationbuildCondSet.Manage(ibs).MarkFalse(ApplicationBuildConditionBuildSucceeded, "ImageMissing", message)
+}
+
+func (ibs *ApplicationBuildStatus) PropagateBuildCacheStatus(pvcs *corev1.PersistentVolumeClaimStatus) {
+	switch pvcs.Phase {
+	case corev1.ClaimPending:
+		// used for PersistentVolumeClaims that are not yet bound
+		applicationbuildCondSet.Manage(ibs).MarkUnknown(ApplicationBuildConditionBuildCacheReady, string(pvcs.Phase), "volume claim is not yet bound")
+	case corev1.ClaimBound:
+		// used for PersistentVolumeClaims that are bound
+		applicationbuildCondSet.Manage(ibs).MarkTrue(ApplicationBuildConditionBuildCacheReady)
+	case corev1.ClaimLost:
+		// used for PersistentVolumeClaims that lost their underlying PersistentVolume
+		applicationbuildCondSet.Manage(ibs).MarkFalse(ApplicationBuildConditionBuildCacheReady, string(pvcs.Phase), "volume claim lost its underlying volume")
+	}
+}
+
+func (ibs *ApplicationBuildStatus) PropagateBuildStatus(bs *buildv1alpha1.BuildStatus) {
+	sc := bs.GetCondition(buildv1alpha1.BuildSucceeded)
 	if sc == nil {
 		return
 	}
 	switch {
 	case sc.Status == corev1.ConditionUnknown:
-		applicationbuildCondSet.Manage(abs).MarkUnknown(ApplicationBuildConditionInternalBuildSucceeded, sc.Reason, sc.Message)
+		applicationbuildCondSet.Manage(ibs).MarkUnknown(ApplicationBuildConditionBuildSucceeded, sc.Reason, sc.Message)
 	case sc.Status == corev1.ConditionTrue:
-		applicationbuildCondSet.Manage(abs).MarkTrue(ApplicationBuildConditionInternalBuildSucceeded)
+		applicationbuildCondSet.Manage(ibs).MarkTrue(ApplicationBuildConditionBuildSucceeded)
 	case sc.Status == corev1.ConditionFalse:
-		applicationbuildCondSet.Manage(abs).MarkFalse(ApplicationBuildConditionInternalBuildSucceeded, sc.Reason, sc.Message)
+		applicationbuildCondSet.Manage(ibs).MarkFalse(ApplicationBuildConditionBuildSucceeded, sc.Reason, sc.Message)
 	}
 }

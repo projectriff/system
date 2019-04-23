@@ -25,8 +25,6 @@ type Interface interface {
 	ApplicationBuilds() ApplicationBuildInformer
 	// FunctionBuilds returns a FunctionBuildInformer.
 	FunctionBuilds() FunctionBuildInformer
-	// InternalBuilds returns a InternalBuildInformer.
-	InternalBuilds() InternalBuildInformer
 }
 
 type version struct {
@@ -48,9 +46,4 @@ func (v *version) ApplicationBuilds() ApplicationBuildInformer {
 // FunctionBuilds returns a FunctionBuildInformer.
 func (v *version) FunctionBuilds() FunctionBuildInformer {
 	return &functionBuildInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
-// InternalBuilds returns a InternalBuildInformer.
-func (v *version) InternalBuilds() InternalBuildInformer {
-	return &internalBuildInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

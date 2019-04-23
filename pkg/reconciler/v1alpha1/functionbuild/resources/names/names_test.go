@@ -25,25 +25,35 @@ import (
 
 func TestNamer(t *testing.T) {
 	tests := []struct {
-		name    string
-		fnbuild *buildv1alpha1.FunctionBuild
-		f       func(*buildv1alpha1.FunctionBuild) string
-		want    string
+		name  string
+		build *buildv1alpha1.FunctionBuild
+		f     func(*buildv1alpha1.FunctionBuild) string
+		want  string
 	}{{
-		name: "Build",
-		fnbuild: &buildv1alpha1.FunctionBuild{
+		name: "BuildCache",
+		build: &buildv1alpha1.FunctionBuild{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "foo",
 				Namespace: "default",
 			},
 		},
-		f:    InternalBuild,
+		f:    BuildCache,
+		want: "build-cache-foo-function",
+	}, {
+		name: "Build",
+		build: &buildv1alpha1.FunctionBuild{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "foo",
+				Namespace: "default",
+			},
+		},
+		f:    Build,
 		want: "foo-function",
 	}}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got := test.f(test.fnbuild)
+			got := test.f(test.build)
 			if got != test.want {
 				t.Errorf("%s() = %v, wanted %v", test.name, got, test.want)
 			}

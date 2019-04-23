@@ -19,47 +19,78 @@ package v1alpha1
 import (
 	"fmt"
 
+	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 )
 
 const (
-	FunctionBuildConditionSucceeded                                         = duckv1alpha1.ConditionSucceeded
-	FunctionBuildConditionInternalBuildSucceeded duckv1alpha1.ConditionType = "InternalBuildSucceeded"
+	FunctionBuildConditionSucceeded                                  = duckv1alpha1.ConditionSucceeded
+	FunctionBuildConditionBuildCacheReady duckv1alpha1.ConditionType = "BuildCacheReady"
+	FunctionBuildConditionBuildSucceeded  duckv1alpha1.ConditionType = "BuildSucceeded"
 )
 
-var functionbuildCondSet = duckv1alpha1.NewBatchConditionSet(FunctionBuildConditionInternalBuildSucceeded)
+var functionbuildCondSet = duckv1alpha1.NewBatchConditionSet(
+	FunctionBuildConditionBuildCacheReady,
+	FunctionBuildConditionBuildSucceeded,
+)
 
-func (fbs *FunctionBuildStatus) IsReady() bool {
-	return functionbuildCondSet.Manage(fbs).IsHappy()
+func (ibs *FunctionBuildStatus) IsReady() bool {
+	return functionbuildCondSet.Manage(ibs).IsHappy()
 }
 
-func (fbs *FunctionBuildStatus) GetCondition(t duckv1alpha1.ConditionType) *duckv1alpha1.Condition {
-	return functionbuildCondSet.Manage(fbs).GetCondition(t)
+func (ibs *FunctionBuildStatus) GetCondition(t duckv1alpha1.ConditionType) *duckv1alpha1.Condition {
+	return functionbuildCondSet.Manage(ibs).GetCondition(t)
 }
 
-func (fbs *FunctionBuildStatus) InitializeConditions() {
-	functionbuildCondSet.Manage(fbs).InitializeConditions()
+func (ibs *FunctionBuildStatus) InitializeConditions() {
+	functionbuildCondSet.Manage(ibs).InitializeConditions()
 }
 
-func (fbs *FunctionBuildStatus) MarkInternalBuildNotOwned(name string) {
-	functionbuildCondSet.Manage(fbs).MarkFalse(FunctionBuildConditionInternalBuildSucceeded, "NotOwned",
-		fmt.Sprintf("There is an existing InternalBuild %q that we do not own.", name))
+func (ibs *FunctionBuildStatus) MarkBuildCacheNotOwned(name string) {
+	functionbuildCondSet.Manage(ibs).MarkFalse(FunctionBuildConditionBuildCacheReady, "NotOwned",
+		fmt.Sprintf("There is an existing PersistentVolumeClaim %q that we do not own.", name))
 }
 
-func (fbs *FunctionBuildStatus) PropagateInternalBuildStatus(ibs *InternalBuildStatus) {
-	fbs.LatestImage = ibs.LatestImage
+func (ibs *FunctionBuildStatus) MarkBuildCacheNotUsed() {
+	ibs.BuildCacheName = ""
+	functionbuildCondSet.Manage(ibs).MarkTrue(FunctionBuildConditionBuildCacheReady)
+}
 
-	sc := ibs.GetCondition(InternalBuildConditionSucceeded)
+func (ibs *FunctionBuildStatus) MarkBuildNotOwned(name string) {
+	functionbuildCondSet.Manage(ibs).MarkFalse(FunctionBuildConditionBuildSucceeded, "NotOwned",
+		fmt.Sprintf("There is an existing Build %q that we do not own.", name))
+}
+
+func (ibs *FunctionBuildStatus) MarkImageMissing(message string) {
+	functionbuildCondSet.Manage(ibs).MarkFalse(FunctionBuildConditionBuildSucceeded, "ImageMissing", message)
+}
+
+func (ibs *FunctionBuildStatus) PropagateBuildCacheStatus(pvcs *corev1.PersistentVolumeClaimStatus) {
+	switch pvcs.Phase {
+	case corev1.ClaimPending:
+		// used for PersistentVolumeClaims that are not yet bound
+		functionbuildCondSet.Manage(ibs).MarkUnknown(FunctionBuildConditionBuildCacheReady, string(pvcs.Phase), "volume claim is not yet bound")
+	case corev1.ClaimBound:
+		// used for PersistentVolumeClaims that are bound
+		functionbuildCondSet.Manage(ibs).MarkTrue(FunctionBuildConditionBuildCacheReady)
+	case corev1.ClaimLost:
+		// used for PersistentVolumeClaims that lost their underlying PersistentVolume
+		functionbuildCondSet.Manage(ibs).MarkFalse(FunctionBuildConditionBuildCacheReady, string(pvcs.Phase), "volume claim lost its underlying volume")
+	}
+}
+
+func (ibs *FunctionBuildStatus) PropagateBuildStatus(bs *buildv1alpha1.BuildStatus) {
+	sc := bs.GetCondition(buildv1alpha1.BuildSucceeded)
 	if sc == nil {
 		return
 	}
 	switch {
 	case sc.Status == corev1.ConditionUnknown:
-		functionbuildCondSet.Manage(fbs).MarkUnknown(FunctionBuildConditionInternalBuildSucceeded, sc.Reason, sc.Message)
+		functionbuildCondSet.Manage(ibs).MarkUnknown(FunctionBuildConditionBuildSucceeded, sc.Reason, sc.Message)
 	case sc.Status == corev1.ConditionTrue:
-		functionbuildCondSet.Manage(fbs).MarkTrue(FunctionBuildConditionInternalBuildSucceeded)
+		functionbuildCondSet.Manage(ibs).MarkTrue(FunctionBuildConditionBuildSucceeded)
 	case sc.Status == corev1.ConditionFalse:
-		functionbuildCondSet.Manage(fbs).MarkFalse(FunctionBuildConditionInternalBuildSucceeded, sc.Reason, sc.Message)
+		functionbuildCondSet.Manage(ibs).MarkFalse(FunctionBuildConditionBuildSucceeded, sc.Reason, sc.Message)
 	}
 }

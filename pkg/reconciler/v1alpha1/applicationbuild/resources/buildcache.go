@@ -19,32 +19,32 @@ package resources
 import (
 	"github.com/knative/pkg/kmeta"
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
-	"github.com/projectriff/system/pkg/reconciler/v1alpha1/internalbuild/resources/names"
+	"github.com/projectriff/system/pkg/reconciler/v1alpha1/applicationbuild/resources/names"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// MakeBuildCache creates a PersistentVolumeClaim from an InternalBuild object.
-func MakeBuildCache(ib *buildv1alpha1.InternalBuild) (*corev1.PersistentVolumeClaim, error) {
-	if ib.Spec.CacheSize == nil {
+// MakeBuildCache creates a PersistentVolumeClaim from an ApplicationBuild object.
+func MakeBuildCache(ab *buildv1alpha1.ApplicationBuild) (*corev1.PersistentVolumeClaim, error) {
+	if ab.Spec.CacheSize == nil {
 		// no cache was requested
 		return nil, nil
 	}
 
 	pvc := &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      names.BuildCache(ib),
-			Namespace: ib.Namespace,
+			Name:      names.BuildCache(ab),
+			Namespace: ab.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
-				*kmeta.NewControllerRef(ib),
+				*kmeta.NewControllerRef(ab),
 			},
-			Labels: makeLabels(ib),
+			Labels: makeLabels(ab),
 		},
 		Spec: corev1.PersistentVolumeClaimSpec{
 			AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
 			Resources: corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{
-					corev1.ResourceStorage: *ib.Spec.CacheSize,
+					corev1.ResourceStorage: *ab.Spec.CacheSize,
 				},
 			},
 		},

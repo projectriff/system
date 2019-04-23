@@ -22,6 +22,10 @@ import (
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 )
 
-func InternalBuild(fb *buildv1alpha1.FunctionBuild) string {
+func BuildCache(fb *buildv1alpha1.FunctionBuild) string {
+	return fmt.Sprintf("build-cache-%s-function", fb.Name)
+}
+
+func Build(fb *buildv1alpha1.FunctionBuild) string {
 	return fmt.Sprintf("%s-function", fb.Name)
 }

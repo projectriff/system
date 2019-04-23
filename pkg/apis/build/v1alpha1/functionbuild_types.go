@@ -53,8 +53,7 @@ type FunctionBuildSpec struct {
 
 type FunctionBuildStatus struct {
 	duckv1alpha1.Status `json:",inline"`
-	InternalBuildName   string `json:"internalBuildName,omitempty"`
-	LatestImage         string `json:"latestImage,omitempty"`
+	BuildStatus         `json:",inline"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

@@ -30,11 +30,3 @@ type FunctionBuildListerExpansion interface{}
 // FunctionBuildNamespaceListerExpansion allows custom methods to be added to
 // FunctionBuildNamespaceLister.
 type FunctionBuildNamespaceListerExpansion interface{}
-
-// InternalBuildListerExpansion allows custom methods to be added to
-// InternalBuildLister.
-type InternalBuildListerExpansion interface{}
-
-// InternalBuildNamespaceListerExpansion allows custom methods to be added to
-// InternalBuildNamespaceLister.
-type InternalBuildNamespaceListerExpansion interface{}

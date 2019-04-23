@@ -22,6 +22,10 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/google/go-containerregistry/pkg/authn/k8schain"
+	knbuildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
+	knbuildinformers "github.com/knative/build/pkg/client/informers/externalversions/build/v1alpha1"
+	knbuildlisters "github.com/knative/build/pkg/client/listers/build/v1alpha1"
 	"github.com/knative/pkg/controller"
 	"github.com/knative/pkg/kmp"
 	"github.com/knative/pkg/logging"
@@ -29,6 +33,7 @@ import (
 	buildinformers "github.com/projectriff/system/pkg/client/informers/externalversions/build/v1alpha1"
 	buildlisters "github.com/projectriff/system/pkg/client/listers/build/v1alpha1"
 	"github.com/projectriff/system/pkg/reconciler"
+	"github.com/projectriff/system/pkg/reconciler/digest"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/functionbuild/resources"
 	resourcenames "github.com/projectriff/system/pkg/reconciler/v1alpha1/functionbuild/resources/names"
 	"go.uber.org/zap"
@@ -37,6 +42,9 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
+	coreinformers "k8s.io/client-go/informers/core/v1"
+	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -52,7 +60,10 @@ type Reconciler struct {
 
 	// listers index properties about resources
 	functionbuildLister buildlisters.FunctionBuildLister
-	internalbuildLister buildlisters.InternalBuildLister
+	pvcLister           corelisters.PersistentVolumeClaimLister
+	knbuildLister       knbuildlisters.BuildLister
+
+	resolver digest.Resolver
 }
 
 // Check that our Reconciler implements controller.Reconciler
@@ -63,13 +74,17 @@ var _ controller.Reconciler = (*Reconciler)(nil)
 func NewController(
 	opt reconciler.Options,
 	functionbuildInformer buildinformers.FunctionBuildInformer,
-	internalbuildInformer buildinformers.InternalBuildInformer,
+	pvcInformer coreinformers.PersistentVolumeClaimInformer,
+	knbuildInformer knbuildinformers.BuildInformer,
 ) *controller.Impl {
 
 	c := &Reconciler{
 		Base:                reconciler.NewBase(opt, controllerAgentName),
 		functionbuildLister: functionbuildInformer.Lister(),
-		internalbuildLister: internalbuildInformer.Lister(),
+		pvcLister:           pvcInformer.Lister(),
+		knbuildLister:       knbuildInformer.Lister(),
+
+		resolver: digest.NewDefaultResolver(opt),
 	}
 	impl := controller.NewImpl(c, c.Logger, ReconcilerName, reconciler.MustNewStatsReporter(ReconcilerName, c.Logger))
 
@@ -80,7 +95,15 @@ func NewController(
 		DeleteFunc: impl.Enqueue,
 	})
 
-	internalbuildInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+	pvcInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: controller.Filter(buildv1alpha1.SchemeGroupVersion.WithKind("FunctionBuild")),
+		Handler: cache.ResourceEventHandlerFuncs{
+			AddFunc:    impl.EnqueueControllerOf,
+			UpdateFunc: controller.PassNew(impl.EnqueueControllerOf),
+			DeleteFunc: impl.EnqueueControllerOf,
+		},
+	})
+	knbuildInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(buildv1alpha1.SchemeGroupVersion.WithKind("FunctionBuild")),
 		Handler: cache.ResourceEventHandlerFuncs{
 			AddFunc:    impl.EnqueueControllerOf,
@@ -153,33 +176,88 @@ func (c *Reconciler) reconcile(ctx context.Context, functionbuild *buildv1alpha1
 
 	functionbuild.Status.InitializeConditions()
 
-	internalbuildName := resourcenames.InternalBuild(functionbuild)
-	internalbuild, err := c.internalbuildLister.InternalBuilds(functionbuild.Namespace).Get(internalbuildName)
+	buildCacheName := resourcenames.BuildCache(functionbuild)
+	buildCache, err := c.pvcLister.PersistentVolumeClaims(functionbuild.Namespace).Get(buildCacheName)
 	if errors.IsNotFound(err) {
-		internalbuild, err = c.createInternalBuild(functionbuild)
+		buildCache, err = c.createBuildCache(functionbuild)
 		if err != nil {
-			logger.Errorf("Failed to create InternalBuild %q: %v", internalbuildName, err)
-			c.Recorder.Eventf(functionbuild, corev1.EventTypeWarning, "CreationFailed", "Failed to create InternalBuild %q: %v", internalbuildName, err)
+			logger.Errorf("Failed to create PersistentVolumeClaim %q: %v", buildCacheName, err)
+			c.Recorder.Eventf(functionbuild, corev1.EventTypeWarning, "CreationFailed", "Failed to create PersistentVolumeClaim %q: %v", buildCacheName, err)
 			return err
 		}
-		if internalbuild != nil {
-			c.Recorder.Eventf(functionbuild, corev1.EventTypeNormal, "Created", "Created InternalBuild %q", internalbuildName)
+		if buildCache != nil {
+			c.Recorder.Eventf(functionbuild, corev1.EventTypeNormal, "Created", "Created PersistentVolumeClaim %q", buildCacheName)
 		}
 	} else if err != nil {
-		logger.Errorf("Failed to reconcile FunctionBuild: %q failed to Get InternalBuild: %q; %v", functionbuild.Name, internalbuildName, zap.Error(err))
+		logger.Errorf("Failed to reconcile FunctionBuild: %q failed to Get PersistentVolumeClaim: %q; %v", functionbuild.Name, buildCacheName, zap.Error(err))
 		return err
-	} else if !metav1.IsControlledBy(internalbuild, functionbuild) {
+	} else if !metav1.IsControlledBy(buildCache, functionbuild) {
 		// Surface an error in the functionbuild's status,and return an error.
-		functionbuild.Status.MarkInternalBuildNotOwned(internalbuildName)
-		return fmt.Errorf("FunctionBuild: %q does not own InternalBuild: %q", functionbuild.Name, internalbuildName)
-	} else if internalbuild, err = c.reconcileInternalBuild(ctx, functionbuild, internalbuild); err != nil {
-		logger.Errorf("Failed to reconcile FunctionBuild: %q failed to reconcile InternalBuild: %q; %v", functionbuild.Name, internalbuild, zap.Error(err))
+		functionbuild.Status.MarkBuildCacheNotOwned(buildCacheName)
+		return fmt.Errorf("FunctionBuild: %q does not own PersistentVolumeClaim: %q", functionbuild.Name, buildCacheName)
+	} else {
+		buildCache, err = c.reconcileBuildCache(ctx, functionbuild, buildCache)
+		if err != nil {
+			logger.Errorf("Failed to reconcile FunctionBuild: %q failed to reconcile PersistentVolumeClaim: %q; %v", functionbuild.Name, buildCache, zap.Error(err))
+			return err
+		}
+		if buildCache == nil {
+			c.Recorder.Eventf(functionbuild, corev1.EventTypeNormal, "Deleted", "Deleted PersistentVolumeClaim %q", buildCacheName)
+		}
+	}
+
+	// Update our Status based on the state of our underlying PersistentVolumeClaim.
+	if buildCache == nil {
+		functionbuild.Status.MarkBuildCacheNotUsed()
+	} else {
+		functionbuild.Status.BuildCacheName = buildCache.Name
+		functionbuild.Status.PropagateBuildCacheStatus(&buildCache.Status)
+	}
+
+	buildName := resourcenames.Build(functionbuild)
+	build, err := c.knbuildLister.Builds(functionbuild.Namespace).Get(buildName)
+	if errors.IsNotFound(err) {
+		build, err = c.createBuild(functionbuild)
+		if err != nil {
+			logger.Errorf("Failed to create Build %q: %v", buildName, err)
+			c.Recorder.Eventf(functionbuild, corev1.EventTypeWarning, "CreationFailed", "Failed to create Build %q: %v", buildName, err)
+			return err
+		}
+		if build != nil {
+			c.Recorder.Eventf(functionbuild, corev1.EventTypeNormal, "Created", "Created Build %q", buildName)
+		}
+	} else if err != nil {
+		logger.Errorf("Failed to reconcile FunctionBuild: %q failed to Get Build: %q; %v", functionbuild.Name, buildName, zap.Error(err))
+		return err
+	} else if !metav1.IsControlledBy(build, functionbuild) {
+		// Surface an error in the functionbuild's status,and return an error.
+		functionbuild.Status.MarkBuildNotOwned(buildName)
+		return fmt.Errorf("FunctionBuild: %q does not own Build: %q", functionbuild.Name, buildName)
+	} else if build, err = c.reconcileBuild(ctx, functionbuild, build); err != nil {
+		logger.Errorf("Failed to reconcile FunctionBuild: %q failed to reconcile Build: %q; %v", functionbuild.Name, build, zap.Error(err))
 		return err
 	}
 
-	// Update our Status based on the state of our underlying InternalBuild.
-	functionbuild.Status.InternalBuildName = internalbuild.Name
-	functionbuild.Status.PropagateInternalBuildStatus(&internalbuild.Status)
+	// Update our Status based on the state of our underlying Build.
+	functionbuild.Status.BuildName = build.Name
+	functionbuild.Status.PropagateBuildStatus(&build.Status)
+	if functionbuild.Status.IsReady() {
+		// resolve image name
+		opt := k8schain.Options{
+			Namespace:          functionbuild.Namespace,
+			ServiceAccountName: build.Spec.ServiceAccountName,
+		}
+		// TODO load from a configmap
+		skipRegistries := sets.NewString()
+		skipRegistries.Insert("ko.local")
+		skipRegistries.Insert("dev.local")
+		digest, err := c.resolver.Resolve(functionbuild.Spec.Image, opt, skipRegistries)
+		if err != nil {
+			functionbuild.Status.MarkImageMissing(fmt.Sprintf("Unable to fetch image %q: %s", functionbuild.Spec.Image, err.Error()))
+			return err
+		}
+		functionbuild.Status.LatestImage = digest
+	}
 
 	functionbuild.Status.ObservedGeneration = functionbuild.Generation
 
@@ -209,44 +287,94 @@ func (c *Reconciler) updateStatus(desired *buildv1alpha1.FunctionBuild) (*buildv
 	return fb, err
 }
 
-func (c *Reconciler) reconcileInternalBuild(ctx context.Context, functionbuild *buildv1alpha1.FunctionBuild, internalbuild *buildv1alpha1.InternalBuild) (*buildv1alpha1.InternalBuild, error) {
+func (c *Reconciler) reconcileBuildCache(ctx context.Context, functionbuild *buildv1alpha1.FunctionBuild, buildCache *corev1.PersistentVolumeClaim) (*corev1.PersistentVolumeClaim, error) {
 	logger := logging.FromContext(ctx)
-	desiredInternalbuild, err := resources.MakeInternalBuild(functionbuild)
+	desiredBuildCache, err := resources.MakeBuildCache(functionbuild)
 	if err != nil {
 		return nil, err
 	}
 
-	if buildSemanticEquals(desiredInternalbuild, internalbuild) {
+	if desiredBuildCache == nil {
+		// drop an existing buildCache
+		return nil, c.KubeClientSet.CoreV1().PersistentVolumeClaims(functionbuild.Namespace).Delete(buildCache.Name, &metav1.DeleteOptions{
+			Preconditions: &metav1.Preconditions{UID: &buildCache.UID},
+		})
+	}
+
+	if buildCacheSemanticEquals(desiredBuildCache, buildCache) {
 		// No differences to reconcile.
-		return internalbuild, nil
+		return buildCache, nil
 	}
-	diff, err := kmp.SafeDiff(desiredInternalbuild.Spec, internalbuild.Spec)
+	diff, err := kmp.SafeDiff(desiredBuildCache.Spec, buildCache.Spec)
 	if err != nil {
-		return nil, fmt.Errorf("failed to diff InternalBuild: %v", err)
+		return nil, fmt.Errorf("failed to diff PersistentVolumeClaim: %v", err)
 	}
-	logger.Infof("Reconciling internalbuild diff (-desired, +observed): %s", diff)
+	logger.Infof("Reconciling build cache diff (-desired, +observed): %s", diff)
 
 	// Don't modify the informers copy.
-	existing := internalbuild.DeepCopy()
+	existing := buildCache.DeepCopy()
+	// Preserve the rest of the object (e.g. PersistentVolumeClaimSpec except for resources).
+	existing.Spec.Resources = desiredBuildCache.Spec.Resources
 	// Preserve the rest of the object (e.g. ObjectMeta except for labels).
-	existing.Spec = desiredInternalbuild.Spec
-	existing.ObjectMeta.Labels = desiredInternalbuild.ObjectMeta.Labels
-	return c.ProjectriffClientSet.BuildV1alpha1().InternalBuilds(functionbuild.Namespace).Update(existing)
+	existing.ObjectMeta.Labels = desiredBuildCache.ObjectMeta.Labels
+	return c.KubeClientSet.CoreV1().PersistentVolumeClaims(functionbuild.Namespace).Update(existing)
 }
 
-func (c *Reconciler) createInternalBuild(functionbuild *buildv1alpha1.FunctionBuild) (*buildv1alpha1.InternalBuild, error) {
-	internalbuild, err := resources.MakeInternalBuild(functionbuild)
+func (c *Reconciler) createBuildCache(functionbuild *buildv1alpha1.FunctionBuild) (*corev1.PersistentVolumeClaim, error) {
+	buildCache, err := resources.MakeBuildCache(functionbuild)
 	if err != nil {
 		return nil, err
 	}
-	if internalbuild == nil {
+	if buildCache == nil {
 		// nothing to create
-		return internalbuild, nil
+		return buildCache, nil
 	}
-	return c.ProjectriffClientSet.BuildV1alpha1().InternalBuilds(functionbuild.Namespace).Create(internalbuild)
+	return c.KubeClientSet.CoreV1().PersistentVolumeClaims(functionbuild.Namespace).Create(buildCache)
 }
 
-func buildSemanticEquals(desiredInternalbuild, internalbuild *buildv1alpha1.InternalBuild) bool {
-	return equality.Semantic.DeepEqual(desiredInternalbuild.Spec, internalbuild.Spec) &&
-		equality.Semantic.DeepEqual(desiredInternalbuild.ObjectMeta.Labels, internalbuild.ObjectMeta.Labels)
+func buildCacheSemanticEquals(desiredBuildCache, buildCache *corev1.PersistentVolumeClaim) bool {
+	return equality.Semantic.DeepEqual(desiredBuildCache.Spec.Resources, buildCache.Spec.Resources) &&
+		equality.Semantic.DeepEqual(desiredBuildCache.ObjectMeta.Labels, buildCache.ObjectMeta.Labels)
+}
+
+func (c *Reconciler) reconcileBuild(ctx context.Context, functionbuild *buildv1alpha1.FunctionBuild, build *knbuildv1alpha1.Build) (*knbuildv1alpha1.Build, error) {
+	logger := logging.FromContext(ctx)
+	desiredBuild, err := resources.MakeBuild(functionbuild)
+	if err != nil {
+		return nil, err
+	}
+
+	if buildSemanticEquals(desiredBuild, build) {
+		// No differences to reconcile.
+		return build, nil
+	}
+	diff, err := kmp.SafeDiff(desiredBuild.Spec, build.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("failed to diff Build: %v", err)
+	}
+	logger.Infof("Reconciling build diff (-desired, +observed): %s", diff)
+
+	// Don't modify the informers copy.
+	existing := build.DeepCopy()
+	// Preserve the rest of the object (e.g. ObjectMeta except for labels).
+	existing.Spec = desiredBuild.Spec
+	existing.ObjectMeta.Labels = desiredBuild.ObjectMeta.Labels
+	return c.KnBuildClientSet.BuildV1alpha1().Builds(functionbuild.Namespace).Update(existing)
+}
+
+func (c *Reconciler) createBuild(functionbuild *buildv1alpha1.FunctionBuild) (*knbuildv1alpha1.Build, error) {
+	build, err := resources.MakeBuild(functionbuild)
+	if err != nil {
+		return nil, err
+	}
+	if build == nil {
+		// nothing to create
+		return build, nil
+	}
+	return c.KnBuildClientSet.BuildV1alpha1().Builds(functionbuild.Namespace).Create(build)
+}
+
+func buildSemanticEquals(desiredBuild, build *knbuildv1alpha1.Build) bool {
+	return equality.Semantic.DeepEqual(desiredBuild.Spec, build.Spec) &&
+		equality.Semantic.DeepEqual(desiredBuild.ObjectMeta.Labels, build.ObjectMeta.Labels)
 }

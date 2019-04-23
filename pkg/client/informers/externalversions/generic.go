@@ -55,8 +55,6 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Build().V1alpha1().ApplicationBuilds().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("functionbuilds"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Build().V1alpha1().FunctionBuilds().Informer()}, nil
-	case v1alpha1.SchemeGroupVersion.WithResource("internalbuilds"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Build().V1alpha1().InternalBuilds().Informer()}, nil
 
 		// Group=projectriff.io, Version=v1alpha1
 	case projectriff_v1alpha1.SchemeGroupVersion.WithResource("applications"):

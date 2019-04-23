@@ -20,32 +20,35 @@ import (
 	"github.com/knative/pkg/kmeta"
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/functionbuild/resources/names"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// MakeInternalBuild creates a InternalBuild from an FunctionBuild object.
-func MakeInternalBuild(fb *buildv1alpha1.FunctionBuild) (*buildv1alpha1.InternalBuild, error) {
-	ib := &buildv1alpha1.InternalBuild{
+// MakeBuildCache creates a PersistentVolumeClaim from an FunctionBuild object.
+func MakeBuildCache(fb *buildv1alpha1.FunctionBuild) (*corev1.PersistentVolumeClaim, error) {
+	if fb.Spec.CacheSize == nil {
+		// no cache was requested
+		return nil, nil
+	}
+
+	pvc := &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      names.InternalBuild(fb),
+			Name:      names.BuildCache(fb),
 			Namespace: fb.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
 				*kmeta.NewControllerRef(fb),
 			},
 			Labels: makeLabels(fb),
 		},
-		Spec: buildv1alpha1.InternalBuildSpec{
-			Image:     fb.Spec.Image,
-			CacheSize: fb.Spec.CacheSize,
-			Template:  "riff-cnb",
-			Source:    fb.Spec.Source,
-			Arguments: []buildv1alpha1.BuildArgument{
-				{Name: "FUNCTION_ARTIFACT", Value: fb.Spec.Artifact},
-				{Name: "FUNCTION_HANDLER", Value: fb.Spec.Handler},
-				{Name: "FUNCTION_LANGUAGE", Value: fb.Spec.Invoker},
+		Spec: corev1.PersistentVolumeClaimSpec{
+			AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+			Resources: corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceStorage: *fb.Spec.CacheSize,
+				},
 			},
 		},
 	}
 
-	return ib, nil
+	return pvc, nil
 }

@@ -18,5 +18,3 @@ package v1alpha1
 type ApplicationBuildExpansion interface{}
 
 type FunctionBuildExpansion interface{}
-
-type InternalBuildExpansion interface{}
