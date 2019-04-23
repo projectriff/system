@@ -1,0 +1,12 @@
+apiVersion: build.projectriff.io/v1alpha1
+kind: FunctionBuild
+metadata:
+  name: square
+spec:
+  image: gcr.io/cf-sandbox-sandrews/square
+  cacheSize: 8Gi
+  source:
+    git:
+      url: https://github.com/projectriff/fats.git
+      revision: master
+    subPath: functions/uppercase/node

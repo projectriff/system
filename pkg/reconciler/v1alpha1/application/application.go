@@ -408,7 +408,7 @@ func (c *Reconciler) reconcileBuild(ctx context.Context, application *projectrif
 	// Preserve the rest of the object (e.g. ObjectMeta except for labels).
 	existing.Spec = desiredBuild.Spec
 	existing.ObjectMeta.Labels = desiredBuild.ObjectMeta.Labels
-	return c.BuildClientSet.BuildV1alpha1().Builds(application.Namespace).Update(existing)
+	return c.KnBuildClientSet.BuildV1alpha1().Builds(application.Namespace).Update(existing)
 }
 
 func (c *Reconciler) createBuild(application *projectriffv1alpha1.Application) (*buildv1alpha1.Build, error) {
@@ -420,7 +420,7 @@ func (c *Reconciler) createBuild(application *projectriffv1alpha1.Application) (
 		// nothing to create
 		return build, nil
 	}
-	return c.BuildClientSet.BuildV1alpha1().Builds(application.Namespace).Create(build)
+	return c.KnBuildClientSet.BuildV1alpha1().Builds(application.Namespace).Create(build)
 }
 
 func buildSemanticEquals(desiredBuild, build *buildv1alpha1.Build) bool {
@@ -450,7 +450,7 @@ func (c *Reconciler) reconcileConfiguration(ctx context.Context, application *pr
 	// Preserve the rest of the object (e.g. ObjectMeta except for labels).
 	existing.Spec = desiredConfiguration.Spec
 	existing.ObjectMeta.Labels = desiredConfiguration.ObjectMeta.Labels
-	return c.ServingClientSet.ServingV1alpha1().Configurations(application.Namespace).Update(existing)
+	return c.KnServingClientSet.ServingV1alpha1().Configurations(application.Namespace).Update(existing)
 }
 
 func (c *Reconciler) createConfiguration(application *projectriffv1alpha1.Application) (*servingv1alpha1.Configuration, error) {
@@ -458,7 +458,7 @@ func (c *Reconciler) createConfiguration(application *projectriffv1alpha1.Applic
 	if err != nil {
 		return nil, err
 	}
-	return c.ServingClientSet.ServingV1alpha1().Configurations(application.Namespace).Create(configuration)
+	return c.KnServingClientSet.ServingV1alpha1().Configurations(application.Namespace).Create(configuration)
 }
 
 func configurationSemanticEquals(desiredConfiguration, configuration *servingv1alpha1.Configuration) bool {
@@ -488,7 +488,7 @@ func (c *Reconciler) reconcileRoute(ctx context.Context, application *projectrif
 	// Preserve the rest of the object (e.g. ObjectMeta except for labels).
 	existing.Spec = desiredRoute.Spec
 	existing.ObjectMeta.Labels = desiredRoute.ObjectMeta.Labels
-	return c.ServingClientSet.ServingV1alpha1().Routes(application.Namespace).Update(existing)
+	return c.KnServingClientSet.ServingV1alpha1().Routes(application.Namespace).Update(existing)
 }
 
 func (c *Reconciler) createRoute(application *projectriffv1alpha1.Application) (*servingv1alpha1.Route, error) {
@@ -496,7 +496,7 @@ func (c *Reconciler) createRoute(application *projectriffv1alpha1.Application) (
 	if err != nil {
 		return nil, err
 	}
-	return c.ServingClientSet.ServingV1alpha1().Routes(application.Namespace).Create(route)
+	return c.KnServingClientSet.ServingV1alpha1().Routes(application.Namespace).Create(route)
 }
 
 func routeSemanticEquals(desiredRoute, route *servingv1alpha1.Route) bool {

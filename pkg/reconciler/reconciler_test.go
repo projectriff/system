@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	logtesting "github.com/knative/pkg/logging/testing"
-	fakeservingclientset "github.com/knative/serving/pkg/client/clientset/versioned/fake"
+	fakeknservingclientset "github.com/knative/serving/pkg/client/clientset/versioned/fake"
 	fakeprojectriffclientset "github.com/projectriff/system/pkg/client/clientset/versioned/fake"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 )
@@ -30,12 +30,12 @@ var reconcilerName = "test-reconciler"
 func TestNew(t *testing.T) {
 	kubeClient := fakekubeclientset.NewSimpleClientset()
 	projectriffClient := fakeprojectriffclientset.NewSimpleClientset()
-	servingClient := fakeservingclientset.NewSimpleClientset()
+	knservingClient := fakeknservingclientset.NewSimpleClientset()
 
 	r := NewBase(Options{
 		KubeClientSet:        kubeClient,
 		ProjectriffClientSet: projectriffClient,
-		ServingClientSet:     servingClient,
+		KnServingClientSet:   knservingClient,
 		Logger:               logtesting.TestLogger(t),
 	}, reconcilerName)
 
