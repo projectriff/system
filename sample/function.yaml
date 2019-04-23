@@ -1,18 +1,15 @@
 apiVersion: serving.knative.dev/v1alpha1
 kind: Service
 metadata:
-  name: square
+  name: uppercase
 spec:
   runLatest:
     configuration:
       build:
         apiVersion: build.projectriff.io/v1alpha1
         kind: FunctionBuild
-        metadata:
-          name: square
         spec:
-          image: gcr.io/cf-sandbox-sandrews/square
-          cacheSize: 8Gi
+          image: gcr.io/cf-sandbox-sandrews/uppercase
           source:
             git:
               url: https://github.com/projectriff/fats.git
@@ -21,4 +18,4 @@ spec:
       revisionTemplate:
         spec:
           container:
-            image: gcr.io/cf-sandbox-sandrews/square
+            image: gcr.io/cf-sandbox-sandrews/uppercase

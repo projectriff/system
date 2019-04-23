@@ -1,9 +1,9 @@
 apiVersion: build.projectriff.io/v1alpha1
 kind: FunctionBuild
 metadata:
-  name: square
+  name: uppercase
 spec:
-  image: gcr.io/cf-sandbox-sandrews/square
+  image: gcr.io/cf-sandbox-sandrews/uppercase
   cacheSize: 8Gi
   source:
     git:
