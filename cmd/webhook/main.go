@@ -31,7 +31,6 @@ import (
 	"github.com/knative/pkg/version"
 	"github.com/knative/pkg/webhook"
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
-	projectriffv1alpha1 "github.com/projectriff/system/pkg/apis/projectriff/v1alpha1"
 	"github.com/projectriff/system/pkg/logging"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
@@ -98,9 +97,6 @@ func main() {
 		Client:  kubeClient,
 		Options: options,
 		Handlers: map[schema.GroupVersionKind]webhook.GenericCRD{
-			projectriffv1alpha1.SchemeGroupVersion.WithKind("Application"): &projectriffv1alpha1.Application{},
-			projectriffv1alpha1.SchemeGroupVersion.WithKind("Function"):    &projectriffv1alpha1.Function{},
-
 			buildv1alpha1.SchemeGroupVersion.WithKind("ApplicationBuild"): &buildv1alpha1.ApplicationBuild{},
 			buildv1alpha1.SchemeGroupVersion.WithKind("FunctionBuild"):    &buildv1alpha1.FunctionBuild{},
 		},

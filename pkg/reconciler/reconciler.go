@@ -29,7 +29,6 @@ import (
 	knbuildclientset "github.com/knative/build/pkg/client/clientset/versioned"
 	"github.com/knative/pkg/configmap"
 	"github.com/knative/pkg/logging/logkey"
-	knservingclientset "github.com/knative/serving/pkg/client/clientset/versioned"
 	projectriffclientset "github.com/projectriff/system/pkg/client/clientset/versioned"
 	projectriffScheme "github.com/projectriff/system/pkg/client/clientset/versioned/scheme"
 )
@@ -41,7 +40,6 @@ type Options struct {
 	KubeClientSet        kubernetes.Interface
 	ProjectriffClientSet projectriffclientset.Interface
 	KnBuildClientSet     knbuildclientset.Interface
-	KnServingClientSet   knservingclientset.Interface
 	Recorder             record.EventRecorder
 
 	ConfigMapWatcher configmap.Watcher
@@ -69,9 +67,6 @@ type Base struct {
 
 	// KnBuildClientSet allows us to configure Build objects
 	KnBuildClientSet knbuildclientset.Interface
-
-	// KnServingClientSet allows us to configure Serving objects
-	KnServingClientSet knservingclientset.Interface
 
 	// ConfigMapWatcher allows us to watch for ConfigMap changes.
 	ConfigMapWatcher configmap.Watcher
@@ -109,7 +104,6 @@ func NewBase(opt Options, controllerAgentName string) *Base {
 		KubeClientSet:        opt.KubeClientSet,
 		ProjectriffClientSet: opt.ProjectriffClientSet,
 		KnBuildClientSet:     opt.KnBuildClientSet,
-		KnServingClientSet:   opt.KnServingClientSet,
 		ConfigMapWatcher:     opt.ConfigMapWatcher,
 		Recorder:             recorder,
 		Logger:               logger,
