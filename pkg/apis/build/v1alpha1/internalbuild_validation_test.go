@@ -137,6 +137,22 @@ func TestValidateInternalBuildSpec(t *testing.T) {
 			Template: "build-template",
 		},
 		want: apis.ErrMissingField("source"),
+	}, {
+		name: "validates arguments",
+		build: &InternalBuildSpec{
+			Image:    "test-image",
+			Template: "build-template",
+			Arguments: []BuildArgument{
+				{},
+			},
+			Source: Source{
+				Git: &GitSource{
+					URL:      "https://example.com/repo.git",
+					Revision: "master",
+				},
+			},
+		},
+		want: apis.ErrMissingField("arguments[0]"),
 	}} {
 		name := c.name
 		t.Run(name, func(t *testing.T) {
