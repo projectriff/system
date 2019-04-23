@@ -45,7 +45,7 @@ var (
 type InternalBuildSpec struct {
 	Image     string             `json:"image"`
 	CacheSize *resource.Quantity `json:"cacheSize,omitempty"`
-	Source    *Source            `json:"source,omitempty"`
+	Source    Source             `json:"source,omitempty"`
 	Template  string             `json:"template"`
 	Arguments []BuildArgument    `json:"arguments,omitempty"`
 }

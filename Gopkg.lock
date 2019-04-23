@@ -1226,7 +1226,6 @@
     "github.com/knative/pkg/system/testing",
     "github.com/knative/pkg/version",
     "github.com/knative/pkg/webhook",
-    "github.com/knative/serving/pkg/apis/config",
     "github.com/knative/serving/pkg/apis/serving/v1alpha1",
     "github.com/knative/serving/pkg/client/clientset/versioned",
     "github.com/knative/serving/pkg/client/clientset/versioned/fake",

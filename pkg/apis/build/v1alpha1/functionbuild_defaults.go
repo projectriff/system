@@ -23,5 +23,5 @@ func (fb *FunctionBuild) SetDefaults(ctx context.Context) {
 }
 
 func (fbs *FunctionBuildSpec) SetDefaults(ctx context.Context) {
-	// TODO
+	// nothing to do
 }

@@ -23,5 +23,5 @@ func (ab *ApplicationBuild) SetDefaults(ctx context.Context) {
 }
 
 func (abs *ApplicationBuildSpec) SetDefaults(ctx context.Context) {
-	// TODO
+	// nothing to do
 }

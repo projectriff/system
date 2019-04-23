@@ -23,5 +23,5 @@ func (ib *InternalBuild) SetDefaults(ctx context.Context) {
 }
 
 func (ibs *InternalBuildSpec) SetDefaults(ctx context.Context) {
-	// TODO
+	// nothing to do
 }

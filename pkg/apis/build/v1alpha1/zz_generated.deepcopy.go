@@ -100,15 +100,7 @@ func (in *ApplicationBuildSpec) DeepCopyInto(out *ApplicationBuildSpec) {
 			**out = (*in).DeepCopy()
 		}
 	}
-	if in.Source != nil {
-		in, out := &in.Source, &out.Source
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(Source)
-			(*in).DeepCopyInto(*out)
-		}
-	}
+	in.Source.DeepCopyInto(&out.Source)
 	return
 }
 
@@ -230,15 +222,7 @@ func (in *FunctionBuildSpec) DeepCopyInto(out *FunctionBuildSpec) {
 			**out = (*in).DeepCopy()
 		}
 	}
-	if in.Source != nil {
-		in, out := &in.Source, &out.Source
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(Source)
-			(*in).DeepCopyInto(*out)
-		}
-	}
+	in.Source.DeepCopyInto(&out.Source)
 	return
 }
 
@@ -360,15 +344,7 @@ func (in *InternalBuildSpec) DeepCopyInto(out *InternalBuildSpec) {
 			**out = (*in).DeepCopy()
 		}
 	}
-	if in.Source != nil {
-		in, out := &in.Source, &out.Source
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(Source)
-			(*in).DeepCopyInto(*out)
-		}
-	}
+	in.Source.DeepCopyInto(&out.Source)
 	if in.Arguments != nil {
 		in, out := &in.Arguments, &out.Arguments
 		*out = make([]BuildArgument, len(*in))

@@ -20,9 +20,28 @@ import (
 	"context"
 
 	"github.com/knative/pkg/apis"
+	"k8s.io/apimachinery/pkg/api/equality"
 )
 
 func (ab *ApplicationBuild) Validate(ctx context.Context) *apis.FieldError {
-	// TODO
-	return nil
+	errs := &apis.FieldError{}
+	errs = errs.Also(validateObjectMetadata(ab.GetObjectMeta()).ViaField("metadata"))
+	errs = errs.Also(ab.Spec.Validate(ctx).ViaField("spec"))
+	return errs
+}
+
+func (abs *ApplicationBuildSpec) Validate(ctx context.Context) *apis.FieldError {
+	if equality.Semantic.DeepEqual(abs, &ApplicationBuildSpec{}) {
+		return apis.ErrMissingField(apis.CurrentField)
+	}
+
+	errs := &apis.FieldError{}
+
+	if abs.Image == "" {
+		errs = errs.Also(apis.ErrMissingField("image"))
+	}
+
+	errs = errs.Also(abs.Source.Validate(ctx).ViaField("source"))
+
+	return errs
 }

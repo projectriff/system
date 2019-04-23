@@ -27,11 +27,6 @@ import (
 
 // MakeBuild creates a Build from an InternalBuild object.
 func MakeBuild(ib *buildv1alpha1.InternalBuild) (*knbuildv1alpha1.Build, error) {
-	if ib.Spec.Source == nil {
-		// no build was requested
-		return nil, nil
-	}
-
 	build := &knbuildv1alpha1.Build{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      names.Build(ib),

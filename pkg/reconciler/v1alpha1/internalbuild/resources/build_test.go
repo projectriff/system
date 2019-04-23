@@ -32,11 +32,9 @@ func TestBuild(t *testing.T) {
 	ib.Spec.Arguments = []buildv1alpha1.BuildArgument{
 		{Name: testBuildArgName, Value: testBuildArgValue},
 	}
-	ib.Spec.Source = &buildv1alpha1.Source{
-		Git: &buildv1alpha1.GitSource{
-			URL:      testGitURL,
-			Revision: testGitRevision,
-		},
+	ib.Spec.Source.Git = &buildv1alpha1.GitSource{
+		URL:      testGitURL,
+		Revision: testGitRevision,
 	}
 	ib.Status.BuildCacheName = testBuildCacheName
 

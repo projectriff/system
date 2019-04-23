@@ -30,11 +30,9 @@ func TestInternalBuild(t *testing.T) {
 	fb := createFunctionBuildMeta()
 	fb.Labels = map[string]string{testLabelKey: testLabelValue}
 	fb.Spec.Image = testImage
-	fb.Spec.Source = &buildv1alpha1.Source{
-		Git: &buildv1alpha1.GitSource{
-			URL:      testGitURL,
-			Revision: testGitRevision,
-		},
+	fb.Spec.Source.Git = &buildv1alpha1.GitSource{
+		URL:      testGitURL,
+		Revision: testGitRevision,
 	}
 	cacheSize := resource.MustParse(testBuildCacheSize)
 	fb.Spec.CacheSize = &cacheSize
