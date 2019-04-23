@@ -42,13 +42,11 @@ func (fbs *FunctionBuildStatus) InitializeConditions() {
 	functionbuildCondSet.Manage(fbs).InitializeConditions()
 }
 
-// TODO move into function reconciler
 func (fbs *FunctionBuildStatus) MarkInternalBuildNotOwned(name string) {
 	functionbuildCondSet.Manage(fbs).MarkFalse(FunctionBuildConditionInternalBuildSucceeded, "NotOwned",
 		fmt.Sprintf("There is an existing InternalBuild %q that we do not own.", name))
 }
 
-// TODO move into function reconciler
 func (fbs *FunctionBuildStatus) PropagateInternalBuildStatus(ibs *InternalBuildStatus) {
 	fbs.LatestImage = ibs.LatestImage
 

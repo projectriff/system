@@ -216,12 +216,6 @@ func (c *Reconciler) reconcileInternalBuild(ctx context.Context, functionbuild *
 		return nil, err
 	}
 
-	if desiredInternalbuild == nil {
-		// TODO drop a existing build
-		// return nil, c.buildClientSet.BuildV1alpha1().Builds(functionbuild.Namespace).Delete(build.Name)
-		return nil, nil
-	}
-
 	if buildSemanticEquals(desiredInternalbuild, internalbuild) {
 		// No differences to reconcile.
 		return internalbuild, nil

@@ -255,7 +255,7 @@ func (c *Reconciler) reconcile(ctx context.Context, internalbuild *buildv1alpha1
 	internalbuild.Status.BuildName = build.Name
 	internalbuild.Status.PropagateBuildStatus(&build.Status)
 	if internalbuild.Status.IsReady() {
-		// TODO resolve image name
+		// resolve image name
 		opt := k8schain.Options{
 			Namespace:          internalbuild.Namespace,
 			ServiceAccountName: build.Spec.ServiceAccountName,
@@ -355,12 +355,6 @@ func (c *Reconciler) reconcileBuild(ctx context.Context, internalbuild *buildv1a
 	desiredBuild, err := resources.MakeBuild(internalbuild)
 	if err != nil {
 		return nil, err
-	}
-
-	if build != nil && desiredBuild == nil {
-		// TODO drop a existing build
-		// return nil, c.buildClientSet.BuildV1alpha1().Builds(internalbuild.Namespace).Delete(build.Name)
-		return nil, nil
 	}
 
 	if buildSemanticEquals(desiredBuild, build) {
