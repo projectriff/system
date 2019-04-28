@@ -17,6 +17,7 @@ package versioned
 
 import (
 	buildv1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/build/v1alpha1"
+	runv1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/run/v1alpha1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
@@ -27,6 +28,9 @@ type Interface interface {
 	BuildV1alpha1() buildv1alpha1.BuildV1alpha1Interface
 	// Deprecated: please explicitly pick a version if possible.
 	Build() buildv1alpha1.BuildV1alpha1Interface
+	RunV1alpha1() runv1alpha1.RunV1alpha1Interface
+	// Deprecated: please explicitly pick a version if possible.
+	Run() runv1alpha1.RunV1alpha1Interface
 }
 
 // Clientset contains the clients for groups. Each group has exactly one
@@ -34,6 +38,7 @@ type Interface interface {
 type Clientset struct {
 	*discovery.DiscoveryClient
 	buildV1alpha1 *buildv1alpha1.BuildV1alpha1Client
+	runV1alpha1   *runv1alpha1.RunV1alpha1Client
 }
 
 // BuildV1alpha1 retrieves the BuildV1alpha1Client
@@ -45,6 +50,17 @@ func (c *Clientset) BuildV1alpha1() buildv1alpha1.BuildV1alpha1Interface {
 // Please explicitly pick a version.
 func (c *Clientset) Build() buildv1alpha1.BuildV1alpha1Interface {
 	return c.buildV1alpha1
+}
+
+// RunV1alpha1 retrieves the RunV1alpha1Client
+func (c *Clientset) RunV1alpha1() runv1alpha1.RunV1alpha1Interface {
+	return c.runV1alpha1
+}
+
+// Deprecated: Run retrieves the default version of RunClient.
+// Please explicitly pick a version.
+func (c *Clientset) Run() runv1alpha1.RunV1alpha1Interface {
+	return c.runV1alpha1
 }
 
 // Discovery retrieves the DiscoveryClient
@@ -67,6 +83,10 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	if err != nil {
 		return nil, err
 	}
+	cs.runV1alpha1, err = runv1alpha1.NewForConfig(&configShallowCopy)
+	if err != nil {
+		return nil, err
+	}
 
 	cs.DiscoveryClient, err = discovery.NewDiscoveryClientForConfig(&configShallowCopy)
 	if err != nil {
@@ -80,6 +100,7 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 func NewForConfigOrDie(c *rest.Config) *Clientset {
 	var cs Clientset
 	cs.buildV1alpha1 = buildv1alpha1.NewForConfigOrDie(c)
+	cs.runV1alpha1 = runv1alpha1.NewForConfigOrDie(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClientForConfigOrDie(c)
 	return &cs
@@ -89,6 +110,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
 	cs.buildV1alpha1 = buildv1alpha1.New(c)
+	cs.runV1alpha1 = runv1alpha1.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
 	return &cs

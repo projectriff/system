@@ -19,6 +19,8 @@ import (
 	clientset "github.com/projectriff/system/pkg/client/clientset/versioned"
 	buildv1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/build/v1alpha1"
 	fakebuildv1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/build/v1alpha1/fake"
+	runv1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/run/v1alpha1"
+	fakerunv1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/run/v1alpha1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -76,4 +78,14 @@ func (c *Clientset) BuildV1alpha1() buildv1alpha1.BuildV1alpha1Interface {
 // Build retrieves the BuildV1alpha1Client
 func (c *Clientset) Build() buildv1alpha1.BuildV1alpha1Interface {
 	return &fakebuildv1alpha1.FakeBuildV1alpha1{Fake: &c.Fake}
+}
+
+// RunV1alpha1 retrieves the RunV1alpha1Client
+func (c *Clientset) RunV1alpha1() runv1alpha1.RunV1alpha1Interface {
+	return &fakerunv1alpha1.FakeRunV1alpha1{Fake: &c.Fake}
+}
+
+// Run retrieves the RunV1alpha1Client
+func (c *Clientset) Run() runv1alpha1.RunV1alpha1Interface {
+	return &fakerunv1alpha1.FakeRunV1alpha1{Fake: &c.Fake}
 }

@@ -388,6 +388,38 @@
   revision = "916205998db9d085aaff357221b208bc89290ea5"
 
 [[projects]]
+  digest = "1:591bceb4cd3eda954c954d31787d1946811d173c8c6593932e2a313c9b4e29fb"
+  name = "github.com/knative/serving"
+  packages = [
+    "pkg/apis/autoscaling",
+    "pkg/apis/autoscaling/v1alpha1",
+    "pkg/apis/config",
+    "pkg/apis/networking",
+    "pkg/apis/networking/v1alpha1",
+    "pkg/apis/serving",
+    "pkg/apis/serving/v1alpha1",
+    "pkg/client/clientset/versioned",
+    "pkg/client/clientset/versioned/scheme",
+    "pkg/client/clientset/versioned/typed/autoscaling/v1alpha1",
+    "pkg/client/clientset/versioned/typed/networking/v1alpha1",
+    "pkg/client/clientset/versioned/typed/serving/v1alpha1",
+    "pkg/client/informers/externalversions",
+    "pkg/client/informers/externalversions/autoscaling",
+    "pkg/client/informers/externalversions/autoscaling/v1alpha1",
+    "pkg/client/informers/externalversions/internalinterfaces",
+    "pkg/client/informers/externalversions/networking",
+    "pkg/client/informers/externalversions/networking/v1alpha1",
+    "pkg/client/informers/externalversions/serving",
+    "pkg/client/informers/externalversions/serving/v1alpha1",
+    "pkg/client/listers/autoscaling/v1alpha1",
+    "pkg/client/listers/networking/v1alpha1",
+    "pkg/client/listers/serving/v1alpha1",
+  ]
+  pruneopts = "NUT"
+  revision = "98e0f5a999ba0f69c1909a676078a22e9b8b13b9"
+  version = "v0.5.2"
+
+[[projects]]
   branch = "master"
   digest = "1:46d262ac970f088a549c3076754e87876d13b69987f27ce8842310336c4099cc"
   name = "github.com/knative/test-infra"
@@ -844,16 +876,18 @@
   version = "kubernetes-1.11.3"
 
 [[projects]]
-  digest = "1:e430de0896db98fb93a75f45ace427a4b6d09028777498b7c6a25d33866efdd6"
+  digest = "1:d959c77ff8fbed0e1ccc5d34f9e62775fcf85f265bebb0eddfc1786c4395b4b3"
   name = "k8s.io/apimachinery"
   packages = [
     "pkg/api/equality",
     "pkg/api/errors",
     "pkg/api/meta",
     "pkg/api/resource",
+    "pkg/api/validation",
     "pkg/apis/meta/internalversion",
     "pkg/apis/meta/v1",
     "pkg/apis/meta/v1/unstructured",
+    "pkg/apis/meta/v1/validation",
     "pkg/apis/meta/v1beta1",
     "pkg/conversion",
     "pkg/conversion/queryparams",
@@ -1180,6 +1214,11 @@
     "github.com/knative/pkg/system/testing",
     "github.com/knative/pkg/version",
     "github.com/knative/pkg/webhook",
+    "github.com/knative/serving/pkg/apis/serving/v1alpha1",
+    "github.com/knative/serving/pkg/client/clientset/versioned",
+    "github.com/knative/serving/pkg/client/informers/externalversions",
+    "github.com/knative/serving/pkg/client/informers/externalversions/serving/v1alpha1",
+    "github.com/knative/serving/pkg/client/listers/serving/v1alpha1",
     "github.com/knative/test-infra/scripts",
     "github.com/knative/test-infra/tools/dep-collector",
     "go.uber.org/zap",

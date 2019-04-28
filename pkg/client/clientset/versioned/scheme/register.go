@@ -17,6 +17,7 @@ package scheme
 
 import (
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
+	runv1alpha1 "github.com/projectriff/system/pkg/apis/run/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -48,4 +49,5 @@ func init() {
 // correctly.
 func AddToScheme(scheme *runtime.Scheme) {
 	buildv1alpha1.AddToScheme(scheme)
+	runv1alpha1.AddToScheme(scheme)
 }
