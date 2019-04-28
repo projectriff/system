@@ -24,8 +24,8 @@ import (
 
 type BuildV1alpha1Interface interface {
 	RESTClient() rest.Interface
-	ApplicationBuildsGetter
-	FunctionBuildsGetter
+	ApplicationsGetter
+	FunctionsGetter
 }
 
 // BuildV1alpha1Client is used to interact with features provided by the build.projectriff.io group.
@@ -33,12 +33,12 @@ type BuildV1alpha1Client struct {
 	restClient rest.Interface
 }
 
-func (c *BuildV1alpha1Client) ApplicationBuilds(namespace string) ApplicationBuildInterface {
-	return newApplicationBuilds(c, namespace)
+func (c *BuildV1alpha1Client) Applications(namespace string) ApplicationInterface {
+	return newApplications(c, namespace)
 }
 
-func (c *BuildV1alpha1Client) FunctionBuilds(namespace string) FunctionBuildInterface {
-	return newFunctionBuilds(c, namespace)
+func (c *BuildV1alpha1Client) Functions(namespace string) FunctionInterface {
+	return newFunctions(c, namespace)
 }
 
 // NewForConfig creates a new BuildV1alpha1Client for the given config.

@@ -15,6 +15,6 @@
  */
 package v1alpha1
 
-type ApplicationBuildExpansion interface{}
+type ApplicationExpansion interface{}
 
-type FunctionBuildExpansion interface{}
+type FunctionExpansion interface{}

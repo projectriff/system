@@ -12,14 +12,16 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
-package build
+package v1alpha1
 
-const (
-	GroupName = "build.projectriff.io"
+import "context"
 
-	ApplicationLabelKey = GroupName + "/application"
-	FunctionLabelKey    = GroupName + "/function"
-)
+func (f *Function) SetDefaults(ctx context.Context) {
+	f.Spec.SetDefaults(ctx)
+}
+
+func (fs *FunctionSpec) SetDefaults(ctx context.Context) {
+	// nothing to do
+}

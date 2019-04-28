@@ -51,10 +51,10 @@ func (f *genericInformer) Lister() cache.GenericLister {
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
 	// Group=build.projectriff.io, Version=v1alpha1
-	case v1alpha1.SchemeGroupVersion.WithResource("applicationbuilds"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Build().V1alpha1().ApplicationBuilds().Informer()}, nil
-	case v1alpha1.SchemeGroupVersion.WithResource("functionbuilds"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Build().V1alpha1().FunctionBuilds().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("applications"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Build().V1alpha1().Applications().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("functions"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Build().V1alpha1().Functions().Informer()}, nil
 
 		// Group=run.projectriff.io, Version=v1alpha1
 	case run_v1alpha1.SchemeGroupVersion.WithResource("requestprocessors"):

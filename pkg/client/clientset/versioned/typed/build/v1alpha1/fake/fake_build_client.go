@@ -25,12 +25,12 @@ type FakeBuildV1alpha1 struct {
 	*testing.Fake
 }
 
-func (c *FakeBuildV1alpha1) ApplicationBuilds(namespace string) v1alpha1.ApplicationBuildInterface {
-	return &FakeApplicationBuilds{c, namespace}
+func (c *FakeBuildV1alpha1) Applications(namespace string) v1alpha1.ApplicationInterface {
+	return &FakeApplications{c, namespace}
 }
 
-func (c *FakeBuildV1alpha1) FunctionBuilds(namespace string) v1alpha1.FunctionBuildInterface {
-	return &FakeFunctionBuilds{c, namespace}
+func (c *FakeBuildV1alpha1) Functions(namespace string) v1alpha1.FunctionInterface {
+	return &FakeFunctions{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

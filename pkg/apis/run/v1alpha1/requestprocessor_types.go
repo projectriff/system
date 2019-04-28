@@ -53,10 +53,10 @@ type RequestProcessorSpecItem struct {
 }
 
 type Build struct {
-	Application    *buildv1alpha1.ApplicationBuildSpec `json:"application,omitempty"`
-	ApplicationRef string                              `json:"applicationRef,omitempty"`
-	Function       *buildv1alpha1.FunctionBuildSpec    `json:"function,omitempty"`
-	FunctionRef    string                              `json:"functionRef,omitempty"`
+	Application    *buildv1alpha1.ApplicationSpec `json:"application,omitempty"`
+	ApplicationRef string                         `json:"applicationRef,omitempty"`
+	Function       *buildv1alpha1.FunctionSpec    `json:"function,omitempty"`
+	FunctionRef    string                         `json:"functionRef,omitempty"`
 }
 
 type RequestProcessorStatus struct {

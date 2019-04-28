@@ -66,8 +66,8 @@ type Reconciler struct {
 	requestprocessorLister runlisters.RequestProcessorLister
 	knconfigurationLister  knservinglisters.ConfigurationLister
 	knrouteLister          knservinglisters.RouteLister
-	applicationbuildLister buildlisters.ApplicationBuildLister
-	functionbuildLister    buildlisters.FunctionBuildLister
+	applicationLister      buildlisters.ApplicationLister
+	functionLister         buildlisters.FunctionLister
 
 	resolver digest.Resolver
 }
@@ -82,8 +82,8 @@ func NewController(
 	requestprocessorInformer runinformers.RequestProcessorInformer,
 	knconfigurationInformer knservinginformers.ConfigurationInformer,
 	knrouteInformer knservinginformers.RouteInformer,
-	applicationbuildInformer buildinformers.ApplicationBuildInformer,
-	functionbuildInformer buildinformers.FunctionBuildInformer,
+	applicationInformer buildinformers.ApplicationInformer,
+	functionInformer buildinformers.FunctionInformer,
 ) *controller.Impl {
 
 	c := &Reconciler{
@@ -91,8 +91,8 @@ func NewController(
 		requestprocessorLister: requestprocessorInformer.Lister(),
 		knconfigurationLister:  knconfigurationInformer.Lister(),
 		knrouteLister:          knrouteInformer.Lister(),
-		applicationbuildLister: applicationbuildInformer.Lister(),
-		functionbuildLister:    functionbuildInformer.Lister(),
+		applicationLister:      applicationInformer.Lister(),
+		functionLister:         functionInformer.Lister(),
 
 		resolver: digest.NewDefaultResolver(opt),
 	}
@@ -122,7 +122,7 @@ func NewController(
 		},
 	})
 
-	applicationbuildInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+	applicationInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(runv1alpha1.SchemeGroupVersion.WithKind("RequestProcessor")),
 		Handler: cache.ResourceEventHandlerFuncs{
 			AddFunc:    impl.EnqueueControllerOf,
@@ -130,7 +130,7 @@ func NewController(
 			DeleteFunc: impl.EnqueueControllerOf,
 		},
 	})
-	functionbuildInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+	functionInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(runv1alpha1.SchemeGroupVersion.WithKind("RequestProcessor")),
 		Handler: cache.ResourceEventHandlerFuncs{
 			AddFunc:    impl.EnqueueControllerOf,
@@ -140,12 +140,12 @@ func NewController(
 	})
 
 	// watch for resource that may be referenced by a RequestProcessor
-	applicationbuildInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	applicationInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    enqueueLabelOfResources(impl, run.RequestProcessorLabelKey, c.Logger),
 		UpdateFunc: controller.PassNew(enqueueLabelOfResources(impl, run.RequestProcessorLabelKey, c.Logger)),
 		DeleteFunc: enqueueLabelOfResources(impl, run.RequestProcessorLabelKey, c.Logger),
 	})
-	functionbuildInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	functionInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    enqueueLabelOfResources(impl, run.RequestProcessorLabelKey, c.Logger),
 		UpdateFunc: controller.PassNew(enqueueLabelOfResources(impl, run.RequestProcessorLabelKey, c.Logger)),
 		DeleteFunc: enqueueLabelOfResources(impl, run.RequestProcessorLabelKey, c.Logger),
@@ -339,67 +339,67 @@ func (c *Reconciler) reconcileBuilds(ctx context.Context, requestprocessor *runv
 			continue
 		}
 		switch buildRef.Kind {
-		case "ApplicationBuild":
-			applicationbuild, err := c.applicationbuildLister.ApplicationBuilds(requestprocessor.Namespace).Get(buildRef.Name)
+		case "Application":
+			application, err := c.applicationLister.Applications(requestprocessor.Namespace).Get(buildRef.Name)
 			if errors.IsNotFound(err) {
 				// can't delete something that doesn't exist
 				continue
 			} else if err != nil {
-				logger.Errorf("Failed to reconcile RequestProcessor: %q failed to Get ApplicationBuild: %q; %v", requestprocessor.Name, buildRef.Name, zap.Error(err))
+				logger.Errorf("Failed to reconcile RequestProcessor: %q failed to Get Application: %q; %v", requestprocessor.Name, buildRef.Name, zap.Error(err))
 				return nil, err
-			} else if !metav1.IsControlledBy(applicationbuild, requestprocessor) {
-				if applicationbuild.UID == buildRef.UID {
+			} else if !metav1.IsControlledBy(application, requestprocessor) {
+				if application.UID == buildRef.UID {
 					// remove reference label
-					applicationbuild = applicationbuild.DeepCopy()
-					applicationbuild.Labels[run.RequestProcessorLabelKey] = deleteToken(applicationbuild.Labels[run.RequestProcessorLabelKey], requestprocessor.Name)
-					if applicationbuild.Labels[run.RequestProcessorLabelKey] == "" {
-						delete(applicationbuild.Labels, run.RequestProcessorLabelKey)
+					application = application.DeepCopy()
+					application.Labels[run.RequestProcessorLabelKey] = deleteToken(application.Labels[run.RequestProcessorLabelKey], requestprocessor.Name)
+					if application.Labels[run.RequestProcessorLabelKey] == "" {
+						delete(application.Labels, run.RequestProcessorLabelKey)
 					}
-					if _, err := c.ProjectriffClientSet.BuildV1alpha1().ApplicationBuilds(requestprocessor.Namespace).Update(applicationbuild); err != nil {
+					if _, err := c.ProjectriffClientSet.BuildV1alpha1().Applications(requestprocessor.Namespace).Update(application); err != nil {
 						return nil, err
 					}
 				}
 				// it's not ours, don't delete it
 				continue
 			}
-			if err := c.ProjectriffClientSet.BuildV1alpha1().ApplicationBuilds(requestprocessor.Namespace).Delete(buildRef.Name, &metav1.DeleteOptions{
+			if err := c.ProjectriffClientSet.BuildV1alpha1().Applications(requestprocessor.Namespace).Delete(buildRef.Name, &metav1.DeleteOptions{
 				Preconditions: &metav1.Preconditions{UID: &buildRef.UID},
 			}); err != nil {
-				logger.Errorf("Failed to reconcile RequestProcessor: %q failed to delete orphaned ApplicationBuild: %q; %v", requestprocessor.Name, applicationbuild, zap.Error(err))
+				logger.Errorf("Failed to reconcile RequestProcessor: %q failed to delete orphaned Application: %q; %v", requestprocessor.Name, application, zap.Error(err))
 				return nil, err
 			}
-			c.Recorder.Eventf(requestprocessor, corev1.EventTypeNormal, "Deleted", "Deleted ApplicationBuild %q", buildRef.Name)
+			c.Recorder.Eventf(requestprocessor, corev1.EventTypeNormal, "Deleted", "Deleted Application %q", buildRef.Name)
 
-		case "FunctionBuild":
-			functionbuild, err := c.functionbuildLister.FunctionBuilds(requestprocessor.Namespace).Get(buildRef.Name)
+		case "Function":
+			function, err := c.functionLister.Functions(requestprocessor.Namespace).Get(buildRef.Name)
 			if errors.IsNotFound(err) {
 				// can't delete something that doesn't exist
 				continue
 			} else if err != nil {
-				logger.Errorf("Failed to reconcile RequestProcessor: %q failed to Get FunctionBuild: %q; %v", requestprocessor.Name, buildRef.Name, zap.Error(err))
+				logger.Errorf("Failed to reconcile RequestProcessor: %q failed to Get Function: %q; %v", requestprocessor.Name, buildRef.Name, zap.Error(err))
 				return nil, err
-			} else if !metav1.IsControlledBy(functionbuild, requestprocessor) {
-				if functionbuild.UID == buildRef.UID {
+			} else if !metav1.IsControlledBy(function, requestprocessor) {
+				if function.UID == buildRef.UID {
 					// remove reference label
-					functionbuild = functionbuild.DeepCopy()
-					functionbuild.Labels[run.RequestProcessorLabelKey] = deleteToken(functionbuild.Labels[run.RequestProcessorLabelKey], requestprocessor.Name)
-					if functionbuild.Labels[run.RequestProcessorLabelKey] == "" {
-						delete(functionbuild.Labels, run.RequestProcessorLabelKey)
+					function = function.DeepCopy()
+					function.Labels[run.RequestProcessorLabelKey] = deleteToken(function.Labels[run.RequestProcessorLabelKey], requestprocessor.Name)
+					if function.Labels[run.RequestProcessorLabelKey] == "" {
+						delete(function.Labels, run.RequestProcessorLabelKey)
 					}
-					if _, err := c.ProjectriffClientSet.BuildV1alpha1().FunctionBuilds(requestprocessor.Namespace).Update(functionbuild); err != nil {
+					if _, err := c.ProjectriffClientSet.BuildV1alpha1().Functions(requestprocessor.Namespace).Update(function); err != nil {
 						return nil, err
 					}
 				}
 				// it's not ours, don't delete it
 				continue
 			}
-			if err := c.ProjectriffClientSet.BuildV1alpha1().FunctionBuilds(requestprocessor.Namespace).Delete(buildRef.Name, &metav1.DeleteOptions{
+			if err := c.ProjectriffClientSet.BuildV1alpha1().Functions(requestprocessor.Namespace).Delete(buildRef.Name, &metav1.DeleteOptions{
 				Preconditions: &metav1.Preconditions{UID: &buildRef.UID},
 			}); err != nil {
-				logger.Errorf("Failed to reconcile RequestProcessor: %q failed to delete orphaned FunctionBuild: %q; %v", requestprocessor.Name, functionbuild, zap.Error(err))
+				logger.Errorf("Failed to reconcile RequestProcessor: %q failed to delete orphaned Function: %q; %v", requestprocessor.Name, function, zap.Error(err))
 				return nil, err
 			}
-			c.Recorder.Eventf(requestprocessor, corev1.EventTypeNormal, "Deleted", "Deleted FunctionBuild %q", buildRef.Name)
+			c.Recorder.Eventf(requestprocessor, corev1.EventTypeNormal, "Deleted", "Deleted Function %q", buildRef.Name)
 
 		default:
 			requestprocessor.Status.MarkBuildsFailed("Kind", fmt.Sprintf("Unknown build of kind %q", buildRef.Kind))
@@ -416,161 +416,161 @@ func (c *Reconciler) reconcileBuild(ctx context.Context, requestprocessor *runv1
 	build := requestprocessor.Spec[i].Build
 	switch {
 	case build.Application != nil:
-		applicationbuildName := resourcenames.TagOrIndex(requestprocessor, i)
-		applicationbuild, err := c.applicationbuildLister.ApplicationBuilds(requestprocessor.Namespace).Get(applicationbuildName)
+		applicationName := resourcenames.TagOrIndex(requestprocessor, i)
+		application, err := c.applicationLister.Applications(requestprocessor.Namespace).Get(applicationName)
 		if errors.IsNotFound(err) {
-			applicationbuild, err = c.createApplicationBuild(requestprocessor, i)
+			application, err = c.createApplication(requestprocessor, i)
 			if err != nil {
-				logger.Errorf("Failed to create ApplicationBuild %q: %v", applicationbuildName, err)
-				c.Recorder.Eventf(requestprocessor, corev1.EventTypeWarning, "CreationFailed", "Failed to create ApplicationBuild %q: %v", applicationbuildName, err)
+				logger.Errorf("Failed to create Application %q: %v", applicationName, err)
+				c.Recorder.Eventf(requestprocessor, corev1.EventTypeWarning, "CreationFailed", "Failed to create Application %q: %v", applicationName, err)
 				return nil, err
 			}
-			if applicationbuild != nil {
-				c.Recorder.Eventf(requestprocessor, corev1.EventTypeNormal, "Created", "Created ApplicationBuild %q", applicationbuildName)
+			if application != nil {
+				c.Recorder.Eventf(requestprocessor, corev1.EventTypeNormal, "Created", "Created Application %q", applicationName)
 			}
 		} else if err != nil {
-			logger.Errorf("Failed to reconcile RequestProcessor: %q failed to Get ApplicationBuild: %q; %v", requestprocessor.Name, applicationbuildName, zap.Error(err))
+			logger.Errorf("Failed to reconcile RequestProcessor: %q failed to Get Application: %q; %v", requestprocessor.Name, applicationName, zap.Error(err))
 			return nil, err
-		} else if !metav1.IsControlledBy(applicationbuild, requestprocessor) {
-			// Surface an error in the applicationbuild's status,and return an error.
-			requestprocessor.Status.MarkBuildNotOwned(applicationbuild.Kind, applicationbuild.Name)
-			return nil, fmt.Errorf("RequestProcessor: %q does not own ApplicationBuild: %q", requestprocessor.Name, applicationbuildName)
-		} else if applicationbuild, err = c.reconcileApplicationBuild(ctx, requestprocessor, i, applicationbuild); err != nil {
-			logger.Errorf("Failed to reconcile RequestProcessor: %q failed to reconcile ApplicationBuild: %q; %v", requestprocessor.Name, applicationbuild.Name, zap.Error(err))
+		} else if !metav1.IsControlledBy(application, requestprocessor) {
+			// Surface an error in the application's status,and return an error.
+			requestprocessor.Status.MarkBuildNotOwned(application.Kind, application.Name)
+			return nil, fmt.Errorf("RequestProcessor: %q does not own Application: %q", requestprocessor.Name, applicationName)
+		} else if application, err = c.reconcileApplication(ctx, requestprocessor, i, application); err != nil {
+			logger.Errorf("Failed to reconcile RequestProcessor: %q failed to reconcile Application: %q; %v", requestprocessor.Name, application.Name, zap.Error(err))
 			return nil, err
 		}
-		return applicationbuild, nil
+		return application, nil
 
 	case build.ApplicationRef != "":
-		applicationbuild, err := c.applicationbuildLister.ApplicationBuilds(requestprocessor.Namespace).Get(build.ApplicationRef)
+		application, err := c.applicationLister.Applications(requestprocessor.Namespace).Get(build.ApplicationRef)
 		if err != nil {
 			return nil, err
 		}
-		applicationbuild = applicationbuild.DeepCopy()
-		applicationbuild.Labels[run.RequestProcessorLabelKey] = insertToken(applicationbuild.Labels[run.RequestProcessorLabelKey], requestprocessor.Name)
-		return c.ProjectriffClientSet.BuildV1alpha1().ApplicationBuilds(requestprocessor.Namespace).Update(applicationbuild)
+		application = application.DeepCopy()
+		application.Labels[run.RequestProcessorLabelKey] = insertToken(application.Labels[run.RequestProcessorLabelKey], requestprocessor.Name)
+		return c.ProjectriffClientSet.BuildV1alpha1().Applications(requestprocessor.Namespace).Update(application)
 
 	case build.Function != nil:
-		functionbuildName := resourcenames.TagOrIndex(requestprocessor, i)
-		functionbuild, err := c.functionbuildLister.FunctionBuilds(requestprocessor.Namespace).Get(functionbuildName)
+		functionName := resourcenames.TagOrIndex(requestprocessor, i)
+		function, err := c.functionLister.Functions(requestprocessor.Namespace).Get(functionName)
 		if errors.IsNotFound(err) {
-			functionbuild, err = c.createFunctionBuild(requestprocessor, i)
+			function, err = c.createFunction(requestprocessor, i)
 			if err != nil {
-				logger.Errorf("Failed to create FunctionBuild %q: %v", functionbuildName, err)
-				c.Recorder.Eventf(requestprocessor, corev1.EventTypeWarning, "CreationFailed", "Failed to create FunctionBuild %q: %v", functionbuildName, err)
+				logger.Errorf("Failed to create Function %q: %v", functionName, err)
+				c.Recorder.Eventf(requestprocessor, corev1.EventTypeWarning, "CreationFailed", "Failed to create Function %q: %v", functionName, err)
 				return nil, err
 			}
-			if functionbuild != nil {
-				c.Recorder.Eventf(requestprocessor, corev1.EventTypeNormal, "Created", "Created FunctionBuild %q", functionbuildName)
+			if function != nil {
+				c.Recorder.Eventf(requestprocessor, corev1.EventTypeNormal, "Created", "Created Function %q", functionName)
 			}
 		} else if err != nil {
-			logger.Errorf("Failed to reconcile RequestProcessor: %q failed to Get FunctionBuild: %q; %v", requestprocessor.Name, functionbuildName, zap.Error(err))
+			logger.Errorf("Failed to reconcile RequestProcessor: %q failed to Get Function: %q; %v", requestprocessor.Name, functionName, zap.Error(err))
 			return nil, err
-		} else if !metav1.IsControlledBy(functionbuild, requestprocessor) {
-			// Surface an error in the functionbuild's status,and return an error.
-			requestprocessor.Status.MarkBuildNotOwned(functionbuild.Kind, functionbuild.Name)
-			return nil, fmt.Errorf("RequestProcessor: %q does not own FunctionBuild: %q", requestprocessor.Name, functionbuildName)
-		} else if functionbuild, err = c.reconcileFunctionBuild(ctx, requestprocessor, i, functionbuild); err != nil {
-			logger.Errorf("Failed to reconcile RequestProcessor: %q failed to reconcile FunctionBuild: %q; %v", requestprocessor.Name, functionbuild.Name, zap.Error(err))
+		} else if !metav1.IsControlledBy(function, requestprocessor) {
+			// Surface an error in the function's status,and return an error.
+			requestprocessor.Status.MarkBuildNotOwned(function.Kind, function.Name)
+			return nil, fmt.Errorf("RequestProcessor: %q does not own Function: %q", requestprocessor.Name, functionName)
+		} else if function, err = c.reconcileFunction(ctx, requestprocessor, i, function); err != nil {
+			logger.Errorf("Failed to reconcile RequestProcessor: %q failed to reconcile Function: %q; %v", requestprocessor.Name, function.Name, zap.Error(err))
 			return nil, err
 		}
-		return functionbuild, nil
+		return function, nil
 
 	case build.FunctionRef != "":
-		functionbuild, err := c.functionbuildLister.FunctionBuilds(requestprocessor.Namespace).Get(build.FunctionRef)
+		function, err := c.functionLister.Functions(requestprocessor.Namespace).Get(build.FunctionRef)
 		if err != nil {
 			return nil, err
 		}
-		functionbuild = functionbuild.DeepCopy()
-		functionbuild.Labels[run.RequestProcessorLabelKey] = insertToken(functionbuild.Labels[run.RequestProcessorLabelKey], requestprocessor.Name)
-		return c.ProjectriffClientSet.BuildV1alpha1().FunctionBuilds(requestprocessor.Namespace).Update(functionbuild)
+		function = function.DeepCopy()
+		function.Labels[run.RequestProcessorLabelKey] = insertToken(function.Labels[run.RequestProcessorLabelKey], requestprocessor.Name)
+		return c.ProjectriffClientSet.BuildV1alpha1().Functions(requestprocessor.Namespace).Update(function)
 	}
 	// should never get here
 	panic(fmt.Sprintf("invalid build %+v", build))
 }
 
-func (c *Reconciler) reconcileApplicationBuild(ctx context.Context, requestprocessor *runv1alpha1.RequestProcessor, i int, applicationbuild *buildv1alpha1.ApplicationBuild) (*buildv1alpha1.ApplicationBuild, error) {
+func (c *Reconciler) reconcileApplication(ctx context.Context, requestprocessor *runv1alpha1.RequestProcessor, i int, application *buildv1alpha1.Application) (*buildv1alpha1.Application, error) {
 	logger := logging.FromContext(ctx)
-	desiredApplicationBuild, err := resources.MakeApplicationBuild(requestprocessor, i)
+	desiredApplication, err := resources.MakeApplication(requestprocessor, i)
 	if err != nil {
 		return nil, err
 	}
 
-	if applicationBuildSemanticEquals(desiredApplicationBuild, applicationbuild) {
+	if applicationSemanticEquals(desiredApplication, application) {
 		// No differences to reconcile.
-		return applicationbuild, nil
+		return application, nil
 	}
-	diff, err := kmp.SafeDiff(desiredApplicationBuild.Spec, applicationbuild.Spec)
+	diff, err := kmp.SafeDiff(desiredApplication.Spec, application.Spec)
 	if err != nil {
-		return nil, fmt.Errorf("failed to diff ApplicationBuild: %v", err)
+		return nil, fmt.Errorf("failed to diff Application: %v", err)
 	}
-	logger.Infof("Reconciling applicationbuild diff (-desired, +observed): %s", diff)
+	logger.Infof("Reconciling application diff (-desired, +observed): %s", diff)
 
 	// Don't modify the informers copy.
-	existing := applicationbuild.DeepCopy()
+	existing := application.DeepCopy()
 	// Preserve the rest of the object (e.g. ObjectMeta except for labels).
-	existing.Spec = desiredApplicationBuild.Spec
-	existing.ObjectMeta.Labels = desiredApplicationBuild.ObjectMeta.Labels
-	return c.ProjectriffClientSet.BuildV1alpha1().ApplicationBuilds(requestprocessor.Namespace).Update(existing)
+	existing.Spec = desiredApplication.Spec
+	existing.ObjectMeta.Labels = desiredApplication.ObjectMeta.Labels
+	return c.ProjectriffClientSet.BuildV1alpha1().Applications(requestprocessor.Namespace).Update(existing)
 }
 
-func (c *Reconciler) createApplicationBuild(requestprocessor *runv1alpha1.RequestProcessor, i int) (*buildv1alpha1.ApplicationBuild, error) {
-	applicationbuild, err := resources.MakeApplicationBuild(requestprocessor, i)
+func (c *Reconciler) createApplication(requestprocessor *runv1alpha1.RequestProcessor, i int) (*buildv1alpha1.Application, error) {
+	application, err := resources.MakeApplication(requestprocessor, i)
 	if err != nil {
 		return nil, err
 	}
-	if applicationbuild == nil {
+	if application == nil {
 		// nothing to create
-		return applicationbuild, nil
+		return application, nil
 	}
-	return c.ProjectriffClientSet.BuildV1alpha1().ApplicationBuilds(requestprocessor.Namespace).Create(applicationbuild)
+	return c.ProjectriffClientSet.BuildV1alpha1().Applications(requestprocessor.Namespace).Create(application)
 }
 
-func applicationBuildSemanticEquals(desiredApplicationBuild, applicationBuild *buildv1alpha1.ApplicationBuild) bool {
-	return equality.Semantic.DeepEqual(desiredApplicationBuild.Spec, applicationBuild.Spec) &&
-		equality.Semantic.DeepEqual(desiredApplicationBuild.ObjectMeta.Labels, applicationBuild.ObjectMeta.Labels)
+func applicationSemanticEquals(desiredApplication, application *buildv1alpha1.Application) bool {
+	return equality.Semantic.DeepEqual(desiredApplication.Spec, application.Spec) &&
+		equality.Semantic.DeepEqual(desiredApplication.ObjectMeta.Labels, application.ObjectMeta.Labels)
 }
 
-func (c *Reconciler) reconcileFunctionBuild(ctx context.Context, requestprocessor *runv1alpha1.RequestProcessor, i int, functionbuild *buildv1alpha1.FunctionBuild) (*buildv1alpha1.FunctionBuild, error) {
+func (c *Reconciler) reconcileFunction(ctx context.Context, requestprocessor *runv1alpha1.RequestProcessor, i int, function *buildv1alpha1.Function) (*buildv1alpha1.Function, error) {
 	logger := logging.FromContext(ctx)
-	desiredFunctionBuild, err := resources.MakeFunctionBuild(requestprocessor, i)
+	desiredFunction, err := resources.MakeFunction(requestprocessor, i)
 	if err != nil {
 		return nil, err
 	}
 
-	if functionBuildSemanticEquals(desiredFunctionBuild, functionbuild) {
+	if functionSemanticEquals(desiredFunction, function) {
 		// No differences to reconcile.
-		return functionbuild, nil
+		return function, nil
 	}
-	diff, err := kmp.SafeDiff(desiredFunctionBuild.Spec, functionbuild.Spec)
+	diff, err := kmp.SafeDiff(desiredFunction.Spec, function.Spec)
 	if err != nil {
-		return nil, fmt.Errorf("failed to diff FunctionBuild: %v", err)
+		return nil, fmt.Errorf("failed to diff Function: %v", err)
 	}
-	logger.Infof("Reconciling functionbuild diff (-desired, +observed): %s", diff)
+	logger.Infof("Reconciling function diff (-desired, +observed): %s", diff)
 
 	// Don't modify the informers copy.
-	existing := functionbuild.DeepCopy()
+	existing := function.DeepCopy()
 	// Preserve the rest of the object (e.g. ObjectMeta except for labels).
-	existing.Spec = desiredFunctionBuild.Spec
-	existing.ObjectMeta.Labels = desiredFunctionBuild.ObjectMeta.Labels
-	return c.ProjectriffClientSet.BuildV1alpha1().FunctionBuilds(requestprocessor.Namespace).Update(existing)
+	existing.Spec = desiredFunction.Spec
+	existing.ObjectMeta.Labels = desiredFunction.ObjectMeta.Labels
+	return c.ProjectriffClientSet.BuildV1alpha1().Functions(requestprocessor.Namespace).Update(existing)
 }
 
-func (c *Reconciler) createFunctionBuild(requestprocessor *runv1alpha1.RequestProcessor, i int) (*buildv1alpha1.FunctionBuild, error) {
-	functionbuild, err := resources.MakeFunctionBuild(requestprocessor, i)
+func (c *Reconciler) createFunction(requestprocessor *runv1alpha1.RequestProcessor, i int) (*buildv1alpha1.Function, error) {
+	function, err := resources.MakeFunction(requestprocessor, i)
 	if err != nil {
 		return nil, err
 	}
-	if functionbuild == nil {
+	if function == nil {
 		// nothing to create
-		return functionbuild, nil
+		return function, nil
 	}
-	return c.ProjectriffClientSet.BuildV1alpha1().FunctionBuilds(requestprocessor.Namespace).Create(functionbuild)
+	return c.ProjectriffClientSet.BuildV1alpha1().Functions(requestprocessor.Namespace).Create(function)
 }
 
-func functionBuildSemanticEquals(desiredFunctionBuild, functionBuild *buildv1alpha1.FunctionBuild) bool {
-	return equality.Semantic.DeepEqual(desiredFunctionBuild.Spec, functionBuild.Spec) &&
-		equality.Semantic.DeepEqual(desiredFunctionBuild.ObjectMeta.Labels, functionBuild.ObjectMeta.Labels)
+func functionSemanticEquals(desiredFunction, function *buildv1alpha1.Function) bool {
+	return equality.Semantic.DeepEqual(desiredFunction.Spec, function.Spec) &&
+		equality.Semantic.DeepEqual(desiredFunction.ObjectMeta.Labels, function.ObjectMeta.Labels)
 }
 
 func (c *Reconciler) reconcileConfigurations(ctx context.Context, requestprocessor *runv1alpha1.RequestProcessor) ([]knservingv1alpha1.Configuration, error) {
@@ -657,14 +657,14 @@ func (c *Reconciler) resolveImages(ctx context.Context, rp *runv1alpha1.RequestP
 		}
 
 		switch {
-		case ref.Kind == "ApplicationBuild":
-			build, err := c.applicationbuildLister.ApplicationBuilds(rp.Namespace).Get(ref.Name)
+		case ref.Kind == "Application":
+			build, err := c.applicationLister.Applications(rp.Namespace).Get(ref.Name)
 			if err != nil {
 				return err
 			}
 			rp.Spec[i].Containers[0].Image = build.Status.LatestImage
-		case ref.Kind == "FunctionBuild":
-			build, err := c.functionbuildLister.FunctionBuilds(rp.Namespace).Get(ref.Name)
+		case ref.Kind == "Function":
+			build, err := c.functionLister.Functions(rp.Namespace).Get(ref.Name)
 			if err != nil {
 				return err
 			}

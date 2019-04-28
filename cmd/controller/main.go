@@ -44,8 +44,8 @@ import (
 	"github.com/projectriff/system/pkg/logging"
 	"github.com/projectriff/system/pkg/metrics"
 	"github.com/projectriff/system/pkg/reconciler"
-	"github.com/projectriff/system/pkg/reconciler/v1alpha1/applicationbuild"
-	"github.com/projectriff/system/pkg/reconciler/v1alpha1/functionbuild"
+	"github.com/projectriff/system/pkg/reconciler/v1alpha1/application"
+	"github.com/projectriff/system/pkg/reconciler/v1alpha1/function"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/requestprocessor"
 	"go.uber.org/zap"
 )
@@ -127,8 +127,8 @@ func main() {
 	knbuildInformerFactory := knbuildinformers.NewSharedInformerFactory(knbuildClient, opt.ResyncPeriod)
 	knservingInformerFactory := knservinginformers.NewSharedInformerFactory(knservingClient, opt.ResyncPeriod)
 
-	applicationbuildInformer := projectriffInformerFactory.Build().V1alpha1().ApplicationBuilds()
-	functionbuildInformer := projectriffInformerFactory.Build().V1alpha1().FunctionBuilds()
+	applicationInformer := projectriffInformerFactory.Build().V1alpha1().Applications()
+	functionInformer := projectriffInformerFactory.Build().V1alpha1().Functions()
 	requestprocessorInformer := projectriffInformerFactory.Run().V1alpha1().RequestProcessors()
 	pvcInformer := kubeInformerFactory.Core().V1().PersistentVolumeClaims()
 	knbuildInformer := knbuildInformerFactory.Build().V1alpha1().Builds()
@@ -138,16 +138,16 @@ func main() {
 	// Build all of our controllers, with the clients constructed above.
 	// Add new controllers to this array.
 	controllers := []*controller.Impl{
-		applicationbuild.NewController(
+		application.NewController(
 			opt,
-			applicationbuildInformer,
+			applicationInformer,
 
 			pvcInformer,
 			knbuildInformer,
 		),
-		functionbuild.NewController(
+		function.NewController(
 			opt,
-			functionbuildInformer,
+			functionInformer,
 
 			pvcInformer,
 			knbuildInformer,
@@ -159,8 +159,8 @@ func main() {
 
 			knconfigurationInformer,
 			knrouteInformer,
-			applicationbuildInformer,
-			functionbuildInformer,
+			applicationInformer,
+			functionInformer,
 		),
 	}
 
@@ -181,8 +181,8 @@ func main() {
 	// Wait for the caches to be synced before starting controllers.
 	logger.Info("Waiting for informer caches to sync")
 	for i, synced := range []cache.InformerSynced{
-		applicationbuildInformer.Informer().HasSynced,
-		functionbuildInformer.Informer().HasSynced,
+		applicationInformer.Informer().HasSynced,
+		functionInformer.Informer().HasSynced,
 		requestprocessorInformer.Informer().HasSynced,
 		pvcInformer.Informer().HasSynced,
 		knbuildInformer.Informer().HasSynced,

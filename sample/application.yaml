@@ -1,0 +1,11 @@
+apiVersion: build.projectriff.io/v1alpha1
+kind: Application
+metadata:
+  name: node-sample
+spec:
+  image: gcr.io/cf-sandbox-sandrews/sample
+  cacheSize: 8Gi
+  source:
+    git:
+      url: https://github.com/cloudfoundry-samples/cf-sample-app-nodejs.git
+      revision: master

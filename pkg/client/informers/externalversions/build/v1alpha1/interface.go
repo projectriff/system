@@ -21,10 +21,10 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
-	// ApplicationBuilds returns a ApplicationBuildInformer.
-	ApplicationBuilds() ApplicationBuildInformer
-	// FunctionBuilds returns a FunctionBuildInformer.
-	FunctionBuilds() FunctionBuildInformer
+	// Applications returns a ApplicationInformer.
+	Applications() ApplicationInformer
+	// Functions returns a FunctionInformer.
+	Functions() FunctionInformer
 }
 
 type version struct {
@@ -38,12 +38,12 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 }
 
-// ApplicationBuilds returns a ApplicationBuildInformer.
-func (v *version) ApplicationBuilds() ApplicationBuildInformer {
-	return &applicationBuildInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+// Applications returns a ApplicationInformer.
+func (v *version) Applications() ApplicationInformer {
+	return &applicationInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
-// FunctionBuilds returns a FunctionBuildInformer.
-func (v *version) FunctionBuilds() FunctionBuildInformer {
-	return &functionBuildInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+// Functions returns a FunctionInformer.
+func (v *version) Functions() FunctionInformer {
+	return &functionInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

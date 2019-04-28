@@ -15,18 +15,18 @@
  */
 package v1alpha1
 
-// ApplicationBuildListerExpansion allows custom methods to be added to
-// ApplicationBuildLister.
-type ApplicationBuildListerExpansion interface{}
+// ApplicationListerExpansion allows custom methods to be added to
+// ApplicationLister.
+type ApplicationListerExpansion interface{}
 
-// ApplicationBuildNamespaceListerExpansion allows custom methods to be added to
-// ApplicationBuildNamespaceLister.
-type ApplicationBuildNamespaceListerExpansion interface{}
+// ApplicationNamespaceListerExpansion allows custom methods to be added to
+// ApplicationNamespaceLister.
+type ApplicationNamespaceListerExpansion interface{}
 
-// FunctionBuildListerExpansion allows custom methods to be added to
-// FunctionBuildLister.
-type FunctionBuildListerExpansion interface{}
+// FunctionListerExpansion allows custom methods to be added to
+// FunctionLister.
+type FunctionListerExpansion interface{}
 
-// FunctionBuildNamespaceListerExpansion allows custom methods to be added to
-// FunctionBuildNamespaceLister.
-type FunctionBuildNamespaceListerExpansion interface{}
+// FunctionNamespaceListerExpansion allows custom methods to be added to
+// FunctionNamespaceLister.
+type FunctionNamespaceListerExpansion interface{}

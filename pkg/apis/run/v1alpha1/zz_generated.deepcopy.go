@@ -35,7 +35,7 @@ func (in *Build) DeepCopyInto(out *Build) {
 		if *in == nil {
 			*out = nil
 		} else {
-			*out = new(build_v1alpha1.ApplicationBuildSpec)
+			*out = new(build_v1alpha1.ApplicationSpec)
 			(*in).DeepCopyInto(*out)
 		}
 	}
@@ -44,7 +44,7 @@ func (in *Build) DeepCopyInto(out *Build) {
 		if *in == nil {
 			*out = nil
 		} else {
-			*out = new(build_v1alpha1.FunctionBuildSpec)
+			*out = new(build_v1alpha1.FunctionSpec)
 			(*in).DeepCopyInto(*out)
 		}
 	}

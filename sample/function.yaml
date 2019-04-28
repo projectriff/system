@@ -1,21 +1,12 @@
-apiVersion: serving.knative.dev/v1alpha1
-kind: Service
+apiVersion: build.projectriff.io/v1alpha1
+kind: Function
 metadata:
   name: uppercase
 spec:
-  runLatest:
-    configuration:
-      build:
-        apiVersion: build.projectriff.io/v1alpha1
-        kind: FunctionBuild
-        spec:
-          image: gcr.io/cf-sandbox-sandrews/uppercase
-          source:
-            git:
-              url: https://github.com/projectriff/fats.git
-              revision: master
-            subPath: functions/uppercase/node        
-      revisionTemplate:
-        spec:
-          container:
-            image: gcr.io/cf-sandbox-sandrews/uppercase
+  image: gcr.io/cf-sandbox-sandrews/uppercase
+  cacheSize: 8Gi
+  source:
+    git:
+      url: https://github.com/projectriff/fats.git
+      revision: master
+    subPath: functions/uppercase/node

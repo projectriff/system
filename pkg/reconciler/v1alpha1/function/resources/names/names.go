@@ -13,21 +13,19 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package resources
+
+package names
 
 import (
-	"github.com/projectriff/system/pkg/apis/run"
-	runv1alpha1 "github.com/projectriff/system/pkg/apis/run/v1alpha1"
+	"fmt"
+
+	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 )
 
-// makeLabels constructs the labels we will apply to RequestProcessor resource.
-func makeLabels(rp *runv1alpha1.RequestProcessor) map[string]string {
-	labels := make(map[string]string, len(rp.ObjectMeta.Labels)+1)
-	labels[run.RequestProcessorLabelKey] = rp.Name
+func BuildCache(f *buildv1alpha1.Function) string {
+	return fmt.Sprintf("build-cache-%s-function", f.Name)
+}
 
-	// Pass through the labels on the Function to child resources.
-	for k, v := range rp.ObjectMeta.Labels {
-		labels[k] = v
-	}
-	return labels
+func Build(f *buildv1alpha1.Function) string {
+	return fmt.Sprintf("%s-function", f.Name)
 }
