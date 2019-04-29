@@ -20,6 +20,5 @@ package run
 const (
 	GroupName = "run.projectriff.io"
 
-	RequestProcessorLabelKey          = GroupName + "/requestprocessor"
-	RequestProcessorRefsAnnotationKey = GroupName + "/requestprocessor-refs"
+	RequestProcessorLabelKey = GroupName + "/requestprocessor"
 )

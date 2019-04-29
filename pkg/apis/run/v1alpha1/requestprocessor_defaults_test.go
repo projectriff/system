@@ -22,7 +22,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestRequestProcessorDefaulting(t *testing.T) {
@@ -33,12 +32,7 @@ func TestRequestProcessorDefaulting(t *testing.T) {
 	}{{
 		name: "empty",
 		in:   &RequestProcessor{},
-		want: &RequestProcessor{
-			ObjectMeta: metav1.ObjectMeta{
-				Annotations: map[string]string{},
-				Labels:      map[string]string{},
-			},
-		},
+		want: &RequestProcessor{},
 	}}
 
 	for _, test := range tests {

@@ -89,27 +89,16 @@ func NewController(
 	impl := controller.NewImpl(c, c.Logger, ReconcilerName, reconciler.MustNewStatsReporter(ReconcilerName, c.Logger))
 
 	c.Logger.Info("Setting up event handlers")
-	functionInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    impl.Enqueue,
-		UpdateFunc: controller.PassNew(impl.Enqueue),
-		DeleteFunc: impl.Enqueue,
-	})
+	functionInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
 
+	// controlled resources
 	pvcInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(buildv1alpha1.SchemeGroupVersion.WithKind("Function")),
-		Handler: cache.ResourceEventHandlerFuncs{
-			AddFunc:    impl.EnqueueControllerOf,
-			UpdateFunc: controller.PassNew(impl.EnqueueControllerOf),
-			DeleteFunc: impl.EnqueueControllerOf,
-		},
+		Handler:    reconciler.Handler(impl.EnqueueControllerOf),
 	})
 	knbuildInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(buildv1alpha1.SchemeGroupVersion.WithKind("Function")),
-		Handler: cache.ResourceEventHandlerFuncs{
-			AddFunc:    impl.EnqueueControllerOf,
-			UpdateFunc: controller.PassNew(impl.EnqueueControllerOf),
-			DeleteFunc: impl.EnqueueControllerOf,
-		},
+		Handler:    reconciler.Handler(impl.EnqueueControllerOf),
 	})
 
 	return impl

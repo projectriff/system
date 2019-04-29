@@ -362,7 +362,7 @@
   version = "v0.5.0"
 
 [[projects]]
-  digest = "1:9f7ddeb95c92203cceb3e458a9d76c9509c623e809b189ba7f5b7c754710749b"
+  digest = "1:6f2ffa3fce8aa0511a77027db2af9d235e43857268b2c3081c1a98b34cd44465"
   name = "github.com/knative/pkg"
   packages = [
     "apis",
@@ -381,6 +381,7 @@
     "signals",
     "system",
     "system/testing",
+    "tracker",
     "version",
     "webhook",
   ]
@@ -1212,6 +1213,7 @@
     "github.com/knative/pkg/signals",
     "github.com/knative/pkg/system",
     "github.com/knative/pkg/system/testing",
+    "github.com/knative/pkg/tracker",
     "github.com/knative/pkg/version",
     "github.com/knative/pkg/webhook",
     "github.com/knative/serving/pkg/apis/serving/v1alpha1",

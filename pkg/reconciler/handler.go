@@ -14,33 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package reconciler
 
 import (
-	"context"
-	"testing"
-
-	"github.com/google/go-cmp/cmp"
+	"github.com/knative/pkg/controller"
+	"k8s.io/client-go/tools/cache"
 )
 
-func TestFunctionDefaulting(t *testing.T) {
-	tests := []struct {
-		name string
-		in   *Function
-		want *Function
-	}{{
-		name: "empty",
-		in:   &Function{},
-		want: &Function{},
-	}}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			got := test.in
-			got.SetDefaults(context.Background())
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("SetDefaults (-want, +got) = %v", diff)
-			}
-		})
+// Handler wraps the provided handler function into a cache.ResourceEventHandler
+// that sends all events to the given handler.  For Updates, only the new object
+// is forwarded.
+func Handler(h func(interface{})) cache.ResourceEventHandler {
+	return cache.ResourceEventHandlerFuncs{
+		AddFunc:    h,
+		UpdateFunc: controller.PassNew(h),
+		DeleteFunc: h,
 	}
 }

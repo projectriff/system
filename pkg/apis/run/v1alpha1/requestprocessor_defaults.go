@@ -25,14 +25,8 @@ import (
 
 func (rp *RequestProcessor) SetDefaults(ctx context.Context) {
 	rp.Spec.SetDefaults(ctx)
-
-	if rp.Annotations == nil {
-		rp.Annotations = map[string]string{}
-	}
-	if rp.Labels == nil {
-		rp.Labels = map[string]string{}
-	}
 }
+
 func (rps RequestProcessorSpec) SetDefaults(ctx context.Context) {
 	for i := range rps {
 		rps[i].SetDefaults(ctx)

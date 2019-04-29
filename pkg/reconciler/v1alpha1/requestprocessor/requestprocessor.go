@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-	"strings"
 	"time"
 
 	knduckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
@@ -28,11 +27,11 @@ import (
 	"github.com/knative/pkg/kmeta"
 	"github.com/knative/pkg/kmp"
 	"github.com/knative/pkg/logging"
+	"github.com/knative/pkg/tracker"
 	knservingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
 	knservinginformers "github.com/knative/serving/pkg/client/informers/externalversions/serving/v1alpha1"
 	knservinglisters "github.com/knative/serving/pkg/client/listers/serving/v1alpha1"
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
-	"github.com/projectriff/system/pkg/apis/run"
 	runv1alpha1 "github.com/projectriff/system/pkg/apis/run/v1alpha1"
 	buildinformers "github.com/projectriff/system/pkg/client/informers/externalversions/build/v1alpha1"
 	runinformers "github.com/projectriff/system/pkg/client/informers/externalversions/run/v1alpha1"
@@ -48,6 +47,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/tools/cache"
 )
@@ -70,6 +70,7 @@ type Reconciler struct {
 	functionLister         buildlisters.FunctionLister
 
 	resolver digest.Resolver
+	tracker  tracker.Interface
 }
 
 // Check that our Reconciler implements controller.Reconciler
@@ -99,57 +100,46 @@ func NewController(
 	impl := controller.NewImpl(c, c.Logger, ReconcilerName, reconciler.MustNewStatsReporter(ReconcilerName, c.Logger))
 
 	c.Logger.Info("Setting up event handlers")
-	requestprocessorInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    impl.Enqueue,
-		UpdateFunc: controller.PassNew(impl.Enqueue),
-		DeleteFunc: impl.Enqueue,
-	})
+	requestprocessorInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
 
+	// controlled resources
 	knconfigurationInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(runv1alpha1.SchemeGroupVersion.WithKind("RequestProcessor")),
-		Handler: cache.ResourceEventHandlerFuncs{
-			AddFunc:    impl.EnqueueControllerOf,
-			UpdateFunc: controller.PassNew(impl.EnqueueControllerOf),
-			DeleteFunc: impl.EnqueueControllerOf,
-		},
+		Handler:    reconciler.Handler(impl.EnqueueControllerOf),
 	})
 	knrouteInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(runv1alpha1.SchemeGroupVersion.WithKind("RequestProcessor")),
-		Handler: cache.ResourceEventHandlerFuncs{
-			AddFunc:    impl.EnqueueControllerOf,
-			UpdateFunc: controller.PassNew(impl.EnqueueControllerOf),
-			DeleteFunc: impl.EnqueueControllerOf,
-		},
+		Handler:    reconciler.Handler(impl.EnqueueControllerOf),
 	})
-
 	applicationInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(runv1alpha1.SchemeGroupVersion.WithKind("RequestProcessor")),
-		Handler: cache.ResourceEventHandlerFuncs{
-			AddFunc:    impl.EnqueueControllerOf,
-			UpdateFunc: controller.PassNew(impl.EnqueueControllerOf),
-			DeleteFunc: impl.EnqueueControllerOf,
-		},
+		Handler:    reconciler.Handler(impl.EnqueueControllerOf),
 	})
 	functionInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(runv1alpha1.SchemeGroupVersion.WithKind("RequestProcessor")),
-		Handler: cache.ResourceEventHandlerFuncs{
-			AddFunc:    impl.EnqueueControllerOf,
-			UpdateFunc: controller.PassNew(impl.EnqueueControllerOf),
-			DeleteFunc: impl.EnqueueControllerOf,
-		},
+		Handler:    reconciler.Handler(impl.EnqueueControllerOf),
 	})
 
-	// watch for resource that may be referenced by a RequestProcessor
-	applicationInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    enqueueAnnotatedResources(impl, run.RequestProcessorRefsAnnotationKey, c.Logger),
-		UpdateFunc: controller.PassNew(enqueueAnnotatedResources(impl, run.RequestProcessorRefsAnnotationKey, c.Logger)),
-		DeleteFunc: enqueueAnnotatedResources(impl, run.RequestProcessorRefsAnnotationKey, c.Logger),
-	})
-	functionInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    enqueueAnnotatedResources(impl, run.RequestProcessorRefsAnnotationKey, c.Logger),
-		UpdateFunc: controller.PassNew(enqueueAnnotatedResources(impl, run.RequestProcessorRefsAnnotationKey, c.Logger)),
-		DeleteFunc: enqueueAnnotatedResources(impl, run.RequestProcessorRefsAnnotationKey, c.Logger),
-	})
+	// referenced resources
+	c.tracker = tracker.New(impl.EnqueueKey, opt.GetTrackerLease())
+	applicationInformer.Informer().AddEventHandler(reconciler.Handler(
+		// Call the tracker's OnChanged method, but we've seen the objects
+		// coming through this path missing TypeMeta, so ensure it is properly
+		// populated.
+		controller.EnsureTypeMeta(
+			c.tracker.OnChanged,
+			buildv1alpha1.SchemeGroupVersion.WithKind("Application"),
+		),
+	))
+	functionInformer.Informer().AddEventHandler(reconciler.Handler(
+		// Call the tracker's OnChanged method, but we've seen the objects
+		// coming through this path missing TypeMeta, so ensure it is properly
+		// populated.
+		controller.EnsureTypeMeta(
+			c.tracker.OnChanged,
+			buildv1alpha1.SchemeGroupVersion.WithKind("Function"),
+		),
+	))
 
 	return impl
 }
@@ -351,20 +341,6 @@ func (c *Reconciler) reconcileBuilds(ctx context.Context, requestprocessor *runv
 				logger.Errorf("Failed to reconcile RequestProcessor: %q failed to Get Application: %q; %v", requestprocessor.Name, buildRef.Name, zap.Error(err))
 				return nil, err
 			} else if !metav1.IsControlledBy(application, requestprocessor) {
-				if application.UID == buildRef.UID {
-					// remove reference label
-					application = application.DeepCopy()
-					if application.Annotations == nil {
-						application.Annotations = map[string]string{}
-					}
-					application.Annotations[run.RequestProcessorRefsAnnotationKey] = deleteToken(application.Annotations[run.RequestProcessorRefsAnnotationKey], requestprocessor.Name)
-					if application.Annotations[run.RequestProcessorRefsAnnotationKey] == "" {
-						delete(application.Annotations, run.RequestProcessorRefsAnnotationKey)
-					}
-					if _, err := c.ProjectriffClientSet.BuildV1alpha1().Applications(requestprocessor.Namespace).Update(application); err != nil {
-						return nil, err
-					}
-				}
 				// it's not ours, don't delete it
 				continue
 			}
@@ -385,20 +361,6 @@ func (c *Reconciler) reconcileBuilds(ctx context.Context, requestprocessor *runv
 				logger.Errorf("Failed to reconcile RequestProcessor: %q failed to Get Function: %q; %v", requestprocessor.Name, buildRef.Name, zap.Error(err))
 				return nil, err
 			} else if !metav1.IsControlledBy(function, requestprocessor) {
-				if function.UID == buildRef.UID {
-					// remove reference label
-					function = function.DeepCopy()
-					if function.Annotations == nil {
-						function.Annotations = map[string]string{}
-					}
-					function.Annotations[run.RequestProcessorRefsAnnotationKey] = deleteToken(function.Annotations[run.RequestProcessorRefsAnnotationKey], requestprocessor.Name)
-					if function.Annotations[run.RequestProcessorRefsAnnotationKey] == "" {
-						delete(function.Annotations, run.RequestProcessorRefsAnnotationKey)
-					}
-					if _, err := c.ProjectriffClientSet.BuildV1alpha1().Functions(requestprocessor.Namespace).Update(function); err != nil {
-						return nil, err
-					}
-				}
 				// it's not ours, don't delete it
 				continue
 			}
@@ -455,12 +417,11 @@ func (c *Reconciler) reconcileBuild(ctx context.Context, requestprocessor *runv1
 		if err != nil {
 			return nil, err
 		}
-		application = application.DeepCopy()
-		if application.Annotations == nil {
-			application.Annotations = map[string]string{}
+		gvk := buildv1alpha1.SchemeGroupVersion.WithKind("Application")
+		if err := c.tracker.Track(objectRef(application, gvk), requestprocessor); err != nil {
+			return nil, err
 		}
-		application.Annotations[run.RequestProcessorRefsAnnotationKey] = insertToken(application.Annotations[run.RequestProcessorRefsAnnotationKey], requestprocessor.Name)
-		return c.ProjectriffClientSet.BuildV1alpha1().Applications(requestprocessor.Namespace).Update(application)
+		return application, nil
 
 	case build.Function != nil:
 		functionName := resourcenames.TagOrIndex(requestprocessor, i)
@@ -493,12 +454,12 @@ func (c *Reconciler) reconcileBuild(ctx context.Context, requestprocessor *runv1
 		if err != nil {
 			return nil, err
 		}
-		function = function.DeepCopy()
-		if function.Annotations == nil {
-			function.Annotations = map[string]string{}
+		gvk := buildv1alpha1.SchemeGroupVersion.WithKind("Function")
+		if err := c.tracker.Track(objectRef(function, gvk), requestprocessor); err != nil {
+			return nil, err
 		}
-		function.Annotations[run.RequestProcessorRefsAnnotationKey] = insertToken(function.Annotations[run.RequestProcessorRefsAnnotationKey], requestprocessor.Name)
-		return c.ProjectriffClientSet.BuildV1alpha1().Functions(requestprocessor.Namespace).Update(function)
+		return function, nil
+
 	}
 	// should never get here
 	panic(fmt.Sprintf("invalid build %+v", build))
@@ -778,52 +739,26 @@ func routeSemanticEquals(desiredRoute, route *knservingv1alpha1.Route) bool {
 		equality.Semantic.DeepEqual(desiredRoute.ObjectMeta.Labels, route.ObjectMeta.Labels)
 }
 
-func insertToken(str, token string) string {
-	set := splitSet(str)
-	set.Insert(token)
-	return joinSet(set)
+/////////////////////////////////////////
+// Misc helpers.
+/////////////////////////////////////////
+
+type accessor interface {
+	GroupVersionKind() schema.GroupVersionKind
+	GetNamespace() string
+	GetName() string
 }
 
-func deleteToken(str, token string) string {
-	set := splitSet(str)
-	set.Delete(token)
-	return joinSet(set)
-}
-
-func hasToken(str, token string) bool {
-	return splitSet(str).Has(token)
-}
-
-func splitSet(str string) sets.String {
-	set := sets.NewString()
-	if str != "" {
-		set.Insert(strings.Split(str, ",")...)
-	}
-	return set
-}
-
-func joinSet(set sets.String) string {
-	return strings.Join(set.List(), ",")
-}
-
-func enqueueAnnotatedResources(c *controller.Impl, annotation string, logger *zap.SugaredLogger) func(obj interface{}) {
-	return func(obj interface{}) {
-		object, err := kmeta.DeletionHandlingAccessor(obj)
-		if err != nil {
-			logger.Error(err)
-			return
-		}
-
-		annotations := object.GetAnnotations()
-		controllerKeys, ok := annotations[annotation]
-		if !ok {
-			logger.Debugf("Object %s/%s does not have a referring name annotation %s",
-				object.GetNamespace(), object.GetName(), annotation)
-			return
-		}
-
-		for _, token := range splitSet(controllerKeys) {
-			c.EnqueueKey(fmt.Sprintf("%s/%s", object.GetNamespace(), token))
-		}
+func objectRef(a accessor, gvk schema.GroupVersionKind) corev1.ObjectReference {
+	// We can't always rely on the TypeMeta being populated.
+	// See: https://github.com/knative/serving/issues/2372
+	// Also: https://github.com/kubernetes/apiextensions-apiserver/issues/29
+	// gvk := a.GroupVersionKind()
+	apiVersion, kind := gvk.ToAPIVersionAndKind()
+	return corev1.ObjectReference{
+		APIVersion: apiVersion,
+		Kind:       kind,
+		Namespace:  a.GetNamespace(),
+		Name:       a.GetName(),
 	}
 }

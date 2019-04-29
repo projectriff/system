@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Knative Authors
+Copyright 2018 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,33 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package tracker
 
 import (
-	"context"
-	"testing"
-
-	"github.com/google/go-cmp/cmp"
+	corev1 "k8s.io/api/core/v1"
 )
 
-func TestFunctionDefaulting(t *testing.T) {
-	tests := []struct {
-		name string
-		in   *Function
-		want *Function
-	}{{
-		name: "empty",
-		in:   &Function{},
-		want: &Function{},
-	}}
+// Interface defines the interface through which an object can register
+// that it is tracking another object by reference.
+type Interface interface {
+	// Track tells us that "obj" is tracking changes to the
+	// referenced object.
+	Track(ref corev1.ObjectReference, obj interface{}) error
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			got := test.in
-			got.SetDefaults(context.Background())
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("SetDefaults (-want, +got) = %v", diff)
-			}
-		})
-	}
+	// OnChanged is a callback to register with the InformerFactory
+	// so that we are notified for appropriate object changes.
+	OnChanged(obj interface{})
 }
