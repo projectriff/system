@@ -16,20 +16,6 @@
 
 package v1alpha1
 
-import (
-	corev1 "k8s.io/api/core/v1"
-)
-
-func makePodSpec(containers ...corev1.Container) corev1.PodSpec {
-	return corev1.PodSpec{
-		Containers: containers,
-	}
-}
-
-func makeDefaultPodSpec() corev1.PodSpec {
-	return makePodSpec(corev1.Container{})
-}
-
 func makePint(i int) *int {
 	return &i
 }

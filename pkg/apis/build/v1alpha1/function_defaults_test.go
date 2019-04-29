@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestFunctionDefaulting(t *testing.T) {
@@ -31,7 +32,12 @@ func TestFunctionDefaulting(t *testing.T) {
 	}{{
 		name: "empty",
 		in:   &Function{},
-		want: &Function{},
+		want: &Function{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{},
+				Labels:      map[string]string{},
+			},
+		},
 	}}
 
 	for _, test := range tests {

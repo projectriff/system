@@ -1,10 +1,9 @@
 apiVersion: run.projectriff.io/v1alpha1
 kind: RequestProcessor
 metadata:
-  name: sample
+  name: blue-green
 spec:
-- percent: 50
-  containers:
+- containers:
   - image: gcr.io/knative-samples/knative-route-demo:green
     env:
     - name: T_VERSION

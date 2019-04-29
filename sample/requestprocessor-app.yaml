@@ -1,0 +1,7 @@
+apiVersion: run.projectriff.io/v1alpha1
+kind: RequestProcessor
+metadata:
+  name: node-sample
+spec:
+- build:
+    applicationRef: node-sample

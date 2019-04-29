@@ -64,6 +64,18 @@ func (rps *RequestProcessorStatus) MarkBuildNotOwned(kind, name string) {
 		"There is an existing %s %q that we do not own.", kind, name)
 }
 
+func (rps *RequestProcessorStatus) MarkConfigurationsReady() {
+	requestprocessorCondSet.Manage(rps).MarkTrue(RequestProcessorConditionConfigurationsReady)
+}
+
+func (rps *RequestProcessorStatus) MarkConfigurationsFailed(reason, messageFormat string, messageA ...interface{}) {
+	requestprocessorCondSet.Manage(rps).MarkFalse(RequestProcessorConditionConfigurationsReady, reason, messageFormat, messageA...)
+}
+
+func (rps *RequestProcessorStatus) MarkConfigurationsUnknown(reason, messageFormat string, messageA ...interface{}) {
+	requestprocessorCondSet.Manage(rps).MarkUnknown(RequestProcessorConditionConfigurationsReady, reason, messageFormat, messageA...)
+}
+
 func (rps *RequestProcessorStatus) MarkConfigurationNotOwned(name string) {
 	requestprocessorCondSet.Manage(rps).MarkFalse(RequestProcessorConditionConfigurationsReady, "NotOwned",
 		"There is an existing Configuration %q that we do not own.", name)

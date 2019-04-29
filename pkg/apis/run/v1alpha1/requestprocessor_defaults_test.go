@@ -21,6 +21,8 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestRequestProcessorDefaulting(t *testing.T) {
@@ -31,7 +33,12 @@ func TestRequestProcessorDefaulting(t *testing.T) {
 	}{{
 		name: "empty",
 		in:   &RequestProcessor{},
-		want: &RequestProcessor{},
+		want: &RequestProcessor{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{},
+				Labels:      map[string]string{},
+			},
+		},
 	}}
 
 	for _, test := range tests {
@@ -57,161 +64,15 @@ func TestRequestProcessorSpecDefaulting(t *testing.T) {
 	}, {
 		name: "ensure at least one container",
 		in: &RequestProcessorSpec{
-			{
-				Percent: makePint(100),
-			},
+			{},
 		},
 		want: &RequestProcessorSpec{
 			{
-				Percent: makePint(100),
-				PodSpec: makeDefaultPodSpec(),
-			},
-		},
-	}, {
-		name: "default traffic",
-		in: &RequestProcessorSpec{
-			{
-				PodSpec: makeDefaultPodSpec(),
-			},
-		},
-		want: &RequestProcessorSpec{
-			{
-				Percent: makePint(100),
-				PodSpec: makeDefaultPodSpec(),
-			},
-		},
-	}, {
-		name: "default partially unallocated traffic",
-		in: &RequestProcessorSpec{
-			{
-				Percent: makePint(90),
-				PodSpec: makeDefaultPodSpec(),
-			},
-			{
-				PodSpec: makeDefaultPodSpec(),
-			},
-		},
-		want: &RequestProcessorSpec{
-			{
-				Percent: makePint(90),
-				PodSpec: makeDefaultPodSpec(),
-			},
-			{
-				Percent: makePint(10),
-				PodSpec: makeDefaultPodSpec(),
-			},
-		},
-	}, {
-		name: "default partially unallocated traffic evenly",
-		in: &RequestProcessorSpec{
-			{
-				Percent: makePint(90),
-				PodSpec: makeDefaultPodSpec(),
-			},
-			{
-				PodSpec: makeDefaultPodSpec(),
-			},
-			{
-				PodSpec: makeDefaultPodSpec(),
-			},
-		},
-		want: &RequestProcessorSpec{
-			{
-				Percent: makePint(90),
-				PodSpec: makeDefaultPodSpec(),
-			},
-			{
-				Percent: makePint(5),
-				PodSpec: makeDefaultPodSpec(),
-			},
-			{
-				Percent: makePint(5),
-				PodSpec: makeDefaultPodSpec(),
-			},
-		},
-	}, {
-		name: "default partially unallocated traffic as evenly as possible",
-		in: &RequestProcessorSpec{
-			{
-				Percent: makePint(95),
-				PodSpec: makeDefaultPodSpec(),
-			},
-			{
-				PodSpec: makeDefaultPodSpec(),
-			},
-			{
-				PodSpec: makeDefaultPodSpec(),
-			},
-		},
-		want: &RequestProcessorSpec{
-			{
-				Percent: makePint(95),
-				PodSpec: makeDefaultPodSpec(),
-			},
-			{
-				Percent: makePint(3),
-				PodSpec: makeDefaultPodSpec(),
-			},
-			{
-				Percent: makePint(2),
-				PodSpec: makeDefaultPodSpec(),
-			},
-		},
-	}, {
-		name: "an item can intentionally receive no traffic",
-		in: &RequestProcessorSpec{
-			{
-				Percent: makePint(0),
-				PodSpec: makeDefaultPodSpec(),
-			},
-			{
-				Percent: makePint(95),
-				PodSpec: makeDefaultPodSpec(),
-			},
-			{
-				PodSpec: makeDefaultPodSpec(),
-			},
-		},
-		want: &RequestProcessorSpec{
-			{
-				Percent: makePint(0),
-				PodSpec: makeDefaultPodSpec(),
-			},
-			{
-				Percent: makePint(95),
-				PodSpec: makeDefaultPodSpec(),
-			},
-			{
-				Percent: makePint(5),
-				PodSpec: makeDefaultPodSpec(),
-			},
-		},
-	}, {
-		name: "an item can unintentionally receive no traffic",
-		in: &RequestProcessorSpec{
-			{
-				Percent: makePint(99),
-				PodSpec: makeDefaultPodSpec(),
-			},
-			{
-				PodSpec: makeDefaultPodSpec(),
-			},
-			{
-				PodSpec: makeDefaultPodSpec(),
-			},
-		},
-		want: &RequestProcessorSpec{
-			{
-				Percent: makePint(99),
-				PodSpec: makeDefaultPodSpec(),
-			},
-			{
-				Percent: makePint(1),
-				PodSpec: makeDefaultPodSpec(),
-			},
-			{
-				Percent: makePint(0),
-				PodSpec: makeDefaultPodSpec(),
+				PodSpec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{},
+					},
+				},
 			},
 		},
 	}}
@@ -222,6 +83,90 @@ func TestRequestProcessorSpecDefaulting(t *testing.T) {
 			got.SetDefaults(context.Background())
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("SetDefaults (-want, +got) = %v", diff)
+			}
+		})
+	}
+}
+
+func TestRequestProcessorSpecDefaultPercentages(t *testing.T) {
+	tests := []struct {
+		name string
+		in   *RequestProcessorSpec
+		want *RequestProcessorSpec
+	}{{
+		name: "default traffic",
+		in: &RequestProcessorSpec{
+			{},
+		},
+		want: &RequestProcessorSpec{
+			{Percent: makePint(100)},
+		},
+	}, {
+		name: "default partially unallocated traffic",
+		in: &RequestProcessorSpec{
+			{Percent: makePint(90)},
+			{},
+		},
+		want: &RequestProcessorSpec{
+			{Percent: makePint(90)},
+			{Percent: makePint(10)},
+		},
+	}, {
+		name: "default partially unallocated traffic evenly",
+		in: &RequestProcessorSpec{
+			{Percent: makePint(90)},
+			{},
+			{},
+		},
+		want: &RequestProcessorSpec{
+			{Percent: makePint(90)},
+			{Percent: makePint(5)},
+			{Percent: makePint(5)},
+		},
+	}, {
+		name: "default partially unallocated traffic as evenly as possible",
+		in: &RequestProcessorSpec{
+			{Percent: makePint(95)},
+			{},
+			{},
+		},
+		want: &RequestProcessorSpec{
+			{Percent: makePint(95)},
+			{Percent: makePint(3)},
+			{Percent: makePint(2)},
+		},
+	}, {
+		name: "an item can intentionally receive no traffic",
+		in: &RequestProcessorSpec{
+			{Percent: makePint(0)},
+			{Percent: makePint(95)},
+			{},
+		},
+		want: &RequestProcessorSpec{
+			{Percent: makePint(0)},
+			{Percent: makePint(95)},
+			{Percent: makePint(5)},
+		},
+	}, {
+		name: "an item can unintentionally receive no traffic",
+		in: &RequestProcessorSpec{
+			{Percent: makePint(99)},
+			{},
+			{},
+		},
+		want: &RequestProcessorSpec{
+			{Percent: makePint(99)},
+			{Percent: makePint(1)},
+			{Percent: makePint(0)},
+		},
+	}}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.in
+			got.SetDefaultPercents(context.Background())
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("SetDefaultPercents (-want, +got) = %v", diff)
 			}
 		})
 	}

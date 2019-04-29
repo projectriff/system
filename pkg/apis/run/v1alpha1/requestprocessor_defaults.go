@@ -25,9 +25,21 @@ import (
 
 func (rp *RequestProcessor) SetDefaults(ctx context.Context) {
 	rp.Spec.SetDefaults(ctx)
+
+	if rp.Annotations == nil {
+		rp.Annotations = map[string]string{}
+	}
+	if rp.Labels == nil {
+		rp.Labels = map[string]string{}
+	}
+}
+func (rps RequestProcessorSpec) SetDefaults(ctx context.Context) {
+	for i := range rps {
+		rps[i].SetDefaults(ctx)
+	}
 }
 
-func (rps RequestProcessorSpec) SetDefaults(ctx context.Context) {
+func (rps RequestProcessorSpec) SetDefaultPercents(ctx context.Context) {
 	logger := logging.FromContext(ctx)
 
 	allocatedTraffic := 0
@@ -38,8 +50,6 @@ func (rps RequestProcessorSpec) SetDefaults(ctx context.Context) {
 		} else {
 			missingTraffic = append(missingTraffic, i)
 		}
-
-		rps[i].SetDefaults(ctx)
 	}
 
 	// traffic must sum to 100 percent

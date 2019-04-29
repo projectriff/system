@@ -20,6 +20,13 @@ import "context"
 
 func (a *Application) SetDefaults(ctx context.Context) {
 	a.Spec.SetDefaults(ctx)
+
+	if a.Annotations == nil {
+		a.Annotations = map[string]string{}
+	}
+	if a.Labels == nil {
+		a.Labels = map[string]string{}
+	}
 }
 
 func (as *ApplicationSpec) SetDefaults(ctx context.Context) {

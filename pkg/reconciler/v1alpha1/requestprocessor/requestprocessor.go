@@ -141,14 +141,14 @@ func NewController(
 
 	// watch for resource that may be referenced by a RequestProcessor
 	applicationInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    enqueueLabelOfResources(impl, run.RequestProcessorLabelKey, c.Logger),
-		UpdateFunc: controller.PassNew(enqueueLabelOfResources(impl, run.RequestProcessorLabelKey, c.Logger)),
-		DeleteFunc: enqueueLabelOfResources(impl, run.RequestProcessorLabelKey, c.Logger),
+		AddFunc:    enqueueAnnotatedResources(impl, run.RequestProcessorRefsAnnotationKey, c.Logger),
+		UpdateFunc: controller.PassNew(enqueueAnnotatedResources(impl, run.RequestProcessorRefsAnnotationKey, c.Logger)),
+		DeleteFunc: enqueueAnnotatedResources(impl, run.RequestProcessorRefsAnnotationKey, c.Logger),
 	})
 	functionInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    enqueueLabelOfResources(impl, run.RequestProcessorLabelKey, c.Logger),
-		UpdateFunc: controller.PassNew(enqueueLabelOfResources(impl, run.RequestProcessorLabelKey, c.Logger)),
-		DeleteFunc: enqueueLabelOfResources(impl, run.RequestProcessorLabelKey, c.Logger),
+		AddFunc:    enqueueAnnotatedResources(impl, run.RequestProcessorRefsAnnotationKey, c.Logger),
+		UpdateFunc: controller.PassNew(enqueueAnnotatedResources(impl, run.RequestProcessorRefsAnnotationKey, c.Logger)),
+		DeleteFunc: enqueueAnnotatedResources(impl, run.RequestProcessorRefsAnnotationKey, c.Logger),
 	})
 
 	return impl
@@ -212,6 +212,9 @@ func (c *Reconciler) reconcile(ctx context.Context, requestprocessor *runv1alpha
 	// in this getting written back to the API Server, but lets downstream logic make
 	// assumptions about defaulting.
 	requestprocessor.SetDefaults(context.Background())
+	// Default percentages before processing, but unlike SetDefaults are not persisted
+	// by the webhook.
+	requestprocessor.Spec.SetDefaultPercents(context.Background())
 
 	requestprocessor.Status.InitializeConditions()
 
@@ -235,7 +238,7 @@ func (c *Reconciler) reconcile(ctx context.Context, requestprocessor *runv1alpha
 	var configurationConditionUnknown *knduckv1alpha1.Condition
 	for i, configuration := range configurations {
 		requestprocessor.Status.ConfigurationNames[i] = configurations[i].Name
-		sc := configuration.Status.GetCondition(knservingv1alpha1.RouteConditionReady)
+		sc := configuration.Status.GetCondition(knservingv1alpha1.ConfigurationConditionReady)
 		if sc == nil {
 			continue
 		}
@@ -247,11 +250,11 @@ func (c *Reconciler) reconcile(ctx context.Context, requestprocessor *runv1alpha
 		}
 	}
 	if configurationConditionFalse != nil {
-		requestprocessor.Status.MarkBuildsFailed(configurationConditionFalse.Reason, configurationConditionFalse.Message)
+		requestprocessor.Status.MarkConfigurationsFailed(configurationConditionFalse.Reason, configurationConditionFalse.Message)
 	} else if configurationConditionUnknown != nil {
-		requestprocessor.Status.MarkBuildsUnknown(configurationConditionUnknown.Reason, configurationConditionUnknown.Message)
+		requestprocessor.Status.MarkConfigurationsUnknown(configurationConditionUnknown.Reason, configurationConditionUnknown.Message)
 	} else {
-		requestprocessor.Status.MarkBuildsCreated()
+		requestprocessor.Status.MarkConfigurationsReady()
 	}
 
 	routeName := resourcenames.Route(requestprocessor)
@@ -351,9 +354,12 @@ func (c *Reconciler) reconcileBuilds(ctx context.Context, requestprocessor *runv
 				if application.UID == buildRef.UID {
 					// remove reference label
 					application = application.DeepCopy()
-					application.Labels[run.RequestProcessorLabelKey] = deleteToken(application.Labels[run.RequestProcessorLabelKey], requestprocessor.Name)
-					if application.Labels[run.RequestProcessorLabelKey] == "" {
-						delete(application.Labels, run.RequestProcessorLabelKey)
+					if application.Annotations == nil {
+						application.Annotations = map[string]string{}
+					}
+					application.Annotations[run.RequestProcessorRefsAnnotationKey] = deleteToken(application.Annotations[run.RequestProcessorRefsAnnotationKey], requestprocessor.Name)
+					if application.Annotations[run.RequestProcessorRefsAnnotationKey] == "" {
+						delete(application.Annotations, run.RequestProcessorRefsAnnotationKey)
 					}
 					if _, err := c.ProjectriffClientSet.BuildV1alpha1().Applications(requestprocessor.Namespace).Update(application); err != nil {
 						return nil, err
@@ -382,9 +388,12 @@ func (c *Reconciler) reconcileBuilds(ctx context.Context, requestprocessor *runv
 				if function.UID == buildRef.UID {
 					// remove reference label
 					function = function.DeepCopy()
-					function.Labels[run.RequestProcessorLabelKey] = deleteToken(function.Labels[run.RequestProcessorLabelKey], requestprocessor.Name)
-					if function.Labels[run.RequestProcessorLabelKey] == "" {
-						delete(function.Labels, run.RequestProcessorLabelKey)
+					if function.Annotations == nil {
+						function.Annotations = map[string]string{}
+					}
+					function.Annotations[run.RequestProcessorRefsAnnotationKey] = deleteToken(function.Annotations[run.RequestProcessorRefsAnnotationKey], requestprocessor.Name)
+					if function.Annotations[run.RequestProcessorRefsAnnotationKey] == "" {
+						delete(function.Annotations, run.RequestProcessorRefsAnnotationKey)
 					}
 					if _, err := c.ProjectriffClientSet.BuildV1alpha1().Functions(requestprocessor.Namespace).Update(function); err != nil {
 						return nil, err
@@ -447,7 +456,10 @@ func (c *Reconciler) reconcileBuild(ctx context.Context, requestprocessor *runv1
 			return nil, err
 		}
 		application = application.DeepCopy()
-		application.Labels[run.RequestProcessorLabelKey] = insertToken(application.Labels[run.RequestProcessorLabelKey], requestprocessor.Name)
+		if application.Annotations == nil {
+			application.Annotations = map[string]string{}
+		}
+		application.Annotations[run.RequestProcessorRefsAnnotationKey] = insertToken(application.Annotations[run.RequestProcessorRefsAnnotationKey], requestprocessor.Name)
 		return c.ProjectriffClientSet.BuildV1alpha1().Applications(requestprocessor.Namespace).Update(application)
 
 	case build.Function != nil:
@@ -482,7 +494,10 @@ func (c *Reconciler) reconcileBuild(ctx context.Context, requestprocessor *runv1
 			return nil, err
 		}
 		function = function.DeepCopy()
-		function.Labels[run.RequestProcessorLabelKey] = insertToken(function.Labels[run.RequestProcessorLabelKey], requestprocessor.Name)
+		if function.Annotations == nil {
+			function.Annotations = map[string]string{}
+		}
+		function.Annotations[run.RequestProcessorRefsAnnotationKey] = insertToken(function.Annotations[run.RequestProcessorRefsAnnotationKey], requestprocessor.Name)
 		return c.ProjectriffClientSet.BuildV1alpha1().Functions(requestprocessor.Namespace).Update(function)
 	}
 	// should never get here
@@ -780,14 +795,18 @@ func hasToken(str, token string) bool {
 }
 
 func splitSet(str string) sets.String {
-	return sets.NewString(strings.Split(str, ",")...)
+	set := sets.NewString()
+	if str != "" {
+		set.Insert(strings.Split(str, ",")...)
+	}
+	return set
 }
 
 func joinSet(set sets.String) string {
 	return strings.Join(set.List(), ",")
 }
 
-func enqueueLabelOfResources(c *controller.Impl, nameLabel string, logger *zap.SugaredLogger) func(obj interface{}) {
+func enqueueAnnotatedResources(c *controller.Impl, annotation string, logger *zap.SugaredLogger) func(obj interface{}) {
 	return func(obj interface{}) {
 		object, err := kmeta.DeletionHandlingAccessor(obj)
 		if err != nil {
@@ -795,18 +814,15 @@ func enqueueLabelOfResources(c *controller.Impl, nameLabel string, logger *zap.S
 			return
 		}
 
-		labels := object.GetLabels()
-		controllerKey, ok := labels[nameLabel]
+		annotations := object.GetAnnotations()
+		controllerKeys, ok := annotations[annotation]
 		if !ok {
-			logger.Debugf("Object %s/%s does not have a referring name label %s",
-				object.GetNamespace(), object.GetName(), nameLabel)
+			logger.Debugf("Object %s/%s does not have a referring name annotation %s",
+				object.GetNamespace(), object.GetName(), annotation)
 			return
 		}
 
-		// Pass through namespace of the object itself if no namespace label specified.
-		// This is for the scenario that object and the parent resource are of same namespace,
-		// e.g. to enqueue the revision of an endpoint.
-		for _, token := range splitSet(controllerKey) {
+		for _, token := range splitSet(controllerKeys) {
 			c.EnqueueKey(fmt.Sprintf("%s/%s", object.GetNamespace(), token))
 		}
 	}
