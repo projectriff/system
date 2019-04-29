@@ -38,7 +38,6 @@ import (
 	buildlisters "github.com/projectriff/system/pkg/client/listers/build/v1alpha1"
 	runlisters "github.com/projectriff/system/pkg/client/listers/run/v1alpha1"
 	"github.com/projectriff/system/pkg/reconciler"
-	"github.com/projectriff/system/pkg/reconciler/digest"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/requestprocessor/resources"
 	resourcenames "github.com/projectriff/system/pkg/reconciler/v1alpha1/requestprocessor/resources/names"
 	"go.uber.org/zap"
@@ -69,8 +68,7 @@ type Reconciler struct {
 	applicationLister      buildlisters.ApplicationLister
 	functionLister         buildlisters.FunctionLister
 
-	resolver digest.Resolver
-	tracker  tracker.Interface
+	tracker tracker.Interface
 }
 
 // Check that our Reconciler implements controller.Reconciler
@@ -94,8 +92,6 @@ func NewController(
 		knrouteLister:          knrouteInformer.Lister(),
 		applicationLister:      applicationInformer.Lister(),
 		functionLister:         functionInformer.Lister(),
-
-		resolver: digest.NewDefaultResolver(opt),
 	}
 	impl := controller.NewImpl(c, c.Logger, ReconcilerName, reconciler.MustNewStatsReporter(ReconcilerName, c.Logger))
 
