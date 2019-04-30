@@ -48,6 +48,8 @@ const (
 var processorCondSet = duckv1alpha1.NewLivingConditionSet(ProcessorConditionFunctionReady)
 
 type ProcessorStatus struct {
+	InputAddresses     []string                `json:"inputAddresses,omitEmpty"`
+	OutputAddresses    []string                `json:"outputAddresses,omitEmpty"`
 	Conditions         duckv1alpha1.Conditions `json:"conditions,omitempty"`
 	ObservedGeneration int64                   `json:"observedGeneration,omitempty"`
 }

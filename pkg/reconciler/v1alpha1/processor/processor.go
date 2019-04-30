@@ -140,10 +140,27 @@ func (c *Reconciler) reconcile(ctx context.Context, processor *streamsv1alpha1.P
 
 	processor.Status.InitializeConditions()
 
-	input := processor.Spec.Inputs
-	output := processor.Spec.Outputs
-	function := processor.Spec.Function
-	logger.Infof("Creating Processor %s with input Stream %s, Function %s, and output Stream %s", processor.Name, input, function, output)
+	var inputAddresses, outputAddresses []string = nil, nil
+
+	for _, inputName := range processor.Spec.Inputs {
+		input, err := c.streamLister.Streams(processor.Namespace).Get(inputName)
+		if err != nil {
+			return err
+		}
+		inputAddresses = append(inputAddresses, input.Status.Address.String())
+	}
+	processor.Status.InputAddresses = inputAddresses
+
+	for _, outputName := range processor.Spec.Outputs {
+		output, err := c.streamLister.Streams(processor.Namespace).Get(outputName)
+		if err != nil {
+			return err
+		}
+		outputAddresses = append(outputAddresses, output.Status.Address.String())
+	}
+	processor.Status.OutputAddresses = outputAddresses
+
+	logger.Infof("Creating Processor %s with input Streams %s, Function %s, and output Streams %s", processor.Name, inputAddresses, processor.Spec.Function, outputAddresses)
 	_, err := c.createDeployment(processor)
 	if err != nil {
 		logger.Warn("Failed to create Deployment", zap.Error(err))
@@ -177,22 +194,6 @@ func (c *Reconciler) updateStatus(desired *streamsv1alpha1.Processor) (*streamsv
 }
 
 func (c *Reconciler) createDeployment(processor *streamsv1alpha1.Processor) (*appsv1.Deployment, error) {
-	var  inputAddresses, outputAddresses []streamsv1alpha1.StreamAddress = nil, nil
-	for _, inputName := range processor.Spec.Inputs {
-		input, err := c.streamLister.Streams(processor.Namespace).Get(inputName)
-		if err != nil {
-			return nil, err
-		}
-		inputAddresses = append(inputAddresses, input.Status.Address)
-	}
-	for _, outputName := range processor.Spec.Outputs {
-		output, err := c.streamLister.Streams(processor.Namespace).Get(outputName)
-		if err != nil {
-			return nil, err
-		}
-		outputAddresses = append(outputAddresses, output.Status.Address)
-	}
-
-	deployment := resources.MakeDeployment(processor, inputAddresses, outputAddresses)
+	deployment := resources.MakeDeployment(processor)
 	return c.KubeClientSet.AppsV1().Deployments(deployment.Namespace).Create(deployment)
 }
