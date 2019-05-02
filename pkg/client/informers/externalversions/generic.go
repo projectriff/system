@@ -18,7 +18,8 @@ package externalversions
 import (
 	"fmt"
 
-	v1alpha1 "github.com/projectriff/system/pkg/apis/projectriff/v1alpha1"
+	v1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
+	run_v1alpha1 "github.com/projectriff/system/pkg/apis/run/v1alpha1"
 	streams_v1alpha1 "github.com/projectriff/system/pkg/apis/streams/v1alpha1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
@@ -50,11 +51,15 @@ func (f *genericInformer) Lister() cache.GenericLister {
 // TODO extend this to unknown resources with a client pool
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
-	// Group=projectriff.io, Version=v1alpha1
+	// Group=build.projectriff.io, Version=v1alpha1
 	case v1alpha1.SchemeGroupVersion.WithResource("applications"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Projectriff().V1alpha1().Applications().Informer()}, nil
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Build().V1alpha1().Applications().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("functions"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Projectriff().V1alpha1().Functions().Informer()}, nil
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Build().V1alpha1().Functions().Informer()}, nil
+
+		// Group=run.projectriff.io, Version=v1alpha1
+	case run_v1alpha1.SchemeGroupVersion.WithResource("requestprocessors"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Run().V1alpha1().RequestProcessors().Informer()}, nil
 
 		// Group=streams.projectriff.io, Version=v1alpha1
 	case streams_v1alpha1.SchemeGroupVersion.WithResource("processors"):

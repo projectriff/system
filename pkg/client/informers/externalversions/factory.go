@@ -21,8 +21,9 @@ import (
 	time "time"
 
 	versioned "github.com/projectriff/system/pkg/client/clientset/versioned"
+	build "github.com/projectriff/system/pkg/client/informers/externalversions/build"
 	internalinterfaces "github.com/projectriff/system/pkg/client/informers/externalversions/internalinterfaces"
-	projectriff "github.com/projectriff/system/pkg/client/informers/externalversions/projectriff"
+	run "github.com/projectriff/system/pkg/client/informers/externalversions/run"
 	streams "github.com/projectriff/system/pkg/client/informers/externalversions/streams"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
@@ -170,12 +171,17 @@ type SharedInformerFactory interface {
 	ForResource(resource schema.GroupVersionResource) (GenericInformer, error)
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
-	Projectriff() projectriff.Interface
+	Build() build.Interface
+	Run() run.Interface
 	Streams() streams.Interface
 }
 
-func (f *sharedInformerFactory) Projectriff() projectriff.Interface {
-	return projectriff.New(f, f.namespace, f.tweakListOptions)
+func (f *sharedInformerFactory) Build() build.Interface {
+	return build.New(f, f.namespace, f.tweakListOptions)
+}
+
+func (f *sharedInformerFactory) Run() run.Interface {
+	return run.New(f, f.namespace, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Streams() streams.Interface {

@@ -22,29 +22,29 @@ import (
 	"github.com/google/go-cmp/cmp"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/projectriff/system/pkg/apis/projectriff"
-	projectriffv1alpha1 "github.com/projectriff/system/pkg/apis/projectriff/v1alpha1"
+	"github.com/projectriff/system/pkg/apis/build"
+	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 )
 
 func TestMakeLabels(t *testing.T) {
 	tests := []struct {
-		name string
-		app  *projectriffv1alpha1.Application
-		want map[string]string
+		name  string
+		build *buildv1alpha1.Application
+		want  map[string]string
 	}{{
 		name: "just application name",
-		app: &projectriffv1alpha1.Application{
+		build: &buildv1alpha1.Application{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: "foo",
 				Name:      "bar",
 			},
 		},
 		want: map[string]string{
-			projectriff.ApplicationLabelKey: "bar",
+			build.ApplicationLabelKey: "bar",
 		},
 	}, {
 		name: "pass through labels",
-		app: &projectriffv1alpha1.Application{
+		build: &buildv1alpha1.Application{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: "baz",
 				Name:      "blah",
@@ -55,15 +55,15 @@ func TestMakeLabels(t *testing.T) {
 			},
 		},
 		want: map[string]string{
-			projectriff.ApplicationLabelKey: "blah",
-			"asdf":                          "bazinga",
-			"ooga":                          "booga",
+			build.ApplicationLabelKey: "blah",
+			"asdf":                    "bazinga",
+			"ooga":                    "booga",
 		},
 	}}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got := makeLabels(test.app)
+			got := makeLabels(test.build)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("makeLabels (-want, +got) = %v", diff)
 			}

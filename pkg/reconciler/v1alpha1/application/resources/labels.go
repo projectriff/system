@@ -16,17 +16,17 @@ limitations under the License.
 package resources
 
 import (
-	"github.com/projectriff/system/pkg/apis/projectriff"
-	projectriffv1alpha1 "github.com/projectriff/system/pkg/apis/projectriff/v1alpha1"
+	"github.com/projectriff/system/pkg/apis/build"
+	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 )
 
 // makeLabels constructs the labels we will apply to Service resource.
-func makeLabels(a *projectriffv1alpha1.Application) map[string]string {
-	labels := make(map[string]string, len(a.ObjectMeta.Labels)+1)
-	labels[projectriff.ApplicationLabelKey] = a.Name
+func makeLabels(ab *buildv1alpha1.Application) map[string]string {
+	labels := make(map[string]string, len(ab.ObjectMeta.Labels)+1)
+	labels[build.ApplicationLabelKey] = ab.Name
 
 	// Pass through the labels on the Application to child resources.
-	for k, v := range a.ObjectMeta.Labels {
+	for k, v := range ab.ObjectMeta.Labels {
 		labels[k] = v
 	}
 	return labels

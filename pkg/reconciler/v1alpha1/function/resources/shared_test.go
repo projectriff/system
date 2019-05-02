@@ -21,21 +21,24 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	projectriffv1alpha1 "github.com/projectriff/system/pkg/apis/projectriff/v1alpha1"
 )
 
 const (
-	testFunctionName          = "test-function"
-	testFunctionNamespace     = "test-function-namespace"
-	testFunctionBuildArtifact = "test-function-build-artifact"
-	testFunctionBuildHandler  = "test-function-build-handler"
-	testFunctionBuildInvoker  = "test-function-build-invoker"
-	testApplicationName       = "test-function"
-	testLabelKey              = "test-label-key"
-	testLabelValue            = "test-label-value"
-	testImage                 = "test-image"
+	testFunctionName      = "test-function"
+	testFunctionNamespace = "test-function-namespace"
+	testBuildName         = "test-function-function"
+	testFunctionArtifact  = "test-function-artifact"
+	testFunctionHandler   = "test-function-handler"
+	testFunctionInvoker   = "test-function-invoker"
+	testLabelKey          = "test-label-key"
+	testLabelValue        = "test-label-value"
+	testImage             = "test-image"
+	testGitURL            = "https://example.com/repo.git"
+	testGitRevision       = "master"
+	testBuildCacheSize    = "8Gi"
+	testBuildCacheName    = "build-cache-test-function-function"
 )
 
 func expectOwnerReferencesSetCorrectly(t *testing.T, ownerRefs []metav1.OwnerReference) {
@@ -45,7 +48,7 @@ func expectOwnerReferencesSetCorrectly(t *testing.T, ownerRefs []metav1.OwnerRef
 	}
 
 	expectedRefs := []metav1.OwnerReference{{
-		APIVersion: "projectriff.io/v1alpha1",
+		APIVersion: "build.projectriff.io/v1alpha1",
 		Kind:       "Function",
 		Name:       testFunctionName,
 	}}
@@ -54,8 +57,8 @@ func expectOwnerReferencesSetCorrectly(t *testing.T, ownerRefs []metav1.OwnerRef
 	}
 }
 
-func createFunctionMeta() *projectriffv1alpha1.Function {
-	return &projectriffv1alpha1.Function{
+func createFunctionMeta() *buildv1alpha1.Function {
+	return &buildv1alpha1.Function{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      testFunctionName,
 			Namespace: testFunctionNamespace,

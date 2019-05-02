@@ -16,21 +16,23 @@
 package scheme
 
 import (
-	projectriffv1alpha1 "github.com/projectriff/system/pkg/apis/projectriff/v1alpha1"
+	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
+	runv1alpha1 "github.com/projectriff/system/pkg/apis/run/v1alpha1"
 	streamsv1alpha1 "github.com/projectriff/system/pkg/apis/streams/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	serializer "k8s.io/apimachinery/pkg/runtime/serializer"
+	util_runtime "k8s.io/apimachinery/pkg/util/runtime"
 )
 
 var Scheme = runtime.NewScheme()
 var Codecs = serializer.NewCodecFactory(Scheme)
 var ParameterCodec = runtime.NewParameterCodec(Scheme)
-
-func init() {
-	v1.AddToGroupVersion(Scheme, schema.GroupVersion{Version: "v1"})
-	AddToScheme(Scheme)
+var localSchemeBuilder = runtime.SchemeBuilder{
+	buildv1alpha1.AddToScheme,
+	runv1alpha1.AddToScheme,
+	streamsv1alpha1.AddToScheme,
 }
 
 // AddToScheme adds all types of this clientset into the given scheme. This allows composition
@@ -43,11 +45,13 @@ func init() {
 //   )
 //
 //   kclientset, _ := kubernetes.NewForConfig(c)
-//   aggregatorclientsetscheme.AddToScheme(clientsetscheme.Scheme)
+//   _ = aggregatorclientsetscheme.AddToScheme(clientsetscheme.Scheme)
 //
 // After this, RawExtensions in Kubernetes types will serialize kube-aggregator types
 // correctly.
-func AddToScheme(scheme *runtime.Scheme) {
-	projectriffv1alpha1.AddToScheme(scheme)
-	streamsv1alpha1.AddToScheme(scheme)
+var AddToScheme = localSchemeBuilder.AddToScheme
+
+func init() {
+	v1.AddToGroupVersion(Scheme, schema.GroupVersion{Version: "v1"})
+	util_runtime.Must(AddToScheme(Scheme))
 }

@@ -19,7 +19,7 @@ package resources
 import (
 	"testing"
 
-	"github.com/projectriff/system/pkg/apis/projectriff"
+	"github.com/projectriff/system/pkg/apis/build"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
@@ -28,7 +28,7 @@ func TestBuildCache(t *testing.T) {
 	a := createApplicationMeta()
 	a.Labels = map[string]string{testLabelKey: testLabelValue}
 	cacheSize := resource.MustParse(testBuildCacheSize)
-	a.Spec.Build.CacheSize = &cacheSize
+	a.Spec.CacheSize = &cacheSize
 
 	c, _ := MakeBuildCache(a)
 
@@ -46,7 +46,7 @@ func TestBuildCache(t *testing.T) {
 	if got, want := c.Labels[testLabelKey], testLabelValue; got != want {
 		t.Errorf("expected %q labels got %q", want, got)
 	}
-	if got, want := c.Labels[projectriff.ApplicationLabelKey], testApplicationName; got != want {
+	if got, want := c.Labels[build.ApplicationLabelKey], testApplicationName; got != want {
 		t.Errorf("expected %q labels got %q", want, got)
 	}
 

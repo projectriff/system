@@ -17,9 +17,15 @@ limitations under the License.
 package names
 
 import (
-	projectriffv1alpha1 "github.com/projectriff/system/pkg/apis/projectriff/v1alpha1"
+	"fmt"
+
+	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 )
 
-func Application(f *projectriffv1alpha1.Function) string {
-	return f.Name
+func BuildCache(f *buildv1alpha1.Function) string {
+	return fmt.Sprintf("build-cache-%s-function", f.Name)
+}
+
+func Build(f *buildv1alpha1.Function) string {
+	return fmt.Sprintf("%s-function", f.Name)
 }

@@ -21,20 +21,21 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	projectriffv1alpha1 "github.com/projectriff/system/pkg/apis/projectriff/v1alpha1"
+	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
 	testApplicationName      = "test-application"
 	testApplicationNamespace = "test-application-namespace"
-	testBuildArgName         = "test-build-arg-name"
-	testBuildArgValue        = "test-build-arg-value"
+	testBuildName            = "test-application-application"
 	testLabelKey             = "test-label-key"
 	testLabelValue           = "test-label-value"
 	testImage                = "test-image"
-	testBuildCacheName       = "build-cache-test-application"
+	testGitURL               = "https://example.com/repo.git"
+	testGitRevision          = "master"
 	testBuildCacheSize       = "8Gi"
+	testBuildCacheName       = "build-cache-test-application-application"
 )
 
 func expectOwnerReferencesSetCorrectly(t *testing.T, ownerRefs []metav1.OwnerReference) {
@@ -44,17 +45,17 @@ func expectOwnerReferencesSetCorrectly(t *testing.T, ownerRefs []metav1.OwnerRef
 	}
 
 	expectedRefs := []metav1.OwnerReference{{
-		APIVersion: "projectriff.io/v1alpha1",
+		APIVersion: "build.projectriff.io/v1alpha1",
 		Kind:       "Application",
 		Name:       testApplicationName,
 	}}
 	if diff := cmp.Diff(expectedRefs, ownerRefs, cmpopts.IgnoreFields(expectedRefs[0], "Controller", "BlockOwnerDeletion")); diff != "" {
-		t.Errorf("Unexpected function owner refs diff (-want +got): %v", diff)
+		t.Errorf("Unexpected application owner refs diff (-want +got): %v", diff)
 	}
 }
 
-func createApplicationMeta() *projectriffv1alpha1.Application {
-	return &projectriffv1alpha1.Application{
+func createApplicationMeta() *buildv1alpha1.Application {
+	return &buildv1alpha1.Application{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      testApplicationName,
 			Namespace: testApplicationNamespace,

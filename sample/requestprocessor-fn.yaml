@@ -1,0 +1,15 @@
+apiVersion: run.projectriff.io/v1alpha1
+kind: RequestProcessor
+metadata:
+  name: uppercase
+spec:
+- name: live
+  build:
+    function:
+      image: gcr.io/cf-sandbox-sandrews/uppercase
+      cacheSize: 8Gi
+      source:
+        git:
+          url: https://github.com/projectriff/fats.git
+          revision: master
+        subPath: functions/uppercase/node

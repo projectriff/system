@@ -26,9 +26,10 @@ import (
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/record"
 
+	knbuildclientset "github.com/knative/build/pkg/client/clientset/versioned"
 	"github.com/knative/pkg/configmap"
 	"github.com/knative/pkg/logging/logkey"
-	servingclientset "github.com/knative/serving/pkg/client/clientset/versioned"
+	knservingclientset "github.com/knative/serving/pkg/client/clientset/versioned"
 	projectriffclientset "github.com/projectriff/system/pkg/client/clientset/versioned"
 	projectriffScheme "github.com/projectriff/system/pkg/client/clientset/versioned/scheme"
 )
@@ -39,7 +40,8 @@ import (
 type Options struct {
 	KubeClientSet        kubernetes.Interface
 	ProjectriffClientSet projectriffclientset.Interface
-	ServingClientSet     servingclientset.Interface
+	KnBuildClientSet     knbuildclientset.Interface
+	KnServingClientSet   knservingclientset.Interface
 	Recorder             record.EventRecorder
 
 	ConfigMapWatcher configmap.Watcher
@@ -65,8 +67,11 @@ type Base struct {
 	// ProjectriffClientSet allows us to configure projectriff objects
 	ProjectriffClientSet projectriffclientset.Interface
 
-	// ServingClientSet allows us to configure Serving objects
-	ServingClientSet servingclientset.Interface
+	// KnBuildClientSet allows us to configure Knative build objects
+	KnBuildClientSet knbuildclientset.Interface
+
+	// KnServingClientSet allows us to configure Knative serving objects
+	KnServingClientSet knservingclientset.Interface
 
 	// ConfigMapWatcher allows us to watch for ConfigMap changes.
 	ConfigMapWatcher configmap.Watcher
@@ -103,7 +108,8 @@ func NewBase(opt Options, controllerAgentName string) *Base {
 	base := &Base{
 		KubeClientSet:        opt.KubeClientSet,
 		ProjectriffClientSet: opt.ProjectriffClientSet,
-		ServingClientSet:     opt.ServingClientSet,
+		KnBuildClientSet:     opt.KnBuildClientSet,
+		KnServingClientSet:   opt.KnServingClientSet,
 		ConfigMapWatcher:     opt.ConfigMapWatcher,
 		Recorder:             recorder,
 		Logger:               logger,

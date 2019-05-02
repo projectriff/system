@@ -19,32 +19,41 @@ package names
 import (
 	"testing"
 
+	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	projectriffv1alpha1 "github.com/projectriff/system/pkg/apis/projectriff/v1alpha1"
 )
 
 func TestNamer(t *testing.T) {
 	tests := []struct {
-		name string
-		fn   *projectriffv1alpha1.Function
-		f    func(*projectriffv1alpha1.Function) string
-		want string
+		name  string
+		build *buildv1alpha1.Function
+		f     func(*buildv1alpha1.Function) string
+		want  string
 	}{{
-		name: "Application",
-		fn: &projectriffv1alpha1.Function{
+		name: "BuildCache",
+		build: &buildv1alpha1.Function{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "foo",
 				Namespace: "default",
 			},
 		},
-		f:    Application,
-		want: "foo",
+		f:    BuildCache,
+		want: "build-cache-foo-function",
+	}, {
+		name: "Build",
+		build: &buildv1alpha1.Function{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "foo",
+				Namespace: "default",
+			},
+		},
+		f:    Build,
+		want: "foo-function",
 	}}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got := test.f(test.fn)
+			got := test.f(test.build)
 			if got != test.want {
 				t.Errorf("%s() = %v, wanted %v", test.name, got, test.want)
 			}

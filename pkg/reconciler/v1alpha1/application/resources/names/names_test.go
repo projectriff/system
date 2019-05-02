@@ -19,52 +19,41 @@ package names
 import (
 	"testing"
 
+	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	projectriffv1alpha1 "github.com/projectriff/system/pkg/apis/projectriff/v1alpha1"
 )
 
 func TestNamer(t *testing.T) {
 	tests := []struct {
-		name string
-		app  *projectriffv1alpha1.Application
-		f    func(*projectriffv1alpha1.Application) string
-		want string
+		name  string
+		build *buildv1alpha1.Application
+		f     func(*buildv1alpha1.Application) string
+		want  string
 	}{{
 		name: "BuildCache",
-		app: &projectriffv1alpha1.Application{
+		build: &buildv1alpha1.Application{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "foo",
 				Namespace: "default",
 			},
 		},
 		f:    BuildCache,
-		want: "build-cache-foo",
+		want: "build-cache-foo-application",
 	}, {
-		name: "Configuration",
-		app: &projectriffv1alpha1.Application{
+		name: "Build",
+		build: &buildv1alpha1.Application{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "foo",
 				Namespace: "default",
 			},
 		},
-		f:    Configuration,
-		want: "foo",
-	}, {
-		name: "Route",
-		app: &projectriffv1alpha1.Application{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "foo",
-				Namespace: "default",
-			},
-		},
-		f:    Route,
-		want: "foo",
+		f:    Build,
+		want: "foo-application",
 	}}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got := test.f(test.app)
+			got := test.f(test.build)
 			if got != test.want {
 				t.Errorf("%s() = %v, wanted %v", test.name, got, test.want)
 			}

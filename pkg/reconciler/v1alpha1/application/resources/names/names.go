@@ -19,17 +19,13 @@ package names
 import (
 	"fmt"
 
-	projectriffv1alpha1 "github.com/projectriff/system/pkg/apis/projectriff/v1alpha1"
+	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 )
 
-func BuildCache(a *projectriffv1alpha1.Application) string {
-	return fmt.Sprintf("build-cache-%s", a.Name)
+func BuildCache(a *buildv1alpha1.Application) string {
+	return fmt.Sprintf("build-cache-%s-application", a.Name)
 }
 
-func Configuration(a *projectriffv1alpha1.Application) string {
-	return a.Name
-}
-
-func Route(a *projectriffv1alpha1.Application) string {
-	return a.Name
+func Build(a *buildv1alpha1.Application) string {
+	return fmt.Sprintf("%s-application", a.Name)
 }
