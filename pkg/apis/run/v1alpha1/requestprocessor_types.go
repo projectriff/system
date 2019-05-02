@@ -46,10 +46,10 @@ var (
 type RequestProcessorSpec []RequestProcessorSpecItem
 
 type RequestProcessorSpecItem struct {
-	Tag            string `json:"tag,omitempty"`
-	Percent        *int   `json:"percent,omitempty"`
-	Build          *Build `json:"build,omitempty"`
-	corev1.PodSpec `json:",inline"`
+	Name     string          `json:"name"`
+	Percent  *int            `json:"percent,omitempty"`
+	Build    *Build          `json:"build,omitempty"`
+	Template *corev1.PodSpec `json:"template,omitempty"`
 }
 
 type Build struct {

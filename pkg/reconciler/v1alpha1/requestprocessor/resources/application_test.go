@@ -18,6 +18,7 @@ package resources
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -30,6 +31,7 @@ func TestApplication(t *testing.T) {
 	rp := createRequestProcessorMeta()
 	rp.Labels = map[string]string{testLabelKey: testLabelValue}
 	rp.Spec = append(rp.Spec, runv1alpha1.RequestProcessorSpecItem{
+		Name: testItemName,
 		Build: &runv1alpha1.Build{
 			Application: &buildv1alpha1.ApplicationSpec{
 				Image: "example.com/repo",
@@ -49,7 +51,7 @@ func TestApplication(t *testing.T) {
 		t.Errorf("expected valid application got errors %+v", errs)
 	}
 
-	if got, want := a.Name, testRequestProcessorName+"-0"; got != want {
+	if got, want := a.Name, fmt.Sprintf("%s-%s", testRequestProcessorName, testItemName); got != want {
 		t.Errorf("expected %q for configuration name got %q", want, got)
 	}
 	if got, want := a.Namespace, testRequestProcessorNamespace; got != want {

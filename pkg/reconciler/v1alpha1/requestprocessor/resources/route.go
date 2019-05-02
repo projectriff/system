@@ -54,7 +54,7 @@ func makeRouteTraffic(rp *runv1alpha1.RequestProcessor) []knservingv1alpha1.Traf
 
 	for i, rpsi := range rp.Spec {
 		traffic = append(traffic, knservingv1alpha1.TrafficTarget{
-			Name:              rpsi.Tag,
+			Name:              rpsi.Name,
 			Percent:           *rpsi.Percent,
 			ConfigurationName: rp.Status.ConfigurationNames[i],
 		})

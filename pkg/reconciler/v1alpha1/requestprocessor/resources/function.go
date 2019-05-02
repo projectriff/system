@@ -32,7 +32,7 @@ func MakeFunction(rp *runv1alpha1.RequestProcessor, i int) (*buildv1alpha1.Funct
 
 	function := &buildv1alpha1.Function{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      names.TagOrIndex(rp, i),
+			Name:      names.Item(rp, i),
 			Namespace: rp.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
 				*kmeta.NewControllerRef(rp),

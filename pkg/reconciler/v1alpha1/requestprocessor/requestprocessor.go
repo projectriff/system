@@ -383,7 +383,7 @@ func (c *Reconciler) reconcileBuild(ctx context.Context, requestprocessor *runv1
 	build := requestprocessor.Spec[i].Build
 	switch {
 	case build.Application != nil:
-		applicationName := resourcenames.TagOrIndex(requestprocessor, i)
+		applicationName := resourcenames.Item(requestprocessor, i)
 		application, err := c.applicationLister.Applications(requestprocessor.Namespace).Get(applicationName)
 		if errors.IsNotFound(err) {
 			application, err = c.createApplication(requestprocessor, i)
@@ -420,7 +420,7 @@ func (c *Reconciler) reconcileBuild(ctx context.Context, requestprocessor *runv1
 		return application, nil
 
 	case build.Function != nil:
-		functionName := resourcenames.TagOrIndex(requestprocessor, i)
+		functionName := resourcenames.Item(requestprocessor, i)
 		function, err := c.functionLister.Functions(requestprocessor.Namespace).Get(functionName)
 		if errors.IsNotFound(err) {
 			function, err = c.createFunction(requestprocessor, i)
@@ -548,14 +548,7 @@ func functionSemanticEquals(desiredFunction, function *buildv1alpha1.Function) b
 func (c *Reconciler) reconcileConfigurations(ctx context.Context, requestprocessor *runv1alpha1.RequestProcessor) ([]knservingv1alpha1.Configuration, error) {
 	logger := logging.FromContext(ctx)
 
-	configurationNames := make([]string, len(requestprocessor.Spec))
-	for i := range requestprocessor.Spec {
-		if requestprocessor.Spec[i].Tag != "" {
-			configurationNames[i] = fmt.Sprintf("%s-%s", resourcenames.Configuration(requestprocessor), requestprocessor.Spec[i].Tag)
-		} else {
-			configurationNames[i] = fmt.Sprintf("%s-%d", resourcenames.Configuration(requestprocessor), i)
-		}
-	}
+	configurationNames := resourcenames.Items(requestprocessor)
 	if err := c.resolveImages(ctx, requestprocessor); err != nil {
 		c.Recorder.Eventf(requestprocessor, corev1.EventTypeWarning, "ResolutionFailed", "Failed to resolve image: %v", err)
 		return nil, fmt.Errorf("unable to resolve image: %v", err)
@@ -634,13 +627,13 @@ func (c *Reconciler) resolveImages(ctx context.Context, rp *runv1alpha1.RequestP
 			if err != nil {
 				return err
 			}
-			rp.Spec[i].Containers[0].Image = build.Status.LatestImage
+			rp.Spec[i].Template.Containers[0].Image = build.Status.LatestImage
 		case ref.Kind == "Function":
 			build, err := c.functionLister.Functions(rp.Namespace).Get(ref.Name)
 			if err != nil {
 				return err
 			}
-			rp.Spec[i].Containers[0].Image = build.Status.LatestImage
+			rp.Spec[i].Template.Containers[0].Image = build.Status.LatestImage
 		}
 	}
 

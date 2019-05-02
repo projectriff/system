@@ -19,6 +19,7 @@ package names
 import (
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	runv1alpha1 "github.com/projectriff/system/pkg/apis/run/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -30,16 +31,6 @@ func TestNamer(t *testing.T) {
 		f    func(*runv1alpha1.RequestProcessor) string
 		want string
 	}{{
-		name: "Configuration",
-		run: &runv1alpha1.RequestProcessor{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "foo",
-				Namespace: "default",
-			},
-		},
-		f:    Configuration,
-		want: "foo",
-	}, {
 		name: "Route",
 		run: &runv1alpha1.RequestProcessor{
 			ObjectMeta: metav1.ObjectMeta{
@@ -56,6 +47,64 @@ func TestNamer(t *testing.T) {
 			got := test.f(test.run)
 			if got != test.want {
 				t.Errorf("%s() = %v, wanted %v", test.name, got, test.want)
+			}
+		})
+	}
+}
+
+func TestNameItems(t *testing.T) {
+	tests := []struct {
+		name string
+		run  *runv1alpha1.RequestProcessor
+		f    func(*runv1alpha1.RequestProcessor) []string
+		want []string
+	}{{
+		name: "Items empty",
+		run: &runv1alpha1.RequestProcessor{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "foo",
+				Namespace: "default",
+			},
+		},
+		f:    Items,
+		want: []string{},
+	}, {
+		name: "Items single",
+		run: &runv1alpha1.RequestProcessor{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "foo",
+				Namespace: "default",
+			},
+			Spec: runv1alpha1.RequestProcessorSpec{
+				{Name: "bar"},
+			},
+		},
+		f:    Items,
+		want: []string{"foo-bar"},
+	}, {
+		name: "Items many",
+		run: &runv1alpha1.RequestProcessor{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "foo",
+				Namespace: "default",
+			},
+			Spec: runv1alpha1.RequestProcessorSpec{
+				{Name: "bar"},
+				{Name: "baz"},
+			},
+		},
+		f: Items,
+		want: []string{
+			"foo-bar",
+			"foo-baz",
+		},
+	}}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.f(test.run)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("%s (-want, +got) = %v", test.name, diff)
 			}
 		})
 	}

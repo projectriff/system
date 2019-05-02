@@ -3,7 +3,8 @@ kind: RequestProcessor
 metadata:
   name: uppercase
 spec:
-- build:
+- name: live
+  build:
     function:
       image: gcr.io/cf-sandbox-sandrews/uppercase
       cacheSize: 8Gi

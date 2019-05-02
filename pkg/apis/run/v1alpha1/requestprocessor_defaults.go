@@ -62,7 +62,10 @@ func (rps RequestProcessorSpec) SetDefaultPercents(ctx context.Context) {
 }
 
 func (rpsi *RequestProcessorSpecItem) SetDefaults(ctx context.Context) {
-	if len(rpsi.Containers) == 0 {
-		rpsi.PodSpec.Containers = append(rpsi.Containers, corev1.Container{})
+	if rpsi.Template == nil {
+		rpsi.Template = &corev1.PodSpec{}
+	}
+	if len(rpsi.Template.Containers) == 0 {
+		rpsi.Template.Containers = append(rpsi.Template.Containers, corev1.Container{})
 	}
 }
