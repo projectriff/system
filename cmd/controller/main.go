@@ -200,6 +200,8 @@ func main() {
 		applicationInformer.Informer().HasSynced,
 		functionInformer.Informer().HasSynced,
 		requestprocessorInformer.Informer().HasSynced,
+		streamInformer.Informer().HasSynced,
+		processorInformer.Informer().HasSynced,
 		pvcInformer.Informer().HasSynced,
 		knbuildInformer.Informer().HasSynced,
 		knconfigurationInformer.Informer().HasSynced,
