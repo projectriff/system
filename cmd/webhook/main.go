@@ -32,6 +32,7 @@ import (
 	"github.com/knative/pkg/webhook"
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	runv1alpha1 "github.com/projectriff/system/pkg/apis/run/v1alpha1"
+	streamsv1alpha1 "github.com/projectriff/system/pkg/apis/streams/v1alpha1"
 	"github.com/projectriff/system/pkg/logging"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
@@ -101,6 +102,8 @@ func main() {
 			buildv1alpha1.SchemeGroupVersion.WithKind("Application"):    &buildv1alpha1.Application{},
 			buildv1alpha1.SchemeGroupVersion.WithKind("Function"):       &buildv1alpha1.Function{},
 			runv1alpha1.SchemeGroupVersion.WithKind("RequestProcessor"): &runv1alpha1.RequestProcessor{},
+			streamsv1alpha1.SchemeGroupVersion.WithKind("Stream"):       &streamsv1alpha1.Stream{},
+			streamsv1alpha1.SchemeGroupVersion.WithKind("Processor"):    &streamsv1alpha1.Processor{},
 		},
 		Logger: logger,
 	}

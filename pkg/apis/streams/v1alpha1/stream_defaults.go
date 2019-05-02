@@ -16,10 +16,12 @@
 
 package v1alpha1
 
-func (s *Stream) SetDefaults() {
-	s.Spec.SetDefaults()
+import "context"
+
+func (s *Stream) SetDefaults(ctx context.Context) {
+	s.Spec.SetDefaults(ctx)
 }
 
-func (spec *StreamSpec) SetDefaults() {
+func (spec *StreamSpec) SetDefaults(ctx context.Context) {
 	// TODO
 }
