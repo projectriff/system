@@ -27,6 +27,7 @@ spec:
     plural: requestprocessors
     categories:
     - riff
+    - processor
   scope: Namespaced
   subresources:
     status: {}

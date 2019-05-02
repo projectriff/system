@@ -21,10 +21,10 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
-	// Processors returns a ProcessorInformer.
-	Processors() ProcessorInformer
 	// Streams returns a StreamInformer.
 	Streams() StreamInformer
+	// StreamProcessors returns a StreamProcessorInformer.
+	StreamProcessors() StreamProcessorInformer
 }
 
 type version struct {
@@ -38,12 +38,12 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 }
 
-// Processors returns a ProcessorInformer.
-func (v *version) Processors() ProcessorInformer {
-	return &processorInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
 // Streams returns a StreamInformer.
 func (v *version) Streams() StreamInformer {
 	return &streamInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// StreamProcessors returns a StreamProcessorInformer.
+func (v *version) StreamProcessors() StreamProcessorInformer {
+	return &streamProcessorInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

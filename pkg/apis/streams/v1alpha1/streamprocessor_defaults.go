@@ -16,10 +16,12 @@
 
 package v1alpha1
 
-func (p *Processor) SetDefaults() {
-	p.Spec.SetDefaults()
+import "context"
+
+func (sp *StreamProcessor) SetDefaults(ctx context.Context) {
+	sp.Spec.SetDefaults(ctx)
 }
 
-func (spec *ProcessorSpec) SetDefaults() {
+func (sps *StreamProcessorSpec) SetDefaults(ctx context.Context) {
 	// TODO
 }

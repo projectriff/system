@@ -20,6 +20,6 @@ package streams
 const (
 	GroupName = "streams.projectriff.io"
 
-	StreamLabelKey    = "streams.projectriff.io/stream"
-	ProcessorLabelKey = "streams.projectriff.io/processor"
+	StreamLabelKey          = "streams.projectriff.io/stream"
+	StreamProcessorLabelKey = "streams.projectriff.io/streamprocessor"
 )

@@ -25,29 +25,29 @@ import (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-type Processor struct {
+type StreamProcessor struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   ProcessorSpec   `json:"spec"`
-	Status ProcessorStatus `json:"status"`
+	Spec   StreamProcessorSpec   `json:"spec"`
+	Status StreamProcessorStatus `json:"status"`
 }
 
-type ProcessorSpec struct {
+type StreamProcessorSpec struct {
 	Inputs   []string `json:"inputs"`
 	Outputs  []string `json:"outputs"`
 	Function string   `json:"function"`
 }
 
 const (
-	ProcessorConditionReady = duckv1alpha1.ConditionReady
+	StreamProcessorConditionReady = duckv1alpha1.ConditionReady
 	// TODO add aggregated streams ready status
-	ProcessorConditionFunctionReady duckv1alpha1.ConditionType = "FunctionReady"
+	StreamProcessorConditionFunctionReady duckv1alpha1.ConditionType = "FunctionReady"
 )
 
-var processorCondSet = duckv1alpha1.NewLivingConditionSet(ProcessorConditionFunctionReady)
+var streamprocessorCondSet = duckv1alpha1.NewLivingConditionSet(StreamProcessorConditionFunctionReady)
 
-type ProcessorStatus struct {
+type StreamProcessorStatus struct {
 	InputAddresses     []string                `json:"inputAddresses,omitEmpty"`
 	OutputAddresses    []string                `json:"outputAddresses,omitEmpty"`
 	Conditions         duckv1alpha1.Conditions `json:"conditions,omitempty"`
@@ -56,25 +56,25 @@ type ProcessorStatus struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-type ProcessorList struct {
+type StreamProcessorList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 
-	Items []Processor `json:"items"`
+	Items []StreamProcessor `json:"items"`
 }
 
-func (*Processor) GetGroupVersionKind() schema.GroupVersionKind {
-	return SchemeGroupVersion.WithKind("Processor")
+func (*StreamProcessor) GetGroupVersionKind() schema.GroupVersionKind {
+	return SchemeGroupVersion.WithKind("StreamProcessor")
 }
 
-func (status *ProcessorStatus) IsReady() bool {
-	return processorCondSet.Manage(status).IsHappy()
+func (sps *StreamProcessorStatus) IsReady() bool {
+	return streamprocessorCondSet.Manage(sps).IsHappy()
 }
 
-func (status *ProcessorStatus) GetCondition(t duckv1alpha1.ConditionType) *duckv1alpha1.Condition {
-	return processorCondSet.Manage(status).GetCondition(t)
+func (sps *StreamProcessorStatus) GetCondition(t duckv1alpha1.ConditionType) *duckv1alpha1.Condition {
+	return streamprocessorCondSet.Manage(sps).GetCondition(t)
 }
 
-func (status *ProcessorStatus) InitializeConditions() {
-	processorCondSet.Manage(status).InitializeConditions()
+func (sps *StreamProcessorStatus) InitializeConditions() {
+	streamprocessorCondSet.Manage(sps).InitializeConditions()
 }

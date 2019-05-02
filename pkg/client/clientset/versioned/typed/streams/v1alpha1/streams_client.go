@@ -24,8 +24,8 @@ import (
 
 type StreamsV1alpha1Interface interface {
 	RESTClient() rest.Interface
-	ProcessorsGetter
 	StreamsGetter
+	StreamProcessorsGetter
 }
 
 // StreamsV1alpha1Client is used to interact with features provided by the streams.projectriff.io group.
@@ -33,12 +33,12 @@ type StreamsV1alpha1Client struct {
 	restClient rest.Interface
 }
 
-func (c *StreamsV1alpha1Client) Processors(namespace string) ProcessorInterface {
-	return newProcessors(c, namespace)
-}
-
 func (c *StreamsV1alpha1Client) Streams(namespace string) StreamInterface {
 	return newStreams(c, namespace)
+}
+
+func (c *StreamsV1alpha1Client) StreamProcessors(namespace string) StreamProcessorInterface {
+	return newStreamProcessors(c, namespace)
 }
 
 // NewForConfig creates a new StreamsV1alpha1Client for the given config.

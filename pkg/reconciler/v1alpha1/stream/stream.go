@@ -136,7 +136,7 @@ func (c *Reconciler) reconcile(ctx context.Context, stream *streamsv1alpha1.Stre
 	// and may not have had all of the assumed defaults specified.  This won't result
 	// in this getting written back to the API Server, but lets downstream logic make
 	// assumptions about defaulting.
-	stream.SetDefaults()
+	stream.SetDefaults(ctx)
 
 	stream.Status.InitializeConditions()
 

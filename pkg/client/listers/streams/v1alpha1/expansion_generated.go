@@ -15,14 +15,6 @@
  */
 package v1alpha1
 
-// ProcessorListerExpansion allows custom methods to be added to
-// ProcessorLister.
-type ProcessorListerExpansion interface{}
-
-// ProcessorNamespaceListerExpansion allows custom methods to be added to
-// ProcessorNamespaceLister.
-type ProcessorNamespaceListerExpansion interface{}
-
 // StreamListerExpansion allows custom methods to be added to
 // StreamLister.
 type StreamListerExpansion interface{}
@@ -30,3 +22,11 @@ type StreamListerExpansion interface{}
 // StreamNamespaceListerExpansion allows custom methods to be added to
 // StreamNamespaceLister.
 type StreamNamespaceListerExpansion interface{}
+
+// StreamProcessorListerExpansion allows custom methods to be added to
+// StreamProcessorLister.
+type StreamProcessorListerExpansion interface{}
+
+// StreamProcessorNamespaceListerExpansion allows custom methods to be added to
+// StreamProcessorNamespaceLister.
+type StreamProcessorNamespaceListerExpansion interface{}

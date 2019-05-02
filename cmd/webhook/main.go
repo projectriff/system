@@ -99,11 +99,11 @@ func main() {
 		Client:  kubeClient,
 		Options: options,
 		Handlers: map[schema.GroupVersionKind]webhook.GenericCRD{
-			buildv1alpha1.SchemeGroupVersion.WithKind("Application"):    &buildv1alpha1.Application{},
-			buildv1alpha1.SchemeGroupVersion.WithKind("Function"):       &buildv1alpha1.Function{},
-			runv1alpha1.SchemeGroupVersion.WithKind("RequestProcessor"): &runv1alpha1.RequestProcessor{},
-			streamsv1alpha1.SchemeGroupVersion.WithKind("Stream"):       &streamsv1alpha1.Stream{},
-			streamsv1alpha1.SchemeGroupVersion.WithKind("Processor"):    &streamsv1alpha1.Processor{},
+			buildv1alpha1.SchemeGroupVersion.WithKind("Application"):       &buildv1alpha1.Application{},
+			buildv1alpha1.SchemeGroupVersion.WithKind("Function"):          &buildv1alpha1.Function{},
+			runv1alpha1.SchemeGroupVersion.WithKind("RequestProcessor"):    &runv1alpha1.RequestProcessor{},
+			streamsv1alpha1.SchemeGroupVersion.WithKind("Stream"):          &streamsv1alpha1.Stream{},
+			streamsv1alpha1.SchemeGroupVersion.WithKind("StreamProcessor"): &streamsv1alpha1.StreamProcessor{},
 		},
 		Logger: logger,
 	}

@@ -17,37 +17,11 @@ limitations under the License.
 package names
 
 import (
-	"testing"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"fmt"
 
 	streamsv1alpha1 "github.com/projectriff/system/pkg/apis/streams/v1alpha1"
 )
 
-func TestNamer(t *testing.T) {
-	tests := []struct {
-		name string
-		proc *streamsv1alpha1.Processor
-		f    func(*streamsv1alpha1.Processor) string
-		want string
-	}{{
-		name: "Deployment",
-		proc: &streamsv1alpha1.Processor{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "foo",
-				Namespace: "default",
-			},
-		},
-		f:    Deployment,
-		want: "foo-processor",
-	}}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			got := test.f(test.proc)
-			if got != test.want {
-				t.Errorf("%s() = %v, wanted %v", test.name, got, test.want)
-			}
-		})
-	}
+func Deployment(sp *streamsv1alpha1.StreamProcessor) string {
+	return fmt.Sprintf("%s-processor", sp.Name)
 }
