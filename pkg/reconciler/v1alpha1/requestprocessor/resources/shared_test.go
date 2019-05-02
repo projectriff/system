@@ -28,13 +28,12 @@ import (
 const (
 	testRequestProcessorName      = "test-requestprocessor"
 	testRequestProcessorNamespace = "test-requestprocessor-namespace"
-	testConfigurationName         = "test-requestprocessor-0"
 	testRouteName                 = "test-requestprocessor"
 	testLabelKey                  = "test-label-key"
 	testLabelValue                = "test-label-value"
 	testServiceAccount            = "test-sa"
 	testImage                     = "test-image"
-	testTag                       = "test-tag"
+	testItemName                  = "test-item"
 )
 
 func expectOwnerReferencesSetCorrectly(t *testing.T, ownerRefs []metav1.OwnerReference) {

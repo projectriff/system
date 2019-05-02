@@ -62,7 +62,7 @@ func TestRequestProcessorSpecDefaulting(t *testing.T) {
 		},
 		want: &RequestProcessorSpec{
 			{
-				PodSpec: corev1.PodSpec{
+				Template: &corev1.PodSpec{
 					Containers: []corev1.Container{
 						{},
 					},

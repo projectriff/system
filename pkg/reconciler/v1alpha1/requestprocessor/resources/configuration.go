@@ -17,8 +17,6 @@ limitations under the License.
 package resources
 
 import (
-	"fmt"
-
 	"github.com/knative/pkg/kmeta"
 	knservingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
 	runv1alpha1 "github.com/projectriff/system/pkg/apis/run/v1alpha1"
@@ -29,15 +27,9 @@ import (
 // MakeConfiguration creates a Configuration from an RequestProcessor object.
 func MakeConfiguration(rp *runv1alpha1.RequestProcessor, i int) (*knservingv1alpha1.Configuration, error) {
 	rpsi := rp.Spec[i]
-	var name string
-	if rpsi.Tag != "" {
-		name = fmt.Sprintf("%s-%s", names.Configuration(rp), rpsi.Tag)
-	} else {
-		name = fmt.Sprintf("%s-%d", names.Configuration(rp), i)
-	}
 	configuration := &knservingv1alpha1.Configuration{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
+			Name:      names.Item(rp, i),
 			Namespace: rp.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
 				*kmeta.NewControllerRef(rp),
@@ -47,9 +39,9 @@ func MakeConfiguration(rp *runv1alpha1.RequestProcessor, i int) (*knservingv1alp
 		Spec: knservingv1alpha1.ConfigurationSpec{
 			RevisionTemplate: knservingv1alpha1.RevisionTemplateSpec{
 				Spec: knservingv1alpha1.RevisionSpec{
-					ServiceAccountName: rpsi.ServiceAccountName,
-					Container:          rpsi.Containers[0],
-					Volumes:            rpsi.Volumes,
+					ServiceAccountName: rpsi.Template.ServiceAccountName,
+					Container:          rpsi.Template.Containers[0],
+					Volumes:            rpsi.Template.Volumes,
 				},
 			},
 		},

@@ -17,6 +17,7 @@ limitations under the License.
 package resources
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/projectriff/system/pkg/apis/run"
@@ -28,11 +29,11 @@ func TestRoute(t *testing.T) {
 	rp := createRequestProcessorMeta()
 	rp.Labels = map[string]string{testLabelKey: testLabelValue}
 	rp.Spec = append(rp.Spec, runv1alpha1.RequestProcessorSpecItem{
-		Tag:     testTag,
+		Name:    testItemName,
 		Percent: &p100,
 	})
 	rp.Status.ConfigurationNames = []string{
-		testConfigurationName,
+		fmt.Sprintf("%s-%s", testRequestProcessorName, testItemName),
 	}
 
 	r, _ := MakeRoute(rp)
@@ -58,13 +59,13 @@ func TestRoute(t *testing.T) {
 	if got, want := len(r.Spec.Traffic), 1; got != want {
 		t.Errorf("expected %d traffic policy got %d", want, got)
 	}
-	if got, want := r.Spec.Traffic[0].Name, testTag; got != want {
+	if got, want := r.Spec.Traffic[0].Name, testItemName; got != want {
 		t.Errorf("expected %q traffic policy tag got %q", want, got)
 	}
 	if got, want := r.Spec.Traffic[0].Percent, 100; got != want {
 		t.Errorf("expected %q traffic policy tag got %q", want, got)
 	}
-	if got, want := r.Spec.Traffic[0].ConfigurationName, testConfigurationName; got != want {
+	if got, want := r.Spec.Traffic[0].ConfigurationName, fmt.Sprintf("%s-%s", testRequestProcessorName, testItemName); got != want {
 		t.Errorf("expected %q traffic policy configuration got %q", want, got)
 	}
 }

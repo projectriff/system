@@ -3,5 +3,6 @@ kind: RequestProcessor
 metadata:
   name: node-sample
 spec:
-- build:
+- name: live
+  build:
     applicationRef: node-sample

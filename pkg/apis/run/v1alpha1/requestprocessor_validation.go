@@ -40,23 +40,25 @@ func (rps RequestProcessorSpec) Validate(ctx context.Context) *apis.FieldError {
 
 	errs := &apis.FieldError{}
 
-	seenTags := map[string]int{}
+	seenNames := map[string]int{}
 	for i, rpsi := range rps {
 		errs = errs.Also(rpsi.Validate(ctx).ViaIndex(i))
 
-		if rpsi.Tag != "" {
-			// require tags be unique
-			if j, ok := seenTags[rpsi.Tag]; ok {
-				errs = errs.Also(&apis.FieldError{
-					Message: fmt.Sprintf("duplicate tag %q", rpsi.Tag),
-					Paths: []string{
-						fmt.Sprintf("[%d].tag", j),
-						fmt.Sprintf("[%d].tag", i),
-					},
-				})
-			} else {
-				seenTags[rpsi.Tag] = i
-			}
+		if rpsi.Name == "" {
+			errs = errs.Also(apis.ErrMissingField("name").ViaIndex(i))
+		}
+
+		// require names be unique
+		if j, ok := seenNames[rpsi.Name]; ok {
+			errs = errs.Also(&apis.FieldError{
+				Message: fmt.Sprintf("duplicate name %q", rpsi.Name),
+				Paths: []string{
+					fmt.Sprintf("[%d].name", j),
+					fmt.Sprintf("[%d].name", i),
+				},
+			})
+		} else {
+			seenNames[rpsi.Name] = i
 		}
 	}
 
@@ -70,22 +72,22 @@ func (rpsi *RequestProcessorSpecItem) Validate(ctx context.Context) *apis.FieldE
 
 	errs := &apis.FieldError{}
 
-	if diff := cmp.Diff(corev1.PodSpec{
+	if diff := cmp.Diff(&corev1.PodSpec{
 		// add supported PodSpec fields here, otherwise their usage will be rejected
-		ServiceAccountName: rpsi.ServiceAccountName,
+		ServiceAccountName: rpsi.Template.ServiceAccountName,
 		// the defaulter guarantees at least one container
-		Containers: filterInvalidContainers(rpsi.Containers[:1]),
-		Volumes:    filterInvalidVolumes(rpsi.Volumes),
-	}, rpsi.PodSpec); diff != "" {
+		Containers: filterInvalidContainers(rpsi.Template.Containers[:1]),
+		Volumes:    filterInvalidVolumes(rpsi.Template.Volumes),
+	}, rpsi.Template); diff != "" {
 		err := apis.ErrDisallowedFields(apis.CurrentField)
-		err.Details = fmt.Sprintf("limited PodSpec fields may be set (-rpnt, +got) = %v", diff)
+		err.Details = fmt.Sprintf("limited Template fields may be set (-want, +got) = %v", diff)
 		errs = errs.Also(err)
 	}
 
-	if rpsi.Build == nil && rpsi.Containers[0].Image == "" {
-		errs = errs.Also(apis.ErrMissingOneOf("build", "containers[0].image"))
-	} else if rpsi.Build != nil && rpsi.Containers[0].Image != "" {
-		errs = errs.Also(apis.ErrMultipleOneOf("build", "containers[0].image"))
+	if rpsi.Build == nil && rpsi.Template.Containers[0].Image == "" {
+		errs = errs.Also(apis.ErrMissingOneOf("build", "template.containers[0].image"))
+	} else if rpsi.Build != nil && rpsi.Template.Containers[0].Image != "" {
+		errs = errs.Also(apis.ErrMultipleOneOf("build", "template.containers[0].image"))
 	} else if rpsi.Build != nil {
 		errs = errs.Also(rpsi.Build.Validate(ctx).ViaField("build"))
 	}

@@ -18,6 +18,7 @@ package resources
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -30,7 +31,8 @@ func TestBuild(t *testing.T) {
 	rp := createRequestProcessorMeta()
 	rp.Labels = map[string]string{testLabelKey: testLabelValue}
 	rp.Spec = append(rp.Spec, runv1alpha1.RequestProcessorSpecItem{
-		PodSpec: corev1.PodSpec{
+		Name: testItemName,
+		Template: &corev1.PodSpec{
 			ServiceAccountName: testServiceAccount,
 			Containers: []corev1.Container{
 				{
@@ -46,7 +48,7 @@ func TestBuild(t *testing.T) {
 		t.Errorf("expected valid configuration got errors %+v", errs)
 	}
 
-	if got, want := c.Name, testConfigurationName; got != want {
+	if got, want := c.Name, fmt.Sprintf("%s-%s", testRequestProcessorName, testItemName); got != want {
 		t.Errorf("expected %q for configuration name got %q", want, got)
 	}
 	if got, want := c.Namespace, testRequestProcessorNamespace; got != want {
@@ -70,7 +72,7 @@ func TestBuild(t *testing.T) {
 	if got, want := c.Spec.RevisionTemplate.Spec.Container.Image, testImage; got != want {
 		t.Errorf("expected %q for image got %q", want, got)
 	}
-	if diff := cmp.Diff(rp.Spec[0].Volumes, c.Spec.RevisionTemplate.Spec.Volumes); diff != "" {
+	if diff := cmp.Diff(rp.Spec[0].Template.Volumes, c.Spec.RevisionTemplate.Spec.Volumes); diff != "" {
 		t.Errorf("podspec volumes differ (-want, +got) = %v", diff)
 	}
 }

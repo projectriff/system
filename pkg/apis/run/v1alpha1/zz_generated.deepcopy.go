@@ -151,7 +151,15 @@ func (in *RequestProcessorSpecItem) DeepCopyInto(out *RequestProcessorSpecItem) 
 			(*in).DeepCopyInto(*out)
 		}
 	}
-	in.PodSpec.DeepCopyInto(&out.PodSpec)
+	if in.Template != nil {
+		in, out := &in.Template, &out.Template
+		if *in == nil {
+			*out = nil
+		} else {
+			*out = new(v1.PodSpec)
+			(*in).DeepCopyInto(*out)
+		}
+	}
 	return
 }
 

@@ -22,17 +22,18 @@ import (
 	runv1alpha1 "github.com/projectriff/system/pkg/apis/run/v1alpha1"
 )
 
-func Configuration(rp *runv1alpha1.RequestProcessor) string {
-	return rp.Name
+func Items(rp *runv1alpha1.RequestProcessor) []string {
+	names := make([]string, len(rp.Spec))
+	for i := range rp.Spec {
+		names[i] = Item(rp, i)
+	}
+	return names
+}
+
+func Item(rp *runv1alpha1.RequestProcessor, i int) string {
+	return fmt.Sprintf("%s-%s", rp.Name, rp.Spec[i].Name)
 }
 
 func Route(rp *runv1alpha1.RequestProcessor) string {
 	return rp.Name
-}
-
-func TagOrIndex(rp *runv1alpha1.RequestProcessor, i int) string {
-	if rp.Spec[i].Tag != "" {
-		return fmt.Sprintf("%s-%s", rp.Name, rp.Spec[i].Tag)
-	}
-	return fmt.Sprintf("%s-%d", rp.Name, i)
 }
