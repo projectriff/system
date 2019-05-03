@@ -29,9 +29,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func MakeDeployment(proc *v1alpha1.StreamProcessor) *appsv1.Deployment {
+func MakeDeployment(proc *v1alpha1.StreamProcessor) (*appsv1.Deployment, error) {
 	one := int32(1)
-	return &appsv1.Deployment{
+	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            names.Deployment(proc),
 			Namespace:       proc.Namespace,
@@ -88,4 +88,6 @@ func MakeDeployment(proc *v1alpha1.StreamProcessor) *appsv1.Deployment {
 			},
 		},
 	}
+
+	return deployment, nil
 }

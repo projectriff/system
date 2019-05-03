@@ -18,21 +18,28 @@ package streamprocessor
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"time"
 
 	"github.com/knative/pkg/controller"
+	"github.com/knative/pkg/kmp"
 	"github.com/knative/pkg/logging"
 	streamsv1alpha1 "github.com/projectriff/system/pkg/apis/streams/v1alpha1"
 	streamsinformers "github.com/projectriff/system/pkg/client/informers/externalversions/streams/v1alpha1"
 	streamslisters "github.com/projectriff/system/pkg/client/listers/streams/v1alpha1"
 	"github.com/projectriff/system/pkg/reconciler"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/streamprocessor/resources"
+	resourcenames "github.com/projectriff/system/pkg/reconciler/v1alpha1/streamprocessor/resources/names"
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
+	"k8s.io/apimachinery/pkg/api/errors"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	appsinformers "k8s.io/client-go/informers/apps/v1"
+	appslisters "k8s.io/client-go/listers/apps/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -48,6 +55,7 @@ type Reconciler struct {
 
 	// listers index properties about resources
 	streamprocessorLister streamslisters.StreamProcessorLister
+	deploymentLister      appslisters.DeploymentLister
 	streamLister          streamslisters.StreamLister
 }
 
@@ -59,21 +67,25 @@ var _ controller.Reconciler = (*Reconciler)(nil)
 func NewController(
 	opt reconciler.Options,
 	streamprocessorInformer streamsinformers.StreamProcessorInformer,
+	deploymentInformer appsinformers.DeploymentInformer,
 	streamInformer streamsinformers.StreamInformer,
 ) *controller.Impl {
 
 	c := &Reconciler{
 		Base:                  reconciler.NewBase(opt, controllerAgentName),
 		streamprocessorLister: streamprocessorInformer.Lister(),
+		deploymentLister:      deploymentInformer.Lister(),
 		streamLister:          streamInformer.Lister(),
 	}
 	impl := controller.NewImpl(c, c.Logger, ReconcilerName, reconciler.MustNewStatsReporter(ReconcilerName, c.Logger))
 
 	c.Logger.Info("Setting up event handlers")
-	streamprocessorInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    impl.Enqueue,
-		UpdateFunc: controller.PassNew(impl.Enqueue),
-		DeleteFunc: impl.Enqueue,
+	streamprocessorInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
+
+	// controlled resources
+	deploymentInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: controller.Filter(streamsv1alpha1.SchemeGroupVersion.WithKind("StreamProcessor")),
+		Handler:    reconciler.Handler(impl.EnqueueControllerOf),
 	})
 
 	return impl
@@ -142,29 +154,62 @@ func (c *Reconciler) reconcile(ctx context.Context, streamprocessor *streamsv1al
 
 	var inputAddresses, outputAddresses []string = nil, nil
 
+	// resolve input addresses
 	for _, inputName := range streamprocessor.Spec.Inputs {
 		input, err := c.streamLister.Streams(streamprocessor.Namespace).Get(inputName)
 		if err != nil {
 			return err
 		}
+		// TODO track stream changes
 		inputAddresses = append(inputAddresses, input.Status.Address.String())
 	}
 	streamprocessor.Status.InputAddresses = inputAddresses
 
+	// resolve output addresses
 	for _, outputName := range streamprocessor.Spec.Outputs {
 		output, err := c.streamLister.Streams(streamprocessor.Namespace).Get(outputName)
 		if err != nil {
 			return err
 		}
+		// TODO track stream changes
 		outputAddresses = append(outputAddresses, output.Status.Address.String())
 	}
 	streamprocessor.Status.OutputAddresses = outputAddresses
 
-	logger.Infof("Creating StreamProcessor %s with input Streams %s, Function %s, and output Streams %s", streamprocessor.Name, inputAddresses, streamprocessor.Spec.Function, outputAddresses)
-	_, err := c.createDeployment(streamprocessor)
-	if err != nil {
-		logger.Warn("Failed to create Deployment", zap.Error(err))
+	deploymentName := resourcenames.Deployment(streamprocessor)
+	deployment, err := c.deploymentLister.Deployments(streamprocessor.Namespace).Get(deploymentName)
+	if errors.IsNotFound(err) {
+		deployment, err = c.createDeployment(streamprocessor)
+		if err != nil {
+			logger.Errorf("Failed to create Deployment %q: %v", deploymentName, err)
+			c.Recorder.Eventf(streamprocessor, corev1.EventTypeWarning, "CreationFailed", "Failed to create Deployment %q: %v", deploymentName, err)
+			return err
+		}
+		if deployment != nil {
+			c.Recorder.Eventf(streamprocessor, corev1.EventTypeNormal, "Created", "Created Deployment %q", deploymentName)
+		}
+	} else if err != nil {
+		logger.Errorf("Failed to reconcile StreamProcessor: %q failed to Get Deployment: %q; %v", streamprocessor.Name, deploymentName, zap.Error(err))
+		return err
+	} else if !metav1.IsControlledBy(deployment, streamprocessor) {
+		// Surface an error in the streamprocessor's status,and return an error.
+		streamprocessor.Status.MarkDeploymentNotOwned(deploymentName)
+		return fmt.Errorf("StreamProcessor: %q does not own Deployment: %q", streamprocessor.Name, deploymentName)
+	} else {
+		deployment, err = c.reconcileDeployment(ctx, streamprocessor, deployment)
+		if err != nil {
+			logger.Errorf("Failed to reconcile StreamProcessor: %q failed to reconcile Deployment: %q; %v", streamprocessor.Name, deployment, zap.Error(err))
+			return err
+		}
+		if deployment == nil {
+			c.Recorder.Eventf(streamprocessor, corev1.EventTypeNormal, "Deleted", "Deleted Deployment %q", deploymentName)
+		}
 	}
+
+	// Update our Status based on the state of our underlying Deployment.
+	streamprocessor.Status.DeploymentName = deployment.Name
+	streamprocessor.Status.PropagateDeploymentStatus(&deployment.Status)
+
 	streamprocessor.Status.ObservedGeneration = streamprocessor.Generation
 
 	return nil
@@ -193,7 +238,44 @@ func (c *Reconciler) updateStatus(desired *streamsv1alpha1.StreamProcessor) (*st
 	return p, err
 }
 
+func (c *Reconciler) reconcileDeployment(ctx context.Context, streamprocessor *streamsv1alpha1.StreamProcessor, deployment *appsv1.Deployment) (*appsv1.Deployment, error) {
+	logger := logging.FromContext(ctx)
+	desiredDeployment, err := resources.MakeDeployment(streamprocessor)
+	if err != nil {
+		return nil, err
+	}
+
+	if deploymentSemanticEquals(desiredDeployment, deployment) {
+		// No differences to reconcile.
+		return deployment, nil
+	}
+	diff, err := kmp.SafeDiff(desiredDeployment.Spec, deployment.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("failed to diff Deployment: %v", err)
+	}
+	logger.Infof("Reconciling deployment diff (-desired, +observed): %s", diff)
+
+	// Don't modify the informers copy.
+	existing := deployment.DeepCopy()
+	// Preserve the rest of the object (e.g. ObjectMeta except for labels).
+	existing.Spec = desiredDeployment.Spec
+	existing.ObjectMeta.Labels = desiredDeployment.ObjectMeta.Labels
+	return c.KubeClientSet.AppsV1().Deployments(streamprocessor.Namespace).Update(existing)
+}
+
 func (c *Reconciler) createDeployment(streamprocessor *streamsv1alpha1.StreamProcessor) (*appsv1.Deployment, error) {
-	deployment := resources.MakeDeployment(streamprocessor)
-	return c.KubeClientSet.AppsV1().Deployments(deployment.Namespace).Create(deployment)
+	deployment, err := resources.MakeDeployment(streamprocessor)
+	if err != nil {
+		return nil, err
+	}
+	if deployment == nil {
+		// nothing to create
+		return deployment, nil
+	}
+	return c.KubeClientSet.AppsV1().Deployments(streamprocessor.Namespace).Create(deployment)
+}
+
+func deploymentSemanticEquals(desiredDeployment, deployment *appsv1.Deployment) bool {
+	return equality.Semantic.DeepEqual(desiredDeployment.Spec, deployment.Spec) &&
+		equality.Semantic.DeepEqual(desiredDeployment.ObjectMeta.Labels, deployment.ObjectMeta.Labels)
 }

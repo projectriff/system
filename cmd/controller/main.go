@@ -135,6 +135,7 @@ func main() {
 	streamInformer := projectriffInformerFactory.Streams().V1alpha1().Streams()
 	streamprocessorInformer := projectriffInformerFactory.Streams().V1alpha1().StreamProcessors()
 
+	deploymentInformer := kubeInformerFactory.Apps().V1().Deployments()
 	pvcInformer := kubeInformerFactory.Core().V1().PersistentVolumeClaims()
 	knbuildInformer := knbuildInformerFactory.Build().V1alpha1().Builds()
 	knconfigurationInformer := knservingInformerFactory.Serving().V1alpha1().Configurations()
@@ -177,6 +178,7 @@ func main() {
 			opt,
 			streamprocessorInformer,
 
+			deploymentInformer,
 			streamInformer,
 		),
 	}
@@ -203,6 +205,7 @@ func main() {
 		requestprocessorInformer.Informer().HasSynced,
 		streamInformer.Informer().HasSynced,
 		streamprocessorInformer.Informer().HasSynced,
+		deploymentInformer.Informer().HasSynced,
 		pvcInformer.Informer().HasSynced,
 		knbuildInformer.Informer().HasSynced,
 		knconfigurationInformer.Informer().HasSynced,

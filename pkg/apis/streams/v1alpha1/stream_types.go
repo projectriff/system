@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	"fmt"
+
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -46,9 +47,9 @@ const (
 var streamCondSet = duckv1alpha1.NewLivingConditionSet(StreamConditionResourceAvailable)
 
 type StreamStatus struct {
-	Address            StreamAddress           `json:"address"`
-	Conditions         duckv1alpha1.Conditions `json:"conditions,omitempty"`
-	ObservedGeneration int64                   `json:"observedGeneration,omitempty"`
+	duckv1alpha1.Status `json:",inline"`
+
+	Address StreamAddress `json:"address,omitempty"`
 }
 
 type StreamAddress struct {
