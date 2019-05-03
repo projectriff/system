@@ -266,6 +266,9 @@ func (c *Reconciler) reconcileDeployment(ctx context.Context, streamprocessor *s
 		return nil, err
 	}
 
+	// Preserve replicas as is it likely set by an autoscaler
+	desiredDeployment.Spec.Replicas = deployment.Spec.Replicas
+
 	if deploymentSemanticEquals(desiredDeployment, deployment) {
 		// No differences to reconcile.
 		return deployment, nil
