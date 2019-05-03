@@ -39,13 +39,6 @@ type StreamSpec struct {
 	Provider string `json:"provider"`
 }
 
-const (
-	StreamConditionReady                                        = duckv1alpha1.ConditionReady
-	StreamConditionResourceAvailable duckv1alpha1.ConditionType = "ResourceAvailable"
-)
-
-var streamCondSet = duckv1alpha1.NewLivingConditionSet(StreamConditionResourceAvailable)
-
 type StreamStatus struct {
 	duckv1alpha1.Status `json:",inline"`
 
@@ -72,16 +65,4 @@ type StreamList struct {
 
 func (*Stream) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("Stream")
-}
-
-func (status *StreamStatus) IsReady() bool {
-	return streamCondSet.Manage(status).IsHappy()
-}
-
-func (status *StreamStatus) GetCondition(t duckv1alpha1.ConditionType) *duckv1alpha1.Condition {
-	return streamCondSet.Manage(status).GetCondition(t)
-}
-
-func (status *StreamStatus) InitializeConditions() {
-	streamCondSet.Manage(status).InitializeConditions()
 }

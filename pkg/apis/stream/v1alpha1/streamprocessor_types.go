@@ -18,8 +18,6 @@ package v1alpha1
 
 import (
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -41,18 +39,6 @@ type StreamProcessorSpec struct {
 	Function string   `json:"function"`
 }
 
-const (
-	StreamProcessorConditionReady = duckv1alpha1.ConditionReady
-	// TODO add aggregated streams ready status
-	StreamProcessorConditionFunctionReady   duckv1alpha1.ConditionType = "FunctionReady"
-	StreamProcessorConditionDeploymentReady duckv1alpha1.ConditionType = "DeploymentReady"
-)
-
-var streamprocessorCondSet = duckv1alpha1.NewLivingConditionSet(
-	StreamProcessorConditionFunctionReady,
-	StreamProcessorConditionDeploymentReady,
-)
-
 type StreamProcessorStatus struct {
 	duckv1alpha1.Status `json:",inline"`
 
@@ -72,42 +58,4 @@ type StreamProcessorList struct {
 
 func (*StreamProcessor) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("StreamProcessor")
-}
-
-func (sps *StreamProcessorStatus) IsReady() bool {
-	return streamprocessorCondSet.Manage(sps).IsHappy()
-}
-
-func (sps *StreamProcessorStatus) GetCondition(t duckv1alpha1.ConditionType) *duckv1alpha1.Condition {
-	return streamprocessorCondSet.Manage(sps).GetCondition(t)
-}
-
-func (sps *StreamProcessorStatus) InitializeConditions() {
-	streamprocessorCondSet.Manage(sps).InitializeConditions()
-}
-
-func (sps *StreamProcessorStatus) MarkDeploymentNotOwned(name string) {
-	streamprocessorCondSet.Manage(sps).MarkFalse(StreamProcessorConditionDeploymentReady, "NotOwned",
-		"There is an existing Deployment %q that we do not own.", name)
-}
-
-func (sps *StreamProcessorStatus) PropagateDeploymentStatus(ds *appsv1.DeploymentStatus) {
-	var ac *appsv1.DeploymentCondition
-	for _, c := range ds.Conditions {
-		if c.Type == appsv1.DeploymentAvailable {
-			ac = &c
-			break
-		}
-	}
-	if ac == nil {
-		return
-	}
-	switch {
-	case ac.Status == corev1.ConditionUnknown:
-		streamprocessorCondSet.Manage(sps).MarkUnknown(StreamProcessorConditionDeploymentReady, ac.Reason, ac.Message)
-	case ac.Status == corev1.ConditionTrue:
-		streamprocessorCondSet.Manage(sps).MarkTrue(StreamProcessorConditionDeploymentReady)
-	case ac.Status == corev1.ConditionFalse:
-		streamprocessorCondSet.Manage(sps).MarkFalse(StreamProcessorConditionDeploymentReady, ac.Reason, ac.Message)
-	}
 }
