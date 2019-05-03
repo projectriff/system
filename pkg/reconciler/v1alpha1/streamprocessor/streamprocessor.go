@@ -25,6 +25,7 @@ import (
 	"github.com/knative/pkg/controller"
 	"github.com/knative/pkg/kmp"
 	"github.com/knative/pkg/logging"
+	"github.com/knative/pkg/tracker"
 	streamsv1alpha1 "github.com/projectriff/system/pkg/apis/streams/v1alpha1"
 	streamsinformers "github.com/projectriff/system/pkg/client/informers/externalversions/streams/v1alpha1"
 	streamslisters "github.com/projectriff/system/pkg/client/listers/streams/v1alpha1"
@@ -57,6 +58,8 @@ type Reconciler struct {
 	streamprocessorLister streamslisters.StreamProcessorLister
 	deploymentLister      appslisters.DeploymentLister
 	streamLister          streamslisters.StreamLister
+
+	tracker tracker.Interface
 }
 
 // Check that our Reconciler implements controller.Reconciler
@@ -87,6 +90,18 @@ func NewController(
 		FilterFunc: controller.Filter(streamsv1alpha1.SchemeGroupVersion.WithKind("StreamProcessor")),
 		Handler:    reconciler.Handler(impl.EnqueueControllerOf),
 	})
+
+	// referenced resources
+	c.tracker = tracker.New(impl.EnqueueKey, opt.GetTrackerLease())
+	streamInformer.Informer().AddEventHandler(reconciler.Handler(
+		// Call the tracker's OnChanged method, but we've seen the objects
+		// coming through this path missing TypeMeta, so ensure it is properly
+		// populated.
+		controller.EnsureTypeMeta(
+			c.tracker.OnChanged,
+			streamsv1alpha1.SchemeGroupVersion.WithKind("Stream"),
+		),
+	))
 
 	return impl
 }
@@ -160,7 +175,10 @@ func (c *Reconciler) reconcile(ctx context.Context, streamprocessor *streamsv1al
 		if err != nil {
 			return err
 		}
-		// TODO track stream changes
+		gvk := streamsv1alpha1.SchemeGroupVersion.WithKind("Stream")
+		if err := c.tracker.Track(reconciler.MakeObjectRef(input, gvk), streamprocessor); err != nil {
+			return err
+		}
 		inputAddresses = append(inputAddresses, input.Status.Address.String())
 	}
 	streamprocessor.Status.InputAddresses = inputAddresses
@@ -171,7 +189,10 @@ func (c *Reconciler) reconcile(ctx context.Context, streamprocessor *streamsv1al
 		if err != nil {
 			return err
 		}
-		// TODO track stream changes
+		gvk := streamsv1alpha1.SchemeGroupVersion.WithKind("Stream")
+		if err := c.tracker.Track(reconciler.MakeObjectRef(output, gvk), streamprocessor); err != nil {
+			return err
+		}
 		outputAddresses = append(outputAddresses, output.Status.Address.String())
 	}
 	streamprocessor.Status.OutputAddresses = outputAddresses

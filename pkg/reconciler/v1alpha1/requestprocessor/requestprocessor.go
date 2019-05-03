@@ -46,7 +46,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/tools/cache"
 )
@@ -414,7 +413,7 @@ func (c *Reconciler) reconcileBuild(ctx context.Context, requestprocessor *runv1
 			return nil, err
 		}
 		gvk := buildv1alpha1.SchemeGroupVersion.WithKind("Application")
-		if err := c.tracker.Track(objectRef(application, gvk), requestprocessor); err != nil {
+		if err := c.tracker.Track(reconciler.MakeObjectRef(application, gvk), requestprocessor); err != nil {
 			return nil, err
 		}
 		return application, nil
@@ -451,7 +450,7 @@ func (c *Reconciler) reconcileBuild(ctx context.Context, requestprocessor *runv1
 			return nil, err
 		}
 		gvk := buildv1alpha1.SchemeGroupVersion.WithKind("Function")
-		if err := c.tracker.Track(objectRef(function, gvk), requestprocessor); err != nil {
+		if err := c.tracker.Track(reconciler.MakeObjectRef(function, gvk), requestprocessor); err != nil {
 			return nil, err
 		}
 		return function, nil
@@ -728,26 +727,3 @@ func routeSemanticEquals(desiredRoute, route *knservingv1alpha1.Route) bool {
 		equality.Semantic.DeepEqual(desiredRoute.ObjectMeta.Labels, route.ObjectMeta.Labels)
 }
 
-/////////////////////////////////////////
-// Misc helpers.
-/////////////////////////////////////////
-
-type accessor interface {
-	GroupVersionKind() schema.GroupVersionKind
-	GetNamespace() string
-	GetName() string
-}
-
-func objectRef(a accessor, gvk schema.GroupVersionKind) corev1.ObjectReference {
-	// We can't always rely on the TypeMeta being populated.
-	// See: https://github.com/knative/serving/issues/2372
-	// Also: https://github.com/kubernetes/apiextensions-apiserver/issues/29
-	// gvk := a.GroupVersionKind()
-	apiVersion, kind := gvk.ToAPIVersionAndKind()
-	return corev1.ObjectReference{
-		APIVersion: apiVersion,
-		Kind:       kind,
-		Namespace:  a.GetNamespace(),
-		Name:       a.GetName(),
-	}
-}
