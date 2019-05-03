@@ -18,69 +18,69 @@ package v1alpha1
 import (
 	time "time"
 
-	streams_v1alpha1 "github.com/projectriff/system/pkg/apis/streams/v1alpha1"
+	stream_v1alpha1 "github.com/projectriff/system/pkg/apis/stream/v1alpha1"
 	versioned "github.com/projectriff/system/pkg/client/clientset/versioned"
 	internalinterfaces "github.com/projectriff/system/pkg/client/informers/externalversions/internalinterfaces"
-	v1alpha1 "github.com/projectriff/system/pkg/client/listers/streams/v1alpha1"
+	v1alpha1 "github.com/projectriff/system/pkg/client/listers/stream/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
 	cache "k8s.io/client-go/tools/cache"
 )
 
-// StreamInformer provides access to a shared informer and lister for
-// Streams.
-type StreamInformer interface {
+// StreamProcessorInformer provides access to a shared informer and lister for
+// StreamProcessors.
+type StreamProcessorInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha1.StreamLister
+	Lister() v1alpha1.StreamProcessorLister
 }
 
-type streamInformer struct {
+type streamProcessorInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
 	tweakListOptions internalinterfaces.TweakListOptionsFunc
 	namespace        string
 }
 
-// NewStreamInformer constructs a new informer for Stream type.
+// NewStreamProcessorInformer constructs a new informer for StreamProcessor type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewStreamInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredStreamInformer(client, namespace, resyncPeriod, indexers, nil)
+func NewStreamProcessorInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	return NewFilteredStreamProcessorInformer(client, namespace, resyncPeriod, indexers, nil)
 }
 
-// NewFilteredStreamInformer constructs a new informer for Stream type.
+// NewFilteredStreamProcessorInformer constructs a new informer for StreamProcessor type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredStreamInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewFilteredStreamProcessorInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.StreamsV1alpha1().Streams(namespace).List(options)
+				return client.StreamV1alpha1().StreamProcessors(namespace).List(options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.StreamsV1alpha1().Streams(namespace).Watch(options)
+				return client.StreamV1alpha1().StreamProcessors(namespace).Watch(options)
 			},
 		},
-		&streams_v1alpha1.Stream{},
+		&stream_v1alpha1.StreamProcessor{},
 		resyncPeriod,
 		indexers,
 	)
 }
 
-func (f *streamInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredStreamInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
+func (f *streamProcessorInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewFilteredStreamProcessorInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
-func (f *streamInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&streams_v1alpha1.Stream{}, f.defaultInformer)
+func (f *streamProcessorInformer) Informer() cache.SharedIndexInformer {
+	return f.factory.InformerFor(&stream_v1alpha1.StreamProcessor{}, f.defaultInformer)
 }
 
-func (f *streamInformer) Lister() v1alpha1.StreamLister {
-	return v1alpha1.NewStreamLister(f.Informer().GetIndexer())
+func (f *streamProcessorInformer) Lister() v1alpha1.StreamProcessorLister {
+	return v1alpha1.NewStreamProcessorLister(f.Informer().GetIndexer())
 }

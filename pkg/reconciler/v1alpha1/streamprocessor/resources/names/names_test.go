@@ -21,18 +21,18 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	streamsv1alpha1 "github.com/projectriff/system/pkg/apis/streams/v1alpha1"
+	streamv1alpha1 "github.com/projectriff/system/pkg/apis/stream/v1alpha1"
 )
 
 func TestNamer(t *testing.T) {
 	tests := []struct {
 		name string
-		proc *streamsv1alpha1.StreamProcessor
-		f    func(*streamsv1alpha1.StreamProcessor) string
+		proc *streamv1alpha1.StreamProcessor
+		f    func(*streamv1alpha1.StreamProcessor) string
 		want string
 	}{{
 		name: "Deployment",
-		proc: &streamsv1alpha1.StreamProcessor{
+		proc: &streamv1alpha1.StreamProcessor{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "foo",
 				Namespace: "default",

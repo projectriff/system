@@ -26,9 +26,9 @@ import (
 	"github.com/knative/pkg/kmp"
 	"github.com/knative/pkg/logging"
 	"github.com/knative/pkg/tracker"
-	streamsv1alpha1 "github.com/projectriff/system/pkg/apis/streams/v1alpha1"
-	streamsinformers "github.com/projectriff/system/pkg/client/informers/externalversions/streams/v1alpha1"
-	streamslisters "github.com/projectriff/system/pkg/client/listers/streams/v1alpha1"
+	streamv1alpha1 "github.com/projectriff/system/pkg/apis/stream/v1alpha1"
+	streaminformers "github.com/projectriff/system/pkg/client/informers/externalversions/stream/v1alpha1"
+	streamlisters "github.com/projectriff/system/pkg/client/listers/stream/v1alpha1"
 	"github.com/projectriff/system/pkg/reconciler"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/streamprocessor/resources"
 	resourcenames "github.com/projectriff/system/pkg/reconciler/v1alpha1/streamprocessor/resources/names"
@@ -55,9 +55,9 @@ type Reconciler struct {
 	*reconciler.Base
 
 	// listers index properties about resources
-	streamprocessorLister streamslisters.StreamProcessorLister
+	streamprocessorLister streamlisters.StreamProcessorLister
 	deploymentLister      appslisters.DeploymentLister
-	streamLister          streamslisters.StreamLister
+	streamLister          streamlisters.StreamLister
 
 	tracker tracker.Interface
 }
@@ -69,9 +69,9 @@ var _ controller.Reconciler = (*Reconciler)(nil)
 // Registers eventhandlers to enqueue events
 func NewController(
 	opt reconciler.Options,
-	streamprocessorInformer streamsinformers.StreamProcessorInformer,
+	streamprocessorInformer streaminformers.StreamProcessorInformer,
 	deploymentInformer appsinformers.DeploymentInformer,
-	streamInformer streamsinformers.StreamInformer,
+	streamInformer streaminformers.StreamInformer,
 ) *controller.Impl {
 
 	c := &Reconciler{
@@ -87,7 +87,7 @@ func NewController(
 
 	// controlled resources
 	deploymentInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(streamsv1alpha1.SchemeGroupVersion.WithKind("StreamProcessor")),
+		FilterFunc: controller.Filter(streamv1alpha1.SchemeGroupVersion.WithKind("StreamProcessor")),
 		Handler:    reconciler.Handler(impl.EnqueueControllerOf),
 	})
 
@@ -99,7 +99,7 @@ func NewController(
 		// populated.
 		controller.EnsureTypeMeta(
 			c.tracker.OnChanged,
-			streamsv1alpha1.SchemeGroupVersion.WithKind("Stream"),
+			streamv1alpha1.SchemeGroupVersion.WithKind("Stream"),
 		),
 	))
 
@@ -153,7 +153,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	return err
 }
 
-func (c *Reconciler) reconcile(ctx context.Context, streamprocessor *streamsv1alpha1.StreamProcessor) error {
+func (c *Reconciler) reconcile(ctx context.Context, streamprocessor *streamv1alpha1.StreamProcessor) error {
 	logger := logging.FromContext(ctx)
 	if streamprocessor.GetDeletionTimestamp() != nil {
 		return nil
@@ -175,7 +175,7 @@ func (c *Reconciler) reconcile(ctx context.Context, streamprocessor *streamsv1al
 		if err != nil {
 			return err
 		}
-		gvk := streamsv1alpha1.SchemeGroupVersion.WithKind("Stream")
+		gvk := streamv1alpha1.SchemeGroupVersion.WithKind("Stream")
 		if err := c.tracker.Track(reconciler.MakeObjectRef(input, gvk), streamprocessor); err != nil {
 			return err
 		}
@@ -189,7 +189,7 @@ func (c *Reconciler) reconcile(ctx context.Context, streamprocessor *streamsv1al
 		if err != nil {
 			return err
 		}
-		gvk := streamsv1alpha1.SchemeGroupVersion.WithKind("Stream")
+		gvk := streamv1alpha1.SchemeGroupVersion.WithKind("Stream")
 		if err := c.tracker.Track(reconciler.MakeObjectRef(output, gvk), streamprocessor); err != nil {
 			return err
 		}
@@ -236,7 +236,7 @@ func (c *Reconciler) reconcile(ctx context.Context, streamprocessor *streamsv1al
 	return nil
 }
 
-func (c *Reconciler) updateStatus(desired *streamsv1alpha1.StreamProcessor) (*streamsv1alpha1.StreamProcessor, error) {
+func (c *Reconciler) updateStatus(desired *streamv1alpha1.StreamProcessor) (*streamv1alpha1.StreamProcessor, error) {
 	streamprocessor, err := c.streamprocessorLister.StreamProcessors(desired.Namespace).Get(desired.Name)
 	if err != nil {
 		return nil, err
@@ -250,7 +250,7 @@ func (c *Reconciler) updateStatus(desired *streamsv1alpha1.StreamProcessor) (*st
 	existing := streamprocessor.DeepCopy()
 	existing.Status = desired.Status
 
-	p, err := c.ProjectriffClientSet.StreamsV1alpha1().StreamProcessors(desired.Namespace).UpdateStatus(existing)
+	p, err := c.ProjectriffClientSet.StreamV1alpha1().StreamProcessors(desired.Namespace).UpdateStatus(existing)
 	if err == nil && becomesReady {
 		duration := time.Now().Sub(p.ObjectMeta.CreationTimestamp.Time)
 		c.Logger.Infof("StreamProcessor %q became ready after %v", p.Name, duration)
@@ -259,7 +259,7 @@ func (c *Reconciler) updateStatus(desired *streamsv1alpha1.StreamProcessor) (*st
 	return p, err
 }
 
-func (c *Reconciler) reconcileDeployment(ctx context.Context, streamprocessor *streamsv1alpha1.StreamProcessor, deployment *appsv1.Deployment) (*appsv1.Deployment, error) {
+func (c *Reconciler) reconcileDeployment(ctx context.Context, streamprocessor *streamv1alpha1.StreamProcessor, deployment *appsv1.Deployment) (*appsv1.Deployment, error) {
 	logger := logging.FromContext(ctx)
 	desiredDeployment, err := resources.MakeDeployment(streamprocessor)
 	if err != nil {
@@ -287,7 +287,7 @@ func (c *Reconciler) reconcileDeployment(ctx context.Context, streamprocessor *s
 	return c.KubeClientSet.AppsV1().Deployments(streamprocessor.Namespace).Update(existing)
 }
 
-func (c *Reconciler) createDeployment(streamprocessor *streamsv1alpha1.StreamProcessor) (*appsv1.Deployment, error) {
+func (c *Reconciler) createDeployment(streamprocessor *streamv1alpha1.StreamProcessor) (*appsv1.Deployment, error) {
 	deployment, err := resources.MakeDeployment(streamprocessor)
 	if err != nil {
 		return nil, err

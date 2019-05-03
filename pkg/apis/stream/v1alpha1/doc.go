@@ -15,6 +15,6 @@
  */
 
 // +k8s:deepcopy-gen=package
-// +groupName=streams.projectriff.io
+// +groupName=stream.projectriff.io
 
 package v1alpha1

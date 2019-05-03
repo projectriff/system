@@ -132,8 +132,8 @@ func main() {
 	applicationInformer := projectriffInformerFactory.Build().V1alpha1().Applications()
 	functionInformer := projectriffInformerFactory.Build().V1alpha1().Functions()
 	requestprocessorInformer := projectriffInformerFactory.Run().V1alpha1().RequestProcessors()
-	streamInformer := projectriffInformerFactory.Streams().V1alpha1().Streams()
-	streamprocessorInformer := projectriffInformerFactory.Streams().V1alpha1().StreamProcessors()
+	streamInformer := projectriffInformerFactory.Stream().V1alpha1().Streams()
+	streamprocessorInformer := projectriffInformerFactory.Stream().V1alpha1().StreamProcessors()
 
 	deploymentInformer := kubeInformerFactory.Apps().V1().Deployments()
 	pvcInformer := kubeInformerFactory.Core().V1().PersistentVolumeClaims()

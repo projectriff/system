@@ -51,7 +51,7 @@ func TestNew(t *testing.T) {
 	projectriffClient := fakeprojectriffclientset.NewSimpleClientset()
 	projectriffInformer := projectriffinformers.NewSharedInformerFactory(projectriffClient, 0)
 
-	streamInformer := projectriffInformer.Streams().V1alpha1().Streams()
+	streamInformer := projectriffInformer.Stream().V1alpha1().Streams()
 
 	c := NewController(reconciler.Options{
 		KubeClientSet:        kubeClient,

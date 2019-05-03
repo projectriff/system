@@ -21,7 +21,7 @@ import (
 	"strings"
 
 	"github.com/knative/pkg/kmeta"
-	"github.com/projectriff/system/pkg/apis/streams/v1alpha1"
+	streamv1alpha1 "github.com/projectriff/system/pkg/apis/stream/v1alpha1"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/streamprocessor/resources/names"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -29,7 +29,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func MakeDeployment(proc *v1alpha1.StreamProcessor) (*appsv1.Deployment, error) {
+func MakeDeployment(proc *streamv1alpha1.StreamProcessor) (*appsv1.Deployment, error) {
 	one := int32(1)
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{

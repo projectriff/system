@@ -58,8 +58,8 @@ func TestNew(t *testing.T) {
 	projectriffClient := fakeprojectriffclientset.NewSimpleClientset()
 	projectriffInformer := projectriffinformers.NewSharedInformerFactory(projectriffClient, 0)
 
-	streamprocessorInformer := projectriffInformer.Streams().V1alpha1().StreamProcessors()
-	streamInformer := projectriffInformer.Streams().V1alpha1().Streams()
+	streamprocessorInformer := projectriffInformer.Stream().V1alpha1().StreamProcessors()
+	streamInformer := projectriffInformer.Stream().V1alpha1().Streams()
 	deploymentInformer := kubeInformer.Apps().V1().Deployments()
 
 	c := NewController(reconciler.Options{

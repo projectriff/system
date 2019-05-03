@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package streams
+package stream
 
 import (
 	internalinterfaces "github.com/projectriff/system/pkg/client/informers/externalversions/internalinterfaces"
-	v1alpha1 "github.com/projectriff/system/pkg/client/informers/externalversions/streams/v1alpha1"
+	v1alpha1 "github.com/projectriff/system/pkg/client/informers/externalversions/stream/v1alpha1"
 )
 
 // Interface provides access to each of this group's versions.

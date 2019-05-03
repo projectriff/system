@@ -19,9 +19,9 @@ package names
 import (
 	"fmt"
 
-	streamsv1alpha1 "github.com/projectriff/system/pkg/apis/streams/v1alpha1"
+	streamv1alpha1 "github.com/projectriff/system/pkg/apis/stream/v1alpha1"
 )
 
-func Deployment(sp *streamsv1alpha1.StreamProcessor) string {
+func Deployment(sp *streamv1alpha1.StreamProcessor) string {
 	return fmt.Sprintf("%s-processor", sp.Name)
 }

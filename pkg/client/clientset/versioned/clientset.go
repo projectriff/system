@@ -18,7 +18,7 @@ package versioned
 import (
 	buildv1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/build/v1alpha1"
 	runv1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/run/v1alpha1"
-	streamsv1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/streams/v1alpha1"
+	streamv1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/stream/v1alpha1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
@@ -32,18 +32,18 @@ type Interface interface {
 	RunV1alpha1() runv1alpha1.RunV1alpha1Interface
 	// Deprecated: please explicitly pick a version if possible.
 	Run() runv1alpha1.RunV1alpha1Interface
-	StreamsV1alpha1() streamsv1alpha1.StreamsV1alpha1Interface
+	StreamV1alpha1() streamv1alpha1.StreamV1alpha1Interface
 	// Deprecated: please explicitly pick a version if possible.
-	Streams() streamsv1alpha1.StreamsV1alpha1Interface
+	Stream() streamv1alpha1.StreamV1alpha1Interface
 }
 
 // Clientset contains the clients for groups. Each group has exactly one
 // version included in a Clientset.
 type Clientset struct {
 	*discovery.DiscoveryClient
-	buildV1alpha1   *buildv1alpha1.BuildV1alpha1Client
-	runV1alpha1     *runv1alpha1.RunV1alpha1Client
-	streamsV1alpha1 *streamsv1alpha1.StreamsV1alpha1Client
+	buildV1alpha1  *buildv1alpha1.BuildV1alpha1Client
+	runV1alpha1    *runv1alpha1.RunV1alpha1Client
+	streamV1alpha1 *streamv1alpha1.StreamV1alpha1Client
 }
 
 // BuildV1alpha1 retrieves the BuildV1alpha1Client
@@ -68,15 +68,15 @@ func (c *Clientset) Run() runv1alpha1.RunV1alpha1Interface {
 	return c.runV1alpha1
 }
 
-// StreamsV1alpha1 retrieves the StreamsV1alpha1Client
-func (c *Clientset) StreamsV1alpha1() streamsv1alpha1.StreamsV1alpha1Interface {
-	return c.streamsV1alpha1
+// StreamV1alpha1 retrieves the StreamV1alpha1Client
+func (c *Clientset) StreamV1alpha1() streamv1alpha1.StreamV1alpha1Interface {
+	return c.streamV1alpha1
 }
 
-// Deprecated: Streams retrieves the default version of StreamsClient.
+// Deprecated: Stream retrieves the default version of StreamClient.
 // Please explicitly pick a version.
-func (c *Clientset) Streams() streamsv1alpha1.StreamsV1alpha1Interface {
-	return c.streamsV1alpha1
+func (c *Clientset) Stream() streamv1alpha1.StreamV1alpha1Interface {
+	return c.streamV1alpha1
 }
 
 // Discovery retrieves the DiscoveryClient
@@ -103,7 +103,7 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	if err != nil {
 		return nil, err
 	}
-	cs.streamsV1alpha1, err = streamsv1alpha1.NewForConfig(&configShallowCopy)
+	cs.streamV1alpha1, err = streamv1alpha1.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +121,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 	var cs Clientset
 	cs.buildV1alpha1 = buildv1alpha1.NewForConfigOrDie(c)
 	cs.runV1alpha1 = runv1alpha1.NewForConfigOrDie(c)
-	cs.streamsV1alpha1 = streamsv1alpha1.NewForConfigOrDie(c)
+	cs.streamV1alpha1 = streamv1alpha1.NewForConfigOrDie(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClientForConfigOrDie(c)
 	return &cs
@@ -132,7 +132,7 @@ func New(c rest.Interface) *Clientset {
 	var cs Clientset
 	cs.buildV1alpha1 = buildv1alpha1.New(c)
 	cs.runV1alpha1 = runv1alpha1.New(c)
-	cs.streamsV1alpha1 = streamsv1alpha1.New(c)
+	cs.streamV1alpha1 = streamv1alpha1.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
 	return &cs

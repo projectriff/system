@@ -27,9 +27,9 @@ import (
 
 	"github.com/knative/pkg/controller"
 	"github.com/knative/pkg/logging"
-	streamsv1alpha1 "github.com/projectriff/system/pkg/apis/streams/v1alpha1"
-	streamsinformers "github.com/projectriff/system/pkg/client/informers/externalversions/streams/v1alpha1"
-	streamslisters "github.com/projectriff/system/pkg/client/listers/streams/v1alpha1"
+	streamv1alpha1 "github.com/projectriff/system/pkg/apis/stream/v1alpha1"
+	streaminformers "github.com/projectriff/system/pkg/client/informers/externalversions/stream/v1alpha1"
+	streamlisters "github.com/projectriff/system/pkg/client/listers/stream/v1alpha1"
 	"github.com/projectriff/system/pkg/reconciler"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -49,7 +49,7 @@ type Reconciler struct {
 	*reconciler.Base
 
 	// listers index properties about resources
-	streamLister streamslisters.StreamLister
+	streamLister streamlisters.StreamLister
 }
 
 // Check that our Reconciler implements controller.Reconciler
@@ -60,7 +60,7 @@ var httpClient = http.DefaultClient
 // Registers eventhandlers to enqueue events
 func NewController(
 	opt reconciler.Options,
-	streamInformer streamsinformers.StreamInformer,
+	streamInformer streaminformers.StreamInformer,
 ) *controller.Impl {
 
 	c := &Reconciler{
@@ -126,7 +126,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	return err
 }
 
-func (c *Reconciler) reconcile(ctx context.Context, stream *streamsv1alpha1.Stream) error {
+func (c *Reconciler) reconcile(ctx context.Context, stream *streamv1alpha1.Stream) error {
 	logger := logging.FromContext(ctx)
 	if stream.GetDeletionTimestamp() != nil {
 		return nil
@@ -152,7 +152,7 @@ func (c *Reconciler) reconcile(ctx context.Context, stream *streamsv1alpha1.Stre
 	return nil
 }
 
-func (c *Reconciler) updateStatus(desired *streamsv1alpha1.Stream) (*streamsv1alpha1.Stream, error) {
+func (c *Reconciler) updateStatus(desired *streamv1alpha1.Stream) (*streamv1alpha1.Stream, error) {
 	stream, err := c.streamLister.Streams(desired.Namespace).Get(desired.Name)
 	if err != nil {
 		return nil, err
@@ -166,7 +166,7 @@ func (c *Reconciler) updateStatus(desired *streamsv1alpha1.Stream) (*streamsv1al
 	existing := stream.DeepCopy()
 	existing.Status = desired.Status
 
-	s, err := c.ProjectriffClientSet.StreamsV1alpha1().Streams(desired.Namespace).UpdateStatus(existing)
+	s, err := c.ProjectriffClientSet.StreamV1alpha1().Streams(desired.Namespace).UpdateStatus(existing)
 	if err == nil && becomesReady {
 		duration := time.Now().Sub(s.ObjectMeta.CreationTimestamp.Time)
 		c.Logger.Infof("Stream %q became ready after %v", s.Name, duration)
@@ -175,7 +175,7 @@ func (c *Reconciler) updateStatus(desired *streamsv1alpha1.Stream) (*streamsv1al
 	return s, err
 }
 
-func createStream(provider string, stream string) (*streamsv1alpha1.StreamAddress, error) {
+func createStream(provider string, stream string) (*streamv1alpha1.StreamAddress, error) {
 	url := fmt.Sprintf("http://%s.default.svc.cluster.local/%s", provider, stream)
 	req, err := http.NewRequest(http.MethodPut, url, bytes.NewReader([]byte{}))
 	if err != nil {
@@ -190,7 +190,7 @@ func createStream(provider string, stream string) (*streamsv1alpha1.StreamAddres
 	if res.StatusCode >= 400 {
 		return nil, fmt.Errorf("status: %d", res.StatusCode)
 	}
-	address := &streamsv1alpha1.StreamAddress{}
+	address := &streamv1alpha1.StreamAddress{}
 	json.NewDecoder(res.Body).Decode(address)
 	return address, nil
 }

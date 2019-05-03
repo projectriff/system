@@ -24,12 +24,12 @@ import (
 	fakeknservingclientset "github.com/knative/serving/pkg/client/clientset/versioned/fake"
 	knservingv1alpha1listers "github.com/knative/serving/pkg/client/listers/serving/v1alpha1"
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
-	streamsv1alpha1 "github.com/projectriff/system/pkg/apis/streams/v1alpha1"
+	streamv1alpha1 "github.com/projectriff/system/pkg/apis/stream/v1alpha1"
 	runv1alpha1 "github.com/projectriff/system/pkg/apis/run/v1alpha1"
 	fakeprojectriffclientset "github.com/projectriff/system/pkg/client/clientset/versioned/fake"
 	buildv1alpha1listers "github.com/projectriff/system/pkg/client/listers/build/v1alpha1"
 	runv1alpha1listers "github.com/projectriff/system/pkg/client/listers/run/v1alpha1"
-	streamsv1alpha1listers "github.com/projectriff/system/pkg/client/listers/streams/v1alpha1"
+	streamv1alpha1listers "github.com/projectriff/system/pkg/client/listers/stream/v1alpha1"
 	"github.com/projectriff/system/pkg/reconciler/testing"
 	corev1 "k8s.io/api/core/v1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -99,12 +99,12 @@ func (l *Listers) GetRequestProcessorLister() runv1alpha1listers.RequestProcesso
 	return runv1alpha1listers.NewRequestProcessorLister(l.indexerFor(&runv1alpha1.RequestProcessor{}))
 }
 
-func (l *Listers) GetStreamLister() streamsv1alpha1listers.StreamLister {
-	return streamsv1alpha1listers.NewStreamLister(l.indexerFor(&streamsv1alpha1.Stream{}))
+func (l *Listers) GetStreamLister() streamv1alpha1listers.StreamLister {
+	return streamv1alpha1listers.NewStreamLister(l.indexerFor(&streamv1alpha1.Stream{}))
 }
 
-func (l *Listers) GetStreamProcessorLister() streamsv1alpha1listers.StreamProcessorLister {
-	return streamsv1alpha1listers.NewStreamProcessorLister(l.indexerFor(&streamsv1alpha1.StreamProcessor{}))
+func (l *Listers) GetStreamProcessorLister() streamv1alpha1listers.StreamProcessorLister {
+	return streamv1alpha1listers.NewStreamProcessorLister(l.indexerFor(&streamv1alpha1.StreamProcessor{}))
 }
 
 func (l *Listers) GetKnBuildLister() knbuildv1alpha1listers.BuildLister {

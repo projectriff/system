@@ -16,7 +16,7 @@
 package fake
 
 import (
-	v1alpha1 "github.com/projectriff/system/pkg/apis/streams/v1alpha1"
+	v1alpha1 "github.com/projectriff/system/pkg/apis/stream/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -27,13 +27,13 @@ import (
 
 // FakeStreams implements StreamInterface
 type FakeStreams struct {
-	Fake *FakeStreamsV1alpha1
+	Fake *FakeStreamV1alpha1
 	ns   string
 }
 
-var streamsResource = schema.GroupVersionResource{Group: "streams.projectriff.io", Version: "v1alpha1", Resource: "streams"}
+var streamsResource = schema.GroupVersionResource{Group: "stream.projectriff.io", Version: "v1alpha1", Resource: "streams"}
 
-var streamsKind = schema.GroupVersionKind{Group: "streams.projectriff.io", Version: "v1alpha1", Kind: "Stream"}
+var streamsKind = schema.GroupVersionKind{Group: "stream.projectriff.io", Version: "v1alpha1", Kind: "Stream"}
 
 // Get takes name of the stream, and returns the corresponding stream object, and an error if there is any.
 func (c *FakeStreams) Get(name string, options v1.GetOptions) (result *v1alpha1.Stream, err error) {

@@ -15,11 +15,11 @@
  *
  */
 
-package streams
+package stream
 
 const (
-	GroupName = "streams.projectriff.io"
+	GroupName = "stream.projectriff.io"
 
-	StreamLabelKey          = "streams.projectriff.io/stream"
-	StreamProcessorLabelKey = "streams.projectriff.io/streamprocessor"
+	StreamLabelKey          = GroupName + "/stream"
+	StreamProcessorLabelKey = GroupName + "/streamprocessor"
 )

@@ -18,7 +18,7 @@ package fake
 import (
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	runv1alpha1 "github.com/projectriff/system/pkg/apis/run/v1alpha1"
-	streamsv1alpha1 "github.com/projectriff/system/pkg/apis/streams/v1alpha1"
+	streamv1alpha1 "github.com/projectriff/system/pkg/apis/stream/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -32,7 +32,7 @@ var parameterCodec = runtime.NewParameterCodec(scheme)
 var localSchemeBuilder = runtime.SchemeBuilder{
 	buildv1alpha1.AddToScheme,
 	runv1alpha1.AddToScheme,
-	streamsv1alpha1.AddToScheme,
+	streamv1alpha1.AddToScheme,
 }
 
 // AddToScheme adds all types of this clientset into the given scheme. This allows composition

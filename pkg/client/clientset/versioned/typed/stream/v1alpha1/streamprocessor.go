@@ -16,7 +16,7 @@
 package v1alpha1
 
 import (
-	v1alpha1 "github.com/projectriff/system/pkg/apis/streams/v1alpha1"
+	v1alpha1 "github.com/projectriff/system/pkg/apis/stream/v1alpha1"
 	scheme "github.com/projectriff/system/pkg/client/clientset/versioned/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
@@ -51,7 +51,7 @@ type streamProcessors struct {
 }
 
 // newStreamProcessors returns a StreamProcessors
-func newStreamProcessors(c *StreamsV1alpha1Client, namespace string) *streamProcessors {
+func newStreamProcessors(c *StreamV1alpha1Client, namespace string) *streamProcessors {
 	return &streamProcessors{
 		client: c.RESTClient(),
 		ns:     namespace,
