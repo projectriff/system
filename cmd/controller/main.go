@@ -47,6 +47,8 @@ import (
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/application"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/function"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/requestprocessor"
+	"github.com/projectriff/system/pkg/reconciler/v1alpha1/stream"
+	"github.com/projectriff/system/pkg/reconciler/v1alpha1/streamprocessor"
 	"go.uber.org/zap"
 )
 
@@ -130,6 +132,10 @@ func main() {
 	applicationInformer := projectriffInformerFactory.Build().V1alpha1().Applications()
 	functionInformer := projectriffInformerFactory.Build().V1alpha1().Functions()
 	requestprocessorInformer := projectriffInformerFactory.Run().V1alpha1().RequestProcessors()
+	streamInformer := projectriffInformerFactory.Stream().V1alpha1().Streams()
+	streamprocessorInformer := projectriffInformerFactory.Stream().V1alpha1().StreamProcessors()
+
+	deploymentInformer := kubeInformerFactory.Apps().V1().Deployments()
 	pvcInformer := kubeInformerFactory.Core().V1().PersistentVolumeClaims()
 	knbuildInformer := knbuildInformerFactory.Build().V1alpha1().Builds()
 	knconfigurationInformer := knservingInformerFactory.Serving().V1alpha1().Configurations()
@@ -138,6 +144,7 @@ func main() {
 	// Build all of our controllers, with the clients constructed above.
 	// Add new controllers to this array.
 	controllers := []*controller.Impl{
+		// build.projectriff.io
 		application.NewController(
 			opt,
 			applicationInformer,
@@ -152,7 +159,7 @@ func main() {
 			pvcInformer,
 			knbuildInformer,
 		),
-
+		// run.projectriff.io
 		requestprocessor.NewController(
 			opt,
 			requestprocessorInformer,
@@ -161,6 +168,18 @@ func main() {
 			knrouteInformer,
 			applicationInformer,
 			functionInformer,
+		),
+		// streams.projectriff.io
+		stream.NewController(
+			opt,
+			streamInformer,
+		),
+		streamprocessor.NewController(
+			opt,
+			streamprocessorInformer,
+
+			deploymentInformer,
+			streamInformer,
 		),
 	}
 
@@ -184,6 +203,9 @@ func main() {
 		applicationInformer.Informer().HasSynced,
 		functionInformer.Informer().HasSynced,
 		requestprocessorInformer.Informer().HasSynced,
+		streamInformer.Informer().HasSynced,
+		streamprocessorInformer.Informer().HasSynced,
+		deploymentInformer.Informer().HasSynced,
 		pvcInformer.Informer().HasSynced,
 		knbuildInformer.Informer().HasSynced,
 		knconfigurationInformer.Informer().HasSynced,

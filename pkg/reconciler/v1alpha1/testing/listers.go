@@ -24,15 +24,19 @@ import (
 	fakeknservingclientset "github.com/knative/serving/pkg/client/clientset/versioned/fake"
 	knservingv1alpha1listers "github.com/knative/serving/pkg/client/listers/serving/v1alpha1"
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
+	streamv1alpha1 "github.com/projectriff/system/pkg/apis/stream/v1alpha1"
 	runv1alpha1 "github.com/projectriff/system/pkg/apis/run/v1alpha1"
 	fakeprojectriffclientset "github.com/projectriff/system/pkg/client/clientset/versioned/fake"
 	buildv1alpha1listers "github.com/projectriff/system/pkg/client/listers/build/v1alpha1"
 	runv1alpha1listers "github.com/projectriff/system/pkg/client/listers/run/v1alpha1"
+	streamv1alpha1listers "github.com/projectriff/system/pkg/client/listers/stream/v1alpha1"
 	"github.com/projectriff/system/pkg/reconciler/testing"
 	corev1 "k8s.io/api/core/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 	corev1listers "k8s.io/client-go/listers/core/v1"
+	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -95,6 +99,14 @@ func (l *Listers) GetRequestProcessorLister() runv1alpha1listers.RequestProcesso
 	return runv1alpha1listers.NewRequestProcessorLister(l.indexerFor(&runv1alpha1.RequestProcessor{}))
 }
 
+func (l *Listers) GetStreamLister() streamv1alpha1listers.StreamLister {
+	return streamv1alpha1listers.NewStreamLister(l.indexerFor(&streamv1alpha1.Stream{}))
+}
+
+func (l *Listers) GetStreamProcessorLister() streamv1alpha1listers.StreamProcessorLister {
+	return streamv1alpha1listers.NewStreamProcessorLister(l.indexerFor(&streamv1alpha1.StreamProcessor{}))
+}
+
 func (l *Listers) GetKnBuildLister() knbuildv1alpha1listers.BuildLister {
 	return knbuildv1alpha1listers.NewBuildLister(l.indexerFor(&knbuildv1alpha1.Build{}))
 }
@@ -113,4 +125,8 @@ func (l *Listers) GetPersistentVolumeClaimLister() corev1listers.PersistentVolum
 
 func (l *Listers) GetConfigMapLister() corev1listers.ConfigMapLister {
 	return corev1listers.NewConfigMapLister(l.indexerFor(&corev1.ConfigMap{}))
+}
+
+func (l *Listers) GetDeploymentLister() appsv1listers.DeploymentLister {
+	return appsv1listers.NewDeploymentLister(l.indexerFor(&appsv1.Deployment{}))
 }
