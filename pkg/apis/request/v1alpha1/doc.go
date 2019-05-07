@@ -13,25 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package fake
 
-import (
-	v1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/run/v1alpha1"
-	rest "k8s.io/client-go/rest"
-	testing "k8s.io/client-go/testing"
-)
+// +k8s:deepcopy-gen=package
+// +groupName=request.projectriff.io
 
-type FakeRunV1alpha1 struct {
-	*testing.Fake
-}
-
-func (c *FakeRunV1alpha1) RequestProcessors(namespace string) v1alpha1.RequestProcessorInterface {
-	return &FakeRequestProcessors{c, namespace}
-}
-
-// RESTClient returns a RESTClient that is used to communicate
-// with API server by this client implementation.
-func (c *FakeRunV1alpha1) RESTClient() rest.Interface {
-	var ret *rest.RESTClient
-	return ret
-}
+package v1alpha1

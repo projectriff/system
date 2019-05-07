@@ -12,9 +12,13 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-// +k8s:deepcopy-gen=package
-// +groupName=run.projectriff.io
+package request
 
-package v1alpha1
+const (
+	GroupName = "request.projectriff.io"
+
+	RequestProcessorLabelKey = GroupName + "/requestprocessor"
+)

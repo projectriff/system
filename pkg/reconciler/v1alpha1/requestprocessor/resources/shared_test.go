@@ -21,7 +21,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	runv1alpha1 "github.com/projectriff/system/pkg/apis/run/v1alpha1"
+	requestv1alpha1 "github.com/projectriff/system/pkg/apis/request/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -43,7 +43,7 @@ func expectOwnerReferencesSetCorrectly(t *testing.T, ownerRefs []metav1.OwnerRef
 	}
 
 	expectedRefs := []metav1.OwnerReference{{
-		APIVersion: "run.projectriff.io/v1alpha1",
+		APIVersion: "request.projectriff.io/v1alpha1",
 		Kind:       "RequestProcessor",
 		Name:       testRequestProcessorName,
 	}}
@@ -52,8 +52,8 @@ func expectOwnerReferencesSetCorrectly(t *testing.T, ownerRefs []metav1.OwnerRef
 	}
 }
 
-func createRequestProcessorMeta() *runv1alpha1.RequestProcessor {
-	return &runv1alpha1.RequestProcessor{
+func createRequestProcessorMeta() *requestv1alpha1.RequestProcessor {
+	return &requestv1alpha1.RequestProcessor{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      testRequestProcessorName,
 			Namespace: testRequestProcessorNamespace,

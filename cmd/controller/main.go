@@ -131,7 +131,7 @@ func main() {
 
 	applicationInformer := projectriffInformerFactory.Build().V1alpha1().Applications()
 	functionInformer := projectriffInformerFactory.Build().V1alpha1().Functions()
-	requestprocessorInformer := projectriffInformerFactory.Run().V1alpha1().RequestProcessors()
+	requestprocessorInformer := projectriffInformerFactory.Request().V1alpha1().RequestProcessors()
 	streamInformer := projectriffInformerFactory.Stream().V1alpha1().Streams()
 	streamprocessorInformer := projectriffInformerFactory.Stream().V1alpha1().StreamProcessors()
 

@@ -16,7 +16,7 @@
 package v1alpha1
 
 import (
-	v1alpha1 "github.com/projectriff/system/pkg/apis/run/v1alpha1"
+	v1alpha1 "github.com/projectriff/system/pkg/apis/request/v1alpha1"
 	scheme "github.com/projectriff/system/pkg/client/clientset/versioned/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
@@ -51,7 +51,7 @@ type requestProcessors struct {
 }
 
 // newRequestProcessors returns a RequestProcessors
-func newRequestProcessors(c *RunV1alpha1Client, namespace string) *requestProcessors {
+func newRequestProcessors(c *RequestV1alpha1Client, namespace string) *requestProcessors {
 	return &requestProcessors{
 		client: c.RESTClient(),
 		ns:     namespace,

@@ -19,13 +19,13 @@ package resources
 import (
 	"github.com/knative/pkg/kmeta"
 	knservingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
-	runv1alpha1 "github.com/projectriff/system/pkg/apis/run/v1alpha1"
+	requestv1alpha1 "github.com/projectriff/system/pkg/apis/request/v1alpha1"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/requestprocessor/resources/names"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // MakeConfiguration creates a Configuration from an RequestProcessor object.
-func MakeConfiguration(rp *runv1alpha1.RequestProcessor, i int) (*knservingv1alpha1.Configuration, error) {
+func MakeConfiguration(rp *requestv1alpha1.RequestProcessor, i int) (*knservingv1alpha1.Configuration, error) {
 	rpsi := rp.Spec[i]
 	configuration := &knservingv1alpha1.Configuration{
 		ObjectMeta: metav1.ObjectMeta{

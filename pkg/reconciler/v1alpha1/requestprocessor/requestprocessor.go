@@ -32,11 +32,12 @@ import (
 	knservinginformers "github.com/knative/serving/pkg/client/informers/externalversions/serving/v1alpha1"
 	knservinglisters "github.com/knative/serving/pkg/client/listers/serving/v1alpha1"
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
-	runv1alpha1 "github.com/projectriff/system/pkg/apis/run/v1alpha1"
+	requestv1alpha1 "github.com/projectriff/system/pkg/apis/request/v1alpha1"
 	buildinformers "github.com/projectriff/system/pkg/client/informers/externalversions/build/v1alpha1"
-	runinformers "github.com/projectriff/system/pkg/client/informers/externalversions/run/v1alpha1"
+	requestinformers "github.com/projectriff/system/pkg/client/informers/externalversions/request/v1alpha1"
 	buildlisters "github.com/projectriff/system/pkg/client/listers/build/v1alpha1"
-	runlisters "github.com/projectriff/system/pkg/client/listers/run/v1alpha1"
+	requestlisters "github.com/projectriff/system/pkg/client/listers/request/v1alpha1"
+	streamlisters "github.com/projectriff/system/pkg/client/listers/stream/v1alpha1"
 	"github.com/projectriff/system/pkg/reconciler"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/requestprocessor/resources"
 	resourcenames "github.com/projectriff/system/pkg/reconciler/v1alpha1/requestprocessor/resources/names"
@@ -61,7 +62,8 @@ type Reconciler struct {
 	*reconciler.Base
 
 	// listers index properties about resources
-	requestprocessorLister runlisters.RequestProcessorLister
+	requestprocessorLister requestlisters.RequestProcessorLister
+	streamprocessorLister  streamlisters.StreamProcessorLister
 	knconfigurationLister  knservinglisters.ConfigurationLister
 	knrouteLister          knservinglisters.RouteLister
 	applicationLister      buildlisters.ApplicationLister
@@ -77,7 +79,7 @@ var _ controller.Reconciler = (*Reconciler)(nil)
 // Registers eventhandlers to enqueue events
 func NewController(
 	opt reconciler.Options,
-	requestprocessorInformer runinformers.RequestProcessorInformer,
+	requestprocessorInformer requestinformers.RequestProcessorInformer,
 	knconfigurationInformer knservinginformers.ConfigurationInformer,
 	knrouteInformer knservinginformers.RouteInformer,
 	applicationInformer buildinformers.ApplicationInformer,
@@ -99,19 +101,19 @@ func NewController(
 
 	// controlled resources
 	knconfigurationInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(runv1alpha1.SchemeGroupVersion.WithKind("RequestProcessor")),
+		FilterFunc: controller.Filter(requestv1alpha1.SchemeGroupVersion.WithKind("RequestProcessor")),
 		Handler:    reconciler.Handler(impl.EnqueueControllerOf),
 	})
 	knrouteInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(runv1alpha1.SchemeGroupVersion.WithKind("RequestProcessor")),
+		FilterFunc: controller.Filter(requestv1alpha1.SchemeGroupVersion.WithKind("RequestProcessor")),
 		Handler:    reconciler.Handler(impl.EnqueueControllerOf),
 	})
 	applicationInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(runv1alpha1.SchemeGroupVersion.WithKind("RequestProcessor")),
+		FilterFunc: controller.Filter(requestv1alpha1.SchemeGroupVersion.WithKind("RequestProcessor")),
 		Handler:    reconciler.Handler(impl.EnqueueControllerOf),
 	})
 	functionInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(runv1alpha1.SchemeGroupVersion.WithKind("RequestProcessor")),
+		FilterFunc: controller.Filter(requestv1alpha1.SchemeGroupVersion.WithKind("RequestProcessor")),
 		Handler:    reconciler.Handler(impl.EnqueueControllerOf),
 	})
 
@@ -186,7 +188,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	return err
 }
 
-func (c *Reconciler) reconcile(ctx context.Context, requestprocessor *runv1alpha1.RequestProcessor) error {
+func (c *Reconciler) reconcile(ctx context.Context, requestprocessor *requestv1alpha1.RequestProcessor) error {
 	logger := logging.FromContext(ctx)
 	if requestprocessor.GetDeletionTimestamp() != nil {
 		return nil
@@ -275,7 +277,7 @@ func (c *Reconciler) reconcile(ctx context.Context, requestprocessor *runv1alpha
 	return nil
 }
 
-func (c *Reconciler) updateStatus(desired *runv1alpha1.RequestProcessor) (*runv1alpha1.RequestProcessor, error) {
+func (c *Reconciler) updateStatus(desired *requestv1alpha1.RequestProcessor) (*requestv1alpha1.RequestProcessor, error) {
 	requestprocessor, err := c.requestprocessorLister.RequestProcessors(desired.Namespace).Get(desired.Name)
 	if err != nil {
 		return nil, err
@@ -289,7 +291,7 @@ func (c *Reconciler) updateStatus(desired *runv1alpha1.RequestProcessor) (*runv1
 	existing := requestprocessor.DeepCopy()
 	existing.Status = desired.Status
 
-	rp, err := c.ProjectriffClientSet.RunV1alpha1().RequestProcessors(desired.Namespace).UpdateStatus(existing)
+	rp, err := c.ProjectriffClientSet.RequestV1alpha1().RequestProcessors(desired.Namespace).UpdateStatus(existing)
 	if err == nil && becomesReady {
 		duration := time.Now().Sub(rp.ObjectMeta.CreationTimestamp.Time)
 		c.Logger.Infof("RequestProcessor %q became ready after %v", requestprocessor.Name, duration)
@@ -298,7 +300,7 @@ func (c *Reconciler) updateStatus(desired *runv1alpha1.RequestProcessor) (*runv1
 	return rp, err
 }
 
-func (c *Reconciler) reconcileBuilds(ctx context.Context, requestprocessor *runv1alpha1.RequestProcessor) ([]*corev1.ObjectReference, error) {
+func (c *Reconciler) reconcileBuilds(ctx context.Context, requestprocessor *requestv1alpha1.RequestProcessor) ([]*corev1.ObjectReference, error) {
 	logger := logging.FromContext(ctx)
 
 	buildRefs := make([]*corev1.ObjectReference, len(requestprocessor.Spec))
@@ -376,7 +378,7 @@ func (c *Reconciler) reconcileBuilds(ctx context.Context, requestprocessor *runv
 	return buildRefs, nil
 }
 
-func (c *Reconciler) reconcileBuild(ctx context.Context, requestprocessor *runv1alpha1.RequestProcessor, i int) (kmeta.OwnerRefable, error) {
+func (c *Reconciler) reconcileBuild(ctx context.Context, requestprocessor *requestv1alpha1.RequestProcessor, i int) (kmeta.OwnerRefable, error) {
 	logger := logging.FromContext(ctx)
 
 	build := requestprocessor.Spec[i].Build
@@ -460,7 +462,7 @@ func (c *Reconciler) reconcileBuild(ctx context.Context, requestprocessor *runv1
 	panic(fmt.Sprintf("invalid build %+v", build))
 }
 
-func (c *Reconciler) reconcileApplication(ctx context.Context, requestprocessor *runv1alpha1.RequestProcessor, i int, application *buildv1alpha1.Application) (*buildv1alpha1.Application, error) {
+func (c *Reconciler) reconcileApplication(ctx context.Context, requestprocessor *requestv1alpha1.RequestProcessor, i int, application *buildv1alpha1.Application) (*buildv1alpha1.Application, error) {
 	logger := logging.FromContext(ctx)
 	desiredApplication, err := resources.MakeApplication(requestprocessor, i)
 	if err != nil {
@@ -485,7 +487,7 @@ func (c *Reconciler) reconcileApplication(ctx context.Context, requestprocessor 
 	return c.ProjectriffClientSet.BuildV1alpha1().Applications(requestprocessor.Namespace).Update(existing)
 }
 
-func (c *Reconciler) createApplication(requestprocessor *runv1alpha1.RequestProcessor, i int) (*buildv1alpha1.Application, error) {
+func (c *Reconciler) createApplication(requestprocessor *requestv1alpha1.RequestProcessor, i int) (*buildv1alpha1.Application, error) {
 	application, err := resources.MakeApplication(requestprocessor, i)
 	if err != nil {
 		return nil, err
@@ -502,7 +504,7 @@ func applicationSemanticEquals(desiredApplication, application *buildv1alpha1.Ap
 		equality.Semantic.DeepEqual(desiredApplication.ObjectMeta.Labels, application.ObjectMeta.Labels)
 }
 
-func (c *Reconciler) reconcileFunction(ctx context.Context, requestprocessor *runv1alpha1.RequestProcessor, i int, function *buildv1alpha1.Function) (*buildv1alpha1.Function, error) {
+func (c *Reconciler) reconcileFunction(ctx context.Context, requestprocessor *requestv1alpha1.RequestProcessor, i int, function *buildv1alpha1.Function) (*buildv1alpha1.Function, error) {
 	logger := logging.FromContext(ctx)
 	desiredFunction, err := resources.MakeFunction(requestprocessor, i)
 	if err != nil {
@@ -527,7 +529,7 @@ func (c *Reconciler) reconcileFunction(ctx context.Context, requestprocessor *ru
 	return c.ProjectriffClientSet.BuildV1alpha1().Functions(requestprocessor.Namespace).Update(existing)
 }
 
-func (c *Reconciler) createFunction(requestprocessor *runv1alpha1.RequestProcessor, i int) (*buildv1alpha1.Function, error) {
+func (c *Reconciler) createFunction(requestprocessor *requestv1alpha1.RequestProcessor, i int) (*buildv1alpha1.Function, error) {
 	function, err := resources.MakeFunction(requestprocessor, i)
 	if err != nil {
 		return nil, err
@@ -544,7 +546,7 @@ func functionSemanticEquals(desiredFunction, function *buildv1alpha1.Function) b
 		equality.Semantic.DeepEqual(desiredFunction.ObjectMeta.Labels, function.ObjectMeta.Labels)
 }
 
-func (c *Reconciler) reconcileConfigurations(ctx context.Context, requestprocessor *runv1alpha1.RequestProcessor) ([]knservingv1alpha1.Configuration, error) {
+func (c *Reconciler) reconcileConfigurations(ctx context.Context, requestprocessor *requestv1alpha1.RequestProcessor) ([]knservingv1alpha1.Configuration, error) {
 	logger := logging.FromContext(ctx)
 
 	configurationNames := resourcenames.Items(requestprocessor)
@@ -613,7 +615,7 @@ func (c *Reconciler) reconcileConfigurations(ctx context.Context, requestprocess
 	return configurations, nil
 }
 
-func (c *Reconciler) resolveImages(ctx context.Context, rp *runv1alpha1.RequestProcessor) error {
+func (c *Reconciler) resolveImages(ctx context.Context, rp *requestv1alpha1.RequestProcessor) error {
 	for i := range rp.Spec {
 		ref := rp.Status.Builds[i]
 		if ref == nil {
@@ -639,7 +641,7 @@ func (c *Reconciler) resolveImages(ctx context.Context, rp *runv1alpha1.RequestP
 	return nil
 }
 
-func (c *Reconciler) reconcileConfiguration(ctx context.Context, requestprocessor *runv1alpha1.RequestProcessor, configuration *knservingv1alpha1.Configuration, i int) (*knservingv1alpha1.Configuration, error) {
+func (c *Reconciler) reconcileConfiguration(ctx context.Context, requestprocessor *requestv1alpha1.RequestProcessor, configuration *knservingv1alpha1.Configuration, i int) (*knservingv1alpha1.Configuration, error) {
 	logger := logging.FromContext(ctx)
 
 	desiredConfiguration, err := resources.MakeConfiguration(requestprocessor, i)
@@ -672,7 +674,7 @@ func (c *Reconciler) reconcileConfiguration(ctx context.Context, requestprocesso
 	return c.KnServingClientSet.ServingV1alpha1().Configurations(requestprocessor.Namespace).Update(existing)
 }
 
-func (c *Reconciler) createConfiguration(requestprocessor *runv1alpha1.RequestProcessor, i int) (*knservingv1alpha1.Configuration, error) {
+func (c *Reconciler) createConfiguration(requestprocessor *requestv1alpha1.RequestProcessor, i int) (*knservingv1alpha1.Configuration, error) {
 	configuration, err := resources.MakeConfiguration(requestprocessor, i)
 	if err != nil {
 		return nil, err
@@ -689,7 +691,7 @@ func configurationSemanticEquals(desiredConfiguration, configuration *knservingv
 		equality.Semantic.DeepEqual(desiredConfiguration.ObjectMeta.Labels, configuration.ObjectMeta.Labels)
 }
 
-func (c *Reconciler) reconcileRoute(ctx context.Context, requestprocessor *runv1alpha1.RequestProcessor, route *knservingv1alpha1.Route) (*knservingv1alpha1.Route, error) {
+func (c *Reconciler) reconcileRoute(ctx context.Context, requestprocessor *requestv1alpha1.RequestProcessor, route *knservingv1alpha1.Route) (*knservingv1alpha1.Route, error) {
 	logger := logging.FromContext(ctx)
 	desiredRoute, err := resources.MakeRoute(requestprocessor)
 	if err != nil {
@@ -714,7 +716,7 @@ func (c *Reconciler) reconcileRoute(ctx context.Context, requestprocessor *runv1
 	return c.KnServingClientSet.ServingV1alpha1().Routes(requestprocessor.Namespace).Update(existing)
 }
 
-func (c *Reconciler) createRoute(requestprocessor *runv1alpha1.RequestProcessor) (*knservingv1alpha1.Route, error) {
+func (c *Reconciler) createRoute(requestprocessor *requestv1alpha1.RequestProcessor) (*knservingv1alpha1.Route, error) {
 	route, err := resources.MakeRoute(requestprocessor)
 	if err != nil {
 		return nil, err
@@ -726,4 +728,3 @@ func routeSemanticEquals(desiredRoute, route *knservingv1alpha1.Route) bool {
 	return equality.Semantic.DeepEqual(desiredRoute.Spec, route.Spec) &&
 		equality.Semantic.DeepEqual(desiredRoute.ObjectMeta.Labels, route.ObjectMeta.Labels)
 }
-
