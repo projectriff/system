@@ -44,6 +44,7 @@ func TestReconcile(t *testing.T) {
 		return &Reconciler{
 			Base:                   reconciler.NewBase(opt, controllerAgentName),
 			requestprocessorLister: listers.GetRequestProcessorLister(),
+			streamprocessorLister:  listers.GetStreamProcessorLister(),
 			knconfigurationLister:  listers.GetKnConfigurationLister(),
 			knrouteLister:          listers.GetKnRouteLister(),
 			applicationLister:      listers.GetApplicationLister(),
@@ -62,7 +63,7 @@ func TestNew(t *testing.T) {
 	knservingClient := fakeknservingclientset.NewSimpleClientset()
 	knservingInformer := knservinginformers.NewSharedInformerFactory(knservingClient, 0)
 
-	requestprocessorInformer := projectriffInformer.Run().V1alpha1().RequestProcessors()
+	requestprocessorInformer := projectriffInformer.Request().V1alpha1().RequestProcessors()
 	knconfigurationInformer := knservingInformer.Serving().V1alpha1().Configurations()
 	knrouteInformer := knservingInformer.Serving().V1alpha1().Routes()
 	applicationInformer := projectriffInformer.Build().V1alpha1().Applications()

@@ -12,13 +12,26 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
+package fake
 
-package run
-
-const (
-	GroupName = "run.projectriff.io"
-
-	RequestProcessorLabelKey = GroupName + "/requestprocessor"
+import (
+	v1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/request/v1alpha1"
+	rest "k8s.io/client-go/rest"
+	testing "k8s.io/client-go/testing"
 )
+
+type FakeRequestV1alpha1 struct {
+	*testing.Fake
+}
+
+func (c *FakeRequestV1alpha1) RequestProcessors(namespace string) v1alpha1.RequestProcessorInterface {
+	return &FakeRequestProcessors{c, namespace}
+}
+
+// RESTClient returns a RESTClient that is used to communicate
+// with API server by this client implementation.
+func (c *FakeRequestV1alpha1) RESTClient() rest.Interface {
+	var ret *rest.RESTClient
+	return ret
+}

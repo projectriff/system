@@ -16,7 +16,7 @@
 package fake
 
 import (
-	v1alpha1 "github.com/projectriff/system/pkg/apis/run/v1alpha1"
+	v1alpha1 "github.com/projectriff/system/pkg/apis/request/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -27,13 +27,13 @@ import (
 
 // FakeRequestProcessors implements RequestProcessorInterface
 type FakeRequestProcessors struct {
-	Fake *FakeRunV1alpha1
+	Fake *FakeRequestV1alpha1
 	ns   string
 }
 
-var requestprocessorsResource = schema.GroupVersionResource{Group: "run.projectriff.io", Version: "v1alpha1", Resource: "requestprocessors"}
+var requestprocessorsResource = schema.GroupVersionResource{Group: "request.projectriff.io", Version: "v1alpha1", Resource: "requestprocessors"}
 
-var requestprocessorsKind = schema.GroupVersionKind{Group: "run.projectriff.io", Version: "v1alpha1", Kind: "RequestProcessor"}
+var requestprocessorsKind = schema.GroupVersionKind{Group: "request.projectriff.io", Version: "v1alpha1", Kind: "RequestProcessor"}
 
 // Get takes name of the requestProcessor, and returns the corresponding requestProcessor object, and an error if there is any.
 func (c *FakeRequestProcessors) Get(name string, options v1.GetOptions) (result *v1alpha1.RequestProcessor, err error) {

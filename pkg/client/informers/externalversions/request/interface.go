@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package run
+package request
 
 import (
 	internalinterfaces "github.com/projectriff/system/pkg/client/informers/externalversions/internalinterfaces"
-	v1alpha1 "github.com/projectriff/system/pkg/client/informers/externalversions/run/v1alpha1"
+	v1alpha1 "github.com/projectriff/system/pkg/client/informers/externalversions/request/v1alpha1"
 )
 
 // Interface provides access to each of this group's versions.

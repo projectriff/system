@@ -19,10 +19,10 @@ package names
 import (
 	"fmt"
 
-	runv1alpha1 "github.com/projectriff/system/pkg/apis/run/v1alpha1"
+	requestv1alpha1 "github.com/projectriff/system/pkg/apis/request/v1alpha1"
 )
 
-func Items(rp *runv1alpha1.RequestProcessor) []string {
+func Items(rp *requestv1alpha1.RequestProcessor) []string {
 	names := make([]string, len(rp.Spec))
 	for i := range rp.Spec {
 		names[i] = Item(rp, i)
@@ -30,10 +30,10 @@ func Items(rp *runv1alpha1.RequestProcessor) []string {
 	return names
 }
 
-func Item(rp *runv1alpha1.RequestProcessor, i int) string {
+func Item(rp *requestv1alpha1.RequestProcessor, i int) string {
 	return fmt.Sprintf("%s-%s", rp.Name, rp.Spec[i].Name)
 }
 
-func Route(rp *runv1alpha1.RequestProcessor) string {
+func Route(rp *requestv1alpha1.RequestProcessor) string {
 	return rp.Name
 }

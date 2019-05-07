@@ -31,7 +31,7 @@ import (
 	"github.com/knative/pkg/version"
 	"github.com/knative/pkg/webhook"
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
-	runv1alpha1 "github.com/projectriff/system/pkg/apis/run/v1alpha1"
+	requestv1alpha1 "github.com/projectriff/system/pkg/apis/request/v1alpha1"
 	streamv1alpha1 "github.com/projectriff/system/pkg/apis/stream/v1alpha1"
 	"github.com/projectriff/system/pkg/logging"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -101,7 +101,7 @@ func main() {
 		Handlers: map[schema.GroupVersionKind]webhook.GenericCRD{
 			buildv1alpha1.SchemeGroupVersion.WithKind("Application"):      &buildv1alpha1.Application{},
 			buildv1alpha1.SchemeGroupVersion.WithKind("Function"):         &buildv1alpha1.Function{},
-			runv1alpha1.SchemeGroupVersion.WithKind("RequestProcessor"):   &runv1alpha1.RequestProcessor{},
+			requestv1alpha1.SchemeGroupVersion.WithKind("RequestProcessor"):   &requestv1alpha1.RequestProcessor{},
 			streamv1alpha1.SchemeGroupVersion.WithKind("Stream"):          &streamv1alpha1.Stream{},
 			streamv1alpha1.SchemeGroupVersion.WithKind("StreamProcessor"): &streamv1alpha1.StreamProcessor{},
 		},

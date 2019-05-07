@@ -24,19 +24,19 @@ import (
 	fakeknservingclientset "github.com/knative/serving/pkg/client/clientset/versioned/fake"
 	knservingv1alpha1listers "github.com/knative/serving/pkg/client/listers/serving/v1alpha1"
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
+	requestv1alpha1 "github.com/projectriff/system/pkg/apis/request/v1alpha1"
 	streamv1alpha1 "github.com/projectriff/system/pkg/apis/stream/v1alpha1"
-	runv1alpha1 "github.com/projectriff/system/pkg/apis/run/v1alpha1"
 	fakeprojectriffclientset "github.com/projectriff/system/pkg/client/clientset/versioned/fake"
 	buildv1alpha1listers "github.com/projectriff/system/pkg/client/listers/build/v1alpha1"
-	runv1alpha1listers "github.com/projectriff/system/pkg/client/listers/run/v1alpha1"
+	requestv1alpha1listers "github.com/projectriff/system/pkg/client/listers/request/v1alpha1"
 	streamv1alpha1listers "github.com/projectriff/system/pkg/client/listers/stream/v1alpha1"
 	"github.com/projectriff/system/pkg/reconciler/testing"
-	corev1 "k8s.io/api/core/v1"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
-	corev1listers "k8s.io/client-go/listers/core/v1"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
+	corev1listers "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -95,8 +95,8 @@ func (l *Listers) GetFunctionLister() buildv1alpha1listers.FunctionLister {
 	return buildv1alpha1listers.NewFunctionLister(l.indexerFor(&buildv1alpha1.Function{}))
 }
 
-func (l *Listers) GetRequestProcessorLister() runv1alpha1listers.RequestProcessorLister {
-	return runv1alpha1listers.NewRequestProcessorLister(l.indexerFor(&runv1alpha1.RequestProcessor{}))
+func (l *Listers) GetRequestProcessorLister() requestv1alpha1listers.RequestProcessorLister {
+	return requestv1alpha1listers.NewRequestProcessorLister(l.indexerFor(&requestv1alpha1.RequestProcessor{}))
 }
 
 func (l *Listers) GetStreamLister() streamv1alpha1listers.StreamLister {

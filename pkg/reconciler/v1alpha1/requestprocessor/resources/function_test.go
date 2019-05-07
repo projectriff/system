@@ -23,16 +23,16 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
-	"github.com/projectriff/system/pkg/apis/run"
-	runv1alpha1 "github.com/projectriff/system/pkg/apis/run/v1alpha1"
+	"github.com/projectriff/system/pkg/apis/request"
+	requestv1alpha1 "github.com/projectriff/system/pkg/apis/request/v1alpha1"
 )
 
 func TestFunction(t *testing.T) {
 	rp := createRequestProcessorMeta()
 	rp.Labels = map[string]string{testLabelKey: testLabelValue}
-	rp.Spec = append(rp.Spec, runv1alpha1.RequestProcessorSpecItem{
+	rp.Spec = append(rp.Spec, requestv1alpha1.RequestProcessorSpecItem{
 		Name: testItemName,
-		Build: &runv1alpha1.Build{
+		Build: &requestv1alpha1.Build{
 			Function: &buildv1alpha1.FunctionSpec{
 				Image: "example.com/repo",
 				Source: buildv1alpha1.Source{
@@ -65,7 +65,7 @@ func TestFunction(t *testing.T) {
 	if got, want := f.Labels[testLabelKey], testLabelValue; got != want {
 		t.Errorf("expected %q labels got %q", want, got)
 	}
-	if got, want := f.Labels[run.RequestProcessorLabelKey], testRequestProcessorName; got != want {
+	if got, want := f.Labels[request.RequestProcessorLabelKey], testRequestProcessorName; got != want {
 		t.Errorf("expected %q labels got %q", want, got)
 	}
 

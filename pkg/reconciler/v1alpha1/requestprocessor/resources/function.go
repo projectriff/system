@@ -19,13 +19,13 @@ package resources
 import (
 	"github.com/knative/pkg/kmeta"
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
-	runv1alpha1 "github.com/projectriff/system/pkg/apis/run/v1alpha1"
+	requestv1alpha1 "github.com/projectriff/system/pkg/apis/request/v1alpha1"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/requestprocessor/resources/names"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // MakeFunction creates a Function from an RequestProcessor object.
-func MakeFunction(rp *runv1alpha1.RequestProcessor, i int) (*buildv1alpha1.Function, error) {
+func MakeFunction(rp *requestv1alpha1.RequestProcessor, i int) (*buildv1alpha1.Function, error) {
 	if rp.Spec[i].Build.Function == nil {
 		return nil, nil
 	}

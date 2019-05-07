@@ -21,13 +21,13 @@ import (
 
 	"github.com/knative/pkg/kmeta"
 	knservingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
-	runv1alpha1 "github.com/projectriff/system/pkg/apis/run/v1alpha1"
+	requestv1alpha1 "github.com/projectriff/system/pkg/apis/request/v1alpha1"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/requestprocessor/resources/names"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // MakeRoute creates a Route from an RequestProcessor object.
-func MakeRoute(rp *runv1alpha1.RequestProcessor) (*knservingv1alpha1.Route, error) {
+func MakeRoute(rp *requestv1alpha1.RequestProcessor) (*knservingv1alpha1.Route, error) {
 	if len(rp.Spec) != len(rp.Status.ConfigurationNames) {
 		return nil, fmt.Errorf("Unable to create Route, wanted %d reconciled configurations, found %d", len(rp.Spec), len(rp.Status.ConfigurationNames))
 	}
@@ -49,7 +49,7 @@ func MakeRoute(rp *runv1alpha1.RequestProcessor) (*knservingv1alpha1.Route, erro
 	return route, nil
 }
 
-func makeRouteTraffic(rp *runv1alpha1.RequestProcessor) []knservingv1alpha1.TrafficTarget {
+func makeRouteTraffic(rp *requestv1alpha1.RequestProcessor) []knservingv1alpha1.TrafficTarget {
 	traffic := []knservingv1alpha1.TrafficTarget{}
 
 	for i, rpsi := range rp.Spec {

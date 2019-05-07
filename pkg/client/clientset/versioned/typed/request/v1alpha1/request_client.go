@@ -16,28 +16,28 @@
 package v1alpha1
 
 import (
-	v1alpha1 "github.com/projectriff/system/pkg/apis/run/v1alpha1"
+	v1alpha1 "github.com/projectriff/system/pkg/apis/request/v1alpha1"
 	"github.com/projectriff/system/pkg/client/clientset/versioned/scheme"
 	serializer "k8s.io/apimachinery/pkg/runtime/serializer"
 	rest "k8s.io/client-go/rest"
 )
 
-type RunV1alpha1Interface interface {
+type RequestV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	RequestProcessorsGetter
 }
 
-// RunV1alpha1Client is used to interact with features provided by the run.projectriff.io group.
-type RunV1alpha1Client struct {
+// RequestV1alpha1Client is used to interact with features provided by the request.projectriff.io group.
+type RequestV1alpha1Client struct {
 	restClient rest.Interface
 }
 
-func (c *RunV1alpha1Client) RequestProcessors(namespace string) RequestProcessorInterface {
+func (c *RequestV1alpha1Client) RequestProcessors(namespace string) RequestProcessorInterface {
 	return newRequestProcessors(c, namespace)
 }
 
-// NewForConfig creates a new RunV1alpha1Client for the given config.
-func NewForConfig(c *rest.Config) (*RunV1alpha1Client, error) {
+// NewForConfig creates a new RequestV1alpha1Client for the given config.
+func NewForConfig(c *rest.Config) (*RequestV1alpha1Client, error) {
 	config := *c
 	if err := setConfigDefaults(&config); err != nil {
 		return nil, err
@@ -46,12 +46,12 @@ func NewForConfig(c *rest.Config) (*RunV1alpha1Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &RunV1alpha1Client{client}, nil
+	return &RequestV1alpha1Client{client}, nil
 }
 
-// NewForConfigOrDie creates a new RunV1alpha1Client for the given config and
+// NewForConfigOrDie creates a new RequestV1alpha1Client for the given config and
 // panics if there is an error in the config.
-func NewForConfigOrDie(c *rest.Config) *RunV1alpha1Client {
+func NewForConfigOrDie(c *rest.Config) *RequestV1alpha1Client {
 	client, err := NewForConfig(c)
 	if err != nil {
 		panic(err)
@@ -59,9 +59,9 @@ func NewForConfigOrDie(c *rest.Config) *RunV1alpha1Client {
 	return client
 }
 
-// New creates a new RunV1alpha1Client for the given RESTClient.
-func New(c rest.Interface) *RunV1alpha1Client {
-	return &RunV1alpha1Client{c}
+// New creates a new RequestV1alpha1Client for the given RESTClient.
+func New(c rest.Interface) *RequestV1alpha1Client {
+	return &RequestV1alpha1Client{c}
 }
 
 func setConfigDefaults(config *rest.Config) error {
@@ -79,7 +79,7 @@ func setConfigDefaults(config *rest.Config) error {
 
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
-func (c *RunV1alpha1Client) RESTClient() rest.Interface {
+func (c *RequestV1alpha1Client) RESTClient() rest.Interface {
 	if c == nil {
 		return nil
 	}

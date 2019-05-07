@@ -16,14 +16,14 @@ limitations under the License.
 package resources
 
 import (
-	"github.com/projectriff/system/pkg/apis/run"
-	runv1alpha1 "github.com/projectriff/system/pkg/apis/run/v1alpha1"
+	"github.com/projectriff/system/pkg/apis/request"
+	requestv1alpha1 "github.com/projectriff/system/pkg/apis/request/v1alpha1"
 )
 
 // makeLabels constructs the labels we will apply to RequestProcessor resource.
-func makeLabels(rp *runv1alpha1.RequestProcessor) map[string]string {
+func makeLabels(rp *requestv1alpha1.RequestProcessor) map[string]string {
 	labels := make(map[string]string, len(rp.ObjectMeta.Labels)+1)
-	labels[run.RequestProcessorLabelKey] = rp.Name
+	labels[request.RequestProcessorLabelKey] = rp.Name
 
 	// Pass through the labels on the Function to child resources.
 	for k, v := range rp.ObjectMeta.Labels {

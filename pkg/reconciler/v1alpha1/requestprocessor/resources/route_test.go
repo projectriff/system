@@ -20,15 +20,15 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/projectriff/system/pkg/apis/run"
-	runv1alpha1 "github.com/projectriff/system/pkg/apis/run/v1alpha1"
+	"github.com/projectriff/system/pkg/apis/request"
+	requestv1alpha1 "github.com/projectriff/system/pkg/apis/request/v1alpha1"
 )
 
 func TestRoute(t *testing.T) {
 	p100 := 100
 	rp := createRequestProcessorMeta()
 	rp.Labels = map[string]string{testLabelKey: testLabelValue}
-	rp.Spec = append(rp.Spec, runv1alpha1.RequestProcessorSpecItem{
+	rp.Spec = append(rp.Spec, requestv1alpha1.RequestProcessorSpecItem{
 		Name:    testItemName,
 		Percent: &p100,
 	})
@@ -52,7 +52,7 @@ func TestRoute(t *testing.T) {
 	if got, want := r.Labels[testLabelKey], testLabelValue; got != want {
 		t.Errorf("expected %q labels got %q", want, got)
 	}
-	if got, want := r.Labels[run.RequestProcessorLabelKey], testRequestProcessorName; got != want {
+	if got, want := r.Labels[request.RequestProcessorLabelKey], testRequestProcessorName; got != want {
 		t.Errorf("expected %q labels got %q", want, got)
 	}
 

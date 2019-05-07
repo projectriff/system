@@ -18,10 +18,10 @@ package v1alpha1
 import (
 	time "time"
 
-	run_v1alpha1 "github.com/projectriff/system/pkg/apis/run/v1alpha1"
+	request_v1alpha1 "github.com/projectriff/system/pkg/apis/request/v1alpha1"
 	versioned "github.com/projectriff/system/pkg/client/clientset/versioned"
 	internalinterfaces "github.com/projectriff/system/pkg/client/informers/externalversions/internalinterfaces"
-	v1alpha1 "github.com/projectriff/system/pkg/client/listers/run/v1alpha1"
+	v1alpha1 "github.com/projectriff/system/pkg/client/listers/request/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -58,16 +58,16 @@ func NewFilteredRequestProcessorInformer(client versioned.Interface, namespace s
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.RunV1alpha1().RequestProcessors(namespace).List(options)
+				return client.RequestV1alpha1().RequestProcessors(namespace).List(options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.RunV1alpha1().RequestProcessors(namespace).Watch(options)
+				return client.RequestV1alpha1().RequestProcessors(namespace).Watch(options)
 			},
 		},
-		&run_v1alpha1.RequestProcessor{},
+		&request_v1alpha1.RequestProcessor{},
 		resyncPeriod,
 		indexers,
 	)
@@ -78,7 +78,7 @@ func (f *requestProcessorInformer) defaultInformer(client versioned.Interface, r
 }
 
 func (f *requestProcessorInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&run_v1alpha1.RequestProcessor{}, f.defaultInformer)
+	return f.factory.InformerFor(&request_v1alpha1.RequestProcessor{}, f.defaultInformer)
 }
 
 func (f *requestProcessorInformer) Lister() v1alpha1.RequestProcessorLister {
