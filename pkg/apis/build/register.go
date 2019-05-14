@@ -22,4 +22,8 @@ const (
 
 	ApplicationLabelKey = GroupName + "/application"
 	FunctionLabelKey    = GroupName + "/function"
+
+	// credentials are not a CRD, but a Secret with this label
+	CredentialLabelKey       = GroupName + "/credential"
+	CredentialsAnnotationKey = GroupName + "/credentials"
 )

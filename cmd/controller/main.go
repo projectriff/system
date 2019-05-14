@@ -46,6 +46,7 @@ import (
 	"github.com/projectriff/system/pkg/reconciler"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/application"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/function"
+	"github.com/projectriff/system/pkg/reconciler/v1alpha1/credential"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/requestprocessor"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/stream"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/streamprocessor"
@@ -137,6 +138,8 @@ func main() {
 
 	deploymentInformer := kubeInformerFactory.Apps().V1().Deployments()
 	pvcInformer := kubeInformerFactory.Core().V1().PersistentVolumeClaims()
+	secretInformer := kubeInformerFactory.Core().V1().Secrets()
+	serviceaccountInformer := kubeInformerFactory.Core().V1().ServiceAccounts()
 	knbuildInformer := knbuildInformerFactory.Build().V1alpha1().Builds()
 	knconfigurationInformer := knservingInformerFactory.Serving().V1alpha1().Configurations()
 	knrouteInformer := knservingInformerFactory.Serving().V1alpha1().Routes()
@@ -158,6 +161,12 @@ func main() {
 
 			pvcInformer,
 			knbuildInformer,
+		),
+		credential.NewController(
+			opt,
+			secretInformer,
+
+			serviceaccountInformer,
 		),
 		// run.projectriff.io
 		requestprocessor.NewController(
@@ -207,6 +216,8 @@ func main() {
 		streamprocessorInformer.Informer().HasSynced,
 		deploymentInformer.Informer().HasSynced,
 		pvcInformer.Informer().HasSynced,
+		secretInformer.Informer().HasSynced,
+		serviceaccountInformer.Informer().HasSynced,
 		knbuildInformer.Informer().HasSynced,
 		knconfigurationInformer.Informer().HasSynced,
 		knrouteInformer.Informer().HasSynced,

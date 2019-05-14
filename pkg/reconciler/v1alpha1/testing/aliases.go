@@ -19,16 +19,21 @@ package testing
 import (
 	logtesting "github.com/knative/pkg/logging/testing"
 	"github.com/projectriff/system/pkg/reconciler/testing"
+	clientgotesting "k8s.io/client-go/testing"
 )
 
 type (
-	TableTest          = testing.TableTest
-	TableRow           = testing.TableRow
-	ActionRecorderList = testing.ActionRecorderList
-	ActionRecorder     = testing.ActionRecorder
-	EventList          = testing.EventList
-	Factory            = testing.Factory
-	HookResult         = testing.HookResult
+	TableTest                  = testing.TableTest
+	TableRow                   = testing.TableRow
+	ActionRecorderList         = testing.ActionRecorderList
+	ActionRecorder             = testing.ActionRecorder
+	EventList                  = testing.EventList
+	Factory                    = testing.Factory
+	HookResult                 = testing.HookResult
+	ActionImpl                 = clientgotesting.ActionImpl
+	UpdateActionImpl           = clientgotesting.UpdateActionImpl
+	DeleteActionImpl           = clientgotesting.DeleteActionImpl
+	DeleteCollectionActionImpl = clientgotesting.DeleteCollectionActionImpl
 )
 
 var (
