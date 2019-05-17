@@ -28,23 +28,23 @@ import (
 
 func TestMakeLabels(t *testing.T) {
 	tests := []struct {
-		name string
-		request  *requestv1alpha1.RequestProcessor
-		want map[string]string
+		name    string
+		request *requestv1alpha1.Handler
+		want    map[string]string
 	}{{
 		name: "just application name",
-		request: &requestv1alpha1.RequestProcessor{
+		request: &requestv1alpha1.Handler{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: "foo",
 				Name:      "bar",
 			},
 		},
 		want: map[string]string{
-			request.RequestProcessorLabelKey: "bar",
+			request.HandlerLabelKey: "bar",
 		},
 	}, {
 		name: "pass through labels",
-		request: &requestv1alpha1.RequestProcessor{
+		request: &requestv1alpha1.Handler{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: "baz",
 				Name:      "blah",
@@ -55,9 +55,9 @@ func TestMakeLabels(t *testing.T) {
 			},
 		},
 		want: map[string]string{
-			request.RequestProcessorLabelKey: "blah",
-			"asdf":                       "bazinga",
-			"ooga":                       "booga",
+			request.HandlerLabelKey: "blah",
+			"asdf":                  "bazinga",
+			"ooga":                  "booga",
 		},
 	}}
 

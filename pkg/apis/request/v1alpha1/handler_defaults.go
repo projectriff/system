@@ -16,6 +16,21 @@
 
 package v1alpha1
 
-func makePint(i int) *int {
-	return &i
+import (
+	"context"
+
+	corev1 "k8s.io/api/core/v1"
+)
+
+func (h *Handler) SetDefaults(ctx context.Context) {
+	h.Spec.SetDefaults(ctx)
+}
+
+func (hs *HandlerSpec) SetDefaults(ctx context.Context) {
+	if hs.Template == nil {
+		hs.Template = &corev1.PodSpec{}
+	}
+	if len(hs.Template.Containers) == 0 {
+		hs.Template.Containers = append(hs.Template.Containers, corev1.Container{})
+	}
 }

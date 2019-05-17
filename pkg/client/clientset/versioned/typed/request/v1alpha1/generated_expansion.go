@@ -15,4 +15,4 @@
  */
 package v1alpha1
 
-type RequestProcessorExpansion interface{}
+type HandlerExpansion interface{}

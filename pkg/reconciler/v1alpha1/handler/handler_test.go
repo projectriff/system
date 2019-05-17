@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package requestprocessor
+package handler
 
 import (
 	"testing"
@@ -42,13 +42,13 @@ func TestReconcile(t *testing.T) {
 	defer ClearAllLoggers()
 	table.Test(t, MakeFactory(func(listers *Listers, opt reconciler.Options) controller.Reconciler {
 		return &Reconciler{
-			Base:                   reconciler.NewBase(opt, controllerAgentName),
-			requestprocessorLister: listers.GetRequestProcessorLister(),
-			streamprocessorLister:  listers.GetStreamProcessorLister(),
-			knconfigurationLister:  listers.GetKnConfigurationLister(),
-			knrouteLister:          listers.GetKnRouteLister(),
-			applicationLister:      listers.GetApplicationLister(),
-			functionLister:         listers.GetFunctionLister(),
+			Base:                  reconciler.NewBase(opt, controllerAgentName),
+			handlerLister:         listers.GetHandlerLister(),
+			streamprocessorLister: listers.GetStreamProcessorLister(),
+			knconfigurationLister: listers.GetKnConfigurationLister(),
+			knrouteLister:         listers.GetKnRouteLister(),
+			applicationLister:     listers.GetApplicationLister(),
+			functionLister:        listers.GetFunctionLister(),
 
 			tracker: &rtesting.NullTracker{},
 		}
@@ -63,7 +63,7 @@ func TestNew(t *testing.T) {
 	knservingClient := fakeknservingclientset.NewSimpleClientset()
 	knservingInformer := knservinginformers.NewSharedInformerFactory(knservingClient, 0)
 
-	requestprocessorInformer := projectriffInformer.Request().V1alpha1().RequestProcessors()
+	handlerInformer := projectriffInformer.Request().V1alpha1().Handlers()
 	knconfigurationInformer := knservingInformer.Serving().V1alpha1().Configurations()
 	knrouteInformer := knservingInformer.Serving().V1alpha1().Routes()
 	applicationInformer := projectriffInformer.Build().V1alpha1().Applications()
@@ -74,7 +74,7 @@ func TestNew(t *testing.T) {
 		ProjectriffClientSet: projectriffClient,
 		KnServingClientSet:   knservingClient,
 		Logger:               TestLogger(t),
-	}, requestprocessorInformer, knconfigurationInformer, knrouteInformer, applicationInformer, functionInformer)
+	}, handlerInformer, knconfigurationInformer, knrouteInformer, applicationInformer, functionInformer)
 
 	if c == nil {
 		t.Fatal("Expected NewController to return a non-nil value")

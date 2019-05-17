@@ -25,8 +25,8 @@ type FakeRequestV1alpha1 struct {
 	*testing.Fake
 }
 
-func (c *FakeRequestV1alpha1) RequestProcessors(namespace string) v1alpha1.RequestProcessorInterface {
-	return &FakeRequestProcessors{c, namespace}
+func (c *FakeRequestV1alpha1) Handlers(namespace string) v1alpha1.HandlerInterface {
+	return &FakeHandlers{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

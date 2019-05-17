@@ -24,7 +24,7 @@ import (
 
 type RequestV1alpha1Interface interface {
 	RESTClient() rest.Interface
-	RequestProcessorsGetter
+	HandlersGetter
 }
 
 // RequestV1alpha1Client is used to interact with features provided by the request.projectriff.io group.
@@ -32,8 +32,8 @@ type RequestV1alpha1Client struct {
 	restClient rest.Interface
 }
 
-func (c *RequestV1alpha1Client) RequestProcessors(namespace string) RequestProcessorInterface {
-	return newRequestProcessors(c, namespace)
+func (c *RequestV1alpha1Client) Handlers(namespace string) HandlerInterface {
+	return newHandlers(c, namespace)
 }
 
 // NewForConfig creates a new RequestV1alpha1Client for the given config.

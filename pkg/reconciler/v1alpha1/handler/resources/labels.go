@@ -20,13 +20,13 @@ import (
 	requestv1alpha1 "github.com/projectriff/system/pkg/apis/request/v1alpha1"
 )
 
-// makeLabels constructs the labels we will apply to RequestProcessor resource.
-func makeLabels(rp *requestv1alpha1.RequestProcessor) map[string]string {
-	labels := make(map[string]string, len(rp.ObjectMeta.Labels)+1)
-	labels[request.RequestProcessorLabelKey] = rp.Name
+// makeLabels constructs the labels we will apply to Handler resource.
+func makeLabels(h *requestv1alpha1.Handler) map[string]string {
+	labels := make(map[string]string, len(h.ObjectMeta.Labels)+1)
+	labels[request.HandlerLabelKey] = h.Name
 
 	// Pass through the labels on the Function to child resources.
-	for k, v := range rp.ObjectMeta.Labels {
+	for k, v := range h.ObjectMeta.Labels {
 		labels[k] = v
 	}
 	return labels

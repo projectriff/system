@@ -21,8 +21,8 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
-	// RequestProcessors returns a RequestProcessorInformer.
-	RequestProcessors() RequestProcessorInformer
+	// Handlers returns a HandlerInformer.
+	Handlers() HandlerInformer
 }
 
 type version struct {
@@ -36,7 +36,7 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 }
 
-// RequestProcessors returns a RequestProcessorInformer.
-func (v *version) RequestProcessors() RequestProcessorInformer {
-	return &requestProcessorInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+// Handlers returns a HandlerInformer.
+func (v *version) Handlers() HandlerInformer {
+	return &handlerInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

@@ -26,47 +26,15 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 )
 
-func (rp *RequestProcessor) Validate(ctx context.Context) *apis.FieldError {
+func (h *Handler) Validate(ctx context.Context) *apis.FieldError {
 	errs := &apis.FieldError{}
-	errs = errs.Also(validateObjectMetadata(rp.GetObjectMeta()).ViaField("metadata"))
-	errs = errs.Also(rp.Spec.Validate(ctx).ViaField("spec"))
+	errs = errs.Also(validateObjectMetadata(h.GetObjectMeta()).ViaField("metadata"))
+	errs = errs.Also(h.Spec.Validate(ctx).ViaField("spec"))
 	return errs
 }
 
-func (rps RequestProcessorSpec) Validate(ctx context.Context) *apis.FieldError {
-	if equality.Semantic.DeepEqual(rps, RequestProcessorSpec{}) {
-		return apis.ErrMissingField(apis.CurrentField)
-	}
-
-	errs := &apis.FieldError{}
-
-	seenNames := map[string]int{}
-	for i, rpsi := range rps {
-		errs = errs.Also(rpsi.Validate(ctx).ViaIndex(i))
-
-		if rpsi.Name == "" {
-			errs = errs.Also(apis.ErrMissingField("name").ViaIndex(i))
-		}
-
-		// require names be unique
-		if j, ok := seenNames[rpsi.Name]; ok {
-			errs = errs.Also(&apis.FieldError{
-				Message: fmt.Sprintf("duplicate name %q", rpsi.Name),
-				Paths: []string{
-					fmt.Sprintf("[%d].name", j),
-					fmt.Sprintf("[%d].name", i),
-				},
-			})
-		} else {
-			seenNames[rpsi.Name] = i
-		}
-	}
-
-	return errs
-}
-
-func (rpsi *RequestProcessorSpecItem) Validate(ctx context.Context) *apis.FieldError {
-	if equality.Semantic.DeepEqual(rpsi, &RequestProcessorSpecItem{}) {
+func (hs HandlerSpec) Validate(ctx context.Context) *apis.FieldError {
+	if equality.Semantic.DeepEqual(hs, HandlerSpec{}) {
 		return apis.ErrMissingField(apis.CurrentField)
 	}
 
@@ -74,22 +42,22 @@ func (rpsi *RequestProcessorSpecItem) Validate(ctx context.Context) *apis.FieldE
 
 	if diff := cmp.Diff(&corev1.PodSpec{
 		// add supported PodSpec fields here, otherwise their usage will be rejected
-		ServiceAccountName: rpsi.Template.ServiceAccountName,
+		ServiceAccountName: hs.Template.ServiceAccountName,
 		// the defaulter guarantees at least one container
-		Containers: filterInvalidContainers(rpsi.Template.Containers[:1]),
-		Volumes:    filterInvalidVolumes(rpsi.Template.Volumes),
-	}, rpsi.Template); diff != "" {
+		Containers: filterInvalidContainers(hs.Template.Containers[:1]),
+		Volumes:    filterInvalidVolumes(hs.Template.Volumes),
+	}, hs.Template); diff != "" {
 		err := apis.ErrDisallowedFields(apis.CurrentField)
 		err.Details = fmt.Sprintf("limited Template fields may be set (-want, +got) = %v", diff)
 		errs = errs.Also(err)
 	}
 
-	if rpsi.Build == nil && rpsi.Template.Containers[0].Image == "" {
+	if hs.Build == nil && hs.Template.Containers[0].Image == "" {
 		errs = errs.Also(apis.ErrMissingOneOf("build", "template.containers[0].image"))
-	} else if rpsi.Build != nil && rpsi.Template.Containers[0].Image != "" {
+	} else if hs.Build != nil && hs.Template.Containers[0].Image != "" {
 		errs = errs.Also(apis.ErrMultipleOneOf("build", "template.containers[0].image"))
-	} else if rpsi.Build != nil {
-		errs = errs.Also(rpsi.Build.Validate(ctx).ViaField("build"))
+	} else if hs.Build != nil {
+		errs = errs.Also(hs.Build.Validate(ctx).ViaField("build"))
 	}
 
 	return errs
@@ -104,24 +72,10 @@ func (b *Build) Validate(ctx context.Context) *apis.FieldError {
 	used := []string{}
 	unused := []string{}
 
-	if b.Application != nil {
-		used = append(used, "application")
-		errs = errs.Also(b.Application.Validate(ctx).ViaField("application"))
-	} else {
-		unused = append(unused, "application")
-	}
-
 	if b.ApplicationRef != "" {
 		used = append(used, "applicationRef")
 	} else {
 		unused = append(unused, "applicationRef")
-	}
-
-	if b.Function != nil {
-		used = append(used, "function")
-		errs = errs.Also(b.Function.Validate(ctx).ViaField("function"))
-	} else {
-		unused = append(unused, "function")
 	}
 
 	if b.FunctionRef != "" {

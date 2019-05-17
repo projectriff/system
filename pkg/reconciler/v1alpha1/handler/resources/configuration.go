@@ -20,28 +20,27 @@ import (
 	"github.com/knative/pkg/kmeta"
 	knservingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
 	requestv1alpha1 "github.com/projectriff/system/pkg/apis/request/v1alpha1"
-	"github.com/projectriff/system/pkg/reconciler/v1alpha1/requestprocessor/resources/names"
+	"github.com/projectriff/system/pkg/reconciler/v1alpha1/handler/resources/names"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// MakeConfiguration creates a Configuration from an RequestProcessor object.
-func MakeConfiguration(rp *requestv1alpha1.RequestProcessor, i int) (*knservingv1alpha1.Configuration, error) {
-	rpsi := rp.Spec[i]
+// MakeConfiguration creates a Configuration from a Handler object.
+func MakeConfiguration(h *requestv1alpha1.Handler) (*knservingv1alpha1.Configuration, error) {
 	configuration := &knservingv1alpha1.Configuration{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      names.Item(rp, i),
-			Namespace: rp.Namespace,
+			Name:      names.Configuration(h),
+			Namespace: h.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
-				*kmeta.NewControllerRef(rp),
+				*kmeta.NewControllerRef(h),
 			},
-			Labels: makeLabels(rp),
+			Labels: makeLabels(h),
 		},
 		Spec: knservingv1alpha1.ConfigurationSpec{
 			RevisionTemplate: knservingv1alpha1.RevisionTemplateSpec{
 				Spec: knservingv1alpha1.RevisionSpec{
-					ServiceAccountName: rpsi.Template.ServiceAccountName,
-					Container:          rpsi.Template.Containers[0],
-					Volumes:            rpsi.Template.Volumes,
+					ServiceAccountName: h.Spec.Template.ServiceAccountName,
+					Container:          h.Spec.Template.Containers[0],
+					Volumes:            h.Spec.Template.Volumes,
 				},
 			},
 		},

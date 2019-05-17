@@ -17,30 +17,39 @@ limitations under the License.
 package resources
 
 import (
+	"fmt"
+
 	"github.com/knative/pkg/kmeta"
-	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
+	knservingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
 	requestv1alpha1 "github.com/projectriff/system/pkg/apis/request/v1alpha1"
-	"github.com/projectriff/system/pkg/reconciler/v1alpha1/requestprocessor/resources/names"
+	"github.com/projectriff/system/pkg/reconciler/v1alpha1/handler/resources/names"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// MakeFunction creates a Function from an RequestProcessor object.
-func MakeFunction(rp *requestv1alpha1.RequestProcessor, i int) (*buildv1alpha1.Function, error) {
-	if rp.Spec[i].Build.Function == nil {
-		return nil, nil
+// MakeRoute creates a Route from a Handler object.
+func MakeRoute(h *requestv1alpha1.Handler) (*knservingv1alpha1.Route, error) {
+	if h.Status.ConfigurationName == "" {
+		return nil, fmt.Errorf("unable to create Route, waiting for Configuration")
 	}
 
-	function := &buildv1alpha1.Function{
+	route := &knservingv1alpha1.Route{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      names.Item(rp, i),
-			Namespace: rp.Namespace,
+			Name:      names.Route(h),
+			Namespace: h.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
-				*kmeta.NewControllerRef(rp),
+				*kmeta.NewControllerRef(h),
 			},
-			Labels: makeLabels(rp),
+			Labels: makeLabels(h),
 		},
-		Spec: *rp.Spec[i].Build.Function,
+		Spec: knservingv1alpha1.RouteSpec{
+			Traffic: []knservingv1alpha1.TrafficTarget{
+				knservingv1alpha1.TrafficTarget{
+					Percent:           100,
+					ConfigurationName: h.Status.ConfigurationName,
+				},
+			},
+		},
 	}
 
-	return function, nil
+	return route, nil
 }
