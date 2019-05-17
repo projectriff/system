@@ -48,8 +48,8 @@ import (
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/credential"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/function"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/handler"
+	"github.com/projectriff/system/pkg/reconciler/v1alpha1/processor"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/stream"
-	"github.com/projectriff/system/pkg/reconciler/v1alpha1/streamprocessor"
 	"go.uber.org/zap"
 )
 
@@ -134,7 +134,7 @@ func main() {
 	functionInformer := projectriffInformerFactory.Build().V1alpha1().Functions()
 	handlerInformer := projectriffInformerFactory.Request().V1alpha1().Handlers()
 	streamInformer := projectriffInformerFactory.Stream().V1alpha1().Streams()
-	streamprocessorInformer := projectriffInformerFactory.Stream().V1alpha1().StreamProcessors()
+	processorInformer := projectriffInformerFactory.Stream().V1alpha1().Processors()
 
 	deploymentInformer := kubeInformerFactory.Apps().V1().Deployments()
 	pvcInformer := kubeInformerFactory.Core().V1().PersistentVolumeClaims()
@@ -183,9 +183,9 @@ func main() {
 			opt,
 			streamInformer,
 		),
-		streamprocessor.NewController(
+		processor.NewController(
 			opt,
-			streamprocessorInformer,
+			processorInformer,
 
 			deploymentInformer,
 			streamInformer,
@@ -213,7 +213,7 @@ func main() {
 		functionInformer.Informer().HasSynced,
 		handlerInformer.Informer().HasSynced,
 		streamInformer.Informer().HasSynced,
-		streamprocessorInformer.Informer().HasSynced,
+		processorInformer.Informer().HasSynced,
 		deploymentInformer.Informer().HasSynced,
 		pvcInformer.Informer().HasSynced,
 		secretInformer.Informer().HasSynced,

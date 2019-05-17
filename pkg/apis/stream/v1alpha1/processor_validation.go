@@ -16,12 +16,13 @@
 
 package v1alpha1
 
-import "context"
+import (
+	"context"
 
-func (sp *StreamProcessor) SetDefaults(ctx context.Context) {
-	sp.Spec.SetDefaults(ctx)
-}
+	"github.com/knative/pkg/apis"
+)
 
-func (sps *StreamProcessorSpec) SetDefaults(ctx context.Context) {
+func (p *Processor) Validate(ctx context.Context) *apis.FieldError {
 	// TODO
+	return nil
 }

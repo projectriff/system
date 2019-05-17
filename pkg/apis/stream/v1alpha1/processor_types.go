@@ -25,21 +25,21 @@ import (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-type StreamProcessor struct {
+type Processor struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   StreamProcessorSpec   `json:"spec"`
-	Status StreamProcessorStatus `json:"status"`
+	Spec   ProcessorSpec   `json:"spec"`
+	Status ProcessorStatus `json:"status"`
 }
 
-type StreamProcessorSpec struct {
+type ProcessorSpec struct {
 	Inputs   []string `json:"inputs"`
 	Outputs  []string `json:"outputs"`
 	Function string   `json:"function"`
 }
 
-type StreamProcessorStatus struct {
+type ProcessorStatus struct {
 	duckv1alpha1.Status `json:",inline"`
 
 	InputAddresses  []string `json:"inputAddresses,omitEmpty"`
@@ -49,13 +49,13 @@ type StreamProcessorStatus struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-type StreamProcessorList struct {
+type ProcessorList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 
-	Items []StreamProcessor `json:"items"`
+	Items []Processor `json:"items"`
 }
 
-func (*StreamProcessor) GetGroupVersionKind() schema.GroupVersionKind {
-	return SchemeGroupVersion.WithKind("StreamProcessor")
+func (*Processor) GetGroupVersionKind() schema.GroupVersionKind {
+	return SchemeGroupVersion.WithKind("Processor")
 }

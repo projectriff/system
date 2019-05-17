@@ -44,7 +44,7 @@ func TestReconcile(t *testing.T) {
 		return &Reconciler{
 			Base:                  reconciler.NewBase(opt, controllerAgentName),
 			handlerLister:         listers.GetHandlerLister(),
-			streamprocessorLister: listers.GetStreamProcessorLister(),
+			processorLister:       listers.GetProcessorLister(),
 			knconfigurationLister: listers.GetKnConfigurationLister(),
 			knrouteLister:         listers.GetKnRouteLister(),
 			applicationLister:     listers.GetApplicationLister(),

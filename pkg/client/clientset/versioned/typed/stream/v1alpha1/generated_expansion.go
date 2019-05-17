@@ -15,6 +15,6 @@
  */
 package v1alpha1
 
-type StreamExpansion interface{}
+type ProcessorExpansion interface{}
 
-type StreamProcessorExpansion interface{}
+type StreamExpansion interface{}

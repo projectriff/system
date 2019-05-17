@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package streamprocessor
+package processor
 
 import (
 	"context"
@@ -30,8 +30,8 @@ import (
 	streaminformers "github.com/projectriff/system/pkg/client/informers/externalversions/stream/v1alpha1"
 	streamlisters "github.com/projectriff/system/pkg/client/listers/stream/v1alpha1"
 	"github.com/projectriff/system/pkg/reconciler"
-	"github.com/projectriff/system/pkg/reconciler/v1alpha1/streamprocessor/resources"
-	resourcenames "github.com/projectriff/system/pkg/reconciler/v1alpha1/streamprocessor/resources/names"
+	"github.com/projectriff/system/pkg/reconciler/v1alpha1/processor/resources"
+	resourcenames "github.com/projectriff/system/pkg/reconciler/v1alpha1/processor/resources/names"
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -46,18 +46,18 @@ import (
 
 const (
 	// ReconcilerName is the name of the reconciler
-	ReconcilerName      = "StreamProcessors"
-	controllerAgentName = "streamprocessor-controller"
+	ReconcilerName      = "Processors"
+	controllerAgentName = "processor-controller"
 )
 
-// Reconciler implements controller.Reconciler for StreamProcessor resources.
+// Reconciler implements controller.Reconciler for Processor resources.
 type Reconciler struct {
 	*reconciler.Base
 
 	// listers index properties about resources
-	streamprocessorLister streamlisters.StreamProcessorLister
-	deploymentLister      appslisters.DeploymentLister
-	streamLister          streamlisters.StreamLister
+	processorLister  streamlisters.ProcessorLister
+	deploymentLister appslisters.DeploymentLister
+	streamLister     streamlisters.StreamLister
 
 	tracker tracker.Interface
 }
@@ -69,25 +69,25 @@ var _ controller.Reconciler = (*Reconciler)(nil)
 // Registers eventhandlers to enqueue events
 func NewController(
 	opt reconciler.Options,
-	streamprocessorInformer streaminformers.StreamProcessorInformer,
+	processorInformer streaminformers.ProcessorInformer,
 	deploymentInformer appsinformers.DeploymentInformer,
 	streamInformer streaminformers.StreamInformer,
 ) *controller.Impl {
 
 	c := &Reconciler{
-		Base:                  reconciler.NewBase(opt, controllerAgentName),
-		streamprocessorLister: streamprocessorInformer.Lister(),
-		deploymentLister:      deploymentInformer.Lister(),
-		streamLister:          streamInformer.Lister(),
+		Base:             reconciler.NewBase(opt, controllerAgentName),
+		processorLister:  processorInformer.Lister(),
+		deploymentLister: deploymentInformer.Lister(),
+		streamLister:     streamInformer.Lister(),
 	}
 	impl := controller.NewImpl(c, c.Logger, ReconcilerName, reconciler.MustNewStatsReporter(ReconcilerName, c.Logger))
 
 	c.Logger.Info("Setting up event handlers")
-	streamprocessorInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
+	processorInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
 
 	// controlled resources
 	deploymentInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(streamv1alpha1.SchemeGroupVersion.WithKind("StreamProcessor")),
+		FilterFunc: controller.Filter(streamv1alpha1.SchemeGroupVersion.WithKind("Processor")),
 		Handler:    reconciler.Handler(impl.EnqueueControllerOf),
 	})
 
@@ -107,7 +107,7 @@ func NewController(
 }
 
 // Reconcile compares the actual state with the desired, and attempts to
-// converge the two. It then updates the Status block of the StreamProcessor resource
+// converge the two. It then updates the Status block of the Processor resource
 // with the current status of the resource.
 func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	// Convert the namespace/name string into a distinct namespace and name
@@ -118,44 +118,44 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	}
 	logger := logging.FromContext(ctx)
 
-	// Get the StreamProcessor resource with this namespace/name
-	original, err := c.streamprocessorLister.StreamProcessors(namespace).Get(name)
+	// Get the Processor resource with this namespace/name
+	original, err := c.processorLister.Processors(namespace).Get(name)
 	if apierrs.IsNotFound(err) {
 		// The resource may no longer exist, in which case we stop processing.
-		logger.Errorf("streamprocessor %q in work queue no longer exists", key)
+		logger.Errorf("processor %q in work queue no longer exists", key)
 		return nil
 	} else if err != nil {
 		return err
 	}
 
 	// Don't modify the informers copy
-	streamprocessor := original.DeepCopy()
+	processor := original.DeepCopy()
 
-	// Reconcile this copy of the streamprocessor and then write back any status
+	// Reconcile this copy of the processor and then write back any status
 	// updates regardless of whether the reconciliation errored out.
-	err = c.reconcile(ctx, streamprocessor)
+	err = c.reconcile(ctx, processor)
 
-	if equality.Semantic.DeepEqual(original.Status, streamprocessor.Status) {
+	if equality.Semantic.DeepEqual(original.Status, processor.Status) {
 		// If we didn't change anything then don't call updateStatus.
 		// This is important because the copy we loaded from the informer's
 		// cache may be stale and we don't want to overwrite a prior update
 		// to status with this stale state.
 
-	} else if _, uErr := c.updateStatus(streamprocessor); uErr != nil {
-		logger.Warn("Failed to update streamprocessor status", zap.Error(uErr))
-		c.Recorder.Eventf(streamprocessor, corev1.EventTypeWarning, "UpdateFailed",
-			"Failed to update status for StreamProcessor %q: %v", streamprocessor.Name, uErr)
+	} else if _, uErr := c.updateStatus(processor); uErr != nil {
+		logger.Warn("Failed to update processor status", zap.Error(uErr))
+		c.Recorder.Eventf(processor, corev1.EventTypeWarning, "UpdateFailed",
+			"Failed to update status for Processor %q: %v", processor.Name, uErr)
 		return uErr
 	} else if err == nil {
 		// If there was a difference and there was no error.
-		c.Recorder.Eventf(streamprocessor, corev1.EventTypeNormal, "Updated", "Updated StreamProcessor %q", streamprocessor.GetName())
+		c.Recorder.Eventf(processor, corev1.EventTypeNormal, "Updated", "Updated Processor %q", processor.GetName())
 	}
 	return err
 }
 
-func (c *Reconciler) reconcile(ctx context.Context, streamprocessor *streamv1alpha1.StreamProcessor) error {
+func (c *Reconciler) reconcile(ctx context.Context, processor *streamv1alpha1.Processor) error {
 	logger := logging.FromContext(ctx)
-	if streamprocessor.GetDeletionTimestamp() != nil {
+	if processor.GetDeletionTimestamp() != nil {
 		return nil
 	}
 
@@ -163,105 +163,105 @@ func (c *Reconciler) reconcile(ctx context.Context, streamprocessor *streamv1alp
 	// and may not have had all of the assumed defaults specified.  This won't result
 	// in this getting written back to the API Server, but lets downstream logic make
 	// assumptions about defaulting.
-	streamprocessor.SetDefaults(ctx)
+	processor.SetDefaults(ctx)
 
-	streamprocessor.Status.InitializeConditions()
+	processor.Status.InitializeConditions()
 
 	var inputAddresses, outputAddresses []string = nil, nil
 
 	// resolve input addresses
-	for _, inputName := range streamprocessor.Spec.Inputs {
-		input, err := c.streamLister.Streams(streamprocessor.Namespace).Get(inputName)
+	for _, inputName := range processor.Spec.Inputs {
+		input, err := c.streamLister.Streams(processor.Namespace).Get(inputName)
 		if err != nil {
 			return err
 		}
 		gvk := streamv1alpha1.SchemeGroupVersion.WithKind("Stream")
-		if err := c.tracker.Track(reconciler.MakeObjectRef(input, gvk), streamprocessor); err != nil {
+		if err := c.tracker.Track(reconciler.MakeObjectRef(input, gvk), processor); err != nil {
 			return err
 		}
 		inputAddresses = append(inputAddresses, input.Status.Address.String())
 	}
-	streamprocessor.Status.InputAddresses = inputAddresses
+	processor.Status.InputAddresses = inputAddresses
 
 	// resolve output addresses
-	for _, outputName := range streamprocessor.Spec.Outputs {
-		output, err := c.streamLister.Streams(streamprocessor.Namespace).Get(outputName)
+	for _, outputName := range processor.Spec.Outputs {
+		output, err := c.streamLister.Streams(processor.Namespace).Get(outputName)
 		if err != nil {
 			return err
 		}
 		gvk := streamv1alpha1.SchemeGroupVersion.WithKind("Stream")
-		if err := c.tracker.Track(reconciler.MakeObjectRef(output, gvk), streamprocessor); err != nil {
+		if err := c.tracker.Track(reconciler.MakeObjectRef(output, gvk), processor); err != nil {
 			return err
 		}
 		outputAddresses = append(outputAddresses, output.Status.Address.String())
 	}
-	streamprocessor.Status.OutputAddresses = outputAddresses
+	processor.Status.OutputAddresses = outputAddresses
 
-	deploymentName := resourcenames.Deployment(streamprocessor)
-	deployment, err := c.deploymentLister.Deployments(streamprocessor.Namespace).Get(deploymentName)
+	deploymentName := resourcenames.Deployment(processor)
+	deployment, err := c.deploymentLister.Deployments(processor.Namespace).Get(deploymentName)
 	if errors.IsNotFound(err) {
-		deployment, err = c.createDeployment(streamprocessor)
+		deployment, err = c.createDeployment(processor)
 		if err != nil {
 			logger.Errorf("Failed to create Deployment %q: %v", deploymentName, err)
-			c.Recorder.Eventf(streamprocessor, corev1.EventTypeWarning, "CreationFailed", "Failed to create Deployment %q: %v", deploymentName, err)
+			c.Recorder.Eventf(processor, corev1.EventTypeWarning, "CreationFailed", "Failed to create Deployment %q: %v", deploymentName, err)
 			return err
 		}
 		if deployment != nil {
-			c.Recorder.Eventf(streamprocessor, corev1.EventTypeNormal, "Created", "Created Deployment %q", deploymentName)
+			c.Recorder.Eventf(processor, corev1.EventTypeNormal, "Created", "Created Deployment %q", deploymentName)
 		}
 	} else if err != nil {
-		logger.Errorf("Failed to reconcile StreamProcessor: %q failed to Get Deployment: %q; %v", streamprocessor.Name, deploymentName, zap.Error(err))
+		logger.Errorf("Failed to reconcile Processor: %q failed to Get Deployment: %q; %v", processor.Name, deploymentName, zap.Error(err))
 		return err
-	} else if !metav1.IsControlledBy(deployment, streamprocessor) {
-		// Surface an error in the streamprocessor's status,and return an error.
-		streamprocessor.Status.MarkDeploymentNotOwned(deploymentName)
-		return fmt.Errorf("StreamProcessor: %q does not own Deployment: %q", streamprocessor.Name, deploymentName)
+	} else if !metav1.IsControlledBy(deployment, processor) {
+		// Surface an error in the processor's status,and return an error.
+		processor.Status.MarkDeploymentNotOwned(deploymentName)
+		return fmt.Errorf("Processor: %q does not own Deployment: %q", processor.Name, deploymentName)
 	} else {
-		deployment, err = c.reconcileDeployment(ctx, streamprocessor, deployment)
+		deployment, err = c.reconcileDeployment(ctx, processor, deployment)
 		if err != nil {
-			logger.Errorf("Failed to reconcile StreamProcessor: %q failed to reconcile Deployment: %q; %v", streamprocessor.Name, deployment, zap.Error(err))
+			logger.Errorf("Failed to reconcile Processor: %q failed to reconcile Deployment: %q; %v", processor.Name, deployment, zap.Error(err))
 			return err
 		}
 		if deployment == nil {
-			c.Recorder.Eventf(streamprocessor, corev1.EventTypeNormal, "Deleted", "Deleted Deployment %q", deploymentName)
+			c.Recorder.Eventf(processor, corev1.EventTypeNormal, "Deleted", "Deleted Deployment %q", deploymentName)
 		}
 	}
 
 	// Update our Status based on the state of our underlying Deployment.
-	streamprocessor.Status.DeploymentName = deployment.Name
-	streamprocessor.Status.PropagateDeploymentStatus(&deployment.Status)
+	processor.Status.DeploymentName = deployment.Name
+	processor.Status.PropagateDeploymentStatus(&deployment.Status)
 
-	streamprocessor.Status.ObservedGeneration = streamprocessor.Generation
+	processor.Status.ObservedGeneration = processor.Generation
 
 	return nil
 }
 
-func (c *Reconciler) updateStatus(desired *streamv1alpha1.StreamProcessor) (*streamv1alpha1.StreamProcessor, error) {
-	streamprocessor, err := c.streamprocessorLister.StreamProcessors(desired.Namespace).Get(desired.Name)
+func (c *Reconciler) updateStatus(desired *streamv1alpha1.Processor) (*streamv1alpha1.Processor, error) {
+	processor, err := c.processorLister.Processors(desired.Namespace).Get(desired.Name)
 	if err != nil {
 		return nil, err
 	}
 	// If there's nothing to update, just return.
-	if reflect.DeepEqual(streamprocessor.Status, desired.Status) {
-		return streamprocessor, nil
+	if reflect.DeepEqual(processor.Status, desired.Status) {
+		return processor, nil
 	}
-	becomesReady := desired.Status.IsReady() && !streamprocessor.Status.IsReady()
+	becomesReady := desired.Status.IsReady() && !processor.Status.IsReady()
 	// Don't modify the informers copy.
-	existing := streamprocessor.DeepCopy()
+	existing := processor.DeepCopy()
 	existing.Status = desired.Status
 
-	p, err := c.ProjectriffClientSet.StreamV1alpha1().StreamProcessors(desired.Namespace).UpdateStatus(existing)
+	p, err := c.ProjectriffClientSet.StreamV1alpha1().Processors(desired.Namespace).UpdateStatus(existing)
 	if err == nil && becomesReady {
 		duration := time.Now().Sub(p.ObjectMeta.CreationTimestamp.Time)
-		c.Logger.Infof("StreamProcessor %q became ready after %v", p.Name, duration)
+		c.Logger.Infof("Processor %q became ready after %v", p.Name, duration)
 	}
 
 	return p, err
 }
 
-func (c *Reconciler) reconcileDeployment(ctx context.Context, streamprocessor *streamv1alpha1.StreamProcessor, deployment *appsv1.Deployment) (*appsv1.Deployment, error) {
+func (c *Reconciler) reconcileDeployment(ctx context.Context, processor *streamv1alpha1.Processor, deployment *appsv1.Deployment) (*appsv1.Deployment, error) {
 	logger := logging.FromContext(ctx)
-	desiredDeployment, err := resources.MakeDeployment(streamprocessor)
+	desiredDeployment, err := resources.MakeDeployment(processor)
 	if err != nil {
 		return nil, err
 	}
@@ -284,11 +284,11 @@ func (c *Reconciler) reconcileDeployment(ctx context.Context, streamprocessor *s
 	// Preserve the rest of the object (e.g. ObjectMeta except for labels).
 	existing.Spec = desiredDeployment.Spec
 	existing.ObjectMeta.Labels = desiredDeployment.ObjectMeta.Labels
-	return c.KubeClientSet.AppsV1().Deployments(streamprocessor.Namespace).Update(existing)
+	return c.KubeClientSet.AppsV1().Deployments(processor.Namespace).Update(existing)
 }
 
-func (c *Reconciler) createDeployment(streamprocessor *streamv1alpha1.StreamProcessor) (*appsv1.Deployment, error) {
-	deployment, err := resources.MakeDeployment(streamprocessor)
+func (c *Reconciler) createDeployment(processor *streamv1alpha1.Processor) (*appsv1.Deployment, error) {
+	deployment, err := resources.MakeDeployment(processor)
 	if err != nil {
 		return nil, err
 	}
@@ -296,7 +296,7 @@ func (c *Reconciler) createDeployment(streamprocessor *streamv1alpha1.StreamProc
 		// nothing to create
 		return deployment, nil
 	}
-	return c.KubeClientSet.AppsV1().Deployments(streamprocessor.Namespace).Create(deployment)
+	return c.KubeClientSet.AppsV1().Deployments(processor.Namespace).Create(deployment)
 }
 
 func deploymentSemanticEquals(desiredDeployment, deployment *appsv1.Deployment) bool {

@@ -103,8 +103,8 @@ func (l *Listers) GetStreamLister() streamv1alpha1listers.StreamLister {
 	return streamv1alpha1listers.NewStreamLister(l.indexerFor(&streamv1alpha1.Stream{}))
 }
 
-func (l *Listers) GetStreamProcessorLister() streamv1alpha1listers.StreamProcessorLister {
-	return streamv1alpha1listers.NewStreamProcessorLister(l.indexerFor(&streamv1alpha1.StreamProcessor{}))
+func (l *Listers) GetProcessorLister() streamv1alpha1listers.ProcessorLister {
+	return streamv1alpha1listers.NewProcessorLister(l.indexerFor(&streamv1alpha1.Processor{}))
 }
 
 func (l *Listers) GetKnBuildLister() knbuildv1alpha1listers.BuildLister {

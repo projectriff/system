@@ -60,7 +60,7 @@ type Reconciler struct {
 
 	// listers index properties about resources
 	handlerLister         requestlisters.HandlerLister
-	streamprocessorLister streamlisters.StreamProcessorLister
+	processorLister       streamlisters.ProcessorLister
 	knconfigurationLister knservinglisters.ConfigurationLister
 	knrouteLister         knservinglisters.RouteLister
 	applicationLister     buildlisters.ApplicationLister
