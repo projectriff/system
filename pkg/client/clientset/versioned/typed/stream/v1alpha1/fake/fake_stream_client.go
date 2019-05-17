@@ -25,12 +25,12 @@ type FakeStreamV1alpha1 struct {
 	*testing.Fake
 }
 
-func (c *FakeStreamV1alpha1) Streams(namespace string) v1alpha1.StreamInterface {
-	return &FakeStreams{c, namespace}
+func (c *FakeStreamV1alpha1) Processors(namespace string) v1alpha1.ProcessorInterface {
+	return &FakeProcessors{c, namespace}
 }
 
-func (c *FakeStreamV1alpha1) StreamProcessors(namespace string) v1alpha1.StreamProcessorInterface {
-	return &FakeStreamProcessors{c, namespace}
+func (c *FakeStreamV1alpha1) Streams(namespace string) v1alpha1.StreamInterface {
+	return &FakeStreams{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

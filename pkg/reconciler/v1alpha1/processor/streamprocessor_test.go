@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package streamprocessor
+package processor
 
 import (
 	"testing"
@@ -41,10 +41,10 @@ func TestReconcile(t *testing.T) {
 	defer ClearAllLoggers()
 	table.Test(t, MakeFactory(func(listers *Listers, opt reconciler.Options) controller.Reconciler {
 		return &Reconciler{
-			Base:                  reconciler.NewBase(opt, controllerAgentName),
-			streamprocessorLister: listers.GetStreamProcessorLister(),
-			deploymentLister:      listers.GetDeploymentLister(),
-			streamLister:          listers.GetStreamLister(),
+			Base:             reconciler.NewBase(opt, controllerAgentName),
+			processorLister:  listers.GetProcessorLister(),
+			deploymentLister: listers.GetDeploymentLister(),
+			streamLister:     listers.GetStreamLister(),
 
 			tracker: &rtesting.NullTracker{},
 		}
@@ -58,7 +58,7 @@ func TestNew(t *testing.T) {
 	projectriffClient := fakeprojectriffclientset.NewSimpleClientset()
 	projectriffInformer := projectriffinformers.NewSharedInformerFactory(projectriffClient, 0)
 
-	streamprocessorInformer := projectriffInformer.Stream().V1alpha1().StreamProcessors()
+	processorInformer := projectriffInformer.Stream().V1alpha1().Processors()
 	streamInformer := projectriffInformer.Stream().V1alpha1().Streams()
 	deploymentInformer := kubeInformer.Apps().V1().Deployments()
 
@@ -66,7 +66,7 @@ func TestNew(t *testing.T) {
 		KubeClientSet:        kubeClient,
 		ProjectriffClientSet: projectriffClient,
 		Logger:               TestLogger(t),
-	}, streamprocessorInformer, deploymentInformer, streamInformer)
+	}, processorInformer, deploymentInformer, streamInformer)
 
 	if c == nil {
 		t.Fatal("Expected NewController to return a non-nil value")

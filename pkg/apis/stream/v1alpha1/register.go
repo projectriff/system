@@ -49,8 +49,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
 		&Stream{},
 		&StreamList{},
-		&StreamProcessor{},
-		&StreamProcessorList{},
+		&Processor{},
+		&ProcessorList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil
