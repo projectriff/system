@@ -324,7 +324,7 @@ func (c *Reconciler) reconcileBuild(handler *requestv1alpha1.Handler) error {
 		return nil
 	}
 
-	return fmt.Errorf("invalid request processor build")
+	return fmt.Errorf("invalid handler build")
 }
 
 func (c *Reconciler) reconcileConfiguration(ctx context.Context, handler *requestv1alpha1.Handler, configuration *knservingv1alpha1.Configuration) (*knservingv1alpha1.Configuration, error) {
