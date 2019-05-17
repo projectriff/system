@@ -24,7 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// MakeConfiguration creates a Configuration from an Handler object.
+// MakeConfiguration creates a Configuration from a Handler object.
 func MakeConfiguration(h *requestv1alpha1.Handler) (*knservingv1alpha1.Configuration, error) {
 	configuration := &knservingv1alpha1.Configuration{
 		ObjectMeta: metav1.ObjectMeta{

@@ -26,7 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// MakeRoute creates a Route from an Handler object.
+// MakeRoute creates a Route from a Handler object.
 func MakeRoute(h *requestv1alpha1.Handler) (*knservingv1alpha1.Route, error) {
 	if h.Status.ConfigurationName == "" {
 		return nil, fmt.Errorf("unable to create Route, waiting for Configuration")
