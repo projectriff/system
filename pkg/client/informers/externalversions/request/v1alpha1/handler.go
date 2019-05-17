@@ -28,59 +28,59 @@ import (
 	cache "k8s.io/client-go/tools/cache"
 )
 
-// RequestProcessorInformer provides access to a shared informer and lister for
-// RequestProcessors.
-type RequestProcessorInformer interface {
+// HandlerInformer provides access to a shared informer and lister for
+// Handlers.
+type HandlerInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha1.RequestProcessorLister
+	Lister() v1alpha1.HandlerLister
 }
 
-type requestProcessorInformer struct {
+type handlerInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
 	tweakListOptions internalinterfaces.TweakListOptionsFunc
 	namespace        string
 }
 
-// NewRequestProcessorInformer constructs a new informer for RequestProcessor type.
+// NewHandlerInformer constructs a new informer for Handler type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewRequestProcessorInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredRequestProcessorInformer(client, namespace, resyncPeriod, indexers, nil)
+func NewHandlerInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	return NewFilteredHandlerInformer(client, namespace, resyncPeriod, indexers, nil)
 }
 
-// NewFilteredRequestProcessorInformer constructs a new informer for RequestProcessor type.
+// NewFilteredHandlerInformer constructs a new informer for Handler type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredRequestProcessorInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewFilteredHandlerInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.RequestV1alpha1().RequestProcessors(namespace).List(options)
+				return client.RequestV1alpha1().Handlers(namespace).List(options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.RequestV1alpha1().RequestProcessors(namespace).Watch(options)
+				return client.RequestV1alpha1().Handlers(namespace).Watch(options)
 			},
 		},
-		&request_v1alpha1.RequestProcessor{},
+		&request_v1alpha1.Handler{},
 		resyncPeriod,
 		indexers,
 	)
 }
 
-func (f *requestProcessorInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredRequestProcessorInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
+func (f *handlerInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewFilteredHandlerInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
-func (f *requestProcessorInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&request_v1alpha1.RequestProcessor{}, f.defaultInformer)
+func (f *handlerInformer) Informer() cache.SharedIndexInformer {
+	return f.factory.InformerFor(&request_v1alpha1.Handler{}, f.defaultInformer)
 }
 
-func (f *requestProcessorInformer) Lister() v1alpha1.RequestProcessorLister {
-	return v1alpha1.NewRequestProcessorLister(f.Informer().GetIndexer())
+func (f *handlerInformer) Lister() v1alpha1.HandlerLister {
+	return v1alpha1.NewHandlerLister(f.Informer().GetIndexer())
 }

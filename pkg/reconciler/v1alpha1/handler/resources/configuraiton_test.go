@@ -18,40 +18,28 @@ package resources
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/projectriff/system/pkg/apis/request"
-	requestv1alpha1 "github.com/projectriff/system/pkg/apis/request/v1alpha1"
-	corev1 "k8s.io/api/core/v1"
 )
 
 func TestBuild(t *testing.T) {
-	rp := createRequestProcessorMeta()
-	rp.Labels = map[string]string{testLabelKey: testLabelValue}
-	rp.Spec = append(rp.Spec, requestv1alpha1.RequestProcessorSpecItem{
-		Name: testItemName,
-		Template: &corev1.PodSpec{
-			ServiceAccountName: testServiceAccount,
-			Containers: []corev1.Container{
-				{
-					Image: testImage,
-				},
-			},
-		},
-	})
+	h := createHandlerMeta()
+	h.Labels = map[string]string{testLabelKey: testLabelValue}
+	h.Spec.Template.ServiceAccountName = testServiceAccount
+	h.Spec.Template.Containers[0].Image = testImage
 
-	c, _ := MakeConfiguration(rp, 0)
+	c, _ := MakeConfiguration(h)
 
 	if errs := c.Validate(context.Background()); errs != nil {
 		t.Errorf("expected valid configuration got errors %+v", errs)
 	}
 
-	if got, want := c.Name, fmt.Sprintf("%s-%s", testRequestProcessorName, testItemName); got != want {
+	if got, want := c.Name, testConfigurationName; got != want {
 		t.Errorf("expected %q for configuration name got %q", want, got)
 	}
-	if got, want := c.Namespace, testRequestProcessorNamespace; got != want {
+	if got, want := c.Namespace, testHandlerNamespace; got != want {
 		t.Errorf("expected %q for configuration namespace got %q", want, got)
 	}
 	expectOwnerReferencesSetCorrectly(t, c.OwnerReferences)
@@ -62,7 +50,7 @@ func TestBuild(t *testing.T) {
 	if got, want := c.Labels[testLabelKey], testLabelValue; got != want {
 		t.Errorf("expected %q labels got %q", want, got)
 	}
-	if got, want := c.Labels[request.RequestProcessorLabelKey], testRequestProcessorName; got != want {
+	if got, want := c.Labels[request.HandlerLabelKey], testHandlerName; got != want {
 		t.Errorf("expected %q labels got %q", want, got)
 	}
 
@@ -72,7 +60,7 @@ func TestBuild(t *testing.T) {
 	if got, want := c.Spec.RevisionTemplate.Spec.Container.Image, testImage; got != want {
 		t.Errorf("expected %q for image got %q", want, got)
 	}
-	if diff := cmp.Diff(rp.Spec[0].Template.Volumes, c.Spec.RevisionTemplate.Spec.Volumes); diff != "" {
+	if diff := cmp.Diff(h.Spec.Template.Volumes, c.Spec.RevisionTemplate.Spec.Volumes); diff != "" {
 		t.Errorf("podspec volumes differ (-want, +got) = %v", diff)
 	}
 }

@@ -20,7 +20,6 @@ import (
 	"github.com/knative/pkg/apis"
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	"github.com/knative/pkg/kmeta"
-	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -29,42 +28,35 @@ import (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-type RequestProcessor struct {
+type Handler struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   RequestProcessorSpec   `json:"spec"`
-	Status RequestProcessorStatus `json:"status"`
+	Spec   HandlerSpec   `json:"spec"`
+	Status HandlerStatus `json:"status"`
 }
 
 var (
-	_ apis.Validatable   = (*RequestProcessor)(nil)
-	_ apis.Defaultable   = (*RequestProcessor)(nil)
-	_ kmeta.OwnerRefable = (*RequestProcessor)(nil)
+	_ apis.Validatable   = (*Handler)(nil)
+	_ apis.Defaultable   = (*Handler)(nil)
+	_ kmeta.OwnerRefable = (*Handler)(nil)
 )
 
-type RequestProcessorSpec []RequestProcessorSpecItem
-
-type RequestProcessorSpecItem struct {
-	Name     string          `json:"name"`
-	Percent  *int            `json:"percent,omitempty"`
+type HandlerSpec struct {
 	Build    *Build          `json:"build,omitempty"`
 	Template *corev1.PodSpec `json:"template,omitempty"`
 }
 
 type Build struct {
-	Application    *buildv1alpha1.ApplicationSpec `json:"application,omitempty"`
-	ApplicationRef string                         `json:"applicationRef,omitempty"`
-	Function       *buildv1alpha1.FunctionSpec    `json:"function,omitempty"`
-	FunctionRef    string                         `json:"functionRef,omitempty"`
+	ApplicationRef string `json:"applicationRef,omitempty"`
+	FunctionRef    string `json:"functionRef,omitempty"`
 }
 
-type RequestProcessorStatus struct {
+type HandlerStatus struct {
 	duckv1alpha1.Status `json:",inline"`
 
-	Builds             []*corev1.ObjectReference `json:"build,omitempty"`
-	ConfigurationNames []string                  `json:"configurationNames,omitempty"`
-	RouteName          string                    `json:"routeName,omitempty"`
+	ConfigurationName string `json:"configurationName,omitempty"`
+	RouteName         string `json:"routeName,omitempty"`
 
 	Domain  string                    `json:"domain,omitempty"`
 	Address *duckv1alpha1.Addressable `json:"address,omitempty"`
@@ -72,13 +64,13 @@ type RequestProcessorStatus struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-type RequestProcessorList struct {
+type HandlerList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 
-	Items []RequestProcessor `json:"items"`
+	Items []Handler `json:"items"`
 }
 
-func (*RequestProcessor) GetGroupVersionKind() schema.GroupVersionKind {
-	return SchemeGroupVersion.WithKind("RequestProcessor")
+func (*Handler) GetGroupVersionKind() schema.GroupVersionKind {
+	return SchemeGroupVersion.WithKind("Handler")
 }

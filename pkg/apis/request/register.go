@@ -20,5 +20,5 @@ package request
 const (
 	GroupName = "request.projectriff.io"
 
-	RequestProcessorLabelKey = GroupName + "/requestprocessor"
+	HandlerLabelKey = GroupName + "/handler"
 )

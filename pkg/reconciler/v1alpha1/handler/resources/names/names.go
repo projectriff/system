@@ -17,23 +17,13 @@ limitations under the License.
 package names
 
 import (
-	"fmt"
-
 	requestv1alpha1 "github.com/projectriff/system/pkg/apis/request/v1alpha1"
 )
 
-func Items(rp *requestv1alpha1.RequestProcessor) []string {
-	names := make([]string, len(rp.Spec))
-	for i := range rp.Spec {
-		names[i] = Item(rp, i)
-	}
-	return names
+func Configuration(h *requestv1alpha1.Handler) string {
+	return h.Name
 }
 
-func Item(rp *requestv1alpha1.RequestProcessor, i int) string {
-	return fmt.Sprintf("%s-%s", rp.Name, rp.Spec[i].Name)
-}
-
-func Route(rp *requestv1alpha1.RequestProcessor) string {
-	return rp.Name
+func Route(h *requestv1alpha1.Handler) string {
+	return h.Name
 }

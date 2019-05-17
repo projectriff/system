@@ -17,31 +17,22 @@ limitations under the License.
 package resources
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/projectriff/system/pkg/apis/request"
-	requestv1alpha1 "github.com/projectriff/system/pkg/apis/request/v1alpha1"
 )
 
 func TestRoute(t *testing.T) {
-	p100 := 100
-	rp := createRequestProcessorMeta()
-	rp.Labels = map[string]string{testLabelKey: testLabelValue}
-	rp.Spec = append(rp.Spec, requestv1alpha1.RequestProcessorSpecItem{
-		Name:    testItemName,
-		Percent: &p100,
-	})
-	rp.Status.ConfigurationNames = []string{
-		fmt.Sprintf("%s-%s", testRequestProcessorName, testItemName),
-	}
+	h := createHandlerMeta()
+	h.Labels = map[string]string{testLabelKey: testLabelValue}
+	h.Status.ConfigurationName = testConfigurationName
 
-	r, _ := MakeRoute(rp)
+	r, _ := MakeRoute(h)
 
 	if got, want := r.Name, testRouteName; got != want {
 		t.Errorf("expected %q for route name got %q", want, got)
 	}
-	if got, want := r.Namespace, testRequestProcessorNamespace; got != want {
+	if got, want := r.Namespace, testHandlerNamespace; got != want {
 		t.Errorf("expected %q for route namespace got %q", want, got)
 	}
 	expectOwnerReferencesSetCorrectly(t, r.OwnerReferences)
@@ -52,20 +43,20 @@ func TestRoute(t *testing.T) {
 	if got, want := r.Labels[testLabelKey], testLabelValue; got != want {
 		t.Errorf("expected %q labels got %q", want, got)
 	}
-	if got, want := r.Labels[request.RequestProcessorLabelKey], testRequestProcessorName; got != want {
+	if got, want := r.Labels[request.HandlerLabelKey], testHandlerName; got != want {
 		t.Errorf("expected %q labels got %q", want, got)
 	}
 
 	if got, want := len(r.Spec.Traffic), 1; got != want {
 		t.Errorf("expected %d traffic policy got %d", want, got)
 	}
-	if got, want := r.Spec.Traffic[0].Name, testItemName; got != want {
+	if got, want := r.Spec.Traffic[0].Name, ""; got != want {
 		t.Errorf("expected %q traffic policy tag got %q", want, got)
 	}
 	if got, want := r.Spec.Traffic[0].Percent, 100; got != want {
 		t.Errorf("expected %q traffic policy tag got %q", want, got)
 	}
-	if got, want := r.Spec.Traffic[0].ConfigurationName, fmt.Sprintf("%s-%s", testRequestProcessorName, testItemName); got != want {
+	if got, want := r.Spec.Traffic[0].ConfigurationName, testConfigurationName; got != want {
 		t.Errorf("expected %q traffic policy configuration got %q", want, got)
 	}
 }

@@ -15,10 +15,10 @@
  */
 package v1alpha1
 
-// RequestProcessorListerExpansion allows custom methods to be added to
-// RequestProcessorLister.
-type RequestProcessorListerExpansion interface{}
+// HandlerListerExpansion allows custom methods to be added to
+// HandlerLister.
+type HandlerListerExpansion interface{}
 
-// RequestProcessorNamespaceListerExpansion allows custom methods to be added to
-// RequestProcessorNamespaceLister.
-type RequestProcessorNamespaceListerExpansion interface{}
+// HandlerNamespaceListerExpansion allows custom methods to be added to
+// HandlerNamespaceLister.
+type HandlerNamespaceListerExpansion interface{}

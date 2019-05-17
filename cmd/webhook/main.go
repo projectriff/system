@@ -101,7 +101,7 @@ func main() {
 		Handlers: map[schema.GroupVersionKind]webhook.GenericCRD{
 			buildv1alpha1.SchemeGroupVersion.WithKind("Application"):      &buildv1alpha1.Application{},
 			buildv1alpha1.SchemeGroupVersion.WithKind("Function"):         &buildv1alpha1.Function{},
-			requestv1alpha1.SchemeGroupVersion.WithKind("RequestProcessor"):   &requestv1alpha1.RequestProcessor{},
+			requestv1alpha1.SchemeGroupVersion.WithKind("Handler"):        &requestv1alpha1.Handler{},
 			streamv1alpha1.SchemeGroupVersion.WithKind("Stream"):          &streamv1alpha1.Stream{},
 			streamv1alpha1.SchemeGroupVersion.WithKind("StreamProcessor"): &streamv1alpha1.StreamProcessor{},
 		},

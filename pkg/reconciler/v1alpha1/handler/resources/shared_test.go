@@ -22,18 +22,19 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	requestv1alpha1 "github.com/projectriff/system/pkg/apis/request/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
-	testRequestProcessorName      = "test-requestprocessor"
-	testRequestProcessorNamespace = "test-requestprocessor-namespace"
-	testRouteName                 = "test-requestprocessor"
-	testLabelKey                  = "test-label-key"
-	testLabelValue                = "test-label-value"
-	testServiceAccount            = "test-sa"
-	testImage                     = "test-image"
-	testItemName                  = "test-item"
+	testHandlerName       = "test-handler"
+	testHandlerNamespace  = "test-handler-namespace"
+	testConfigurationName = "test-handler"
+	testRouteName         = "test-handler"
+	testLabelKey          = "test-label-key"
+	testLabelValue        = "test-label-value"
+	testServiceAccount    = "test-sa"
+	testImage             = "test-image"
 )
 
 func expectOwnerReferencesSetCorrectly(t *testing.T, ownerRefs []metav1.OwnerReference) {
@@ -44,19 +45,26 @@ func expectOwnerReferencesSetCorrectly(t *testing.T, ownerRefs []metav1.OwnerRef
 
 	expectedRefs := []metav1.OwnerReference{{
 		APIVersion: "request.projectriff.io/v1alpha1",
-		Kind:       "RequestProcessor",
-		Name:       testRequestProcessorName,
+		Kind:       "Handler",
+		Name:       testHandlerName,
 	}}
 	if diff := cmp.Diff(expectedRefs, ownerRefs, cmpopts.IgnoreFields(expectedRefs[0], "Controller", "BlockOwnerDeletion")); diff != "" {
-		t.Errorf("Unexpected requestprocessor owner refs diff (-want +got): %v", diff)
+		t.Errorf("Unexpected handler owner refs diff (-want +got): %v", diff)
 	}
 }
 
-func createRequestProcessorMeta() *requestv1alpha1.RequestProcessor {
-	return &requestv1alpha1.RequestProcessor{
+func createHandlerMeta() *requestv1alpha1.Handler {
+	return &requestv1alpha1.Handler{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      testRequestProcessorName,
-			Namespace: testRequestProcessorNamespace,
+			Name:      testHandlerName,
+			Namespace: testHandlerNamespace,
+		},
+		Spec: requestv1alpha1.HandlerSpec{
+			Template: &corev1.PodSpec{
+				Containers: []corev1.Container{
+					{},
+				},
+			},
 		},
 	}
 }
