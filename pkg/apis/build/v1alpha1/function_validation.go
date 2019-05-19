@@ -41,7 +41,9 @@ func (fs *FunctionSpec) Validate(ctx context.Context) *apis.FieldError {
 		errs = errs.Also(apis.ErrMissingField("image"))
 	}
 
-	errs = errs.Also(fs.Source.Validate(ctx).ViaField("source"))
+	if fs.Source != nil {
+		errs = errs.Also(fs.Source.Validate(ctx).ViaField("source"))
+	}
 
 	return errs
 }

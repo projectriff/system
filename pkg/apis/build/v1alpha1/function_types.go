@@ -45,7 +45,7 @@ var (
 type FunctionSpec struct {
 	Image     string             `json:"image"`
 	CacheSize *resource.Quantity `json:"cacheSize,omitempty"`
-	Source    Source             `json:"source,omitempty"`
+	Source    *Source            `json:"source,omitempty"`
 	Artifact  string             `json:"artifact,omitempty"`
 	Handler   string             `json:"handler,omitempty"`
 	Invoker   string             `json:"invoker,omitempty"`

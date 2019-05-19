@@ -27,6 +27,10 @@ import (
 
 // MakeBuild creates a Build from an Function object.
 func MakeBuild(f *buildv1alpha1.Function) (*knbuildv1alpha1.Build, error) {
+	if f.Spec.Source == nil {
+		return nil, nil
+	}
+
 	build := &knbuildv1alpha1.Build{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      names.Build(f),

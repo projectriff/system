@@ -28,9 +28,11 @@ func TestBuild(t *testing.T) {
 	f := createFunctionMeta()
 	f.Labels = map[string]string{testLabelKey: testLabelValue}
 	f.Spec.Image = testImage
-	f.Spec.Source.Git = &buildv1alpha1.GitSource{
-		URL:      testGitURL,
-		Revision: testGitRevision,
+	f.Spec.Source = &buildv1alpha1.Source{
+		Git: &buildv1alpha1.GitSource{
+			URL:      testGitURL,
+			Revision: testGitRevision,
+		},
 	}
 	f.Status.BuildCacheName = testBuildCacheName
 	f.Spec.Artifact = testFunctionArtifact

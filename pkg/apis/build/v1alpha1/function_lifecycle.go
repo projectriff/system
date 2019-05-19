@@ -62,6 +62,11 @@ func (fs *FunctionStatus) MarkBuildNotOwned(name string) {
 		fmt.Sprintf("There is an existing Build %q that we do not own.", name))
 }
 
+func (fs *FunctionStatus) MarkBuildNotUsed() {
+	fs.BuildName = ""
+	functionCondSet.Manage(fs).MarkTrue(FunctionConditionBuildSucceeded)
+}
+
 func (fs *FunctionStatus) MarkImageMissing(message string) {
 	functionCondSet.Manage(fs).MarkFalse(FunctionConditionBuildSucceeded, "ImageMissing", message)
 }

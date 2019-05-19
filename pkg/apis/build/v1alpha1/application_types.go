@@ -45,7 +45,7 @@ var (
 type ApplicationSpec struct {
 	Image     string             `json:"image"`
 	CacheSize *resource.Quantity `json:"cacheSize,omitempty"`
-	Source    Source             `json:"source,omitempty"`
+	Source    *Source            `json:"source,omitempty"`
 }
 
 type ApplicationStatus struct {

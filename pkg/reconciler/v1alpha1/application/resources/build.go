@@ -27,6 +27,10 @@ import (
 
 // MakeBuild creates a Build from an Application object.
 func MakeBuild(a *buildv1alpha1.Application) (*knbuildv1alpha1.Build, error) {
+	if a.Spec.Source == nil {
+		return nil, nil
+	}
+
 	build := &knbuildv1alpha1.Build{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      names.Build(a),

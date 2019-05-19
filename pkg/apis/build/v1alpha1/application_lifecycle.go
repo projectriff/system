@@ -62,6 +62,11 @@ func (as *ApplicationStatus) MarkBuildNotOwned(name string) {
 		fmt.Sprintf("There is an existing Build %q that we do not own.", name))
 }
 
+func (as *ApplicationStatus) MarkBuildNotUsed() {
+	as.BuildName = ""
+	applicationCondSet.Manage(as).MarkTrue(ApplicationConditionBuildSucceeded)
+}
+
 func (as *ApplicationStatus) MarkImageMissing(message string) {
 	applicationCondSet.Manage(as).MarkFalse(ApplicationConditionBuildSucceeded, "ImageMissing", message)
 }

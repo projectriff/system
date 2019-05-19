@@ -38,7 +38,7 @@ func TestValidateFunction(t *testing.T) {
 			},
 			Spec: FunctionSpec{
 				Image: "test-image",
-				Source: Source{
+				Source: &Source{
 					Git: &GitSource{
 						URL:      "https://example.com/repo.git",
 						Revision: "master",
@@ -53,7 +53,7 @@ func TestValidateFunction(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{},
 			Spec: FunctionSpec{
 				Image: "test-image",
-				Source: Source{
+				Source: &Source{
 					Git: &GitSource{
 						URL:      "https://example.com/repo.git",
 						Revision: "master",
@@ -91,7 +91,7 @@ func TestValidateFunctionSpec(t *testing.T) {
 		name: "valid",
 		build: &FunctionSpec{
 			Image: "test-image",
-			Source: Source{
+			Source: &Source{
 				Git: &GitSource{
 					URL:      "https://example.com/repo.git",
 					Revision: "master",
@@ -106,7 +106,7 @@ func TestValidateFunctionSpec(t *testing.T) {
 	}, {
 		name: "requires image",
 		build: &FunctionSpec{
-			Source: Source{
+			Source: &Source{
 				Git: &GitSource{
 					URL:      "https://example.com/repo.git",
 					Revision: "master",
@@ -115,11 +115,11 @@ func TestValidateFunctionSpec(t *testing.T) {
 		},
 		want: apis.ErrMissingField("image"),
 	}, {
-		name: "requires source",
+		name: "does not require source",
 		build: &FunctionSpec{
 			Image: "test-image",
 		},
-		want: apis.ErrMissingField("source"),
+		want: nil,
 	}} {
 		name := c.name
 		t.Run(name, func(t *testing.T) {

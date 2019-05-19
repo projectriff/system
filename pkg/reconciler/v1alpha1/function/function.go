@@ -228,8 +228,12 @@ func (c *Reconciler) reconcile(ctx context.Context, function *buildv1alpha1.Func
 	}
 
 	// Update our Status based on the state of our underlying Build.
-	function.Status.BuildName = build.Name
-	function.Status.PropagateBuildStatus(&build.Status)
+	if build == nil {
+		function.Status.MarkBuildNotUsed()
+	} else {
+		function.Status.BuildName = build.Name
+		function.Status.PropagateBuildStatus(&build.Status)
+	}
 	if function.Status.IsReady() {
 		// resolve image name
 		opt := k8schain.Options{

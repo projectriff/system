@@ -100,7 +100,15 @@ func (in *ApplicationSpec) DeepCopyInto(out *ApplicationSpec) {
 			**out = (*in).DeepCopy()
 		}
 	}
-	in.Source.DeepCopyInto(&out.Source)
+	if in.Source != nil {
+		in, out := &in.Source, &out.Source
+		if *in == nil {
+			*out = nil
+		} else {
+			*out = new(Source)
+			(*in).DeepCopyInto(*out)
+		}
+	}
 	return
 }
 
@@ -239,7 +247,15 @@ func (in *FunctionSpec) DeepCopyInto(out *FunctionSpec) {
 			**out = (*in).DeepCopy()
 		}
 	}
-	in.Source.DeepCopyInto(&out.Source)
+	if in.Source != nil {
+		in, out := &in.Source, &out.Source
+		if *in == nil {
+			*out = nil
+		} else {
+			*out = new(Source)
+			(*in).DeepCopyInto(*out)
+		}
+	}
 	return
 }
 

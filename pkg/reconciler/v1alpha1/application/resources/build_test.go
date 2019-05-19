@@ -28,9 +28,11 @@ func TestBuild(t *testing.T) {
 	a := createApplicationMeta()
 	a.Labels = map[string]string{testLabelKey: testLabelValue}
 	a.Spec.Image = testImage
-	a.Spec.Source.Git = &buildv1alpha1.GitSource{
-		URL:      testGitURL,
-		Revision: testGitRevision,
+	a.Spec.Source = &buildv1alpha1.Source{
+		Git: &buildv1alpha1.GitSource{
+			URL:      testGitURL,
+			Revision: testGitRevision,
+		},
 	}
 	a.Status.BuildCacheName = testBuildCacheName
 
