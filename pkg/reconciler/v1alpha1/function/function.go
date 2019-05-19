@@ -237,8 +237,12 @@ func (c *Reconciler) reconcile(ctx context.Context, function *buildv1alpha1.Func
 	if function.Status.IsReady() {
 		// resolve image name
 		opt := k8schain.Options{
-			Namespace:          function.Namespace,
-			ServiceAccountName: build.Spec.ServiceAccountName,
+			Namespace: function.Namespace,
+		}
+		if build == nil {
+			opt.ServiceAccountName = "riff-build"
+		} else {
+			opt.ServiceAccountName = build.Spec.ServiceAccountName
 		}
 		// TODO load from a configmap
 		skipRegistries := sets.NewString()
