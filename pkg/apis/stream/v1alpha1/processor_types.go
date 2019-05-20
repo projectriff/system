@@ -34,7 +34,7 @@ type Processor struct {
 }
 
 type ProcessorSpec struct {
-	FunctionRef string   `json:"function-ref"`
+	FunctionRef string   `json:"functionRef"`
 	Inputs      []string `json:"inputs"`
 	Outputs     []string `json:"outputs"`
 }

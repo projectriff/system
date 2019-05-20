@@ -39,7 +39,7 @@ func (ps *ProcessorSpec) Validate(ctx context.Context) *apis.FieldError {
 	errs := &apis.FieldError{}
 
 	if ps.FunctionRef == "" {
-		errs = errs.Also(apis.ErrMissingField("function-ref"))
+		errs = errs.Also(apis.ErrMissingField("functionRef"))
 	}
 
 	// at least one input is required

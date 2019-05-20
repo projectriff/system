@@ -94,7 +94,7 @@ func TestValidateProcessorSpec(t *testing.T) {
 			FunctionRef: "",
 			Inputs:      []string{"my-stream"},
 		},
-		want: apis.ErrMissingField("function-ref"),
+		want: apis.ErrMissingField("functionRef"),
 	}, {
 		name: "requires inputs",
 		p: &ProcessorSpec{
