@@ -44,7 +44,7 @@ func MakeBuild(f *buildv1alpha1.Function) (*knbuildv1alpha1.Build, error) {
 			ServiceAccountName: "riff-build",
 			Source:             makeBuildSource(f),
 			Template: &knbuildv1alpha1.TemplateInstantiationSpec{
-				Name:      "riff-cnb",
+				Name:      "riff-function",
 				Kind:      "ClusterBuildTemplate",
 				Arguments: makeBuildArguments(f),
 			},

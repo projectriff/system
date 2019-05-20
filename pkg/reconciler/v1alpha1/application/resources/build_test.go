@@ -60,7 +60,7 @@ func TestBuild(t *testing.T) {
 		t.Errorf("expected %q labels got %q", want, got)
 	}
 
-	if got, want := b.Spec.Template.Name, "cf-cnb"; got != want {
+	if got, want := b.Spec.Template.Name, "riff-application"; got != want {
 		t.Errorf("expected %q for template name got %q", want, got)
 	}
 	if got, want := len(b.Spec.Template.Arguments), 2; got != want {
