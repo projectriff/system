@@ -76,7 +76,7 @@ func MakeDeployment(proc *streamv1alpha1.Processor) (*appsv1.Deployment, error) 
 						},
 						corev1.Container{
 							Name:  "function",
-							Image: proc.Spec.Function,
+							Image: proc.Status.FunctionImage,
 							Ports: []corev1.ContainerPort{
 								{
 									ContainerPort: 8080,

@@ -20,12 +20,13 @@ import (
 	"context"
 
 	"github.com/knative/pkg/apis"
+	systemapis "github.com/projectriff/system/pkg/apis"
 	"k8s.io/apimachinery/pkg/api/equality"
 )
 
 func (f *Function) Validate(ctx context.Context) *apis.FieldError {
 	errs := &apis.FieldError{}
-	errs = errs.Also(validateObjectMetadata(f.GetObjectMeta()).ViaField("metadata"))
+	errs = errs.Also(systemapis.ValidateObjectMetadata(f.GetObjectMeta()).ViaField("metadata"))
 	errs = errs.Also(f.Spec.Validate(ctx).ViaField("spec"))
 	return errs
 }

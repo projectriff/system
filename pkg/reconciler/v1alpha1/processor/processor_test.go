@@ -59,6 +59,7 @@ func TestNew(t *testing.T) {
 	projectriffInformer := projectriffinformers.NewSharedInformerFactory(projectriffClient, 0)
 
 	processorInformer := projectriffInformer.Stream().V1alpha1().Processors()
+	functionInformer := projectriffInformer.Build().V1alpha1().Functions()
 	streamInformer := projectriffInformer.Stream().V1alpha1().Streams()
 	deploymentInformer := kubeInformer.Apps().V1().Deployments()
 
@@ -66,7 +67,7 @@ func TestNew(t *testing.T) {
 		KubeClientSet:        kubeClient,
 		ProjectriffClientSet: projectriffClient,
 		Logger:               TestLogger(t),
-	}, processorInformer, deploymentInformer, streamInformer)
+	}, processorInformer, functionInformer, streamInformer, deploymentInformer)
 
 	if c == nil {
 		t.Fatal("Expected NewController to return a non-nil value")

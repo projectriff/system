@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
+	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -44,6 +45,28 @@ func (ps *ProcessorStatus) GetCondition(t duckv1alpha1.ConditionType) *duckv1alp
 
 func (ps *ProcessorStatus) InitializeConditions() {
 	processorCondSet.Manage(ps).InitializeConditions()
+}
+
+func (ps *ProcessorStatus) MarkFunctionNotFound(name string) {
+	processorCondSet.Manage(ps).MarkFalse(ProcessorConditionFunctionReady, "NotFound",
+		"Unable to find function %q.", name)
+}
+
+func (ps *ProcessorStatus) PropagateFunctionStatus(fs *buildv1alpha1.FunctionStatus) {
+	ps.FunctionImage = fs.LatestImage
+
+	sc := fs.GetCondition(buildv1alpha1.FunctionConditionSucceeded)
+	if sc == nil {
+		return
+	}
+	switch {
+	case sc.Status == corev1.ConditionUnknown:
+		processorCondSet.Manage(fs).MarkUnknown(ProcessorConditionFunctionReady, sc.Reason, sc.Message)
+	case sc.Status == corev1.ConditionTrue:
+		processorCondSet.Manage(fs).MarkTrue(ProcessorConditionFunctionReady)
+	case sc.Status == corev1.ConditionFalse:
+		processorCondSet.Manage(fs).MarkFalse(ProcessorConditionFunctionReady, sc.Reason, sc.Message)
+	}
 }
 
 func (ps *ProcessorStatus) MarkDeploymentNotOwned(name string) {

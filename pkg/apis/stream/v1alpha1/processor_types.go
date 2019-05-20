@@ -34,17 +34,18 @@ type Processor struct {
 }
 
 type ProcessorSpec struct {
-	Inputs   []string `json:"inputs"`
-	Outputs  []string `json:"outputs"`
-	Function string   `json:"function"`
+	FunctionRef string   `json:"functionRef"`
+	Inputs      []string `json:"inputs"`
+	Outputs     []string `json:"outputs"`
 }
 
 type ProcessorStatus struct {
 	duckv1alpha1.Status `json:",inline"`
 
-	InputAddresses  []string `json:"inputAddresses,omitEmpty"`
-	OutputAddresses []string `json:"outputAddresses,omitEmpty"`
-	DeploymentName  string   `json:"deploymentName,omitEmpty"`
+	InputAddresses  []string `json:"inputAddresses,omitempty"`
+	OutputAddresses []string `json:"outputAddresses,omitempty"`
+	DeploymentName  string   `json:"deploymentName,omitempty"`
+	FunctionImage   string   `json:"functionImage,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
