@@ -187,8 +187,9 @@ func main() {
 			opt,
 			processorInformer,
 
-			deploymentInformer,
+			functionInformer,
 			streamInformer,
+			deploymentInformer,
 		),
 	}
 

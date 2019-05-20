@@ -20,9 +20,44 @@ import (
 	"context"
 
 	"github.com/knative/pkg/apis"
+	systemapis "github.com/projectriff/system/pkg/apis"
+	"k8s.io/apimachinery/pkg/api/equality"
 )
 
 func (p *Processor) Validate(ctx context.Context) *apis.FieldError {
-	// TODO
-	return nil
+	errs := &apis.FieldError{}
+	errs = errs.Also(systemapis.ValidateObjectMetadata(p.GetObjectMeta()).ViaField("metadata"))
+	errs = errs.Also(p.Spec.Validate(ctx).ViaField("spec"))
+	return errs
+}
+
+func (ps *ProcessorSpec) Validate(ctx context.Context) *apis.FieldError {
+	if equality.Semantic.DeepEqual(ps, &ProcessorSpec{}) {
+		return apis.ErrMissingField(apis.CurrentField)
+	}
+
+	errs := &apis.FieldError{}
+
+	if ps.FunctionRef == "" {
+		errs = errs.Also(apis.ErrMissingField("function-ref"))
+	}
+
+	// at least one input is required
+	if len(ps.Inputs) == 0 {
+		errs = errs.Also(apis.ErrMissingField("inputs"))
+	}
+	for i, input := range ps.Inputs {
+		if input == "" {
+			errs = errs.Also(apis.ErrInvalidArrayValue(input, "inputs", i))
+		}
+	}
+
+	// outputs are optional
+	for i, output := range ps.Outputs {
+		if output == "" {
+			errs = errs.Also(apis.ErrInvalidArrayValue(output, "outputs", i))
+		}
+	}
+
+	return errs
 }

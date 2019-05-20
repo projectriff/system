@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package apis
 
 import (
 	"strings"
@@ -80,7 +80,7 @@ func TestValidateObjectMetadata(t *testing.T) {
 	}} {
 		name := c.name
 		t.Run(name, func(t *testing.T) {
-			got := validateObjectMetadata(c.meta)
+			got := ValidateObjectMetadata(c.meta)
 			if diff := cmp.Diff(c.want.Error(), got.Error()); diff != "" {
 				t.Errorf("validateObjectMetadata(%s) (-want, +got) = %v", name, diff)
 			}

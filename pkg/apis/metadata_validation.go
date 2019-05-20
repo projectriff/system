@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package apis
 
 import (
 	"strings"
@@ -27,7 +27,7 @@ const (
 	maxLength = 63
 )
 
-func validateObjectMetadata(meta metav1.Object) *apis.FieldError {
+func ValidateObjectMetadata(meta metav1.Object) *apis.FieldError {
 	name := meta.GetName()
 	generateName := meta.GetGenerateName()
 	errs := &apis.FieldError{}

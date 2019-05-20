@@ -20,9 +20,27 @@ import (
 	"context"
 
 	"github.com/knative/pkg/apis"
+	systemapis "github.com/projectriff/system/pkg/apis"
+	"k8s.io/apimachinery/pkg/api/equality"
 )
 
 func (s *Stream) Validate(ctx context.Context) *apis.FieldError {
-	// TODO
-	return nil
+	errs := &apis.FieldError{}
+	errs = errs.Also(systemapis.ValidateObjectMetadata(s.GetObjectMeta()).ViaField("metadata"))
+	errs = errs.Also(s.Spec.Validate(ctx).ViaField("spec"))
+	return errs
+}
+
+func (ss *StreamSpec) Validate(ctx context.Context) *apis.FieldError {
+	if equality.Semantic.DeepEqual(ss, &StreamSpec{}) {
+		return apis.ErrMissingField(apis.CurrentField)
+	}
+
+	errs := &apis.FieldError{}
+
+	if ss.Provider == "" {
+		errs = errs.Also(apis.ErrMissingField("provider"))
+	}
+
+	return errs
 }

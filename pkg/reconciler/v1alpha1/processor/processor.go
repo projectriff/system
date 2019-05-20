@@ -26,8 +26,11 @@ import (
 	"github.com/knative/pkg/kmp"
 	"github.com/knative/pkg/logging"
 	"github.com/knative/pkg/tracker"
+	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	streamv1alpha1 "github.com/projectriff/system/pkg/apis/stream/v1alpha1"
+	buildinformers "github.com/projectriff/system/pkg/client/informers/externalversions/build/v1alpha1"
 	streaminformers "github.com/projectriff/system/pkg/client/informers/externalversions/stream/v1alpha1"
+	buildlisters "github.com/projectriff/system/pkg/client/listers/build/v1alpha1"
 	streamlisters "github.com/projectriff/system/pkg/client/listers/stream/v1alpha1"
 	"github.com/projectriff/system/pkg/reconciler"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/processor/resources"
@@ -56,8 +59,9 @@ type Reconciler struct {
 
 	// listers index properties about resources
 	processorLister  streamlisters.ProcessorLister
-	deploymentLister appslisters.DeploymentLister
+	functionLister   buildlisters.FunctionLister
 	streamLister     streamlisters.StreamLister
+	deploymentLister appslisters.DeploymentLister
 
 	tracker tracker.Interface
 }
@@ -70,15 +74,17 @@ var _ controller.Reconciler = (*Reconciler)(nil)
 func NewController(
 	opt reconciler.Options,
 	processorInformer streaminformers.ProcessorInformer,
-	deploymentInformer appsinformers.DeploymentInformer,
+	functionInformer buildinformers.FunctionInformer,
 	streamInformer streaminformers.StreamInformer,
+	deploymentInformer appsinformers.DeploymentInformer,
 ) *controller.Impl {
 
 	c := &Reconciler{
 		Base:             reconciler.NewBase(opt, controllerAgentName),
 		processorLister:  processorInformer.Lister(),
-		deploymentLister: deploymentInformer.Lister(),
+		functionLister:   functionInformer.Lister(),
 		streamLister:     streamInformer.Lister(),
+		deploymentLister: deploymentInformer.Lister(),
 	}
 	impl := controller.NewImpl(c, c.Logger, ReconcilerName, reconciler.MustNewStatsReporter(ReconcilerName, c.Logger))
 
@@ -93,6 +99,15 @@ func NewController(
 
 	// referenced resources
 	c.tracker = tracker.New(impl.EnqueueKey, opt.GetTrackerLease())
+	functionInformer.Informer().AddEventHandler(reconciler.Handler(
+		// Call the tracker's OnChanged method, but we've seen the objects
+		// coming through this path missing TypeMeta, so ensure it is properly
+		// populated.
+		controller.EnsureTypeMeta(
+			c.tracker.OnChanged,
+			buildv1alpha1.SchemeGroupVersion.WithKind("Function"),
+		),
+	))
 	streamInformer.Informer().AddEventHandler(reconciler.Handler(
 		// Call the tracker's OnChanged method, but we've seen the objects
 		// coming through this path missing TypeMeta, so ensure it is properly
@@ -166,6 +181,20 @@ func (c *Reconciler) reconcile(ctx context.Context, processor *streamv1alpha1.Pr
 	processor.SetDefaults(ctx)
 
 	processor.Status.InitializeConditions()
+
+	// resolve function
+	function, err := c.functionLister.Functions(processor.Namespace).Get(processor.Spec.FunctionRef)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			processor.Status.MarkFunctionNotFound(processor.Spec.FunctionRef)
+		}
+		return err
+	}
+	gvk := buildv1alpha1.SchemeGroupVersion.WithKind("Function")
+	if err := c.tracker.Track(reconciler.MakeObjectRef(function, gvk), processor); err != nil {
+		return err
+	}
+	processor.Status.PropagateFunctionStatus(&function.Status)
 
 	var inputAddresses, outputAddresses []string = nil, nil
 

@@ -22,13 +22,14 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/knative/pkg/apis"
+	systemapis "github.com/projectriff/system/pkg/apis"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 )
 
 func (h *Handler) Validate(ctx context.Context) *apis.FieldError {
 	errs := &apis.FieldError{}
-	errs = errs.Also(validateObjectMetadata(h.GetObjectMeta()).ViaField("metadata"))
+	errs = errs.Also(systemapis.ValidateObjectMetadata(h.GetObjectMeta()).ViaField("metadata"))
 	errs = errs.Also(h.Spec.Validate(ctx).ViaField("spec"))
 	return errs
 }
