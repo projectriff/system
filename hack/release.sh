@@ -4,8 +4,6 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-gcloud auth activate-service-account --key-file <(echo ${GCLOUD_CLIENT_SECRET} | base64 --decode)
-
 readonly root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." >/dev/null 2>&1 && pwd)
 readonly version=$(cat ${root}/VERSION)
 readonly gitsha=$(git rev-parse HEAD)
