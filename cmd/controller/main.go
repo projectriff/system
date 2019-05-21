@@ -45,6 +45,7 @@ import (
 	"github.com/projectriff/system/pkg/metrics"
 	"github.com/projectriff/system/pkg/reconciler"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/application"
+	"github.com/projectriff/system/pkg/reconciler/v1alpha1/builder"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/credential"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/function"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/handler"
@@ -137,10 +138,12 @@ func main() {
 	processorInformer := projectriffInformerFactory.Stream().V1alpha1().Processors()
 
 	deploymentInformer := kubeInformerFactory.Apps().V1().Deployments()
+	configmapInformer := kubeInformerFactory.Core().V1().ConfigMaps()
 	pvcInformer := kubeInformerFactory.Core().V1().PersistentVolumeClaims()
 	secretInformer := kubeInformerFactory.Core().V1().Secrets()
 	serviceaccountInformer := kubeInformerFactory.Core().V1().ServiceAccounts()
 	knbuildInformer := knbuildInformerFactory.Build().V1alpha1().Builds()
+	knclusterbuildtemplateInformer := knbuildInformerFactory.Build().V1alpha1().ClusterBuildTemplates()
 	knconfigurationInformer := knservingInformerFactory.Serving().V1alpha1().Configurations()
 	knrouteInformer := knservingInformerFactory.Serving().V1alpha1().Routes()
 
@@ -167,6 +170,12 @@ func main() {
 			secretInformer,
 
 			serviceaccountInformer,
+		),
+		builder.NewController(
+			opt,
+			configmapInformer,
+
+			knclusterbuildtemplateInformer,
 		),
 		// run.projectriff.io
 		handler.NewController(

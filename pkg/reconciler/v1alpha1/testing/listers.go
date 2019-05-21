@@ -111,6 +111,10 @@ func (l *Listers) GetKnBuildLister() knbuildv1alpha1listers.BuildLister {
 	return knbuildv1alpha1listers.NewBuildLister(l.indexerFor(&knbuildv1alpha1.Build{}))
 }
 
+func (l *Listers) GetKnClusterBuildTemplateLister() knbuildv1alpha1listers.ClusterBuildTemplateLister {
+	return knbuildv1alpha1listers.NewClusterBuildTemplateLister(l.indexerFor(&knbuildv1alpha1.ClusterBuildTemplate{}))
+}
+
 func (l *Listers) GetKnConfigurationLister() knservingv1alpha1listers.ConfigurationLister {
 	return knservingv1alpha1listers.NewConfigurationLister(l.indexerFor(&knservingv1alpha1.Configuration{}))
 }
