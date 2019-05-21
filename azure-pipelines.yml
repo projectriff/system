@@ -68,5 +68,6 @@ steps:
     source ./hack/release.sh
   env:
     GCLOUD_CLIENT_SECRET: '$(GcloudClientSecret)'
+  workingDirectory: '$(modulePath)'
   condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
   displayName: 'Publish riff System'
