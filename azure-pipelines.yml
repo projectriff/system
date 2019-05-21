@@ -62,3 +62,11 @@ steps:
     codeCoverageTool: Cobertura 
     summaryFileLocation: $(System.DefaultWorkingDirectory)/**/coverage.xml
     reportDirectory: $(System.DefaultWorkingDirectory)/**/coverage
+
+- script: |
+    go get github.com/google/ko/cmd/ko
+    source ./hack/release.sh
+  env:
+    GCLOUD_CLIENT_SECRET: '$(GcloudClientSecret)'
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+  displayName: 'Publish riff System'
