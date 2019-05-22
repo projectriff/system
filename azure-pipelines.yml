@@ -72,12 +72,10 @@ steps:
 
     gcloud config set disable_prompts True
     gcloud auth activate-service-account --key-file <(echo ${GCLOUD_CLIENT_SECRET} | base64 --decode)
-    echo "$DOCKER_PASSWORD" | docker login --username $DOCKER_USERNAME --password-stdin 
+    gcloud auth configure-docker 
 
     source ./hack/release.sh
   env:
-    DOCKER_USERNAME: '$(DockerUsername)'
-    DOCKER_PASSWORD: '$(DockerPassword)'
     GCLOUD_CLIENT_SECRET: '$(GcloudClientSecret)'
   workingDirectory: '$(modulePath)'
   condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
