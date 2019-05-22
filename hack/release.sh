@@ -9,7 +9,7 @@ readonly version=$(cat ${root}/VERSION)
 readonly gitsha=$(git rev-parse HEAD)
 
 echo "Building riff System"
-(cd $root && KO_DOCKER_REPO="docker.io/projectriff" ko resolve -t "${version}" -t "${version}-${gitsha}" -f config/ | \
+(cd $root && KO_DOCKER_REPO="gcr.io/projectriff/system" ko resolve -P -t "${version}" -t "${version}-${gitsha}" -f config/ | \
   sed -e "s|projectriff.io/release: devel|projectriff.io/release: \"${version}\"|" > ${root}/riff-system.yaml)
 
 echo "Publishing riff System"
