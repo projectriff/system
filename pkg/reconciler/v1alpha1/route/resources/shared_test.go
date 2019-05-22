@@ -27,14 +27,14 @@ import (
 )
 
 const (
-	testHandlerName       = "test-handler"
-	testHandlerNamespace  = "test-handler-namespace"
-	testConfigurationName = "test-handler"
-	testRouteName         = "test-handler"
-	testLabelKey          = "test-label-key"
-	testLabelValue        = "test-label-value"
-	testServiceAccount    = "test-sa"
-	testImage             = "test-image"
+	testRouteName           = "test-route"
+	testRouteNamespace      = "test-route-namespace"
+	testKnConfigurationName = "test-route"
+	testKnRouteName         = "test-route"
+	testLabelKey            = "test-label-key"
+	testLabelValue          = "test-label-value"
+	testServiceAccount      = "test-sa"
+	testImage               = "test-image"
 )
 
 func expectOwnerReferencesSetCorrectly(t *testing.T, ownerRefs []metav1.OwnerReference) {
@@ -45,21 +45,21 @@ func expectOwnerReferencesSetCorrectly(t *testing.T, ownerRefs []metav1.OwnerRef
 
 	expectedRefs := []metav1.OwnerReference{{
 		APIVersion: "request.projectriff.io/v1alpha1",
-		Kind:       "Handler",
-		Name:       testHandlerName,
+		Kind:       "Route",
+		Name:       testRouteName,
 	}}
 	if diff := cmp.Diff(expectedRefs, ownerRefs, cmpopts.IgnoreFields(expectedRefs[0], "Controller", "BlockOwnerDeletion")); diff != "" {
-		t.Errorf("Unexpected handler owner refs diff (-want +got): %v", diff)
+		t.Errorf("Unexpected route owner refs diff (-want +got): %v", diff)
 	}
 }
 
-func createHandlerMeta() *requestv1alpha1.Handler {
-	return &requestv1alpha1.Handler{
+func createRouteMeta() *requestv1alpha1.Route {
+	return &requestv1alpha1.Route{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      testHandlerName,
-			Namespace: testHandlerNamespace,
+			Name:      testRouteName,
+			Namespace: testRouteNamespace,
 		},
-		Spec: requestv1alpha1.HandlerSpec{
+		Spec: requestv1alpha1.RouteSpec{
 			Template: &corev1.PodSpec{
 				Containers: []corev1.Container{
 					{},

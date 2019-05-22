@@ -25,42 +25,42 @@ import (
 )
 
 func TestBuild(t *testing.T) {
-	h := createHandlerMeta()
-	h.Labels = map[string]string{testLabelKey: testLabelValue}
-	h.Spec.Template.ServiceAccountName = testServiceAccount
-	h.Spec.Template.Containers[0].Image = testImage
+	r := createRouteMeta()
+	r.Labels = map[string]string{testLabelKey: testLabelValue}
+	r.Spec.Template.ServiceAccountName = testServiceAccount
+	r.Spec.Template.Containers[0].Image = testImage
 
-	c, _ := MakeConfiguration(h)
+	knc, _ := MakeKnConfiguration(r)
 
-	if errs := c.Validate(context.Background()); errs != nil {
+	if errs := knc.Validate(context.Background()); errs != nil {
 		t.Errorf("expected valid configuration got errors %+v", errs)
 	}
 
-	if got, want := c.Name, testConfigurationName; got != want {
+	if got, want := knc.Name, testKnConfigurationName; got != want {
 		t.Errorf("expected %q for configuration name got %q", want, got)
 	}
-	if got, want := c.Namespace, testHandlerNamespace; got != want {
+	if got, want := knc.Namespace, testRouteNamespace; got != want {
 		t.Errorf("expected %q for configuration namespace got %q", want, got)
 	}
-	expectOwnerReferencesSetCorrectly(t, c.OwnerReferences)
+	expectOwnerReferencesSetCorrectly(t, knc.OwnerReferences)
 
-	if got, want := len(c.Labels), 2; got != want {
+	if got, want := len(knc.Labels), 2; got != want {
 		t.Errorf("expected %d labels got %d", want, got)
 	}
-	if got, want := c.Labels[testLabelKey], testLabelValue; got != want {
+	if got, want := knc.Labels[testLabelKey], testLabelValue; got != want {
 		t.Errorf("expected %q labels got %q", want, got)
 	}
-	if got, want := c.Labels[request.HandlerLabelKey], testHandlerName; got != want {
+	if got, want := knc.Labels[request.RouteLabelKey], testRouteName; got != want {
 		t.Errorf("expected %q labels got %q", want, got)
 	}
 
-	if got, want := c.Spec.RevisionTemplate.Spec.ServiceAccountName, testServiceAccount; got != want {
+	if got, want := knc.Spec.RevisionTemplate.Spec.ServiceAccountName, testServiceAccount; got != want {
 		t.Errorf("expected %q for service account got %q", want, got)
 	}
-	if got, want := c.Spec.RevisionTemplate.Spec.Container.Image, testImage; got != want {
+	if got, want := knc.Spec.RevisionTemplate.Spec.Container.Image, testImage; got != want {
 		t.Errorf("expected %q for image got %q", want, got)
 	}
-	if diff := cmp.Diff(h.Spec.Template.Volumes, c.Spec.RevisionTemplate.Spec.Volumes); diff != "" {
+	if diff := cmp.Diff(r.Spec.Template.Volumes, knc.Spec.RevisionTemplate.Spec.Volumes); diff != "" {
 		t.Errorf("podspec volumes differ (-want, +got) = %v", diff)
 	}
 }

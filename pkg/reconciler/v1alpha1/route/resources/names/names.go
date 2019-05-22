@@ -20,10 +20,10 @@ import (
 	requestv1alpha1 "github.com/projectriff/system/pkg/apis/request/v1alpha1"
 )
 
-func Configuration(h *requestv1alpha1.Handler) string {
-	return h.Name
+func KnConfiguration(r *requestv1alpha1.Route) string {
+	return r.Name
 }
 
-func Route(h *requestv1alpha1.Handler) string {
-	return h.Name
+func KnRoute(r *requestv1alpha1.Route) string {
+	return r.Name
 }

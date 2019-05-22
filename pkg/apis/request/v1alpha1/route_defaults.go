@@ -22,15 +22,15 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-func (h *Handler) SetDefaults(ctx context.Context) {
-	h.Spec.SetDefaults(ctx)
+func (r *Route) SetDefaults(ctx context.Context) {
+	r.Spec.SetDefaults(ctx)
 }
 
-func (hs *HandlerSpec) SetDefaults(ctx context.Context) {
-	if hs.Template == nil {
-		hs.Template = &corev1.PodSpec{}
+func (rs *RouteSpec) SetDefaults(ctx context.Context) {
+	if rs.Template == nil {
+		rs.Template = &corev1.PodSpec{}
 	}
-	if len(hs.Template.Containers) == 0 {
-		hs.Template.Containers = append(hs.Template.Containers, corev1.Container{})
+	if len(rs.Template.Containers) == 0 {
+		rs.Template.Containers = append(rs.Template.Containers, corev1.Container{})
 	}
 }

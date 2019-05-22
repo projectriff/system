@@ -20,31 +20,31 @@ import (
 	"github.com/knative/pkg/kmeta"
 	knservingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
 	requestv1alpha1 "github.com/projectriff/system/pkg/apis/request/v1alpha1"
-	"github.com/projectriff/system/pkg/reconciler/v1alpha1/handler/resources/names"
+	"github.com/projectriff/system/pkg/reconciler/v1alpha1/route/resources/names"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// MakeConfiguration creates a Configuration from a Handler object.
-func MakeConfiguration(h *requestv1alpha1.Handler) (*knservingv1alpha1.Configuration, error) {
-	configuration := &knservingv1alpha1.Configuration{
+// MakeKnConfiguration creates a Configuration from a Route object.
+func MakeKnConfiguration(r *requestv1alpha1.Route) (*knservingv1alpha1.Configuration, error) {
+	knconfiguration := &knservingv1alpha1.Configuration{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      names.Configuration(h),
-			Namespace: h.Namespace,
+			Name:      names.KnConfiguration(r),
+			Namespace: r.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
-				*kmeta.NewControllerRef(h),
+				*kmeta.NewControllerRef(r),
 			},
-			Labels: makeLabels(h),
+			Labels: makeLabels(r),
 		},
 		Spec: knservingv1alpha1.ConfigurationSpec{
 			RevisionTemplate: knservingv1alpha1.RevisionTemplateSpec{
 				Spec: knservingv1alpha1.RevisionSpec{
-					ServiceAccountName: h.Spec.Template.ServiceAccountName,
-					Container:          h.Spec.Template.Containers[0],
-					Volumes:            h.Spec.Template.Volumes,
+					ServiceAccountName: r.Spec.Template.ServiceAccountName,
+					Container:          r.Spec.Template.Containers[0],
+					Volumes:            r.Spec.Template.Volumes,
 				},
 			},
 		},
 	}
 
-	return configuration, nil
+	return knconfiguration, nil
 }

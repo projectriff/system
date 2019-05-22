@@ -28,59 +28,59 @@ import (
 	cache "k8s.io/client-go/tools/cache"
 )
 
-// HandlerInformer provides access to a shared informer and lister for
-// Handlers.
-type HandlerInformer interface {
+// RouteInformer provides access to a shared informer and lister for
+// Routes.
+type RouteInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha1.HandlerLister
+	Lister() v1alpha1.RouteLister
 }
 
-type handlerInformer struct {
+type routeInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
 	tweakListOptions internalinterfaces.TweakListOptionsFunc
 	namespace        string
 }
 
-// NewHandlerInformer constructs a new informer for Handler type.
+// NewRouteInformer constructs a new informer for Route type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewHandlerInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredHandlerInformer(client, namespace, resyncPeriod, indexers, nil)
+func NewRouteInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	return NewFilteredRouteInformer(client, namespace, resyncPeriod, indexers, nil)
 }
 
-// NewFilteredHandlerInformer constructs a new informer for Handler type.
+// NewFilteredRouteInformer constructs a new informer for Route type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredHandlerInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewFilteredRouteInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.RequestV1alpha1().Handlers(namespace).List(options)
+				return client.RequestV1alpha1().Routes(namespace).List(options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.RequestV1alpha1().Handlers(namespace).Watch(options)
+				return client.RequestV1alpha1().Routes(namespace).Watch(options)
 			},
 		},
-		&request_v1alpha1.Handler{},
+		&request_v1alpha1.Route{},
 		resyncPeriod,
 		indexers,
 	)
 }
 
-func (f *handlerInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredHandlerInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
+func (f *routeInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewFilteredRouteInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
-func (f *handlerInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&request_v1alpha1.Handler{}, f.defaultInformer)
+func (f *routeInformer) Informer() cache.SharedIndexInformer {
+	return f.factory.InformerFor(&request_v1alpha1.Route{}, f.defaultInformer)
 }
 
-func (f *handlerInformer) Lister() v1alpha1.HandlerLister {
-	return v1alpha1.NewHandlerLister(f.Informer().GetIndexer())
+func (f *routeInformer) Lister() v1alpha1.RouteLister {
+	return v1alpha1.NewRouteLister(f.Informer().GetIndexer())
 }

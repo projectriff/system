@@ -95,8 +95,8 @@ func (l *Listers) GetFunctionLister() buildv1alpha1listers.FunctionLister {
 	return buildv1alpha1listers.NewFunctionLister(l.indexerFor(&buildv1alpha1.Function{}))
 }
 
-func (l *Listers) GetHandlerLister() requestv1alpha1listers.HandlerLister {
-	return requestv1alpha1listers.NewHandlerLister(l.indexerFor(&requestv1alpha1.Handler{}))
+func (l *Listers) GetRouteLister() requestv1alpha1listers.RouteLister {
+	return requestv1alpha1listers.NewRouteLister(l.indexerFor(&requestv1alpha1.Route{}))
 }
 
 func (l *Listers) GetStreamLister() streamv1alpha1listers.StreamLister {

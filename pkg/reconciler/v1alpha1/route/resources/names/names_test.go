@@ -26,28 +26,28 @@ import (
 func TestNames(t *testing.T) {
 	tests := []struct {
 		name    string
-		request *requestv1alpha1.Handler
-		f       func(*requestv1alpha1.Handler) string
+		request *requestv1alpha1.Route
+		f       func(*requestv1alpha1.Route) string
 		want    string
 	}{{
-		name: "Route",
-		request: &requestv1alpha1.Handler{
+		name: "KnRoute",
+		request: &requestv1alpha1.Route{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "foo",
 				Namespace: "default",
 			},
 		},
-		f:    Route,
+		f:    KnRoute,
 		want: "foo",
 	}, {
-		name: "Configuration",
-		request: &requestv1alpha1.Handler{
+		name: "KnConfiguration",
+		request: &requestv1alpha1.Route{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "foo",
 				Namespace: "default",
 			},
 		},
-		f:    Configuration,
+		f:    KnConfiguration,
 		want: "foo",
 	}}
 

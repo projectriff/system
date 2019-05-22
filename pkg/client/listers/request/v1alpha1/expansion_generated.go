@@ -15,10 +15,10 @@
  */
 package v1alpha1
 
-// HandlerListerExpansion allows custom methods to be added to
-// HandlerLister.
-type HandlerListerExpansion interface{}
+// RouteListerExpansion allows custom methods to be added to
+// RouteLister.
+type RouteListerExpansion interface{}
 
-// HandlerNamespaceListerExpansion allows custom methods to be added to
-// HandlerNamespaceLister.
-type HandlerNamespaceListerExpansion interface{}
+// RouteNamespaceListerExpansion allows custom methods to be added to
+// RouteNamespaceLister.
+type RouteNamespaceListerExpansion interface{}

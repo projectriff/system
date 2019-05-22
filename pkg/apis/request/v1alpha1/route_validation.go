@@ -27,15 +27,15 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 )
 
-func (h *Handler) Validate(ctx context.Context) *apis.FieldError {
+func (r *Route) Validate(ctx context.Context) *apis.FieldError {
 	errs := &apis.FieldError{}
-	errs = errs.Also(systemapis.ValidateObjectMetadata(h.GetObjectMeta()).ViaField("metadata"))
-	errs = errs.Also(h.Spec.Validate(ctx).ViaField("spec"))
+	errs = errs.Also(systemapis.ValidateObjectMetadata(r.GetObjectMeta()).ViaField("metadata"))
+	errs = errs.Also(r.Spec.Validate(ctx).ViaField("spec"))
 	return errs
 }
 
-func (hs HandlerSpec) Validate(ctx context.Context) *apis.FieldError {
-	if equality.Semantic.DeepEqual(hs, HandlerSpec{}) {
+func (rs RouteSpec) Validate(ctx context.Context) *apis.FieldError {
+	if equality.Semantic.DeepEqual(rs, RouteSpec{}) {
 		return apis.ErrMissingField(apis.CurrentField)
 	}
 
@@ -43,22 +43,22 @@ func (hs HandlerSpec) Validate(ctx context.Context) *apis.FieldError {
 
 	if diff := cmp.Diff(&corev1.PodSpec{
 		// add supported PodSpec fields here, otherwise their usage will be rejected
-		ServiceAccountName: hs.Template.ServiceAccountName,
+		ServiceAccountName: rs.Template.ServiceAccountName,
 		// the defaulter guarantees at least one container
-		Containers: filterInvalidContainers(hs.Template.Containers[:1]),
-		Volumes:    filterInvalidVolumes(hs.Template.Volumes),
-	}, hs.Template); diff != "" {
+		Containers: filterInvalidContainers(rs.Template.Containers[:1]),
+		Volumes:    filterInvalidVolumes(rs.Template.Volumes),
+	}, rs.Template); diff != "" {
 		err := apis.ErrDisallowedFields(apis.CurrentField)
 		err.Details = fmt.Sprintf("limited Template fields may be set (-want, +got) = %v", diff)
 		errs = errs.Also(err)
 	}
 
-	if hs.Build == nil && hs.Template.Containers[0].Image == "" {
+	if rs.Build == nil && rs.Template.Containers[0].Image == "" {
 		errs = errs.Also(apis.ErrMissingOneOf("build", "template.containers[0].image"))
-	} else if hs.Build != nil && hs.Template.Containers[0].Image != "" {
+	} else if rs.Build != nil && rs.Template.Containers[0].Image != "" {
 		errs = errs.Also(apis.ErrMultipleOneOf("build", "template.containers[0].image"))
-	} else if hs.Build != nil {
-		errs = errs.Also(hs.Build.Validate(ctx).ViaField("build"))
+	} else if rs.Build != nil {
+		errs = errs.Also(rs.Build.Validate(ctx).ViaField("build"))
 	}
 
 	return errs

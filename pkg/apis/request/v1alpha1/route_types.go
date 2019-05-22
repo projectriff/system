@@ -28,21 +28,21 @@ import (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-type Handler struct {
+type Route struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   HandlerSpec   `json:"spec"`
-	Status HandlerStatus `json:"status"`
+	Spec   RouteSpec   `json:"spec"`
+	Status RouteStatus `json:"status"`
 }
 
 var (
-	_ apis.Validatable   = (*Handler)(nil)
-	_ apis.Defaultable   = (*Handler)(nil)
-	_ kmeta.OwnerRefable = (*Handler)(nil)
+	_ apis.Validatable   = (*Route)(nil)
+	_ apis.Defaultable   = (*Route)(nil)
+	_ kmeta.OwnerRefable = (*Route)(nil)
 )
 
-type HandlerSpec struct {
+type RouteSpec struct {
 	Build    *Build          `json:"build,omitempty"`
 	Template *corev1.PodSpec `json:"template,omitempty"`
 }
@@ -52,11 +52,11 @@ type Build struct {
 	FunctionRef    string `json:"functionRef,omitempty"`
 }
 
-type HandlerStatus struct {
+type RouteStatus struct {
 	duckv1alpha1.Status `json:",inline"`
 
-	ConfigurationName string `json:"configurationName,omitempty"`
-	RouteName         string `json:"routeName,omitempty"`
+	KnConfigurationName string `json:"configurationName,omitempty"`
+	KnRouteName         string `json:"routeName,omitempty"`
 
 	Domain  string                    `json:"domain,omitempty"`
 	Address *duckv1alpha1.Addressable `json:"address,omitempty"`
@@ -64,13 +64,13 @@ type HandlerStatus struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-type HandlerList struct {
+type RouteList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 
-	Items []Handler `json:"items"`
+	Items []Route `json:"items"`
 }
 
-func (*Handler) GetGroupVersionKind() schema.GroupVersionKind {
-	return SchemeGroupVersion.WithKind("Handler")
+func (*Route) GetGroupVersionKind() schema.GroupVersionKind {
+	return SchemeGroupVersion.WithKind("Route")
 }

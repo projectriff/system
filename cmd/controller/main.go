@@ -47,8 +47,8 @@ import (
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/application"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/credential"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/function"
-	"github.com/projectriff/system/pkg/reconciler/v1alpha1/handler"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/processor"
+	"github.com/projectriff/system/pkg/reconciler/v1alpha1/route"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/stream"
 	"go.uber.org/zap"
 )
@@ -132,7 +132,7 @@ func main() {
 
 	applicationInformer := projectriffInformerFactory.Build().V1alpha1().Applications()
 	functionInformer := projectriffInformerFactory.Build().V1alpha1().Functions()
-	handlerInformer := projectriffInformerFactory.Request().V1alpha1().Handlers()
+	routeInformer := projectriffInformerFactory.Request().V1alpha1().Routes()
 	streamInformer := projectriffInformerFactory.Stream().V1alpha1().Streams()
 	processorInformer := projectriffInformerFactory.Stream().V1alpha1().Processors()
 
@@ -169,9 +169,9 @@ func main() {
 			serviceaccountInformer,
 		),
 		// run.projectriff.io
-		handler.NewController(
+		route.NewController(
 			opt,
-			handlerInformer,
+			routeInformer,
 
 			knconfigurationInformer,
 			knrouteInformer,
@@ -212,7 +212,7 @@ func main() {
 	for i, synced := range []cache.InformerSynced{
 		applicationInformer.Informer().HasSynced,
 		functionInformer.Informer().HasSynced,
-		handlerInformer.Informer().HasSynced,
+		routeInformer.Informer().HasSynced,
 		streamInformer.Informer().HasSynced,
 		processorInformer.Informer().HasSynced,
 		deploymentInformer.Informer().HasSynced,

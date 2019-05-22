@@ -24,16 +24,16 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-func TestHandlerDefaulting(t *testing.T) {
+func TestRouteDefaulting(t *testing.T) {
 	tests := []struct {
 		name string
-		in   *Handler
-		want *Handler
+		in   *Route
+		want *Route
 	}{{
 		name: "empty",
-		in:   &Handler{},
-		want: &Handler{
-			Spec: HandlerSpec{
+		in:   &Route{},
+		want: &Route{
+			Spec: RouteSpec{
 				Template: &corev1.PodSpec{
 					Containers: []corev1.Container{
 						{},
@@ -54,15 +54,15 @@ func TestHandlerDefaulting(t *testing.T) {
 	}
 }
 
-func TestHandlerSpecDefaulting(t *testing.T) {
+func TestRouteSpecDefaulting(t *testing.T) {
 	tests := []struct {
 		name string
-		in   *HandlerSpec
-		want *HandlerSpec
+		in   *RouteSpec
+		want *RouteSpec
 	}{{
 		name: "ensure at least one container",
-		in:   &HandlerSpec{},
-		want: &HandlerSpec{
+		in:   &RouteSpec{},
+		want: &RouteSpec{
 			Template: &corev1.PodSpec{
 				Containers: []corev1.Container{
 					{},

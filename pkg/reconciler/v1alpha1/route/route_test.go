@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package handler
+package route
 
 import (
 	"testing"
@@ -43,8 +43,7 @@ func TestReconcile(t *testing.T) {
 	table.Test(t, MakeFactory(func(listers *Listers, opt reconciler.Options) controller.Reconciler {
 		return &Reconciler{
 			Base:                  reconciler.NewBase(opt, controllerAgentName),
-			handlerLister:         listers.GetHandlerLister(),
-			processorLister:       listers.GetProcessorLister(),
+			routeLister:           listers.GetRouteLister(),
 			knconfigurationLister: listers.GetKnConfigurationLister(),
 			knrouteLister:         listers.GetKnRouteLister(),
 			applicationLister:     listers.GetApplicationLister(),
@@ -63,7 +62,7 @@ func TestNew(t *testing.T) {
 	knservingClient := fakeknservingclientset.NewSimpleClientset()
 	knservingInformer := knservinginformers.NewSharedInformerFactory(knservingClient, 0)
 
-	handlerInformer := projectriffInformer.Request().V1alpha1().Handlers()
+	routeInformer := projectriffInformer.Request().V1alpha1().Routes()
 	knconfigurationInformer := knservingInformer.Serving().V1alpha1().Configurations()
 	knrouteInformer := knservingInformer.Serving().V1alpha1().Routes()
 	applicationInformer := projectriffInformer.Build().V1alpha1().Applications()
@@ -74,7 +73,7 @@ func TestNew(t *testing.T) {
 		ProjectriffClientSet: projectriffClient,
 		KnServingClientSet:   knservingClient,
 		Logger:               TestLogger(t),
-	}, handlerInformer, knconfigurationInformer, knrouteInformer, applicationInformer, functionInformer)
+	}, routeInformer, knconfigurationInformer, knrouteInformer, applicationInformer, functionInformer)
 
 	if c == nil {
 		t.Fatal("Expected NewController to return a non-nil value")
