@@ -16,6 +16,35 @@
 
 package v1alpha1
 
+import (
+	"fmt"
+	"strings"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+type ImageResource interface {
+	metav1.ObjectMetaAccessor
+	GetImage() string
+}
+
+func ResolveDefaultImage(resource ImageResource, registry string) (string, error) {
+	if registry == "" {
+		return "", fmt.Errorf("invalid registry %q", registry)
+	}
+	image := resource.GetImage()
+	if image == "_" {
+		// combine registry prefix and application name
+		image = fmt.Sprintf("%s/%s", registry, resource.GetObjectMeta().GetName())
+	} else if strings.HasPrefix(image, "_/") {
+		// add the prefix to the specified image name
+		image = strings.Replace(image, "_", registry, 1)
+	} else {
+		return "", fmt.Errorf("unable to default registry")
+	}
+	return image, nil
+}
+
 type BuildArgument struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`

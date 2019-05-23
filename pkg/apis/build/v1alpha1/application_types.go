@@ -40,7 +40,12 @@ var (
 	_ apis.Validatable   = (*Application)(nil)
 	_ apis.Defaultable   = (*Application)(nil)
 	_ kmeta.OwnerRefable = (*Application)(nil)
+	_ ImageResource      = (*Application)(nil)
 )
+
+func (a *Application) GetImage() string {
+	return a.Spec.Image
+}
 
 type ApplicationSpec struct {
 	Image     string             `json:"image"`
@@ -51,6 +56,7 @@ type ApplicationSpec struct {
 type ApplicationStatus struct {
 	duckv1alpha1.Status `json:",inline"`
 	BuildStatus         `json:",inline"`
+	TargetImage         string `json:"targetImage,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

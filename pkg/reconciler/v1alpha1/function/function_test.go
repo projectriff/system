@@ -62,6 +62,7 @@ func TestNew(t *testing.T) {
 	knbuildInformer := knbuildinformers.NewSharedInformerFactory(knbuildClient, 0)
 
 	functionInformer := projectriffInformer.Build().V1alpha1().Functions()
+	configmapInformer := kubeInformer.Core().V1().ConfigMaps()
 	pvcInformer := kubeInformer.Core().V1().PersistentVolumeClaims()
 	buildInformer := knbuildInformer.Build().V1alpha1().Builds()
 
@@ -70,7 +71,7 @@ func TestNew(t *testing.T) {
 		ProjectriffClientSet: projectriffClient,
 		KnBuildClientSet:     knbuildClient,
 		Logger:               TestLogger(t),
-	}, functionInformer, pvcInformer, buildInformer)
+	}, functionInformer, configmapInformer, pvcInformer, buildInformer)
 
 	if c == nil {
 		t.Fatal("Expected NewController to return a non-nil value")

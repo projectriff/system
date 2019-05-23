@@ -27,7 +27,7 @@ import (
 func TestBuild(t *testing.T) {
 	f := createFunctionMeta()
 	f.Labels = map[string]string{testLabelKey: testLabelValue}
-	f.Spec.Image = testImage
+	f.Status.TargetImage = testImage
 	f.Spec.Source = &buildv1alpha1.Source{
 		Git: &buildv1alpha1.GitSource{
 			URL:      testGitURL,
