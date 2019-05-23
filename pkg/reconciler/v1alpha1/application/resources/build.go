@@ -71,7 +71,7 @@ func makeBuildSource(a *buildv1alpha1.Application) *knbuildv1alpha1.SourceSpec {
 
 func makeBuildArguments(a *buildv1alpha1.Application) []knbuildv1alpha1.ArgumentSpec {
 	args := []knbuildv1alpha1.ArgumentSpec{
-		{Name: "IMAGE", Value: a.Spec.Image},
+		{Name: "IMAGE", Value: a.Status.TargetImage},
 	}
 	if a.Status.BuildCacheName != "" {
 		args = append(args, knbuildv1alpha1.ArgumentSpec{Name: "CACHE", Value: "cache"})

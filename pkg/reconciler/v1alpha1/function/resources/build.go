@@ -71,7 +71,7 @@ func makeBuildSource(f *buildv1alpha1.Function) *knbuildv1alpha1.SourceSpec {
 
 func makeBuildArguments(f *buildv1alpha1.Function) []knbuildv1alpha1.ArgumentSpec {
 	args := []knbuildv1alpha1.ArgumentSpec{
-		{Name: "IMAGE", Value: f.Spec.Image},
+		{Name: "IMAGE", Value: f.Status.TargetImage},
 		{Name: "FUNCTION_ARTIFACT", Value: f.Spec.Artifact},
 		{Name: "FUNCTION_HANDLER", Value: f.Spec.Handler},
 		{Name: "FUNCTION_LANGUAGE", Value: f.Spec.Invoker},

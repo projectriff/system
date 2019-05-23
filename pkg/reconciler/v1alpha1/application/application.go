@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/authn/k8schain"
@@ -60,6 +61,7 @@ type Reconciler struct {
 
 	// listers index properties about resources
 	applicationLister buildlisters.ApplicationLister
+	configmapLister   corelisters.ConfigMapLister
 	pvcLister         corelisters.PersistentVolumeClaimLister
 	knbuildLister     knbuildlisters.BuildLister
 
@@ -74,6 +76,7 @@ var _ controller.Reconciler = (*Reconciler)(nil)
 func NewController(
 	opt reconciler.Options,
 	applicationInformer buildinformers.ApplicationInformer,
+	configmapInformer coreinformers.ConfigMapInformer,
 	pvcInformer coreinformers.PersistentVolumeClaimInformer,
 	knbuildInformer knbuildinformers.BuildInformer,
 ) *controller.Impl {
@@ -81,6 +84,7 @@ func NewController(
 	c := &Reconciler{
 		Base:              reconciler.NewBase(opt, controllerAgentName),
 		applicationLister: applicationInformer.Lister(),
+		configmapLister:   configmapInformer.Lister(),
 		pvcLister:         pvcInformer.Lister(),
 		knbuildLister:     knbuildInformer.Lister(),
 
@@ -203,6 +207,12 @@ func (c *Reconciler) reconcile(ctx context.Context, application *buildv1alpha1.A
 		application.Status.PropagateBuildCacheStatus(&buildCache.Status)
 	}
 
+	targetImage, err := c.resolveTargetImage(application)
+	if err != nil {
+		return err
+	}
+	application.Status.TargetImage = targetImage
+
 	buildName := resourcenames.Build(application)
 	build, err := c.knbuildLister.Builds(application.Namespace).Get(buildName)
 	if errors.IsNotFound(err) {
@@ -237,8 +247,8 @@ func (c *Reconciler) reconcile(ctx context.Context, application *buildv1alpha1.A
 	if application.Status.IsReady() {
 		// resolve image name
 		opt := k8schain.Options{
-			Namespace:          application.Namespace,
-		} 
+			Namespace: application.Namespace,
+		}
 		if build == nil {
 			opt.ServiceAccountName = "riff-build"
 		} else {
@@ -282,6 +292,21 @@ func (c *Reconciler) updateStatus(desired *buildv1alpha1.Application) (*buildv1a
 	}
 
 	return f, err
+}
+
+func (c *Reconciler) resolveTargetImage(application *buildv1alpha1.Application) (string, error) {
+	if !strings.HasPrefix(application.Spec.Image, "_") {
+		return application.Spec.Image, nil
+	}
+	riffBuildConfig, err := c.configmapLister.ConfigMaps(application.Namespace).Get("riff-build")
+	if err != nil {
+		return "", err
+	}
+	image, err := buildv1alpha1.ResolveDefaultImage(application, riffBuildConfig.Data["default-image-prefix"])
+	if err != nil {
+		return "", err
+	}
+	return image, nil
 }
 
 func (c *Reconciler) reconcileBuildCache(ctx context.Context, application *buildv1alpha1.Application, buildCache *corev1.PersistentVolumeClaim) (*corev1.PersistentVolumeClaim, error) {

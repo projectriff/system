@@ -155,6 +155,7 @@ func main() {
 			opt,
 			applicationInformer,
 
+			configmapInformer,
 			pvcInformer,
 			knbuildInformer,
 		),
@@ -162,6 +163,7 @@ func main() {
 			opt,
 			functionInformer,
 
+			configmapInformer,
 			pvcInformer,
 			knbuildInformer,
 		),
