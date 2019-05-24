@@ -258,9 +258,9 @@ func (c *Reconciler) reconcile(ctx context.Context, application *buildv1alpha1.A
 		skipRegistries := sets.NewString()
 		skipRegistries.Insert("ko.local")
 		skipRegistries.Insert("dev.local")
-		digest, err := c.resolver.Resolve(application.Spec.Image, opt, skipRegistries)
+		digest, err := c.resolver.Resolve(application.Status.TargetImage, opt, skipRegistries)
 		if err != nil {
-			application.Status.MarkImageMissing(fmt.Sprintf("Unable to fetch image %q: %s", application.Spec.Image, err.Error()))
+			application.Status.MarkImageMissing(fmt.Sprintf("Unable to fetch image %q: %s", application.Status.TargetImage, err.Error()))
 			return err
 		}
 		application.Status.LatestImage = digest
