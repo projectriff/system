@@ -28,11 +28,13 @@ const (
 	FunctionConditionSucceeded                                  = duckv1alpha1.ConditionSucceeded
 	FunctionConditionBuildCacheReady duckv1alpha1.ConditionType = "BuildCacheReady"
 	FunctionConditionBuildSucceeded  duckv1alpha1.ConditionType = "BuildSucceeded"
+	FunctionConditionImageResolved   duckv1alpha1.ConditionType = "ImageResolved"
 )
 
 var functionCondSet = duckv1alpha1.NewBatchConditionSet(
 	FunctionConditionBuildCacheReady,
 	FunctionConditionBuildSucceeded,
+	FunctionConditionImageResolved,
 )
 
 func (fs *FunctionStatus) IsReady() bool {
@@ -67,8 +69,20 @@ func (fs *FunctionStatus) MarkBuildNotUsed() {
 	functionCondSet.Manage(fs).MarkTrue(FunctionConditionBuildSucceeded)
 }
 
+func (fs *FunctionStatus) MarkImageDefaultPrefixMissing(message string) {
+	functionCondSet.Manage(fs).MarkFalse(FunctionConditionImageResolved, "DefaultImagePrefixMissing", message)
+}
+
+func (fs *FunctionStatus) MarkImageInvalid(message string) {
+	functionCondSet.Manage(fs).MarkFalse(FunctionConditionImageResolved, "ImageInvalid", message)
+}
+
 func (fs *FunctionStatus) MarkImageMissing(message string) {
-	functionCondSet.Manage(fs).MarkFalse(FunctionConditionBuildSucceeded, "ImageMissing", message)
+	functionCondSet.Manage(fs).MarkFalse(FunctionConditionImageResolved, "ImageMissing", message)
+}
+
+func (fs *FunctionStatus) MarkImageResolved() {
+	functionCondSet.Manage(fs).MarkTrue(FunctionConditionImageResolved)
 }
 
 func (fs *FunctionStatus) PropagateBuildCacheStatus(pvcs *corev1.PersistentVolumeClaimStatus) {

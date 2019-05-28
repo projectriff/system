@@ -55,6 +55,8 @@ const (
 	controllerAgentName = "function-controller"
 )
 
+var errMissingDefaultPrefix = fmt.Errorf("missing default image prefix")
+
 // Reconciler implements controller.Reconciler for Function resources.
 type Reconciler struct {
 	*reconciler.Base
@@ -209,6 +211,11 @@ func (c *Reconciler) reconcile(ctx context.Context, function *buildv1alpha1.Func
 
 	targetImage, err := c.resolveTargetImage(function)
 	if err != nil {
+		if err == errMissingDefaultPrefix {
+			function.Status.MarkImageDefaultPrefixMissing(err.Error())
+		} else {
+			function.Status.MarkImageInvalid(err.Error())
+		}
 		return err
 	}
 	function.Status.TargetImage = targetImage
@@ -244,7 +251,7 @@ func (c *Reconciler) reconcile(ctx context.Context, function *buildv1alpha1.Func
 		function.Status.BuildName = build.Name
 		function.Status.PropagateBuildStatus(&build.Status)
 	}
-	if function.Status.IsReady() {
+	if function.Status.GetCondition(buildv1alpha1.FunctionConditionBuildSucceeded).IsTrue() {
 		// resolve image name
 		opt := k8schain.Options{
 			Namespace: function.Namespace,
@@ -264,6 +271,7 @@ func (c *Reconciler) reconcile(ctx context.Context, function *buildv1alpha1.Func
 			return err
 		}
 		function.Status.LatestImage = digest
+		function.Status.MarkImageResolved()
 	}
 
 	function.Status.ObservedGeneration = function.Generation
@@ -300,9 +308,16 @@ func (c *Reconciler) resolveTargetImage(function *buildv1alpha1.Function) (strin
 	}
 	riffBuildConfig, err := c.configmapLister.ConfigMaps(function.Namespace).Get("riff-build")
 	if err != nil {
+		if apierrs.IsNotFound(err) {
+			return "", errMissingDefaultPrefix
+		}
 		return "", err
 	}
-	image, err := buildv1alpha1.ResolveDefaultImage(function, riffBuildConfig.Data["default-image-prefix"])
+	defaultPrefix := riffBuildConfig.Data["default-image-prefix"]
+	if defaultPrefix == "" {
+		return "", errMissingDefaultPrefix
+	}
+	image, err := buildv1alpha1.ResolveDefaultImage(function, defaultPrefix)
 	if err != nil {
 		return "", err
 	}

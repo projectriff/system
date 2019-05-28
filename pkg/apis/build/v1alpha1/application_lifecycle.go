@@ -28,11 +28,13 @@ const (
 	ApplicationConditionSucceeded                                  = duckv1alpha1.ConditionSucceeded
 	ApplicationConditionBuildCacheReady duckv1alpha1.ConditionType = "BuildCacheReady"
 	ApplicationConditionBuildSucceeded  duckv1alpha1.ConditionType = "BuildSucceeded"
+	ApplicationConditionImageResolved   duckv1alpha1.ConditionType = "ImageResolved"
 )
 
 var applicationCondSet = duckv1alpha1.NewBatchConditionSet(
 	ApplicationConditionBuildCacheReady,
 	ApplicationConditionBuildSucceeded,
+	ApplicationConditionImageResolved,
 )
 
 func (as *ApplicationStatus) IsReady() bool {
@@ -67,8 +69,20 @@ func (as *ApplicationStatus) MarkBuildNotUsed() {
 	applicationCondSet.Manage(as).MarkTrue(ApplicationConditionBuildSucceeded)
 }
 
+func (as *ApplicationStatus) MarkImageDefaultPrefixMissing(message string) {
+	applicationCondSet.Manage(as).MarkFalse(ApplicationConditionImageResolved, "DefaultImagePrefixMissing", message)
+}
+
+func (as *ApplicationStatus) MarkImageInvalid(message string) {
+	applicationCondSet.Manage(as).MarkFalse(ApplicationConditionImageResolved, "ImageInvalid", message)
+}
+
 func (as *ApplicationStatus) MarkImageMissing(message string) {
-	applicationCondSet.Manage(as).MarkFalse(ApplicationConditionBuildSucceeded, "ImageMissing", message)
+	applicationCondSet.Manage(as).MarkFalse(ApplicationConditionImageResolved, "ImageMissing", message)
+}
+
+func (as *ApplicationStatus) MarkImageResolved() {
+	applicationCondSet.Manage(as).MarkTrue(ApplicationConditionImageResolved)
 }
 
 func (as *ApplicationStatus) PropagateBuildCacheStatus(pvcs *corev1.PersistentVolumeClaimStatus) {
