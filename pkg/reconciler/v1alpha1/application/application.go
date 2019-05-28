@@ -55,6 +55,8 @@ const (
 	controllerAgentName = "application-controller"
 )
 
+var errMissingDefaultPrefix = fmt.Errorf("missing default image prefix")
+
 // Reconciler implements controller.Reconciler for Application resources.
 type Reconciler struct {
 	*reconciler.Base
@@ -209,6 +211,11 @@ func (c *Reconciler) reconcile(ctx context.Context, application *buildv1alpha1.A
 
 	targetImage, err := c.resolveTargetImage(application)
 	if err != nil {
+		if err == errMissingDefaultPrefix {
+			application.Status.MarkImageDefaultPrefixMissing(err.Error())
+		} else {
+			application.Status.MarkImageInvalid(err.Error())
+		}
 		return err
 	}
 	application.Status.TargetImage = targetImage
@@ -244,7 +251,7 @@ func (c *Reconciler) reconcile(ctx context.Context, application *buildv1alpha1.A
 		application.Status.BuildName = build.Name
 		application.Status.PropagateBuildStatus(&build.Status)
 	}
-	if application.Status.IsReady() {
+	if application.Status.GetCondition(buildv1alpha1.ApplicationConditionBuildSucceeded).IsTrue() {
 		// resolve image name
 		opt := k8schain.Options{
 			Namespace: application.Namespace,
@@ -264,6 +271,7 @@ func (c *Reconciler) reconcile(ctx context.Context, application *buildv1alpha1.A
 			return err
 		}
 		application.Status.LatestImage = digest
+		application.Status.MarkImageResolved()
 	}
 
 	application.Status.ObservedGeneration = application.Generation
@@ -300,9 +308,16 @@ func (c *Reconciler) resolveTargetImage(application *buildv1alpha1.Application) 
 	}
 	riffBuildConfig, err := c.configmapLister.ConfigMaps(application.Namespace).Get("riff-build")
 	if err != nil {
+		if apierrs.IsNotFound(err) {
+			return "", errMissingDefaultPrefix
+		}
 		return "", err
 	}
-	image, err := buildv1alpha1.ResolveDefaultImage(application, riffBuildConfig.Data["default-image-prefix"])
+	defaultPrefix := riffBuildConfig.Data["default-image-prefix"]
+	if defaultPrefix == "" {
+		return "", errMissingDefaultPrefix
+	}
+	image, err := buildv1alpha1.ResolveDefaultImage(application, defaultPrefix)
 	if err != nil {
 		return "", err
 	}
