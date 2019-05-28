@@ -61,11 +61,11 @@ func (ps *ProcessorStatus) PropagateFunctionStatus(fs *buildv1alpha1.FunctionSta
 	}
 	switch {
 	case sc.Status == corev1.ConditionUnknown:
-		processorCondSet.Manage(fs).MarkUnknown(ProcessorConditionFunctionReady, sc.Reason, sc.Message)
+		processorCondSet.Manage(ps).MarkUnknown(ProcessorConditionFunctionReady, sc.Reason, sc.Message)
 	case sc.Status == corev1.ConditionTrue:
-		processorCondSet.Manage(fs).MarkTrue(ProcessorConditionFunctionReady)
+		processorCondSet.Manage(ps).MarkTrue(ProcessorConditionFunctionReady)
 	case sc.Status == corev1.ConditionFalse:
-		processorCondSet.Manage(fs).MarkFalse(ProcessorConditionFunctionReady, sc.Reason, sc.Message)
+		processorCondSet.Manage(ps).MarkFalse(ProcessorConditionFunctionReady, sc.Reason, sc.Message)
 	}
 }
 

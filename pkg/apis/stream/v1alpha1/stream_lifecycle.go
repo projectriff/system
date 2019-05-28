@@ -38,3 +38,11 @@ func (status *StreamStatus) GetCondition(t duckv1alpha1.ConditionType) *duckv1al
 func (status *StreamStatus) InitializeConditions() {
 	streamCondSet.Manage(status).InitializeConditions()
 }
+
+func (status *StreamStatus) MarkStreamProvisioned() {
+	streamCondSet.Manage(status).MarkTrue(StreamConditionReady)
+}
+
+func (status *StreamStatus) MarkStreamProvisionFailed(message string) {
+	streamCondSet.Manage(status).MarkFalse(StreamConditionReady, "ProvisionFailed", message)
+}

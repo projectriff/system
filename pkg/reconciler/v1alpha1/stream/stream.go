@@ -144,8 +144,10 @@ func (c *Reconciler) reconcile(ctx context.Context, stream *streamv1alpha1.Strea
 	logger.Infof("Creating Stream %s with Provider %s", stream.Name, stream.Spec.Provider)
 	address, err := createStream(stream.Spec.Provider, stream.Name)
 	if err != nil {
+		stream.Status.MarkStreamProvisionFailed(err.Error())
 		return err
 	}
+	stream.Status.MarkStreamProvisioned()
 	stream.Status.Address = *address
 	stream.Status.ObservedGeneration = stream.Generation
 
