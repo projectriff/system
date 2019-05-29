@@ -25,13 +25,13 @@ import (
 )
 
 const (
-	ApplicationConditionSucceeded                                  = duckv1alpha1.ConditionSucceeded
+	ApplicationConditionReady                                      = duckv1alpha1.ConditionReady
 	ApplicationConditionBuildCacheReady duckv1alpha1.ConditionType = "BuildCacheReady"
 	ApplicationConditionBuildSucceeded  duckv1alpha1.ConditionType = "BuildSucceeded"
 	ApplicationConditionImageResolved   duckv1alpha1.ConditionType = "ImageResolved"
 )
 
-var applicationCondSet = duckv1alpha1.NewBatchConditionSet(
+var applicationCondSet = duckv1alpha1.NewLivingConditionSet(
 	ApplicationConditionBuildCacheReady,
 	ApplicationConditionBuildSucceeded,
 	ApplicationConditionImageResolved,
