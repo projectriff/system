@@ -37,7 +37,8 @@ func TestValidateStream(t *testing.T) {
 				Name: "test-function",
 			},
 			Spec: StreamSpec{
-				Provider: "kafka",
+				Provider:    "kafka",
+				ContentType: "application/json",
 			},
 		},
 		want: nil,
@@ -46,7 +47,8 @@ func TestValidateStream(t *testing.T) {
 		s: &Stream{
 			ObjectMeta: metav1.ObjectMeta{},
 			Spec: StreamSpec{
-				Provider: "kafka",
+				Provider:    "kafka",
+				ContentType: "audio/vorbis",
 			},
 		},
 		want: apis.ErrMissingOneOf("metadata.generateName", "metadata.name"),
@@ -78,6 +80,13 @@ func TestValidateStreamSpec(t *testing.T) {
 	}{{
 		name: "valid",
 		s: &StreamSpec{
+			Provider:    "kafka",
+			ContentType: "video/mp4",
+		},
+		want: nil,
+	}, {
+		name: "valid without explicit content-type",
+		s: &StreamSpec{
 			Provider: "kafka",
 		},
 		want: nil,
@@ -88,11 +97,10 @@ func TestValidateStreamSpec(t *testing.T) {
 	}, {
 		name: "requires provider",
 		s: &StreamSpec{
-			Provider: "",
+			Provider:    "",
+			ContentType: "image/*",
 		},
-		// TODO this case is currently impossible to distinguish from an empty spec
-		// want: apis.ErrMissingField("provider"),
-		want: apis.ErrMissingField(apis.CurrentField),
+		want: apis.ErrMissingField("provider"),
 	}} {
 		name := c.name
 		t.Run(name, func(t *testing.T) {
