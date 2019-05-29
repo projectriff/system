@@ -53,6 +53,9 @@ func TestBuild(t *testing.T) {
 	if got, want := c.Labels[request.HandlerLabelKey], testHandlerName; got != want {
 		t.Errorf("expected %q labels got %q", want, got)
 	}
+	if diff := cmp.Diff(c.Labels, c.Spec.Template.Labels); diff != "" {
+		t.Errorf("configuration and revision template labels differ (-want, +got) = %v", diff)
+	}
 
 	if got, want := c.Spec.Template.Spec.ServiceAccountName, testServiceAccount; got != want {
 		t.Errorf("expected %q for service account got %q", want, got)

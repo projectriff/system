@@ -38,6 +38,9 @@ func MakeConfiguration(h *requestv1alpha1.Handler) (*knservingv1alpha1.Configura
 		},
 		Spec: knservingv1alpha1.ConfigurationSpec{
 			Template: &knservingv1alpha1.RevisionTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: makeLabels(h),
+				},
 				Spec: knservingv1alpha1.RevisionSpec{
 					RevisionSpec: knservingv1beta1.RevisionSpec{
 						PodSpec: knservingv1beta1.PodSpec{
