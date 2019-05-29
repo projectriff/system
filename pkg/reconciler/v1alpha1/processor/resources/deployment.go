@@ -36,6 +36,7 @@ func MakeDeployment(proc *streamv1alpha1.Processor) (*appsv1.Deployment, error) 
 			Name:            names.Deployment(proc),
 			Namespace:       proc.Namespace,
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(proc)},
+			Labels:          makeLabels(proc),
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &one,
