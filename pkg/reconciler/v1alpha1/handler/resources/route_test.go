@@ -50,13 +50,13 @@ func TestRoute(t *testing.T) {
 	if got, want := len(r.Spec.Traffic), 1; got != want {
 		t.Errorf("expected %d traffic policy got %d", want, got)
 	}
-	if got, want := r.Spec.Traffic[0].Name, ""; got != want {
+	if got, want := r.Spec.Traffic[0].TrafficTarget.Tag, ""; got != want {
 		t.Errorf("expected %q traffic policy tag got %q", want, got)
 	}
-	if got, want := r.Spec.Traffic[0].Percent, 100; got != want {
+	if got, want := r.Spec.Traffic[0].TrafficTarget.Percent, 100; got != want {
 		t.Errorf("expected %q traffic policy tag got %q", want, got)
 	}
-	if got, want := r.Spec.Traffic[0].ConfigurationName, testConfigurationName; got != want {
+	if got, want := r.Spec.Traffic[0].TrafficTarget.ConfigurationName, testConfigurationName; got != want {
 		t.Errorf("expected %q traffic policy configuration got %q", want, got)
 	}
 }
