@@ -21,6 +21,7 @@ import (
 
 	"github.com/knative/pkg/kmeta"
 	knservingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
+	knservingv1beta1 "github.com/knative/serving/pkg/apis/serving/v1beta1"
 	requestv1alpha1 "github.com/projectriff/system/pkg/apis/request/v1alpha1"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/handler/resources/names"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -44,8 +45,10 @@ func MakeRoute(h *requestv1alpha1.Handler) (*knservingv1alpha1.Route, error) {
 		Spec: knservingv1alpha1.RouteSpec{
 			Traffic: []knservingv1alpha1.TrafficTarget{
 				knservingv1alpha1.TrafficTarget{
-					Percent:           100,
-					ConfigurationName: h.Status.ConfigurationName,
+					TrafficTarget: knservingv1beta1.TrafficTarget{
+						Percent:           100,
+						ConfigurationName: h.Status.ConfigurationName,
+					},
 				},
 			},
 		},

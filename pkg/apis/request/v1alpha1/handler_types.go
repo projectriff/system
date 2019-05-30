@@ -58,8 +58,8 @@ type HandlerStatus struct {
 	ConfigurationName string `json:"configurationName,omitempty"`
 	RouteName         string `json:"routeName,omitempty"`
 
-	Domain  string                    `json:"domain,omitempty"`
 	Address *duckv1alpha1.Addressable `json:"address,omitempty"`
+	URL     *apis.URL                 `json:"url,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

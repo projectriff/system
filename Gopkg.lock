@@ -22,15 +22,14 @@
   version = "v0.2.0"
 
 [[projects]]
-  digest = "1:b73244f6a5ab381f938bfd2d831c57eeea884b0fab333126cc175914ec82dec5"
+  digest = "1:b6eb7c2538ec2999a072c0e372a18d7b7e3aedac249f26e159586fa5f892909f"
   name = "contrib.go.opencensus.io/exporter/stackdriver"
   packages = [
     ".",
     "monitoredresource",
   ]
   pruneopts = "NUT"
-  revision = "2b7f4fc93daf5ec3048fa4fc1c15573466711a17"
-  version = "v0.8.0"
+  revision = "c06c82c832edca4eaf7b0241bd655560a1be0346"
 
 [[projects]]
   digest = "1:336d2b31a1335b16b2d9f639c17d4d6c0d7c38852055e80434baf9f80fa7a87f"
@@ -110,11 +109,12 @@
   revision = "4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9"
 
 [[projects]]
-  digest = "1:65b0d980b428a6ad4425f2df4cd5410edd81f044cf527bd1c345368444649e58"
+  digest = "1:7b306d2c6d792f8e71bf123669ee967cdeec633ca8944c627b50db13cc36c5ec"
   name = "github.com/census-instrumentation/opencensus-proto"
   packages = [
     "gen-go/agent/common/v1",
     "gen-go/agent/trace/v1",
+    "gen-go/metrics/v1",
     "gen-go/resource/v1",
     "gen-go/trace/v1",
   ]
@@ -216,21 +216,22 @@
   revision = "e89373fe6b4a7413d7acd6da1725b83ef713e6e4"
 
 [[projects]]
-  digest = "1:d2754cafcab0d22c13541618a8029a70a8959eb3525ff201fe971637e2274cd0"
+  digest = "1:010d46ea3c1e730897e53058d1013a963f3f987675dda87df64f891b945281db"
   name = "github.com/google/go-cmp"
   packages = [
     "cmp",
     "cmp/cmpopts",
     "cmp/internal/diff",
+    "cmp/internal/flags",
     "cmp/internal/function",
     "cmp/internal/value",
   ]
   pruneopts = "NUT"
-  revision = "3af367b6b30c263d47e8895973edcca9a49cf029"
-  version = "v0.2.0"
+  revision = "6f77996f0c42f7b84e5a2b252227263f93432e9b"
+  version = "v0.3.0"
 
 [[projects]]
-  digest = "1:d7bd6899e2f01d83a9b5ca04dea4a4e6b01703583a35afbb0d94cd6a559729ec"
+  digest = "1:99794f1d519d529aa784e3e8ecb647dfc2e53172ae8bc26d2b69d57ae917db38"
   name = "github.com/google/go-containerregistry"
   packages = [
     "pkg/authn",
@@ -240,12 +241,11 @@
     "pkg/v1/partial",
     "pkg/v1/remote",
     "pkg/v1/remote/transport",
-    "pkg/v1/stream",
     "pkg/v1/types",
     "pkg/v1/v1util",
   ]
   pruneopts = "NUT"
-  revision = "dbc4da98389f9d0c42eb314c2b346bf1d2a27310"
+  revision = "ec69c4a8a1bff25fcbe096fcb32c9a6543fbdccf"
 
 [[projects]]
   branch = "master"
@@ -360,16 +360,17 @@
     "pkg/client/listers/build/v1alpha1",
   ]
   pruneopts = "NUT"
-  revision = "4fc8663ff9c48a66c52684b2e4cdf06ec83117c8"
-  version = "v0.5.0"
+  revision = "002a41a30693d0a720ba34476336fc81ba299564"
+  version = "v0.6.0"
 
 [[projects]]
-  digest = "1:6f2ffa3fce8aa0511a77027db2af9d235e43857268b2c3081c1a98b34cd44465"
+  digest = "1:42bb28839182c6197e95f3e81ed59011deb7a395a6cd5b0eb62a10586a064d5d"
   name = "github.com/knative/pkg"
   packages = [
     "apis",
     "apis/duck",
     "apis/duck/v1alpha1",
+    "apis/duck/v1beta1",
     "changeset",
     "configmap",
     "controller",
@@ -380,6 +381,7 @@
     "logging/testing",
     "metrics",
     "metrics/metricskey",
+    "ptr",
     "signals",
     "system",
     "system/testing",
@@ -388,10 +390,10 @@
     "webhook",
   ]
   pruneopts = "NUT"
-  revision = "916205998db9d085aaff357221b208bc89290ea5"
+  revision = "9e0db8f0a7f47def18cf65e0859066d5e0377304"
 
 [[projects]]
-  digest = "1:94c1404fff90fb098b1a59fa7a8647360c6787c06d72a924edf6826edf6ce50b"
+  digest = "1:6abb457d4c14927801c97cc781a555e4c90a9e0dc14b0e80f0739e24e39f106e"
   name = "github.com/knative/serving"
   packages = [
     "pkg/apis/autoscaling",
@@ -401,6 +403,7 @@
     "pkg/apis/networking/v1alpha1",
     "pkg/apis/serving",
     "pkg/apis/serving/v1alpha1",
+    "pkg/apis/serving/v1beta1",
     "pkg/client/clientset/versioned",
     "pkg/client/clientset/versioned/fake",
     "pkg/client/clientset/versioned/scheme",
@@ -423,8 +426,8 @@
     "pkg/client/listers/serving/v1alpha1",
   ]
   pruneopts = "NUT"
-  revision = "98e0f5a999ba0f69c1909a676078a22e9b8b13b9"
-  version = "v0.5.2"
+  revision = "0800b94fd42981b439f6a54b0c0cbedd23e58c32"
+  version = "v0.6.0"
 
 [[projects]]
   branch = "master"
@@ -492,14 +495,6 @@
   pruneopts = "NUT"
   revision = "5f041e8faa004a95c88a202771f4cc3e991971e6"
   version = "v2.0.1"
-
-[[projects]]
-  digest = "1:5cf3f025cbee5951a4ee961de067c8a89fc95a5adabead774f82822efabab121"
-  name = "github.com/pkg/errors"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
-  version = "v0.8.0"
 
 [[projects]]
   digest = "1:7c7cfeecd2b7147bcfec48a4bf622b4879e26aec145a9e373ce51d0c23b16f6b"
@@ -1236,6 +1231,7 @@
     "github.com/knative/pkg/version",
     "github.com/knative/pkg/webhook",
     "github.com/knative/serving/pkg/apis/serving/v1alpha1",
+    "github.com/knative/serving/pkg/apis/serving/v1beta1",
     "github.com/knative/serving/pkg/client/clientset/versioned",
     "github.com/knative/serving/pkg/client/clientset/versioned/fake",
     "github.com/knative/serving/pkg/client/informers/externalversions",

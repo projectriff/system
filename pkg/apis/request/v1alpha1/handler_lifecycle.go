@@ -72,7 +72,7 @@ func (hs *HandlerStatus) MarkRouteNotOwned(name string) {
 
 func (hs *HandlerStatus) PropagateRouteStatus(rs *servingv1alpha1.RouteStatus) {
 	hs.Address = rs.Address
-	hs.Domain = rs.Domain
+	hs.URL = rs.URL
 
 	sc := rs.GetCondition(servingv1alpha1.RouteConditionReady)
 	if sc == nil {

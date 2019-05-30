@@ -19,6 +19,7 @@ package resources
 import (
 	"github.com/knative/pkg/kmeta"
 	knservingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
+	knservingv1beta1 "github.com/knative/serving/pkg/apis/serving/v1beta1"
 	requestv1alpha1 "github.com/projectriff/system/pkg/apis/request/v1alpha1"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/handler/resources/names"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,11 +37,18 @@ func MakeConfiguration(h *requestv1alpha1.Handler) (*knservingv1alpha1.Configura
 			Labels: makeLabels(h),
 		},
 		Spec: knservingv1alpha1.ConfigurationSpec{
-			RevisionTemplate: knservingv1alpha1.RevisionTemplateSpec{
+			Template: &knservingv1alpha1.RevisionTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: makeLabels(h),
+				},
 				Spec: knservingv1alpha1.RevisionSpec{
-					ServiceAccountName: h.Spec.Template.ServiceAccountName,
-					Container:          h.Spec.Template.Containers[0],
-					Volumes:            h.Spec.Template.Volumes,
+					RevisionSpec: knservingv1beta1.RevisionSpec{
+						PodSpec: knservingv1beta1.PodSpec{
+							ServiceAccountName: h.Spec.Template.ServiceAccountName,
+							Containers:         h.Spec.Template.Containers,
+							Volumes:            h.Spec.Template.Volumes,
+						},
+					},
 				},
 			},
 		},

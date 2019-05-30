@@ -53,14 +53,17 @@ func TestBuild(t *testing.T) {
 	if got, want := c.Labels[request.HandlerLabelKey], testHandlerName; got != want {
 		t.Errorf("expected %q labels got %q", want, got)
 	}
+	if diff := cmp.Diff(c.Labels, c.Spec.Template.Labels); diff != "" {
+		t.Errorf("configuration and revision template labels differ (-want, +got) = %v", diff)
+	}
 
-	if got, want := c.Spec.RevisionTemplate.Spec.ServiceAccountName, testServiceAccount; got != want {
+	if got, want := c.Spec.Template.Spec.ServiceAccountName, testServiceAccount; got != want {
 		t.Errorf("expected %q for service account got %q", want, got)
 	}
-	if got, want := c.Spec.RevisionTemplate.Spec.Container.Image, testImage; got != want {
+	if got, want := c.Spec.Template.Spec.Containers[0].Image, testImage; got != want {
 		t.Errorf("expected %q for image got %q", want, got)
 	}
-	if diff := cmp.Diff(h.Spec.Template.Volumes, c.Spec.RevisionTemplate.Spec.Volumes); diff != "" {
+	if diff := cmp.Diff(h.Spec.Template.Volumes, c.Spec.Template.Spec.Volumes); diff != "" {
 		t.Errorf("podspec volumes differ (-want, +got) = %v", diff)
 	}
 }
