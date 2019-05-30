@@ -1,0 +1,39 @@
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: projectriff
+  labels:
+    projectriff.io/release: devel
+    # Add these permissions to the "admin" and "edit" default roles.
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+    rbac.authorization.k8s.io/aggregate-to-edit: "true"
+rules:
+  - apiGroups: ["build.projectriff.io"]
+    resources: ["applications", "functions"]
+    verbs: ["get", "list", "create", "update", "delete", "patch", "watch"]
+  - apiGroups: ["request.projectriff.io"]
+    resources: ["handlers"]
+    verbs: ["get", "list", "create", "update", "delete", "patch", "watch"]
+  - apiGroups: ["stream.projectriff.io"]
+    resources: ["streams", "processors"]
+    verbs: ["get", "list", "create", "update", "delete", "patch", "watch"]
+
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: projectriff-readonly
+  labels:
+    projectriff.io/release: devel
+    # Add these permissions to the "view" default role.
+    rbac.authorization.k8s.io/aggregate-to-view: "true"
+rules:
+  - apiGroups: ["build.projectriff.io"]
+    resources: ["applications", "functions"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["request.projectriff.io"]
+    resources: ["handlers"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["stream.projectriff.io"]
+    resources: ["streams", "processors"]
+    verbs: ["get", "list", "watch"]
