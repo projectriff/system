@@ -25,13 +25,13 @@ import (
 )
 
 const (
-	FunctionConditionSucceeded                                  = duckv1alpha1.ConditionSucceeded
+	FunctionConditionReady                                      = duckv1alpha1.ConditionReady
 	FunctionConditionBuildCacheReady duckv1alpha1.ConditionType = "BuildCacheReady"
 	FunctionConditionBuildSucceeded  duckv1alpha1.ConditionType = "BuildSucceeded"
 	FunctionConditionImageResolved   duckv1alpha1.ConditionType = "ImageResolved"
 )
 
-var functionCondSet = duckv1alpha1.NewBatchConditionSet(
+var functionCondSet = duckv1alpha1.NewLivingConditionSet(
 	FunctionConditionBuildCacheReady,
 	FunctionConditionBuildSucceeded,
 	FunctionConditionImageResolved,

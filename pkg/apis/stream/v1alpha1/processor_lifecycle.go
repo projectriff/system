@@ -55,7 +55,7 @@ func (ps *ProcessorStatus) MarkFunctionNotFound(name string) {
 func (ps *ProcessorStatus) PropagateFunctionStatus(fs *buildv1alpha1.FunctionStatus) {
 	ps.FunctionImage = fs.LatestImage
 
-	sc := fs.GetCondition(buildv1alpha1.FunctionConditionSucceeded)
+	sc := fs.GetCondition(buildv1alpha1.FunctionConditionReady)
 	if sc == nil {
 		return
 	}
