@@ -37,8 +37,16 @@ var applicationCondSet = duckv1alpha1.NewLivingConditionSet(
 	ApplicationConditionImageResolved,
 )
 
+func (as *ApplicationStatus) GetObservedGeneration() int64 {
+	return as.ObservedGeneration
+}
+
 func (as *ApplicationStatus) IsReady() bool {
 	return applicationCondSet.Manage(as).IsHappy()
+}
+
+func (*ApplicationStatus) GetReadyConditionType() duckv1alpha1.ConditionType {
+	return ApplicationConditionReady
 }
 
 func (as *ApplicationStatus) GetCondition(t duckv1alpha1.ConditionType) *duckv1alpha1.Condition {

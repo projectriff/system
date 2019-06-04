@@ -17,9 +17,10 @@
 package v1alpha1
 
 import (
-	"github.com/knative/pkg/apis"
+	knapis "github.com/knative/pkg/apis"
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	"github.com/knative/pkg/kmeta"
+	"github.com/projectriff/system/pkg/apis"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -37,9 +38,10 @@ type Handler struct {
 }
 
 var (
-	_ apis.Validatable   = (*Handler)(nil)
-	_ apis.Defaultable   = (*Handler)(nil)
+	_ knapis.Validatable = (*Handler)(nil)
+	_ knapis.Defaultable = (*Handler)(nil)
 	_ kmeta.OwnerRefable = (*Handler)(nil)
+	_ apis.Object        = (*Handler)(nil)
 )
 
 type HandlerSpec struct {
@@ -59,7 +61,7 @@ type HandlerStatus struct {
 	RouteName         string `json:"routeName,omitempty"`
 
 	Address *duckv1alpha1.Addressable `json:"address,omitempty"`
-	URL     *apis.URL                 `json:"url,omitempty"`
+	URL     *knapis.URL               `json:"url,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -73,4 +75,8 @@ type HandlerList struct {
 
 func (*Handler) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("Handler")
+}
+
+func (h *Handler) GetStatus() apis.Status {
+	return &h.Status
 }

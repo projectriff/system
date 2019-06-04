@@ -33,8 +33,16 @@ var handlerCondSet = duckv1alpha1.NewLivingConditionSet(
 	HandlerConditionRouteReady,
 )
 
+func (hs *HandlerStatus) GetObservedGeneration() int64 {
+	return hs.ObservedGeneration
+}
+
 func (hs *HandlerStatus) IsReady() bool {
 	return handlerCondSet.Manage(hs).IsHappy()
+}
+
+func (*HandlerStatus) GetReadyConditionType() duckv1alpha1.ConditionType {
+	return HandlerConditionReady
 }
 
 func (hs *HandlerStatus) GetCondition(t duckv1alpha1.ConditionType) *duckv1alpha1.Condition {

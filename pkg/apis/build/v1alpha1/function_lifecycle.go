@@ -37,8 +37,16 @@ var functionCondSet = duckv1alpha1.NewLivingConditionSet(
 	FunctionConditionImageResolved,
 )
 
+func (fs *FunctionStatus) GetObservedGeneration() int64 {
+	return fs.ObservedGeneration
+}
+
 func (fs *FunctionStatus) IsReady() bool {
 	return functionCondSet.Manage(fs).IsHappy()
+}
+
+func (*FunctionStatus) GetReadyConditionType() duckv1alpha1.ConditionType {
+	return FunctionConditionReady
 }
 
 func (fs *FunctionStatus) GetCondition(t duckv1alpha1.ConditionType) *duckv1alpha1.Condition {

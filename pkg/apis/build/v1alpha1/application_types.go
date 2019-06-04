@@ -17,9 +17,10 @@
 package v1alpha1
 
 import (
-	"github.com/knative/pkg/apis"
+	knapis "github.com/knative/pkg/apis"
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	"github.com/knative/pkg/kmeta"
+	"github.com/projectriff/system/pkg/apis"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -37,15 +38,12 @@ type Application struct {
 }
 
 var (
-	_ apis.Validatable   = (*Application)(nil)
-	_ apis.Defaultable   = (*Application)(nil)
+	_ knapis.Validatable = (*Application)(nil)
+	_ knapis.Defaultable = (*Application)(nil)
 	_ kmeta.OwnerRefable = (*Application)(nil)
+	_ apis.Object        = (*Application)(nil)
 	_ ImageResource      = (*Application)(nil)
 )
-
-func (a *Application) GetImage() string {
-	return a.Spec.Image
-}
 
 type ApplicationSpec struct {
 	Image     string             `json:"image"`
@@ -70,4 +68,12 @@ type ApplicationList struct {
 
 func (*Application) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("Application")
+}
+
+func (a *Application) GetStatus() apis.Status {
+	return &a.Status
+}
+
+func (a *Application) GetImage() string {
+	return a.Spec.Image
 }

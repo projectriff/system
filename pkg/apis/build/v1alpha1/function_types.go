@@ -17,9 +17,10 @@
 package v1alpha1
 
 import (
-	"github.com/knative/pkg/apis"
+	knapis "github.com/knative/pkg/apis"
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	"github.com/knative/pkg/kmeta"
+	"github.com/projectriff/system/pkg/apis"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -37,15 +38,12 @@ type Function struct {
 }
 
 var (
-	_ apis.Validatable   = (*Function)(nil)
-	_ apis.Defaultable   = (*Function)(nil)
+	_ knapis.Validatable = (*Function)(nil)
+	_ knapis.Defaultable = (*Function)(nil)
 	_ kmeta.OwnerRefable = (*Function)(nil)
+	_ apis.Object        = (*Function)(nil)
 	_ ImageResource      = (*Function)(nil)
 )
-
-func (f *Function) GetImage() string {
-	return f.Spec.Image
-}
 
 type FunctionSpec struct {
 	Image     string             `json:"image"`
@@ -73,4 +71,12 @@ type FunctionList struct {
 
 func (*Function) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("Function")
+}
+
+func (f *Function) GetStatus() apis.Status {
+	return &f.Status
+}
+
+func (f *Function) GetImage() string {
+	return f.Spec.Image
 }
