@@ -19,7 +19,10 @@ package v1alpha1
 import (
 	"fmt"
 
+	knapis "github.com/knative/pkg/apis"
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
+	"github.com/knative/pkg/kmeta"
+	"github.com/projectriff/system/pkg/apis"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -34,6 +37,13 @@ type Stream struct {
 	Spec   StreamSpec   `json:"spec"`
 	Status StreamStatus `json:"status"`
 }
+
+var (
+	_ knapis.Validatable = (*Stream)(nil)
+	_ knapis.Defaultable = (*Stream)(nil)
+	_ kmeta.OwnerRefable = (*Stream)(nil)
+	_ apis.Object        = (*Stream)(nil)
+)
 
 type StreamSpec struct {
 	Provider string `json:"provider"`
@@ -65,4 +75,8 @@ type StreamList struct {
 
 func (*Stream) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("Stream")
+}
+
+func (s *Stream) GetStatus() apis.Status {
+	return &s.Status
 }

@@ -25,24 +25,34 @@ const (
 	StreamConditionResourceAvailable duckv1alpha1.ConditionType = "ResourceAvailable"
 )
 
-var streamCondSet = duckv1alpha1.NewLivingConditionSet(StreamConditionResourceAvailable)
+var streamCondSet = duckv1alpha1.NewLivingConditionSet(
+	StreamConditionResourceAvailable,
+)
 
-func (status *StreamStatus) IsReady() bool {
-	return streamCondSet.Manage(status).IsHappy()
+func (ss *StreamStatus) GetObservedGeneration() int64 {
+	return ss.ObservedGeneration
 }
 
-func (status *StreamStatus) GetCondition(t duckv1alpha1.ConditionType) *duckv1alpha1.Condition {
-	return streamCondSet.Manage(status).GetCondition(t)
+func (ss *StreamStatus) IsReady() bool {
+	return streamCondSet.Manage(ss).IsHappy()
 }
 
-func (status *StreamStatus) InitializeConditions() {
-	streamCondSet.Manage(status).InitializeConditions()
+func (*StreamStatus) GetReadyConditionType() duckv1alpha1.ConditionType {
+	return StreamConditionReady
 }
 
-func (status *StreamStatus) MarkStreamProvisioned() {
-	streamCondSet.Manage(status).MarkTrue(StreamConditionReady)
+func (ss *StreamStatus) GetCondition(t duckv1alpha1.ConditionType) *duckv1alpha1.Condition {
+	return streamCondSet.Manage(ss).GetCondition(t)
 }
 
-func (status *StreamStatus) MarkStreamProvisionFailed(message string) {
-	streamCondSet.Manage(status).MarkFalse(StreamConditionReady, "ProvisionFailed", message)
+func (ss *StreamStatus) InitializeConditions() {
+	streamCondSet.Manage(ss).InitializeConditions()
+}
+
+func (ss *StreamStatus) MarkStreamProvisioned() {
+	streamCondSet.Manage(ss).MarkTrue(StreamConditionReady)
+}
+
+func (ss *StreamStatus) MarkStreamProvisionFailed(message string) {
+	streamCondSet.Manage(ss).MarkFalse(StreamConditionReady, "ProvisionFailed", message)
 }

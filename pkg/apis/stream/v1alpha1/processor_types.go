@@ -17,7 +17,10 @@
 package v1alpha1
 
 import (
+	knapis "github.com/knative/pkg/apis"
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
+	"github.com/knative/pkg/kmeta"
+	"github.com/projectriff/system/pkg/apis"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -32,6 +35,13 @@ type Processor struct {
 	Spec   ProcessorSpec   `json:"spec"`
 	Status ProcessorStatus `json:"status"`
 }
+
+var (
+	_ knapis.Validatable = (*Processor)(nil)
+	_ knapis.Defaultable = (*Processor)(nil)
+	_ kmeta.OwnerRefable = (*Processor)(nil)
+	_ apis.Object        = (*Processor)(nil)
+)
 
 type ProcessorSpec struct {
 	FunctionRef string   `json:"functionRef"`
@@ -59,4 +69,8 @@ type ProcessorList struct {
 
 func (*Processor) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("Processor")
+}
+
+func (p *Processor) GetStatus() apis.Status {
+	return &p.Status
 }

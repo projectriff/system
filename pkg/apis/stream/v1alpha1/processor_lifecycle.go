@@ -35,8 +35,16 @@ var processorCondSet = duckv1alpha1.NewLivingConditionSet(
 	ProcessorConditionDeploymentReady,
 )
 
+func (ps *ProcessorStatus) GetObservedGeneration() int64 {
+	return ps.ObservedGeneration
+}
+
 func (ps *ProcessorStatus) IsReady() bool {
 	return processorCondSet.Manage(ps).IsHappy()
+}
+
+func (*ProcessorStatus) GetReadyConditionType() duckv1alpha1.ConditionType {
+	return ProcessorConditionReady
 }
 
 func (ps *ProcessorStatus) GetCondition(t duckv1alpha1.ConditionType) *duckv1alpha1.Condition {
