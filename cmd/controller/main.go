@@ -172,6 +172,8 @@ func main() {
 			secretInformer,
 
 			serviceaccountInformer,
+			applicationInformer,
+			functionInformer,
 		),
 		builder.NewController(
 			opt,
