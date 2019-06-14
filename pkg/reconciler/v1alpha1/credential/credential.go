@@ -25,6 +25,8 @@ import (
 	"github.com/knative/pkg/kmp"
 	"github.com/knative/pkg/logging"
 	"github.com/projectriff/system/pkg/apis/build"
+	buildinformers "github.com/projectriff/system/pkg/client/informers/externalversions/build/v1alpha1"
+	buildlisters "github.com/projectriff/system/pkg/client/listers/build/v1alpha1"
 	"github.com/projectriff/system/pkg/reconciler"
 	"github.com/projectriff/system/pkg/reconciler/digest"
 	"go.uber.org/zap"
@@ -55,6 +57,8 @@ type Reconciler struct {
 	// listers index properties about resources
 	secretLister         corelisters.SecretLister
 	serviceAccountLister corelisters.ServiceAccountLister
+	applicationLister    buildlisters.ApplicationLister
+	functionLister       buildlisters.FunctionLister
 
 	resolver digest.Resolver
 }
@@ -68,12 +72,16 @@ func NewController(
 	opt reconciler.Options,
 	secretInformer coreinformers.SecretInformer,
 	serviceAccountInformer coreinformers.ServiceAccountInformer,
+	applicationInformer buildinformers.ApplicationInformer,
+	functionInformer buildinformers.FunctionInformer,
 ) *controller.Impl {
 
 	c := &Reconciler{
 		Base:                 reconciler.NewBase(opt, controllerAgentName),
 		secretLister:         secretInformer.Lister(),
 		serviceAccountLister: serviceAccountInformer.Lister(),
+		applicationLister:    applicationInformer.Lister(),
+		functionLister:       functionInformer.Lister(),
 
 		resolver: digest.NewDefaultResolver(opt),
 	}
@@ -99,6 +107,28 @@ func NewController(
 			return meta.GetName() == riffBuildServiceAccount
 		},
 		Handler: reconciler.Handler(impl.Enqueue),
+	})
+
+	// Watch for new builds. If the registry is unauthenticated, there may not be a
+	// credential to trigger the creation of the riff-build service account, but it
+	// still needs to exist for builds to run.
+	applicationInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			meta, err := meta.Accessor(obj)
+			if err != nil {
+				return
+			}
+			impl.EnqueueKey(meta.GetNamespace() + "/" + riffBuildServiceAccount)
+		},
+	})
+	functionInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			meta, err := meta.Accessor(obj)
+			if err != nil {
+				return
+			}
+			impl.EnqueueKey(meta.GetNamespace() + "/" + riffBuildServiceAccount)
+		},
 	})
 
 	return impl
@@ -156,14 +186,18 @@ func (c *Reconciler) reconcile(ctx context.Context, serviceAccount *corev1.Servi
 	serviceAccountName := riffBuildServiceAccount
 
 	if serviceAccount == nil {
-		serviceAccount, err := c.createServiceAccount(secretNames, namespace)
-		if err != nil {
-			logger.Errorf("Failed to create ServiceAccount %q: %v", serviceAccountName, err)
-			c.Recorder.Eventf(serviceAccount, corev1.EventTypeWarning, "CreationFailed", "Failed to create ServiceAccount %q: %v", serviceAccountName, err)
+		if needed, err := c.isServiceAccountNeeded(secretNames, namespace); err != nil {
 			return serviceAccount, err
-		}
-		if serviceAccount != nil {
-			c.Recorder.Eventf(serviceAccount, corev1.EventTypeNormal, "Created", "Created ServiceAccount %q", serviceAccountName)
+		} else if needed {
+			serviceAccount, err := c.createServiceAccount(secretNames, namespace)
+			if err != nil {
+				logger.Errorf("Failed to create ServiceAccount %q: %v", serviceAccountName, err)
+				c.Recorder.Eventf(serviceAccount, corev1.EventTypeWarning, "CreationFailed", "Failed to create ServiceAccount %q: %v", serviceAccountName, err)
+				return serviceAccount, err
+			}
+			if serviceAccount != nil {
+				c.Recorder.Eventf(serviceAccount, corev1.EventTypeNormal, "Created", "Created ServiceAccount %q", serviceAccountName)
+			}
 		}
 	} else {
 		serviceAccount, err := c.reconcileServiceAccount(ctx, serviceAccount, secretNames)
@@ -212,6 +246,23 @@ func (c *Reconciler) reconcileServiceAccount(ctx context.Context, existingServic
 	logger.Infof("Reconciling build cache diff (-desired, +observed): %s", diff)
 
 	return c.KubeClientSet.CoreV1().ServiceAccounts(serviceAccount.Namespace).Update(serviceAccount)
+}
+
+func (c *Reconciler) isServiceAccountNeeded(secretNames sets.String, namespace string) (bool, error) {
+	if secretNames.Len() != 0 {
+		return true, nil
+	}
+	if items, err := c.applicationLister.Applications(namespace).List(labels.Everything()); err != nil {
+		return false, err
+	} else if len(items) != 0 {
+		return true, nil
+	}
+	if items, err := c.functionLister.Functions(namespace).List(labels.Everything()); err != nil {
+		return false, err
+	} else if len(items) != 0 {
+		return true, nil
+	}
+	return false, nil
 }
 
 func (c *Reconciler) createServiceAccount(secretNames sets.String, namespace string) (*corev1.ServiceAccount, error) {
