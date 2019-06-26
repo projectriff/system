@@ -231,7 +231,7 @@
   version = "v0.3.0"
 
 [[projects]]
-  digest = "1:99794f1d519d529aa784e3e8ecb647dfc2e53172ae8bc26d2b69d57ae917db38"
+  digest = "1:f2bafe0d7a699d2eff955fb9a64c9ebe8ef82db7d6d91659d0f4eb0c0059788b"
   name = "github.com/google/go-containerregistry"
   packages = [
     "pkg/authn",
@@ -245,7 +245,7 @@
     "pkg/v1/v1util",
   ]
   pruneopts = "NUT"
-  revision = "ec69c4a8a1bff25fcbe096fcb32c9a6543fbdccf"
+  revision = "abf9ef06abd9f532944e28e8942644ea4b710a40"
 
 [[projects]]
   branch = "master"
@@ -402,7 +402,7 @@
   revision = "d82505e6c5b4ce46562d6c242be0e706791f35bd"
 
 [[projects]]
-  digest = "1:6abb457d4c14927801c97cc781a555e4c90a9e0dc14b0e80f0739e24e39f106e"
+  digest = "1:a99f646800de7ab3c6615051a750336dde7711ad77e00ac9d9680ebaca105241"
   name = "github.com/knative/serving"
   packages = [
     "pkg/apis/autoscaling",
@@ -422,6 +422,8 @@
     "pkg/client/clientset/versioned/typed/networking/v1alpha1/fake",
     "pkg/client/clientset/versioned/typed/serving/v1alpha1",
     "pkg/client/clientset/versioned/typed/serving/v1alpha1/fake",
+    "pkg/client/clientset/versioned/typed/serving/v1beta1",
+    "pkg/client/clientset/versioned/typed/serving/v1beta1/fake",
     "pkg/client/informers/externalversions",
     "pkg/client/informers/externalversions/autoscaling",
     "pkg/client/informers/externalversions/autoscaling/v1alpha1",
@@ -430,13 +432,15 @@
     "pkg/client/informers/externalversions/networking/v1alpha1",
     "pkg/client/informers/externalversions/serving",
     "pkg/client/informers/externalversions/serving/v1alpha1",
+    "pkg/client/informers/externalversions/serving/v1beta1",
     "pkg/client/listers/autoscaling/v1alpha1",
     "pkg/client/listers/networking/v1alpha1",
     "pkg/client/listers/serving/v1alpha1",
+    "pkg/client/listers/serving/v1beta1",
   ]
   pruneopts = "NUT"
-  revision = "0800b94fd42981b439f6a54b0c0cbedd23e58c32"
-  version = "v0.6.0"
+  revision = "cb5c1810f2690efa0c434bc81aab3a1d45df497f"
+  version = "v0.7.0"
 
 [[projects]]
   branch = "master"
