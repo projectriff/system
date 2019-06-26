@@ -67,7 +67,7 @@ func NewController(
 		Base:         reconciler.NewBase(opt, controllerAgentName),
 		streamLister: streamInformer.Lister(),
 	}
-	impl := controller.NewImpl(c, c.Logger, ReconcilerName, reconciler.MustNewStatsReporter(ReconcilerName, c.Logger))
+	impl := controller.NewImpl(c, c.Logger, ReconcilerName)
 
 	c.Logger.Info("Setting up event handlers")
 	streamInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{

@@ -92,7 +92,7 @@ func NewController(
 
 		resolver: digest.NewDefaultResolver(opt),
 	}
-	impl := controller.NewImpl(c, c.Logger, ReconcilerName, reconciler.MustNewStatsReporter(ReconcilerName, c.Logger))
+	impl := controller.NewImpl(c, c.Logger, ReconcilerName)
 
 	c.Logger.Info("Setting up event handlers")
 	applicationInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
