@@ -20,9 +20,9 @@ import (
 	knbuildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	fakeknbuildclientset "github.com/knative/build/pkg/client/clientset/versioned/fake"
 	knbuildv1alpha1listers "github.com/knative/build/pkg/client/listers/build/v1alpha1"
-	knservingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
+	knservingv1beta1 "github.com/knative/serving/pkg/apis/serving/v1beta1"
 	fakeknservingclientset "github.com/knative/serving/pkg/client/clientset/versioned/fake"
-	knservingv1alpha1listers "github.com/knative/serving/pkg/client/listers/serving/v1alpha1"
+	knservingv1beta1listers "github.com/knative/serving/pkg/client/listers/serving/v1beta1"
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	requestv1alpha1 "github.com/projectriff/system/pkg/apis/request/v1alpha1"
 	streamv1alpha1 "github.com/projectriff/system/pkg/apis/stream/v1alpha1"
@@ -115,12 +115,12 @@ func (l *Listers) GetKnClusterBuildTemplateLister() knbuildv1alpha1listers.Clust
 	return knbuildv1alpha1listers.NewClusterBuildTemplateLister(l.indexerFor(&knbuildv1alpha1.ClusterBuildTemplate{}))
 }
 
-func (l *Listers) GetKnConfigurationLister() knservingv1alpha1listers.ConfigurationLister {
-	return knservingv1alpha1listers.NewConfigurationLister(l.indexerFor(&knservingv1alpha1.Configuration{}))
+func (l *Listers) GetKnConfigurationLister() knservingv1beta1listers.ConfigurationLister {
+	return knservingv1beta1listers.NewConfigurationLister(l.indexerFor(&knservingv1beta1.Configuration{}))
 }
 
-func (l *Listers) GetKnRouteLister() knservingv1alpha1listers.RouteLister {
-	return knservingv1alpha1listers.NewRouteLister(l.indexerFor(&knservingv1alpha1.Route{}))
+func (l *Listers) GetKnRouteLister() knservingv1beta1listers.RouteLister {
+	return knservingv1beta1listers.NewRouteLister(l.indexerFor(&knservingv1beta1.Route{}))
 }
 
 func (l *Listers) GetPersistentVolumeClaimLister() corev1listers.PersistentVolumeClaimLister {

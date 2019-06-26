@@ -17,7 +17,7 @@
 package apis
 
 import (
-	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
+	knapis "github.com/knative/pkg/apis"
 )
 
 type Object interface {
@@ -26,7 +26,7 @@ type Object interface {
 
 type Status interface {
 	IsReady() bool
-	GetCondition(t duckv1alpha1.ConditionType) *duckv1alpha1.Condition
-	GetReadyConditionType() duckv1alpha1.ConditionType
+	GetCondition(t knapis.ConditionType) *knapis.Condition
+	GetReadyConditionType() knapis.ConditionType
 	GetObservedGeneration() int64
 }

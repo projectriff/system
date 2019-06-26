@@ -18,7 +18,7 @@ package v1alpha1
 
 import (
 	knapis "github.com/knative/pkg/apis"
-	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
+	duckv1beta1 "github.com/knative/pkg/apis/duck/v1beta1"
 	"github.com/knative/pkg/kmeta"
 	"github.com/projectriff/system/pkg/apis"
 	corev1 "k8s.io/api/core/v1"
@@ -55,12 +55,12 @@ type Build struct {
 }
 
 type HandlerStatus struct {
-	duckv1alpha1.Status `json:",inline"`
+	duckv1beta1.Status `json:",inline"`
 
 	ConfigurationName string `json:"configurationName,omitempty"`
 	RouteName         string `json:"routeName,omitempty"`
 
-	Address *duckv1alpha1.Addressable `json:"address,omitempty"`
+	Address *duckv1beta1.Addressable `json:"address,omitempty"`
 	URL     *knapis.URL               `json:"url,omitempty"`
 }
 
