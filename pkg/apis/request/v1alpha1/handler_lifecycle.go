@@ -17,18 +17,18 @@
 package v1alpha1
 
 import (
-	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
+	knapis "github.com/knative/pkg/apis"
 	servingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 )
 
 const (
-	HandlerConditionReady                                         = duckv1alpha1.ConditionReady
-	HandlerConditionConfigurationReady duckv1alpha1.ConditionType = "ConfigurationReady"
-	HandlerConditionRouteReady         duckv1alpha1.ConditionType = "RouteReady"
+	HandlerConditionReady                                   = knapis.ConditionReady
+	HandlerConditionConfigurationReady knapis.ConditionType = "ConfigurationReady"
+	HandlerConditionRouteReady         knapis.ConditionType = "RouteReady"
 )
 
-var handlerCondSet = duckv1alpha1.NewLivingConditionSet(
+var handlerCondSet = knapis.NewLivingConditionSet(
 	HandlerConditionConfigurationReady,
 	HandlerConditionRouteReady,
 )
@@ -41,11 +41,11 @@ func (hs *HandlerStatus) IsReady() bool {
 	return handlerCondSet.Manage(hs).IsHappy()
 }
 
-func (*HandlerStatus) GetReadyConditionType() duckv1alpha1.ConditionType {
+func (*HandlerStatus) GetReadyConditionType() knapis.ConditionType {
 	return HandlerConditionReady
 }
 
-func (hs *HandlerStatus) GetCondition(t duckv1alpha1.ConditionType) *duckv1alpha1.Condition {
+func (hs *HandlerStatus) GetCondition(t knapis.ConditionType) *knapis.Condition {
 	return handlerCondSet.Manage(hs).GetCondition(t)
 }
 

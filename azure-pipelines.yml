@@ -40,6 +40,10 @@ steps:
   displayName: 'Build commands'
 
 - script: |
+    set -o errexit
+    set -o nounset
+    set -o pipefail
+
     go get github.com/jstemmer/go-junit-report
     go get github.com/axw/gocov/gocov
     go get github.com/AlekSi/gocov-xml
@@ -64,6 +68,10 @@ steps:
     reportDirectory: $(System.DefaultWorkingDirectory)/**/coverage
 
 - script: |
+    set -o errexit
+    set -o nounset
+    set -o pipefail
+
     # from https://cloud.google.com/sdk/docs/downloads-apt-get
     export CLOUD_SDK_REPO="cloud-sdk-$(lsb_release -c -s)"
     echo "deb http://packages.cloud.google.com/apt $CLOUD_SDK_REPO main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list

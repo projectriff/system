@@ -24,11 +24,10 @@ import (
 
 const (
 	ObservabilityConfigName = "config-observability"
-	metricsDomain           = "projectriff.io/system"
 )
 
 // UpdateExporterFromConfigMap returns a helper func that can be used to update the exporter
 // when a config map is updated
 func UpdateExporterFromConfigMap(component string, logger *zap.SugaredLogger) func(configMap *corev1.ConfigMap) {
-	return metrics.UpdateExporterFromConfigMap(metricsDomain, component, logger)
+	return metrics.UpdateExporterFromConfigMap(component, logger)
 }

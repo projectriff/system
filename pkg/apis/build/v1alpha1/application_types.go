@@ -18,7 +18,7 @@ package v1alpha1
 
 import (
 	knapis "github.com/knative/pkg/apis"
-	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
+	duckv1beta1 "github.com/knative/pkg/apis/duck/v1beta1"
 	"github.com/knative/pkg/kmeta"
 	"github.com/projectriff/system/pkg/apis"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -52,9 +52,9 @@ type ApplicationSpec struct {
 }
 
 type ApplicationStatus struct {
-	duckv1alpha1.Status `json:",inline"`
-	BuildStatus         `json:",inline"`
-	TargetImage         string `json:"targetImage,omitempty"`
+	duckv1beta1.Status `json:",inline"`
+	BuildStatus        `json:",inline"`
+	TargetImage        string `json:"targetImage,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

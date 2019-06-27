@@ -44,7 +44,7 @@ func MakeRoute(h *requestv1alpha1.Handler) (*knservingv1alpha1.Route, error) {
 		},
 		Spec: knservingv1alpha1.RouteSpec{
 			Traffic: []knservingv1alpha1.TrafficTarget{
-				knservingv1alpha1.TrafficTarget{
+				{
 					TrafficTarget: knservingv1beta1.TrafficTarget{
 						Percent:           100,
 						ConfigurationName: h.Status.ConfigurationName,

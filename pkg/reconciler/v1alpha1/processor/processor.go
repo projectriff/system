@@ -86,7 +86,7 @@ func NewController(
 		streamLister:     streamInformer.Lister(),
 		deploymentLister: deploymentInformer.Lister(),
 	}
-	impl := controller.NewImpl(c, c.Logger, ReconcilerName, reconciler.MustNewStatsReporter(ReconcilerName, c.Logger))
+	impl := controller.NewImpl(c, c.Logger, ReconcilerName)
 
 	c.Logger.Info("Setting up event handlers")
 	processorInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))

@@ -20,18 +20,18 @@ import (
 	"fmt"
 
 	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
-	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
+	knapis "github.com/knative/pkg/apis"
 	corev1 "k8s.io/api/core/v1"
 )
 
 const (
-	FunctionConditionReady                                      = duckv1alpha1.ConditionReady
-	FunctionConditionBuildCacheReady duckv1alpha1.ConditionType = "BuildCacheReady"
-	FunctionConditionBuildSucceeded  duckv1alpha1.ConditionType = "BuildSucceeded"
-	FunctionConditionImageResolved   duckv1alpha1.ConditionType = "ImageResolved"
+	FunctionConditionReady                                = knapis.ConditionReady
+	FunctionConditionBuildCacheReady knapis.ConditionType = "BuildCacheReady"
+	FunctionConditionBuildSucceeded  knapis.ConditionType = "BuildSucceeded"
+	FunctionConditionImageResolved   knapis.ConditionType = "ImageResolved"
 )
 
-var functionCondSet = duckv1alpha1.NewLivingConditionSet(
+var functionCondSet = knapis.NewLivingConditionSet(
 	FunctionConditionBuildCacheReady,
 	FunctionConditionBuildSucceeded,
 	FunctionConditionImageResolved,
@@ -45,11 +45,11 @@ func (fs *FunctionStatus) IsReady() bool {
 	return functionCondSet.Manage(fs).IsHappy()
 }
 
-func (*FunctionStatus) GetReadyConditionType() duckv1alpha1.ConditionType {
+func (*FunctionStatus) GetReadyConditionType() knapis.ConditionType {
 	return FunctionConditionReady
 }
 
-func (fs *FunctionStatus) GetCondition(t duckv1alpha1.ConditionType) *duckv1alpha1.Condition {
+func (fs *FunctionStatus) GetCondition(t knapis.ConditionType) *knapis.Condition {
 	return functionCondSet.Manage(fs).GetCondition(t)
 }
 

@@ -19,16 +19,15 @@ required = [
 
 [[constraint]]
   name = "github.com/knative/build"
-  version = "v0.6.0"
+  version = "v0.7.0"
 
 [[constraint]]
   name = "github.com/knative/serving"
-  version = "v0.6.0"
+  version = "v0.7.0"
 
 [[override]]
   name = "github.com/knative/pkg"
-  # HEAD as of 2919-05-11
-  revision = "9e0db8f0a7f47def18cf65e0859066d5e0377304"
+  branch = "release-0.7"
 
 [[override]]
   name = "go.uber.org/zap"
@@ -36,8 +35,8 @@ required = [
 
 [[constraint]]
   name = "github.com/google/go-containerregistry"
-  # HEAD as of 2019-04-10
-  revision = "ec69c4a8a1bff25fcbe096fcb32c9a6543fbdccf"
+  # HEAD as of 2019-06-19
+  revision = "abf9ef06abd9f532944e28e8942644ea4b710a40"
 
 [[override]]
   name = "contrib.go.opencensus.io/exporter/stackdriver"

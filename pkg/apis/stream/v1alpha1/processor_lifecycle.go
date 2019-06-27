@@ -17,20 +17,20 @@
 package v1alpha1
 
 import (
-	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
+	knapis "github.com/knative/pkg/apis"
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 
 const (
-	ProcessorConditionReady = duckv1alpha1.ConditionReady
+	ProcessorConditionReady = knapis.ConditionReady
 	// TODO add aggregated streams ready status
-	ProcessorConditionFunctionReady   duckv1alpha1.ConditionType = "FunctionReady"
-	ProcessorConditionDeploymentReady duckv1alpha1.ConditionType = "DeploymentReady"
+	ProcessorConditionFunctionReady   knapis.ConditionType = "FunctionReady"
+	ProcessorConditionDeploymentReady knapis.ConditionType = "DeploymentReady"
 )
 
-var processorCondSet = duckv1alpha1.NewLivingConditionSet(
+var processorCondSet = knapis.NewLivingConditionSet(
 	ProcessorConditionFunctionReady,
 	ProcessorConditionDeploymentReady,
 )
@@ -43,11 +43,11 @@ func (ps *ProcessorStatus) IsReady() bool {
 	return processorCondSet.Manage(ps).IsHappy()
 }
 
-func (*ProcessorStatus) GetReadyConditionType() duckv1alpha1.ConditionType {
+func (*ProcessorStatus) GetReadyConditionType() knapis.ConditionType {
 	return ProcessorConditionReady
 }
 
-func (ps *ProcessorStatus) GetCondition(t duckv1alpha1.ConditionType) *duckv1alpha1.Condition {
+func (ps *ProcessorStatus) GetCondition(t knapis.ConditionType) *knapis.Condition {
 	return processorCondSet.Manage(ps).GetCondition(t)
 }
 

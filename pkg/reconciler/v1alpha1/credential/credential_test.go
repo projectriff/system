@@ -21,6 +21,9 @@ import (
 
 	"github.com/knative/pkg/controller"
 	"github.com/projectriff/system/pkg/apis/build"
+	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
+	fakeprojectriffclientset "github.com/projectriff/system/pkg/client/clientset/versioned/fake"
+	projectriffinformers "github.com/projectriff/system/pkg/client/informers/externalversions"
 	"github.com/projectriff/system/pkg/reconciler"
 	. "github.com/projectriff/system/pkg/reconciler/v1alpha1/testing"
 	corev1 "k8s.io/api/core/v1"
@@ -38,24 +41,8 @@ func TestReconcile(t *testing.T) {
 		Name: "key not found",
 		Key:  "foo/not-found",
 	}, {
-		Name:    "create service account",
-		Key:     "default/riff-build",
-		Objects: []runtime.Object{},
-		WantCreates: []metav1.Object{
-			&corev1.ServiceAccount{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "default",
-					Name:      "riff-build",
-					Annotations: map[string]string{
-						build.CredentialsAnnotationKey: "",
-					},
-				},
-				Secrets: []corev1.ObjectReference{},
-			},
-		},
-		WantEvents: []string{
-			`Normal Created Created ServiceAccount "riff-build"`,
-		},
+		Name: "skips creating service account by default",
+		Key:  "default/riff-build",
 	}, {
 		Name: "create service account with credential",
 		Key:  "default/riff-build",
@@ -88,13 +75,13 @@ func TestReconcile(t *testing.T) {
 			`Normal Created Created ServiceAccount "riff-build"`,
 		},
 	}, {
-		Name: "create service account ignoring non-credential secrets",
+		Name: "create service account with application",
 		Key:  "default/riff-build",
 		Objects: []runtime.Object{
-			&corev1.Secret{
+			&buildv1alpha1.Application{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "default",
-					Name:      "my-secret",
+					Name:      "my-application",
 				},
 			},
 		},
@@ -112,6 +99,43 @@ func TestReconcile(t *testing.T) {
 		},
 		WantEvents: []string{
 			`Normal Created Created ServiceAccount "riff-build"`,
+		},
+	}, {
+		Name: "create service account with function",
+		Key:  "default/riff-build",
+		Objects: []runtime.Object{
+			&buildv1alpha1.Function{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "default",
+					Name:      "my-function",
+				},
+			},
+		},
+		WantCreates: []metav1.Object{
+			&corev1.ServiceAccount{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "default",
+					Name:      "riff-build",
+					Annotations: map[string]string{
+						build.CredentialsAnnotationKey: "",
+					},
+				},
+				Secrets: []corev1.ObjectReference{},
+			},
+		},
+		WantEvents: []string{
+			`Normal Created Created ServiceAccount "riff-build"`,
+		},
+	}, {
+		Name: "create service account ignoring non-credential secrets",
+		Key:  "default/riff-build",
+		Objects: []runtime.Object{
+			&corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "default",
+					Name:      "my-secret",
+				},
+			},
 		},
 	}, {
 		Name: "add credential",
@@ -269,6 +293,8 @@ func TestReconcile(t *testing.T) {
 			Base:                 reconciler.NewBase(opt, controllerAgentName),
 			serviceAccountLister: listers.GetServiceAccountLister(),
 			secretLister:         listers.GetSecretLister(),
+			applicationLister:    listers.GetApplicationLister(),
+			functionLister:       listers.GetFunctionLister(),
 		}
 	}))
 }
@@ -277,14 +303,19 @@ func TestNew(t *testing.T) {
 	defer ClearAllLoggers()
 	kubeClient := fakekubeclientset.NewSimpleClientset()
 	kubeInformer := kubeinformers.NewSharedInformerFactory(kubeClient, 0)
+	projectriffClient := fakeprojectriffclientset.NewSimpleClientset()
+	projectriffInformer := projectriffinformers.NewSharedInformerFactory(projectriffClient, 0)
 
 	secretInformer := kubeInformer.Core().V1().Secrets()
 	serviceAccountInformer := kubeInformer.Core().V1().ServiceAccounts()
 
+	applicationInformer := projectriffInformer.Build().V1alpha1().Applications()
+	functionInformer := projectriffInformer.Build().V1alpha1().Functions()
+
 	c := NewController(reconciler.Options{
 		KubeClientSet: kubeClient,
 		Logger:        TestLogger(t),
-	}, secretInformer, serviceAccountInformer)
+	}, secretInformer, serviceAccountInformer, applicationInformer, functionInformer)
 
 	if c == nil {
 		t.Fatal("Expected NewController to return a non-nil value")

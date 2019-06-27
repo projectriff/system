@@ -231,7 +231,7 @@
   version = "v0.3.0"
 
 [[projects]]
-  digest = "1:99794f1d519d529aa784e3e8ecb647dfc2e53172ae8bc26d2b69d57ae917db38"
+  digest = "1:f2bafe0d7a699d2eff955fb9a64c9ebe8ef82db7d6d91659d0f4eb0c0059788b"
   name = "github.com/google/go-containerregistry"
   packages = [
     "pkg/authn",
@@ -245,7 +245,7 @@
     "pkg/v1/v1util",
   ]
   pruneopts = "NUT"
-  revision = "ec69c4a8a1bff25fcbe096fcb32c9a6543fbdccf"
+  revision = "abf9ef06abd9f532944e28e8942644ea4b710a40"
 
 [[projects]]
   branch = "master"
@@ -269,6 +269,14 @@
   ]
   pruneopts = "NUT"
   revision = "e979a0b10eebe748549c702a25e997c556349da6"
+
+[[projects]]
+  digest = "1:ab3ec1fe3e39bac4b3ab63390767766622be35b7cab03f47f787f9ec60522a53"
+  name = "github.com/google/uuid"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "0cd6bf5da1e1c83f8b45653022c74f71af0538a4"
+  version = "v1.1.1"
 
 [[projects]]
   digest = "1:fb9f5147a9d6fc69057d05b0739bcd79562c55db143c3bdacfe1c9c6129461f6"
@@ -343,7 +351,7 @@
   revision = "f2b4162afba35581b6d4a50d3b8f34e33c144682"
 
 [[projects]]
-  digest = "1:2feaa66dd68975cc15637f4c39f2452d714e1f2feb8cfca5225514d4b1a8005d"
+  digest = "1:3a5f74d96cee6e094702734970ec83ba30779cf0d90bcd5dbe5746b09bceb1c3"
   name = "github.com/knative/build"
   packages = [
     "pkg/apis/build",
@@ -360,11 +368,12 @@
     "pkg/client/listers/build/v1alpha1",
   ]
   pruneopts = "NUT"
-  revision = "002a41a30693d0a720ba34476336fc81ba299564"
-  version = "v0.6.0"
+  revision = "0ff6554186913895288555b640b6af03173a2495"
+  version = "v0.7.0"
 
 [[projects]]
-  digest = "1:42bb28839182c6197e95f3e81ed59011deb7a395a6cd5b0eb62a10586a064d5d"
+  branch = "release-0.7"
+  digest = "1:0ef2c09b5cf6c19a00b3b00f961a0ba73c76f5cca9420577d56867d4997b01d2"
   name = "github.com/knative/pkg"
   packages = [
     "apis",
@@ -390,10 +399,10 @@
     "webhook",
   ]
   pruneopts = "NUT"
-  revision = "9e0db8f0a7f47def18cf65e0859066d5e0377304"
+  revision = "d82505e6c5b4ce46562d6c242be0e706791f35bd"
 
 [[projects]]
-  digest = "1:6abb457d4c14927801c97cc781a555e4c90a9e0dc14b0e80f0739e24e39f106e"
+  digest = "1:a99f646800de7ab3c6615051a750336dde7711ad77e00ac9d9680ebaca105241"
   name = "github.com/knative/serving"
   packages = [
     "pkg/apis/autoscaling",
@@ -413,6 +422,8 @@
     "pkg/client/clientset/versioned/typed/networking/v1alpha1/fake",
     "pkg/client/clientset/versioned/typed/serving/v1alpha1",
     "pkg/client/clientset/versioned/typed/serving/v1alpha1/fake",
+    "pkg/client/clientset/versioned/typed/serving/v1beta1",
+    "pkg/client/clientset/versioned/typed/serving/v1beta1/fake",
     "pkg/client/informers/externalversions",
     "pkg/client/informers/externalversions/autoscaling",
     "pkg/client/informers/externalversions/autoscaling/v1alpha1",
@@ -421,13 +432,15 @@
     "pkg/client/informers/externalversions/networking/v1alpha1",
     "pkg/client/informers/externalversions/serving",
     "pkg/client/informers/externalversions/serving/v1alpha1",
+    "pkg/client/informers/externalversions/serving/v1beta1",
     "pkg/client/listers/autoscaling/v1alpha1",
     "pkg/client/listers/networking/v1alpha1",
     "pkg/client/listers/serving/v1alpha1",
+    "pkg/client/listers/serving/v1beta1",
   ]
   pruneopts = "NUT"
-  revision = "0800b94fd42981b439f6a54b0c0cbedd23e58c32"
-  version = "v0.6.0"
+  revision = "cb5c1810f2690efa0c434bc81aab3a1d45df497f"
+  version = "v0.7.0"
 
 [[projects]]
   branch = "master"
@@ -1216,6 +1229,7 @@
     "github.com/knative/build/pkg/client/listers/build/v1alpha1",
     "github.com/knative/pkg/apis",
     "github.com/knative/pkg/apis/duck/v1alpha1",
+    "github.com/knative/pkg/apis/duck/v1beta1",
     "github.com/knative/pkg/configmap",
     "github.com/knative/pkg/controller",
     "github.com/knative/pkg/kmeta",
@@ -1231,7 +1245,6 @@
     "github.com/knative/pkg/version",
     "github.com/knative/pkg/webhook",
     "github.com/knative/serving/pkg/apis/serving/v1alpha1",
-    "github.com/knative/serving/pkg/apis/serving/v1beta1",
     "github.com/knative/serving/pkg/client/clientset/versioned",
     "github.com/knative/serving/pkg/client/clientset/versioned/fake",
     "github.com/knative/serving/pkg/client/informers/externalversions",

@@ -46,16 +46,16 @@ func NewLoggerFromConfig(config *logging.Config, name string) (*zap.SugaredLogge
 
 // NewConfigFromMap creates a LoggingConfig from the supplied map
 func NewConfigFromMap(data map[string]string) (*logging.Config, error) {
-	return logging.NewConfigFromMap(data, components...)
+	return logging.NewConfigFromMap(data)
 }
 
 // NewConfigFromConfigMap creates a LoggingConfig from the supplied ConfigMap
 func NewConfigFromConfigMap(configMap *corev1.ConfigMap) (*logging.Config, error) {
-	return logging.NewConfigFromConfigMap(configMap, components...)
+	return logging.NewConfigFromConfigMap(configMap)
 }
 
 // UpdateLevelFromConfigMap returns a helper func that can be used to update the logging level
 // when a config map is updated
 func UpdateLevelFromConfigMap(logger *zap.SugaredLogger, atomicLevel zap.AtomicLevel, levelKey string) func(configMap *corev1.ConfigMap) {
-	return logging.UpdateLevelFromConfigMap(logger, atomicLevel, levelKey, components...)
+	return logging.UpdateLevelFromConfigMap(logger, atomicLevel, levelKey)
 }

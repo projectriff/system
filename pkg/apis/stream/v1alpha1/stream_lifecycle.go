@@ -17,15 +17,15 @@
 package v1alpha1
 
 import (
-	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
+	knapis "github.com/knative/pkg/apis"
 )
 
 const (
-	StreamConditionReady                                        = duckv1alpha1.ConditionReady
-	StreamConditionResourceAvailable duckv1alpha1.ConditionType = "ResourceAvailable"
+	StreamConditionReady                                  = knapis.ConditionReady
+	StreamConditionResourceAvailable knapis.ConditionType = "ResourceAvailable"
 )
 
-var streamCondSet = duckv1alpha1.NewLivingConditionSet(
+var streamCondSet = knapis.NewLivingConditionSet(
 	StreamConditionResourceAvailable,
 )
 
@@ -37,11 +37,11 @@ func (ss *StreamStatus) IsReady() bool {
 	return streamCondSet.Manage(ss).IsHappy()
 }
 
-func (*StreamStatus) GetReadyConditionType() duckv1alpha1.ConditionType {
+func (*StreamStatus) GetReadyConditionType() knapis.ConditionType {
 	return StreamConditionReady
 }
 
-func (ss *StreamStatus) GetCondition(t duckv1alpha1.ConditionType) *duckv1alpha1.Condition {
+func (ss *StreamStatus) GetCondition(t knapis.ConditionType) *knapis.Condition {
 	return streamCondSet.Manage(ss).GetCondition(t)
 }
 
