@@ -20,12 +20,12 @@ import (
 	"fmt"
 
 	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
-	corev1 "k8s.io/api/core/v1"
 	knapis "github.com/knative/pkg/apis"
+	corev1 "k8s.io/api/core/v1"
 )
 
 const (
-	FunctionConditionReady                                      = knapis.ConditionReady
+	FunctionConditionReady                                = knapis.ConditionReady
 	FunctionConditionBuildCacheReady knapis.ConditionType = "BuildCacheReady"
 	FunctionConditionBuildSucceeded  knapis.ConditionType = "BuildSucceeded"
 	FunctionConditionImageResolved   knapis.ConditionType = "ImageResolved"

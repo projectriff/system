@@ -26,9 +26,9 @@ import (
 	"github.com/knative/pkg/kmp"
 	"github.com/knative/pkg/logging"
 	"github.com/knative/pkg/tracker"
-	knservingv1beta1 "github.com/knative/serving/pkg/apis/serving/v1beta1"
-	knservinginformers "github.com/knative/serving/pkg/client/informers/externalversions/serving/v1beta1"
-	knservinglisters "github.com/knative/serving/pkg/client/listers/serving/v1beta1"
+	knservingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
+	knservinginformers "github.com/knative/serving/pkg/client/informers/externalversions/serving/v1alpha1"
+	knservinglisters "github.com/knative/serving/pkg/client/listers/serving/v1alpha1"
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	requestv1alpha1 "github.com/projectriff/system/pkg/apis/request/v1alpha1"
 	buildinformers "github.com/projectriff/system/pkg/client/informers/externalversions/build/v1alpha1"
@@ -327,7 +327,7 @@ func (c *Reconciler) reconcileBuild(handler *requestv1alpha1.Handler) error {
 	return fmt.Errorf("invalid handler build")
 }
 
-func (c *Reconciler) reconcileConfiguration(ctx context.Context, handler *requestv1alpha1.Handler, configuration *knservingv1beta1.Configuration) (*knservingv1beta1.Configuration, error) {
+func (c *Reconciler) reconcileConfiguration(ctx context.Context, handler *requestv1alpha1.Handler, configuration *knservingv1alpha1.Configuration) (*knservingv1alpha1.Configuration, error) {
 	logger := logging.FromContext(ctx)
 	desiredConfiguration, err := resources.MakeConfiguration(handler)
 	if err != nil {
@@ -349,23 +349,23 @@ func (c *Reconciler) reconcileConfiguration(ctx context.Context, handler *reques
 	// Preserve the rest of the object (e.g. ObjectMeta except for labels).
 	existing.Spec = desiredConfiguration.Spec
 	existing.ObjectMeta.Labels = desiredConfiguration.ObjectMeta.Labels
-	return c.KnServingClientSet.ServingV1beta1().Configurations(handler.Namespace).Update(existing)
+	return c.KnServingClientSet.ServingV1alpha1().Configurations(handler.Namespace).Update(existing)
 }
 
-func (c *Reconciler) createConfiguration(handler *requestv1alpha1.Handler) (*knservingv1beta1.Configuration, error) {
+func (c *Reconciler) createConfiguration(handler *requestv1alpha1.Handler) (*knservingv1alpha1.Configuration, error) {
 	configuration, err := resources.MakeConfiguration(handler)
 	if err != nil {
 		return nil, err
 	}
-	return c.KnServingClientSet.ServingV1beta1().Configurations(handler.Namespace).Create(configuration)
+	return c.KnServingClientSet.ServingV1alpha1().Configurations(handler.Namespace).Create(configuration)
 }
 
-func configurationSemanticEquals(desiredConfiguration, configuration *knservingv1beta1.Configuration) bool {
+func configurationSemanticEquals(desiredConfiguration, configuration *knservingv1alpha1.Configuration) bool {
 	return equality.Semantic.DeepEqual(desiredConfiguration.Spec, configuration.Spec) &&
 		equality.Semantic.DeepEqual(desiredConfiguration.ObjectMeta.Labels, configuration.ObjectMeta.Labels)
 }
 
-func (c *Reconciler) reconcileRoute(ctx context.Context, handler *requestv1alpha1.Handler, route *knservingv1beta1.Route) (*knservingv1beta1.Route, error) {
+func (c *Reconciler) reconcileRoute(ctx context.Context, handler *requestv1alpha1.Handler, route *knservingv1alpha1.Route) (*knservingv1alpha1.Route, error) {
 	logger := logging.FromContext(ctx)
 	desiredRoute, err := resources.MakeRoute(handler)
 	if err != nil {
@@ -387,18 +387,18 @@ func (c *Reconciler) reconcileRoute(ctx context.Context, handler *requestv1alpha
 	// Preserve the rest of the object (e.g. ObjectMeta except for labels).
 	existing.Spec = desiredRoute.Spec
 	existing.ObjectMeta.Labels = desiredRoute.ObjectMeta.Labels
-	return c.KnServingClientSet.ServingV1beta1().Routes(handler.Namespace).Update(existing)
+	return c.KnServingClientSet.ServingV1alpha1().Routes(handler.Namespace).Update(existing)
 }
 
-func (c *Reconciler) createRoute(handler *requestv1alpha1.Handler) (*knservingv1beta1.Route, error) {
+func (c *Reconciler) createRoute(handler *requestv1alpha1.Handler) (*knservingv1alpha1.Route, error) {
 	route, err := resources.MakeRoute(handler)
 	if err != nil {
 		return nil, err
 	}
-	return c.KnServingClientSet.ServingV1beta1().Routes(handler.Namespace).Create(route)
+	return c.KnServingClientSet.ServingV1alpha1().Routes(handler.Namespace).Create(route)
 }
 
-func routeSemanticEquals(desiredRoute, route *knservingv1beta1.Route) bool {
+func routeSemanticEquals(desiredRoute, route *knservingv1alpha1.Route) bool {
 	return equality.Semantic.DeepEqual(desiredRoute.Spec, route.Spec) &&
 		equality.Semantic.DeepEqual(desiredRoute.ObjectMeta.Labels, route.ObjectMeta.Labels)
 }

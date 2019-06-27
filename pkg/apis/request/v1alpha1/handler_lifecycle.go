@@ -17,13 +17,13 @@
 package v1alpha1
 
 import (
-	servingv1beta1 "github.com/knative/serving/pkg/apis/serving/v1beta1"
-	corev1 "k8s.io/api/core/v1"
 	knapis "github.com/knative/pkg/apis"
+	servingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 const (
-	HandlerConditionReady                                         = knapis.ConditionReady
+	HandlerConditionReady                                   = knapis.ConditionReady
 	HandlerConditionConfigurationReady knapis.ConditionType = "ConfigurationReady"
 	HandlerConditionRouteReady         knapis.ConditionType = "RouteReady"
 )
@@ -58,8 +58,8 @@ func (hs *HandlerStatus) MarkConfigurationNotOwned(name string) {
 		"There is an existing Configuration %q that we do not own.", name)
 }
 
-func (hs *HandlerStatus) PropagateConfigurationStatus(cs *servingv1beta1.ConfigurationStatus) {
-	sc := cs.GetCondition(servingv1beta1.ConfigurationConditionReady)
+func (hs *HandlerStatus) PropagateConfigurationStatus(cs *servingv1alpha1.ConfigurationStatus) {
+	sc := cs.GetCondition(servingv1alpha1.ConfigurationConditionReady)
 	if sc == nil {
 		return
 	}
@@ -78,11 +78,11 @@ func (hs *HandlerStatus) MarkRouteNotOwned(name string) {
 		"There is an existing Route %q that we do not own.", name)
 }
 
-func (hs *HandlerStatus) PropagateRouteStatus(rs *servingv1beta1.RouteStatus) {
+func (hs *HandlerStatus) PropagateRouteStatus(rs *servingv1alpha1.RouteStatus) {
 	hs.Address = rs.Address
 	hs.URL = rs.URL
 
-	sc := rs.GetCondition(servingv1beta1.RouteConditionReady)
+	sc := rs.GetCondition(servingv1alpha1.RouteConditionReady)
 	if sc == nil {
 		return
 	}

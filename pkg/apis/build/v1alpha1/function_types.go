@@ -56,8 +56,8 @@ type FunctionSpec struct {
 
 type FunctionStatus struct {
 	duckv1beta1.Status `json:",inline"`
-	BuildStatus         `json:",inline"`
-	TargetImage         string `json:"targetImage,omitempty"`
+	BuildStatus        `json:",inline"`
+	TargetImage        string `json:"targetImage,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

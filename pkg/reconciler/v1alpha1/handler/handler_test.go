@@ -64,8 +64,8 @@ func TestNew(t *testing.T) {
 	knservingInformer := knservinginformers.NewSharedInformerFactory(knservingClient, 0)
 
 	handlerInformer := projectriffInformer.Request().V1alpha1().Handlers()
-	knconfigurationInformer := knservingInformer.Serving().V1beta1().Configurations()
-	knrouteInformer := knservingInformer.Serving().V1beta1().Routes()
+	knconfigurationInformer := knservingInformer.Serving().V1alpha1().Configurations()
+	knrouteInformer := knservingInformer.Serving().V1alpha1().Routes()
 	applicationInformer := projectriffInformer.Build().V1alpha1().Applications()
 	functionInformer := projectriffInformer.Build().V1alpha1().Functions()
 

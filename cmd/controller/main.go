@@ -144,8 +144,8 @@ func main() {
 	serviceaccountInformer := kubeInformerFactory.Core().V1().ServiceAccounts()
 	knbuildInformer := knbuildInformerFactory.Build().V1alpha1().Builds()
 	knclusterbuildtemplateInformer := knbuildInformerFactory.Build().V1alpha1().ClusterBuildTemplates()
-	knconfigurationInformer := knservingInformerFactory.Serving().V1beta1().Configurations()
-	knrouteInformer := knservingInformerFactory.Serving().V1beta1().Routes()
+	knconfigurationInformer := knservingInformerFactory.Serving().V1alpha1().Configurations()
+	knrouteInformer := knservingInformerFactory.Serving().V1alpha1().Routes()
 
 	// Build all of our controllers, with the clients constructed above.
 	// Add new controllers to this array.

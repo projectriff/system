@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	ApplicationConditionReady                                      = knapis.ConditionReady
+	ApplicationConditionReady                                = knapis.ConditionReady
 	ApplicationConditionBuildCacheReady knapis.ConditionType = "BuildCacheReady"
 	ApplicationConditionBuildSucceeded  knapis.ConditionType = "BuildSucceeded"
 	ApplicationConditionImageResolved   knapis.ConditionType = "ImageResolved"

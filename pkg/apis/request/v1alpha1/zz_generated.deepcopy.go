@@ -22,7 +22,7 @@ package v1alpha1
 
 import (
 	apis "github.com/knative/pkg/apis"
-	v1beta1 "github.com/knative/pkg/apis/duck/v1beta1"
+	duck_v1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	v1 "k8s.io/api/core/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
@@ -149,7 +149,7 @@ func (in *HandlerStatus) DeepCopyInto(out *HandlerStatus) {
 		if *in == nil {
 			*out = nil
 		} else {
-			*out = new(v1beta1.Addressable)
+			*out = new(duck_v1alpha1.Addressable)
 			(*in).DeepCopyInto(*out)
 		}
 	}

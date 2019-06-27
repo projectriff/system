@@ -21,10 +21,10 @@ import (
 
 	"github.com/knative/pkg/controller"
 	"github.com/projectriff/system/pkg/apis/build"
+	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	fakeprojectriffclientset "github.com/projectriff/system/pkg/client/clientset/versioned/fake"
 	projectriffinformers "github.com/projectriff/system/pkg/client/informers/externalversions"
 	"github.com/projectriff/system/pkg/reconciler"
-	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	. "github.com/projectriff/system/pkg/reconciler/v1alpha1/testing"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

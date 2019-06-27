@@ -18,16 +18,17 @@ package resources
 
 import (
 	"github.com/knative/pkg/kmeta"
+	knservingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
 	knservingv1beta1 "github.com/knative/serving/pkg/apis/serving/v1beta1"
 	requestv1alpha1 "github.com/projectriff/system/pkg/apis/request/v1alpha1"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/handler/resources/names"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // MakeConfiguration creates a Configuration from a Handler object.
-func MakeConfiguration(h *requestv1alpha1.Handler) (*knservingv1beta1.Configuration, error) {
-	configuration := &knservingv1beta1.Configuration{
+func MakeConfiguration(h *requestv1alpha1.Handler) (*knservingv1alpha1.Configuration, error) {
+	configuration := &knservingv1alpha1.Configuration{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      names.Configuration(h),
 			Namespace: h.Namespace,
@@ -36,17 +37,19 @@ func MakeConfiguration(h *requestv1alpha1.Handler) (*knservingv1beta1.Configurat
 			},
 			Labels: makeLabels(h),
 		},
-		Spec: knservingv1beta1.ConfigurationSpec{
-			Template: knservingv1beta1.RevisionTemplateSpec{
+		Spec: knservingv1alpha1.ConfigurationSpec{
+			Template: &knservingv1alpha1.RevisionTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: makeLabels(h),
 				},
-				Spec: knservingv1beta1.RevisionSpec{
+				Spec: knservingv1alpha1.RevisionSpec{
+					RevisionSpec: knservingv1beta1.RevisionSpec{
 						PodSpec: corev1.PodSpec{
 							ServiceAccountName: h.Spec.Template.ServiceAccountName,
 							Containers:         h.Spec.Template.Containers,
 							Volumes:            h.Spec.Template.Volumes,
 						},
+					},
 				},
 			},
 		},

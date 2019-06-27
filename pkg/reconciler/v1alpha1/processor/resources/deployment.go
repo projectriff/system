@@ -59,10 +59,10 @@ func MakeDeployment(proc *streamv1alpha1.Processor) (*appsv1.Deployment, error) 
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
 						{
-							Name:  "processor",
-							Image: "ericbottard/processor:grpc",
+							Name:            "processor",
+							Image:           "ericbottard/processor:grpc",
 							ImagePullPolicy: corev1.PullAlways,
-							Env:   environmentVariables,
+							Env:             environmentVariables,
 						},
 						{
 							Name:  "function",

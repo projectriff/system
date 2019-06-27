@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	StreamConditionReady                                        = knapis.ConditionReady
+	StreamConditionReady                                  = knapis.ConditionReady
 	StreamConditionResourceAvailable knapis.ConditionType = "ResourceAvailable"
 )
 
