@@ -53,6 +53,8 @@ spec:
         - name: config-logging
           mountPath: /etc/config-logging
         env:
+        - name: METRICS_DOMAIN
+          value: projectriff.io/system
         - name: SYSTEM_NAMESPACE
           valueFrom:
             fieldRef:

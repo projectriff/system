@@ -24,7 +24,6 @@ import (
 
 const (
 	ObservabilityConfigName = "config-observability"
-	metricsDomain           = "projectriff.io/system"
 )
 
 // UpdateExporterFromConfigMap returns a helper func that can be used to update the exporter
