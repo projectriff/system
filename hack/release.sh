@@ -6,6 +6,7 @@ set -o pipefail
 
 readonly root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." >/dev/null 2>&1 && pwd)
 readonly version=$(cat ${root}/VERSION)
+readonly branch=$(git rev-parse --abbrev-ref HEAD)
 readonly gitsha=$(git rev-parse HEAD)
 
 echo "Building riff System"
@@ -15,3 +16,10 @@ echo "Building riff System"
 echo "Publishing riff System"
 gsutil cp -a public-read ${root}/riff-system.yaml gs://projectriff/riff-system/snapshots/riff-system-${version}-${gitsha}.yaml
 gsutil cp -a public-read ${root}/riff-system.yaml gs://projectriff/riff-system/riff-system-${version}.yaml
+
+echo "Publishing version references"
+gsutil -h 'Content-Type: text/plain' -h 'Cache-Control: private' cp -a public-read <(echo "${version}-${gitsha}") gs://projectriff/riff-system/snapshots/versions/${branch}
+gsutil -h 'Content-Type: text/plain' -h 'Cache-Control: private' cp -a public-read <(echo "${version}-${gitsha}") gs://projectriff/riff-system/snapshots/versions/${version}
+if [[ ${version} != *"-snapshot" ]] ; then
+  gsutil -h 'Content-Type: text/plain' -h 'Cache-Control: private' cp -a public-read <(echo "${version}") gs://projectriff/riff-system/versions/releases/${branch}
+fi
