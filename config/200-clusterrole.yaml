@@ -9,14 +9,14 @@ metadata:
     rbac.authorization.k8s.io/aggregate-to-edit: "true"
 rules:
   - apiGroups: ["build.projectriff.io"]
-    resources: ["applications", "functions"]
-    verbs: ["get", "list", "create", "update", "delete", "patch", "watch"]
+    resources: ["*"]
+    verbs: ["*"]
   - apiGroups: ["request.projectriff.io"]
-    resources: ["handlers"]
-    verbs: ["get", "list", "create", "update", "delete", "patch", "watch"]
+    resources: ["*"]
+    verbs: ["*"]
   - apiGroups: ["stream.projectriff.io"]
-    resources: ["streams", "processors"]
-    verbs: ["get", "list", "create", "update", "delete", "patch", "watch"]
+    resources: ["*"]
+    verbs: ["*"]
 
 ---
 kind: ClusterRole
@@ -29,11 +29,44 @@ metadata:
     rbac.authorization.k8s.io/aggregate-to-view: "true"
 rules:
   - apiGroups: ["build.projectriff.io"]
-    resources: ["applications", "functions"]
+    resources: ["*"]
     verbs: ["get", "list", "watch"]
   - apiGroups: ["request.projectriff.io"]
-    resources: ["handlers"]
+    resources: ["*"]
     verbs: ["get", "list", "watch"]
   - apiGroups: ["stream.projectriff.io"]
-    resources: ["streams", "processors"]
+    resources: ["*"]
     verbs: ["get", "list", "watch"]
+
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: projectriff-admin
+  labels:
+    projectriff.io/release: devel
+rules:
+  - apiGroups: ["build.projectriff.io"]
+    resources: ["*"]
+    verbs: ["*"]
+  - apiGroups: ["request.projectriff.io"]
+    resources: ["*"]
+    verbs: ["*"]
+  - apiGroups: ["stream.projectriff.io"]
+    resources: ["*"]
+    verbs: ["*"]
+  - apiGroups: [""]
+    resources: ["secrets", "configmaps", "serviceaccounts", "persistentvolumeclaims"]
+    verbs: ["*"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "deployments/finalizers"] # finalizers are needed for the owner reference of the webhook
+    verbs: ["*"]
+  - apiGroups: ["serving.knative.dev"]
+    resources: ["*"]
+    verbs: ["*"]
+  - apiGroups: ["build.knative.dev"]
+    resources: ["*"]
+    verbs: ["*"]
+  - apiGroups: ["admissionregistration.k8s.io"]
+    resources: ["mutatingwebhookconfigurations"]
+    verbs: ["*"]
