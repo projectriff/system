@@ -6,7 +6,7 @@ set -o pipefail
 
 readonly root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." >/dev/null 2>&1 && pwd)
 readonly version=$(cat ${root}/VERSION)
-readonly branch=$(git rev-parse --abbrev-ref HEAD)
+readonly branch=${1:11} # drop 'refs/head/' prefix
 readonly gitsha=$(git rev-parse HEAD)
 
 echo "Building riff System"

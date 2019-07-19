@@ -82,7 +82,7 @@ steps:
     gcloud auth activate-service-account --key-file <(echo ${GCLOUD_CLIENT_SECRET} | base64 --decode)
     gcloud auth configure-docker 
 
-    source ./hack/release.sh
+    source ./hack/release.sh $(Build.SourceBranch)
   env:
     GCLOUD_CLIENT_SECRET: '$(GcloudClientSecret)'
   workingDirectory: '$(modulePath)'
