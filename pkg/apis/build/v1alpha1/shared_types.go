@@ -28,40 +28,61 @@ type ImageResource interface {
 	GetImage() string
 }
 
-func ResolveDefaultImage(resource ImageResource, registry string) (string, error) {
-	if registry == "" {
-		return "", fmt.Errorf("invalid registry %q", registry)
+// ResolveDefaultImage applies the default image prefix as needed to an image.
+//
+// The default image prefix may apply to either a repository whose value is '_'
+// or a repository with a leading '_/'.
+//
+// For a leading '_/', the underscore is replaced with the default image prefix.
+// For a repository of '_', the default image prefix is combined with the name
+// of the build resource.
+func ResolveDefaultImage(resource ImageResource, defaultImagePrefix string) (string, error) {
+	if defaultImagePrefix == "" {
+		return "", fmt.Errorf("invalid default image prefix %q", defaultImagePrefix)
 	}
 	image := resource.GetImage()
 	if image == "_" {
 		// combine registry prefix and application name
-		image = fmt.Sprintf("%s/%s", registry, resource.GetObjectMeta().GetName())
+		image = fmt.Sprintf("%s/%s", defaultImagePrefix, resource.GetObjectMeta().GetName())
 	} else if strings.HasPrefix(image, "_/") {
 		// add the prefix to the specified image name
-		image = strings.Replace(image, "_", registry, 1)
+		image = strings.Replace(image, "_", defaultImagePrefix, 1)
 	} else {
 		return "", fmt.Errorf("unable to default registry")
 	}
 	return image, nil
 }
 
-type BuildArgument struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
-}
-
 type Source struct {
-	Git     *GitSource `json:"git"`
-	SubPath string     `json:"subPath,omitempty"`
+	// Git source location to clone and checkout for the build.
+	Git *GitSource `json:"git"`
+
+	// SubPath within the source to mount. Files outside of the sub path will
+	// not be available to tbe build.
+	SubPath string `json:"subPath,omitempty"`
 }
 
 type GitSource struct {
+	// Revision in the git repository to checkout. May be any valid refspec
+	// including commit sha, tags or branches.
 	Revision string `json:"revision"`
-	URL      string `json:"url"`
+
+	// URL to a cloneable git repository.
+	URL string `json:"url"`
 }
 
 type BuildStatus struct {
+	// BuildCacheName is the name of the PersistentVolumeClaim used as a cache
+	// for intermediate build resources.
 	BuildCacheName string `json:"buildCacheName,omitempty"`
-	BuildName      string `json:"buildName,omitempty"`
-	LatestImage    string `json:"latestImage,omitempty"`
+
+	// BuildName is the name of the Knative Build backing this build.
+	BuildName string `json:"buildName,omitempty"`
+
+	// LatestImage is the most recent image for this build.
+	LatestImage string `json:"latestImage,omitempty"`
+
+	// TargetImage is the resolved image repository where built images are
+	// pushed.
+	TargetImage string `json:"targetImage,omitempty"`
 }

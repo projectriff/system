@@ -23,18 +23,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 )
 
-func (ba *BuildArgument) Validate(ctx context.Context) *apis.FieldError {
-	if equality.Semantic.DeepEqual(ba, &BuildArgument{}) {
-		return apis.ErrMissingField(apis.CurrentField)
-	}
-
-	errs := &apis.FieldError{}
-	if ba.Name == "" {
-		errs = errs.Also(apis.ErrMissingField("name"))
-	}
-	return errs
-}
-
 func (s *Source) Validate(ctx context.Context) *apis.FieldError {
 	if equality.Semantic.DeepEqual(s, &Source{}) {
 		return apis.ErrMissingField(apis.CurrentField)

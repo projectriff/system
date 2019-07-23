@@ -29,6 +29,7 @@ import (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
+// Application builds from source using application buildpacks
 type Application struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -46,15 +47,21 @@ var (
 )
 
 type ApplicationSpec struct {
-	Image     string             `json:"image"`
+	// Image repository to push built images. May contain a leading underscore
+	// to have the default image prefix applied.
+	Image string `json:"image"`
+
+	// CacheSize for an optional PersistentVolumeClaim used to store
+	// intermediate build artifacts, like a maven cache, for future builds.
 	CacheSize *resource.Quantity `json:"cacheSize,omitempty"`
-	Source    *Source            `json:"source,omitempty"`
+
+	// Source location. Required for on cluster builds.
+	Source *Source `json:"source,omitempty"`
 }
 
 type ApplicationStatus struct {
 	duckv1beta1.Status `json:",inline"`
 	BuildStatus        `json:",inline"`
-	TargetImage        string `json:"targetImage,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
