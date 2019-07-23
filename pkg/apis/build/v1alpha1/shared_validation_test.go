@@ -24,46 +24,6 @@ import (
 	"github.com/knative/pkg/apis"
 )
 
-func TestValidateBuildArgument(t *testing.T) {
-	for _, c := range []struct {
-		name string
-		arg  *BuildArgument
-		want *apis.FieldError
-	}{{
-		name: "valid",
-		arg: &BuildArgument{
-			Name:  "ARGUMENT_NAME",
-			Value: "argument value",
-		},
-		want: nil,
-	}, {
-		name: "empty",
-		arg:  &BuildArgument{},
-		want: apis.ErrMissingField(apis.CurrentField),
-	}, {
-		name: "requires name",
-		arg: &BuildArgument{
-			Value: "argument value",
-		},
-		want: apis.ErrMissingField("name"),
-	}, {
-		name: "allows empty value",
-		arg: &BuildArgument{
-			Name:  "ARGUMENT_NAME",
-			Value: "",
-		},
-		want: nil,
-	}} {
-		name := c.name
-		t.Run(name, func(t *testing.T) {
-			got := c.arg.Validate(context.Background())
-			if diff := cmp.Diff(c.want.Error(), got.Error()); diff != "" {
-				t.Errorf("validateBuildArgument(%s) (-want, +got) = %v", name, diff)
-			}
-		})
-	}
-}
-
 func TestValidateSource(t *testing.T) {
 	for _, c := range []struct {
 		name   string

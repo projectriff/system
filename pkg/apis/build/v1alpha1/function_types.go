@@ -46,18 +46,30 @@ var (
 )
 
 type FunctionSpec struct {
-	Image     string             `json:"image"`
+	// Image repository to push built images. May contain a leading underscore
+	// to have the default image prefix applied.
+	Image string `json:"image"`
+
+	// CacheSize of persistent volume to store resources between builds
 	CacheSize *resource.Quantity `json:"cacheSize,omitempty"`
-	Source    *Source            `json:"source,omitempty"`
-	Artifact  string             `json:"artifact,omitempty"`
-	Handler   string             `json:"handler,omitempty"`
-	Invoker   string             `json:"invoker,omitempty"`
+
+	// Source location. Required for on cluster builds.
+	Source *Source `json:"source,omitempty"`
+
+	// Artifact file containing the function within the build workspace.
+	Artifact string `json:"artifact,omitempty"`
+
+	// Handler name of the method or class to invoke. The value depends on the
+	// invoker.
+	Handler string `json:"handler,omitempty"`
+
+	// Invoker language runtime name. Detected by default.
+	Invoker string `json:"invoker,omitempty"`
 }
 
 type FunctionStatus struct {
 	duckv1beta1.Status `json:",inline"`
 	BuildStatus        `json:",inline"`
-	TargetImage        string `json:"targetImage,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

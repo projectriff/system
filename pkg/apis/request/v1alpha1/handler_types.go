@@ -46,23 +46,38 @@ var (
 )
 
 type HandlerSpec struct {
-	Build    *Build          `json:"build,omitempty"`
+	// Build resolves the image from a build resource. As the target build
+	// produces new images, they will be automatically rolled out to the
+	// handler.
+	Build *Build `json:"build,omitempty"`
+
+	// Template pod
 	Template *corev1.PodSpec `json:"template,omitempty"`
 }
 
 type Build struct {
+	// ApplicationRef references an application in this namespace.
 	ApplicationRef string `json:"applicationRef,omitempty"`
-	FunctionRef    string `json:"functionRef,omitempty"`
+
+	// FunctionRef references an application in this namespace.
+	FunctionRef string `json:"functionRef,omitempty"`
 }
 
 type HandlerStatus struct {
 	duckv1beta1.Status `json:",inline"`
 
+	// ConfigurationName is the name of the Knative Serving configuration
+	// backing this handler.
 	ConfigurationName string `json:"configurationName,omitempty"`
-	RouteName         string `json:"routeName,omitempty"`
 
+	// RouteName is the name of the Knative Serving route backing this handler.
+	RouteName string `json:"routeName,omitempty"`
+
+	// Address to target this handler internally
 	Address *duckv1alpha1.Addressable `json:"address,omitempty"`
-	URL     *knapis.URL               `json:"url,omitempty"`
+
+	// URL to target this handler publicly
+	URL *knapis.URL `json:"url,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
