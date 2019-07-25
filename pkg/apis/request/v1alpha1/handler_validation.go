@@ -79,6 +79,12 @@ func (b *Build) Validate(ctx context.Context) *apis.FieldError {
 		unused = append(unused, "applicationRef")
 	}
 
+	if b.ContainerRef != "" {
+		used = append(used, "containerRef")
+	} else {
+		unused = append(unused, "contaienrRef")
+	}
+
 	if b.FunctionRef != "" {
 		used = append(used, "functionRef")
 	} else {
