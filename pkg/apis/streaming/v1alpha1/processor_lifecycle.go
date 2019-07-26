@@ -17,6 +17,7 @@
 package v1alpha1
 
 import (
+	"github.com/kedacore/keda/pkg/apis/keda/v1alpha1"
 	knapis "github.com/knative/pkg/apis"
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -26,13 +27,15 @@ import (
 const (
 	ProcessorConditionReady = knapis.ConditionReady
 	// TODO add aggregated streams ready status
-	ProcessorConditionFunctionReady   knapis.ConditionType = "FunctionReady"
-	ProcessorConditionDeploymentReady knapis.ConditionType = "DeploymentReady"
+	ProcessorConditionFunctionReady     knapis.ConditionType = "FunctionReady"
+	ProcessorConditionDeploymentReady   knapis.ConditionType = "DeploymentReady"
+	ProcessorConditionScaledObjectReady knapis.ConditionType = "ScaledObjectReady"
 )
 
 var processorCondSet = knapis.NewLivingConditionSet(
 	ProcessorConditionFunctionReady,
 	ProcessorConditionDeploymentReady,
+	ProcessorConditionScaledObjectReady,
 )
 
 func (ps *ProcessorStatus) GetObservedGeneration() int64 {
@@ -101,4 +104,14 @@ func (ps *ProcessorStatus) PropagateDeploymentStatus(ds *appsv1.DeploymentStatus
 	case ac.Status == corev1.ConditionFalse:
 		processorCondSet.Manage(ps).MarkFalse(ProcessorConditionDeploymentReady, ac.Reason, ac.Message)
 	}
+}
+
+func (ps *ProcessorStatus) MarkScaledObjectNotOwned(name string) {
+	processorCondSet.Manage(ps).MarkFalse(ProcessorConditionScaledObjectReady, "NotOwned",
+		"There is an existing ScaledObject %q that we do not own.", name)
+}
+
+func (ps *ProcessorStatus) PropagateScaledObjectStatus(sos *v1alpha1.ScaledObjectStatus) {
+	// TODO: ScaledObject does not report much atm
+	processorCondSet.Manage(ps).MarkTrue(ProcessorConditionScaledObjectReady)
 }

@@ -17,6 +17,7 @@ limitations under the License.
 package testing
 
 import (
+	fakekedaclientset "github.com/kedacore/keda/pkg/client/clientset/versioned/fake"
 	knbuildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	fakeknbuildclientset "github.com/knative/build/pkg/client/clientset/versioned/fake"
 	knbuildv1alpha1listers "github.com/knative/build/pkg/client/listers/build/v1alpha1"
@@ -32,6 +33,8 @@ import (
 	corev1alpha1listers "github.com/projectriff/system/pkg/client/listers/core/v1alpha1"
 	knativev1alpha1listers "github.com/projectriff/system/pkg/client/listers/knative/v1alpha1"
 	streamingv1alpha1listers "github.com/projectriff/system/pkg/client/listers/streaming/v1alpha1"
+	kedav1alphalisters "github.com/kedacore/keda/pkg/client/listers/keda/v1alpha1"
+	kedav1alpha1 "github.com/kedacore/keda/pkg/apis/keda/v1alpha1"
 	"github.com/projectriff/system/pkg/reconciler/testing"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -47,6 +50,7 @@ var clientSetSchemes = []func(*runtime.Scheme) error{
 	fakeprojectriffclientset.AddToScheme,
 	fakeknbuildclientset.AddToScheme,
 	fakeknservingclientset.AddToScheme,
+	fakekedaclientset.AddToScheme,
 }
 
 type Listers struct {
@@ -87,6 +91,10 @@ func (l *Listers) GetKnServingObjects() []runtime.Object {
 
 func (l *Listers) GetKubeObjects() []runtime.Object {
 	return l.sorter.ObjectsForSchemeFunc(fakekubeclientset.AddToScheme)
+}
+
+func (l *Listers) GetKedaObjects() []runtime.Object {
+	return l.sorter.ObjectsForSchemeFunc(fakekedaclientset.AddToScheme)
 }
 
 func (l *Listers) GetApplicationLister() buildv1alpha1listers.ApplicationLister {
@@ -163,4 +171,8 @@ func (l *Listers) GetSecretLister() corev1listers.SecretLister {
 
 func (l *Listers) GetServiceAccountLister() corev1listers.ServiceAccountLister {
 	return corev1listers.NewServiceAccountLister(l.indexerFor(&corev1.ServiceAccount{}))
+}
+
+func (l *Listers) GetScaledObjectLister() kedav1alphalisters.ScaledObjectLister {
+	return kedav1alphalisters.NewScaledObjectLister(l.indexerFor(&kedav1alpha1.ScaledObject{}))
 }

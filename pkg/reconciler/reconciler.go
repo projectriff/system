@@ -26,6 +26,7 @@ import (
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/record"
 
+	kedaclientset "github.com/kedacore/keda/pkg/client/clientset/versioned"
 	knbuildclientset "github.com/knative/build/pkg/client/clientset/versioned"
 	"github.com/knative/pkg/configmap"
 	"github.com/knative/pkg/logging/logkey"
@@ -42,6 +43,7 @@ type Options struct {
 	ProjectriffClientSet projectriffclientset.Interface
 	KnBuildClientSet     knbuildclientset.Interface
 	KnServingClientSet   knservingclientset.Interface
+	KedaClientSet        kedaclientset.Interface
 	Recorder             record.EventRecorder
 
 	ConfigMapWatcher configmap.Watcher
@@ -72,6 +74,9 @@ type Base struct {
 
 	// KnServingClientSet allows us to configure Knative serving objects
 	KnServingClientSet knservingclientset.Interface
+
+	// KedaClientSet allows us to configure Keda scaledObjects
+	KedaClientSet kedaclientset.Interface
 
 	// ConfigMapWatcher allows us to watch for ConfigMap changes.
 	ConfigMapWatcher configmap.Watcher
@@ -110,6 +115,8 @@ func NewBase(opt Options, controllerAgentName string) *Base {
 		ProjectriffClientSet: opt.ProjectriffClientSet,
 		KnBuildClientSet:     opt.KnBuildClientSet,
 		KnServingClientSet:   opt.KnServingClientSet,
+		KedaClientSet:        opt.KedaClientSet,
+
 		ConfigMapWatcher:     opt.ConfigMapWatcher,
 		Recorder:             recorder,
 		Logger:               logger,

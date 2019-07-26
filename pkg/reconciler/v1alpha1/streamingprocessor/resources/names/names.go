@@ -22,6 +22,12 @@ import (
 	streamingv1alpha1 "github.com/projectriff/system/pkg/apis/streaming/v1alpha1"
 )
 
+// Deployment returns the name used for the kubernetes deployment backing a riff processor.
 func Deployment(p *streamingv1alpha1.Processor) string {
+	return fmt.Sprintf("%s-processor", p.Name)
+}
+
+// ScaledObject returns the names used for the keda scaled-object backing a riff processor.
+func ScaledObject(p *streamingv1alpha1.Processor) string {
 	return fmt.Sprintf("%s-processor", p.Name)
 }

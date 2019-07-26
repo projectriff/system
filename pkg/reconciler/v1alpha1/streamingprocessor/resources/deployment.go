@@ -19,6 +19,7 @@ package resources
 
 import (
 	"encoding/json"
+	"github.com/kedacore/keda/pkg/apis/keda/v1alpha1"
 	"strings"
 
 	"github.com/knative/pkg/kmeta"
@@ -31,7 +32,7 @@ import (
 )
 
 func MakeDeployment(proc *streamingv1alpha1.Processor) (*appsv1.Deployment, error) {
-	one := int32(1)
+	zero := int32(0)
 	environmentVariables, err := computeEnvironmentVariables(proc)
 	if err != nil {
 		return nil, err
@@ -44,7 +45,7 @@ func MakeDeployment(proc *streamingv1alpha1.Processor) (*appsv1.Deployment, erro
 			Labels:          makeLabels(proc),
 		},
 		Spec: appsv1.DeploymentSpec{
-			Replicas: &one,
+			Replicas: &zero,
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
 					"app": proc.Name,
@@ -130,4 +131,44 @@ func serializeContentTypes(outputContentTypes []string) (string, error) {
 		return "", err
 	}
 	return string(bytes), nil
+}
+
+func MakeScaledObject(proc *streamingv1alpha1.Processor, deployment *appsv1.Deployment) (*v1alpha1.ScaledObject, error) {
+	one := int32(1)
+	thirty := int32(30)
+
+	scaledObjectLabels := makeLabels(proc)
+	scaledObjectLabels["deploymentName"] = deployment.Name
+
+	scaledObject := &v1alpha1.ScaledObject{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            names.ScaledObject(proc),
+			Namespace:       proc.Namespace,
+			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(proc)},
+			Labels:          scaledObjectLabels,
+		},
+		Spec: v1alpha1.ScaledObjectSpec{
+			ScaleTargetRef: v1alpha1.ObjectReference{
+				DeploymentName: deployment.Name,
+			},
+			PollingInterval: &one,
+			CooldownPeriod:  &thirty,
+			Triggers:        triggers(proc),
+		},
+	}
+
+	return scaledObject, nil
+}
+
+func triggers(proc *streamingv1alpha1.Processor) []v1alpha1.ScaleTriggers {
+	result := make([]v1alpha1.ScaleTriggers, len(proc.Status.InputAddresses))
+	for i, topic := range proc.Status.InputAddresses {
+		result[i].Type = "liiklus"
+		result[i].Metadata = map[string]string{
+			"address": strings.Split(topic, "/")[0],
+			"group":   proc.Name,
+			"topic":   strings.Split(topic, "/")[1],
+		}
+	}
+	return result
 }

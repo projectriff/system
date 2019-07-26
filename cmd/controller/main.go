@@ -25,6 +25,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
+	kedaclientset "github.com/kedacore/keda/pkg/client/clientset/versioned"
+	kedainformers "github.com/kedacore/keda/pkg/client/informers/externalversions"
 	knbuildclientset "github.com/knative/build/pkg/client/clientset/versioned"
 	knbuildinformers "github.com/knative/build/pkg/client/informers/externalversions"
 	"github.com/knative/pkg/configmap"
@@ -69,9 +71,11 @@ var (
 	kubeconfig = flag.String("kubeconfig", "", "Path to a kubeconfig. Only required if out-of-cluster.")
 )
 
-var knativeRuntime = false
-
 func main() {
+
+	var knativeRuntime = false
+	var streamingRuntime = false
+
 	flag.Parse()
 	loggingConfigMap, err := configmap.Load("/etc/config-logging")
 	if err != nil {
@@ -116,6 +120,11 @@ func main() {
 		logger.Fatalw("Error building knserving clientset", zap.Error(err))
 	}
 
+	kedaClient, err := kedaclientset.NewForConfig(cfg)
+	if err != nil {
+		logger.Fatalw("Error building keda clientset", zap.Error(err))
+	}
+
 	if err := version.CheckMinimumVersion(kubeClient.Discovery()); err != nil {
 		logger.Fatalf("Version check failed: %v", err)
 	}
@@ -128,22 +137,31 @@ func main() {
 	} else {
 		logger.Warn("Starting without Knative runtime")
 	}
+	streamingRuntime = detectStreamingRuntime(cfg, logger)
+	if knativeRuntime {
+		logger.Info("Starting with Streaming runtime")
+	} else {
+		logger.Warn("Starting without Streaming runtime")
+	}
 
 	opt := reconciler.Options{
 		KubeClientSet:        kubeClient,
 		ProjectriffClientSet: projectriffClient,
 		KnBuildClientSet:     knbuildClient,
 		KnServingClientSet:   knservingClient,
-		ConfigMapWatcher:     configMapWatcher,
-		Logger:               logger,
-		ResyncPeriod:         10 * time.Hour, // Based on controller-runtime default.
-		StopChannel:          stopCh,
+		KedaClientSet:        kedaClient,
+
+		ConfigMapWatcher: configMapWatcher,
+		Logger:           logger,
+		ResyncPeriod:     10 * time.Hour, // Based on controller-runtime default.
+		StopChannel:      stopCh,
 	}
 
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, opt.ResyncPeriod)
 	projectriffInformerFactory := projectriffinformers.NewSharedInformerFactory(projectriffClient, opt.ResyncPeriod)
 	knbuildInformerFactory := knbuildinformers.NewSharedInformerFactory(knbuildClient, opt.ResyncPeriod)
 	knservingInformerFactory := knservinginformers.NewSharedInformerFactory(knservingClient, opt.ResyncPeriod)
+	kedaInformerFactory := kedainformers.NewSharedInformerFactory(kedaClient, opt.ResyncPeriod)
 
 	applicationInformer := projectriffInformerFactory.Build().V1alpha1().Applications()
 	containerInformer := projectriffInformerFactory.Build().V1alpha1().Containers()
@@ -165,6 +183,7 @@ func main() {
 	knserviceInformer := knservingInformerFactory.Serving().V1alpha1().Services()
 	knconfigurationInformer := knservingInformerFactory.Serving().V1alpha1().Configurations()
 	knrouteInformer := knservingInformerFactory.Serving().V1alpha1().Routes()
+	scaledObjectInformer := kedaInformerFactory.Keda().V1alpha1().ScaledObjects()
 
 	// Build all of our controllers, with the clients constructed above.
 	// Add new controllers to this array.
@@ -217,19 +236,6 @@ func main() {
 			containerInformer,
 			functionInformer,
 		),
-		// streaming.projectriff.io
-		streamingstream.NewController(
-			opt,
-			streamInformer,
-		),
-		streamingprocessor.NewController(
-			opt,
-			processorInformer,
-
-			functionInformer,
-			streamInformer,
-			deploymentInformer,
-		),
 	}
 	if knativeRuntime {
 		controllers = append(controllers,
@@ -256,6 +262,24 @@ func main() {
 			),
 		)
 	}
+	if streamingRuntime {
+		controllers = append(controllers,
+			// streaming.projectriff.io
+			streamingstream.NewController(
+				opt,
+				streamInformer,
+			),
+			streamingprocessor.NewController(
+				opt,
+				processorInformer,
+
+				functionInformer,
+				streamInformer,
+				deploymentInformer,
+				scaledObjectInformer,
+			),
+		)
+	}
 
 	// Watch the logging config map and dynamically update logging levels.
 	configMapWatcher.Watch(logging.ConfigName, logging.UpdateLevelFromConfigMap(logger, atomicLevel, component))
@@ -269,6 +293,9 @@ func main() {
 	if knativeRuntime {
 		knservingInformerFactory.Start(stopCh)
 	}
+	if streamingRuntime {
+		kedaInformerFactory.Start(stopCh)
+	}
 	if err := configMapWatcher.Start(stopCh); err != nil {
 		logger.Fatalw("failed to start configuration manager", zap.Error(err))
 	}
@@ -280,8 +307,6 @@ func main() {
 		containerInformer.Informer().HasSynced,
 		functionInformer.Informer().HasSynced,
 		coredeployerInformer.Informer().HasSynced,
-		streamInformer.Informer().HasSynced,
-		processorInformer.Informer().HasSynced,
 		deploymentInformer.Informer().HasSynced,
 		serviceInformer.Informer().HasSynced,
 		pvcInformer.Informer().HasSynced,
@@ -296,6 +321,13 @@ func main() {
 			knserviceInformer.Informer().HasSynced,
 			knconfigurationInformer.Informer().HasSynced,
 			knrouteInformer.Informer().HasSynced,
+		)
+	}
+	if streamingRuntime {
+		informersSynced = append(informersSynced,
+			streamInformer.Informer().HasSynced,
+			processorInformer.Informer().HasSynced,
+			scaledObjectInformer.Informer().HasSynced,
 		)
 	}
 	for i, synced := range informersSynced {
@@ -330,6 +362,24 @@ func detectKnativeRuntime(cfg *rest.Config, logger *zap.SugaredLogger) bool {
 			return false
 		}
 		logger.Fatalw("Error resolving Knative runtime", zap.Error(err))
+	}
+
+	return true
+}
+
+// detectStreamingRuntime detects whether keda is available, as it is a required dependency for supporting streaming.
+func detectStreamingRuntime(cfg *rest.Config, logger *zap.SugaredLogger) bool {
+	apiextensionsClient, err := apiextensionsclientset.NewForConfig(cfg)
+	if err != nil {
+		logger.Fatalw("Error building apiextensions clientset", zap.Error(err))
+	}
+
+	_, err = apiextensionsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Get("scaledobjects.keda.k8s.io", metav1.GetOptions{})
+	if err != nil {
+		if errors.IsNotFound(err) {
+			return false
+		}
+		logger.Fatalw("Error resolving Streaming runtime", zap.Error(err))
 	}
 
 	return true

@@ -19,6 +19,8 @@ package streamingprocessor
 import (
 	"testing"
 
+	fakekedaclientset "github.com/kedacore/keda/pkg/client/clientset/versioned/fake"
+	kedainformers "github.com/kedacore/keda/pkg/client/informers/externalversions"
 	"github.com/knative/pkg/controller"
 	fakeprojectriffclientset "github.com/projectriff/system/pkg/client/clientset/versioned/fake"
 	projectriffinformers "github.com/projectriff/system/pkg/client/informers/externalversions"
@@ -43,8 +45,10 @@ func TestReconcile(t *testing.T) {
 		return &Reconciler{
 			Base:             reconciler.NewBase(opt, controllerAgentName),
 			processorLister:  listers.GetStreamingProcessorLister(),
+			functionLister:   listers.GetFunctionLister(),
 			streamLister:     listers.GetStreamingStreamLister(),
 			deploymentLister: listers.GetDeploymentLister(),
+			scaledObjectLister:listers.GetScaledObjectLister(),
 
 			tracker: &rtesting.NullTracker{},
 		}
@@ -57,17 +61,21 @@ func TestNew(t *testing.T) {
 	kubeInformer := kubeinformers.NewSharedInformerFactory(kubeClient, 0)
 	projectriffClient := fakeprojectriffclientset.NewSimpleClientset()
 	projectriffInformer := projectriffinformers.NewSharedInformerFactory(projectriffClient, 0)
+	kedaClient := fakekedaclientset.NewSimpleClientset()
+	kedaInformer := kedainformers.NewSharedInformerFactory(kedaClient, 0)
 
 	processorInformer := projectriffInformer.Streaming().V1alpha1().Processors()
 	streamInformer := projectriffInformer.Streaming().V1alpha1().Streams()
 	functionInformer := projectriffInformer.Build().V1alpha1().Functions()
 	deploymentInformer := kubeInformer.Apps().V1().Deployments()
+	scaledObjectInformer := kedaInformer.Keda().V1alpha1().ScaledObjects()
 
 	c := NewController(reconciler.Options{
 		KubeClientSet:        kubeClient,
 		ProjectriffClientSet: projectriffClient,
+		KedaClientSet:        kedaClient,
 		Logger:               TestLogger(t),
-	}, processorInformer, functionInformer, streamInformer, deploymentInformer)
+	}, processorInformer, functionInformer, streamInformer, deploymentInformer, scaledObjectInformer)
 
 	if c == nil {
 		t.Fatal("Expected NewController to return a non-nil value")

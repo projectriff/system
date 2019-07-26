@@ -351,6 +351,27 @@
   revision = "f2b4162afba35581b6d4a50d3b8f34e33c144682"
 
 [[projects]]
+  branch = "master"
+  digest = "1:e30e6d392ec261532347258c1cb16cb92365c7721d5d76e030f30c75642507fa"
+  name = "github.com/kedacore/keda"
+  packages = [
+    "pkg/apis/keda",
+    "pkg/apis/keda/v1alpha1",
+    "pkg/client/clientset/versioned",
+    "pkg/client/clientset/versioned/fake",
+    "pkg/client/clientset/versioned/scheme",
+    "pkg/client/clientset/versioned/typed/keda/v1alpha1",
+    "pkg/client/clientset/versioned/typed/keda/v1alpha1/fake",
+    "pkg/client/informers/externalversions",
+    "pkg/client/informers/externalversions/internalinterfaces",
+    "pkg/client/informers/externalversions/keda",
+    "pkg/client/informers/externalversions/keda/v1alpha1",
+    "pkg/client/listers/keda/v1alpha1",
+  ]
+  pruneopts = "NUT"
+  revision = "864ddb5478276c5c4d28a14f514c71b79d04ad80"
+
+[[projects]]
   digest = "1:3a5f74d96cee6e094702734970ec83ba30779cf0d90bcd5dbe5746b09bceb1c3"
   name = "github.com/knative/build"
   packages = [
@@ -1235,6 +1256,12 @@
     "github.com/google/go-containerregistry/pkg/authn/k8schain",
     "github.com/google/go-containerregistry/pkg/name",
     "github.com/google/go-containerregistry/pkg/v1/remote",
+    "github.com/kedacore/keda/pkg/apis/keda/v1alpha1",
+    "github.com/kedacore/keda/pkg/client/clientset/versioned",
+    "github.com/kedacore/keda/pkg/client/clientset/versioned/fake",
+    "github.com/kedacore/keda/pkg/client/informers/externalversions",
+    "github.com/kedacore/keda/pkg/client/informers/externalversions/keda/v1alpha1",
+    "github.com/kedacore/keda/pkg/client/listers/keda/v1alpha1",
     "github.com/knative/build/pkg/apis/build/v1alpha1",
     "github.com/knative/build/pkg/client/clientset/versioned",
     "github.com/knative/build/pkg/client/clientset/versioned/fake",

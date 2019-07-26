@@ -19,6 +19,7 @@ package testing
 import (
 	"testing"
 
+	fakekedaclientset "github.com/kedacore/keda/pkg/client/clientset/versioned/fake"
 	fakeknbuildclientset "github.com/knative/build/pkg/client/clientset/versioned/fake"
 	"github.com/knative/pkg/controller"
 	fakeprojectriffclientset "github.com/projectriff/system/pkg/client/clientset/versioned/fake"
@@ -44,6 +45,7 @@ func MakeFactory(ctor Ctor) Factory {
 		kubeClient := fakekubeclientset.NewSimpleClientset(ls.GetKubeObjects()...)
 		projectriffClient := fakeprojectriffclientset.NewSimpleClientset(ls.GetProjectriffObjects()...)
 		knbuildClient := fakeknbuildclientset.NewSimpleClientset(ls.GetKnBuildObjects()...)
+		kedaClient := fakekedaclientset.NewSimpleClientset(ls.GetKedaObjects()...)
 		eventRecorder := record.NewFakeRecorder(maxEventBufferSize)
 
 		PrependGenerateNameReactor(&projectriffClient.Fake)
@@ -53,6 +55,7 @@ func MakeFactory(ctor Ctor) Factory {
 			KubeClientSet:        kubeClient,
 			ProjectriffClientSet: projectriffClient,
 			KnBuildClientSet:     knbuildClient,
+			KedaClientSet:        kedaClient,
 			Recorder:             eventRecorder,
 			Logger:               TestLogger(t),
 		})
@@ -61,6 +64,7 @@ func MakeFactory(ctor Ctor) Factory {
 			kubeClient.PrependReactor("*", "*", reactor)
 			projectriffClient.PrependReactor("*", "*", reactor)
 			knbuildClient.PrependReactor("*", "*", reactor)
+			kedaClient.PrependReactor("*", "*", reactor)
 		}
 
 		// Validate all Create operations through the projectriff client.

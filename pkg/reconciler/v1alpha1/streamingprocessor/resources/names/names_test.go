@@ -40,7 +40,18 @@ func TestNamer(t *testing.T) {
 		},
 		f:    Deployment,
 		want: "foo-processor",
-	}}
+	}, {
+		name: "Deployment",
+		proc: &streamingv1alpha1.Processor{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "foo",
+				Namespace: "default",
+			},
+		},
+		f:    ScaledObject,
+		want: "foo-processor",
+	},
+	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
