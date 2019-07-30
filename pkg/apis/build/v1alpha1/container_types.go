@@ -69,10 +69,10 @@ func (*Container) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("Container")
 }
 
-func (a *Container) GetStatus() apis.Status {
-	return &a.Status
+func (c *Container) GetStatus() apis.Status {
+	return &c.Status
 }
 
-func (a *Container) GetImage() string {
-	return a.Spec.Image
+func (c *Container) GetImage() string {
+	return c.Spec.Image
 }
