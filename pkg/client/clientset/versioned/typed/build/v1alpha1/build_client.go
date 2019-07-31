@@ -25,6 +25,7 @@ import (
 type BuildV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	ApplicationsGetter
+	ContainersGetter
 	FunctionsGetter
 }
 
@@ -35,6 +36,10 @@ type BuildV1alpha1Client struct {
 
 func (c *BuildV1alpha1Client) Applications(namespace string) ApplicationInterface {
 	return newApplications(c, namespace)
+}
+
+func (c *BuildV1alpha1Client) Containers(namespace string) ContainerInterface {
+	return newContainers(c, namespace)
 }
 
 func (c *BuildV1alpha1Client) Functions(namespace string) FunctionInterface {

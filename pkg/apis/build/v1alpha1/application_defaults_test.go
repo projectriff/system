@@ -31,7 +31,11 @@ func TestApplicationDefaulting(t *testing.T) {
 	}{{
 		name: "empty",
 		in:   &Application{},
-		want: &Application{},
+		want: &Application{
+			Spec: ApplicationSpec{
+				Image: "_",
+			},
+		},
 	}}
 
 	for _, test := range tests {

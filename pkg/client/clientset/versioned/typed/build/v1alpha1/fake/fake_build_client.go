@@ -29,6 +29,10 @@ func (c *FakeBuildV1alpha1) Applications(namespace string) v1alpha1.ApplicationI
 	return &FakeApplications{c, namespace}
 }
 
+func (c *FakeBuildV1alpha1) Containers(namespace string) v1alpha1.ContainerInterface {
+	return &FakeContainers{c, namespace}
+}
+
 func (c *FakeBuildV1alpha1) Functions(namespace string) v1alpha1.FunctionInterface {
 	return &FakeFunctions{c, namespace}
 }

@@ -91,6 +91,10 @@ func (l *Listers) GetApplicationLister() buildv1alpha1listers.ApplicationLister 
 	return buildv1alpha1listers.NewApplicationLister(l.indexerFor(&buildv1alpha1.Application{}))
 }
 
+func (l *Listers) GetContainerLister() buildv1alpha1listers.ContainerLister {
+	return buildv1alpha1listers.NewContainerLister(l.indexerFor(&buildv1alpha1.Container{}))
+}
+
 func (l *Listers) GetFunctionLister() buildv1alpha1listers.FunctionLister {
 	return buildv1alpha1listers.NewFunctionLister(l.indexerFor(&buildv1alpha1.Function{}))
 }

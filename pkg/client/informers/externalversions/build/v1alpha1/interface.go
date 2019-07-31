@@ -23,6 +23,8 @@ import (
 type Interface interface {
 	// Applications returns a ApplicationInformer.
 	Applications() ApplicationInformer
+	// Containers returns a ContainerInformer.
+	Containers() ContainerInformer
 	// Functions returns a FunctionInformer.
 	Functions() FunctionInformer
 }
@@ -41,6 +43,11 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 // Applications returns a ApplicationInformer.
 func (v *version) Applications() ApplicationInformer {
 	return &applicationInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// Containers returns a ContainerInformer.
+func (v *version) Containers() ContainerInformer {
+	return &containerInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // Functions returns a FunctionInformer.

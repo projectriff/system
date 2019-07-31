@@ -18,12 +18,12 @@ package v1alpha1
 
 import "context"
 
-func (f *Function) SetDefaults(ctx context.Context) {
-	f.Spec.SetDefaults(ctx)
+func (c *Container) SetDefaults(ctx context.Context) {
+	c.Spec.SetDefaults(ctx)
 }
 
-func (fs *FunctionSpec) SetDefaults(ctx context.Context) {
-	if fs.Image == "" {
-		fs.Image = "_"
+func (cs *ContainerSpec) SetDefaults(ctx context.Context) {
+	if cs.Image == "" {
+		cs.Image = "_"
 	}
 }

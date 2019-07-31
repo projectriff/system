@@ -31,7 +31,11 @@ func TestFunctionDefaulting(t *testing.T) {
 	}{{
 		name: "empty",
 		in:   &Function{},
-		want: &Function{},
+		want: &Function{
+			Spec: FunctionSpec{
+				Image: "_",
+			},
+		},
 	}}
 
 	for _, test := range tests {

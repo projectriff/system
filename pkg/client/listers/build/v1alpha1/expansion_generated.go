@@ -23,6 +23,14 @@ type ApplicationListerExpansion interface{}
 // ApplicationNamespaceLister.
 type ApplicationNamespaceListerExpansion interface{}
 
+// ContainerListerExpansion allows custom methods to be added to
+// ContainerLister.
+type ContainerListerExpansion interface{}
+
+// ContainerNamespaceListerExpansion allows custom methods to be added to
+// ContainerNamespaceLister.
+type ContainerNamespaceListerExpansion interface{}
+
 // FunctionListerExpansion allows custom methods to be added to
 // FunctionLister.
 type FunctionListerExpansion interface{}
