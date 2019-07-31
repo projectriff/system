@@ -57,6 +57,7 @@ type Reconciler struct {
 	// listers index properties about resources
 	adapterLister         knativelisters.AdapterLister
 	applicationLister     buildlisters.ApplicationLister
+	containerLister       buildlisters.ContainerLister
 	functionLister        buildlisters.FunctionLister
 	knconfigurationLister knservinglisters.ConfigurationLister
 	knserviceLister       knservinglisters.ServiceLister
@@ -73,6 +74,7 @@ func NewController(
 	opt reconciler.Options,
 	adapterInformer knativeinformers.AdapterInformer,
 	applicationInformer buildinformers.ApplicationInformer,
+	containerInformer buildinformers.ContainerInformer,
 	functionInformer buildinformers.FunctionInformer,
 	knserviceInformer knservinginformers.ServiceInformer,
 	knconfigurationInformer knservinginformers.ConfigurationInformer,
@@ -82,6 +84,7 @@ func NewController(
 		Base:                  reconciler.NewBase(opt, controllerAgentName),
 		adapterLister:         adapterInformer.Lister(),
 		applicationLister:     applicationInformer.Lister(),
+		containerLister:       containerInformer.Lister(),
 		functionLister:        functionInformer.Lister(),
 		knserviceLister:       knserviceInformer.Lister(),
 		knconfigurationLister: knconfigurationInformer.Lister(),
@@ -100,6 +103,15 @@ func NewController(
 		controller.EnsureTypeMeta(
 			c.tracker.OnChanged,
 			buildv1alpha1.SchemeGroupVersion.WithKind("Application"),
+		),
+	))
+	containerInformer.Informer().AddEventHandler(reconciler.Handler(
+		// Call the tracker's OnChanged method, but we've seen the objects
+		// coming through this path missing TypeMeta, so ensure it is properly
+		// populated.
+		controller.EnsureTypeMeta(
+			c.tracker.OnChanged,
+			buildv1alpha1.SchemeGroupVersion.WithKind("Container"),
 		),
 	))
 	functionInformer.Informer().AddEventHandler(reconciler.Handler(
@@ -255,6 +267,29 @@ func (c *Reconciler) reconcileBuild(adapter *knativev1alpha1.Adapter) error {
 		// track application for new images
 		gvk := buildv1alpha1.SchemeGroupVersion.WithKind("Application")
 		if err := c.tracker.Track(reconciler.MakeObjectRef(application, gvk), adapter); err != nil {
+			return err
+		}
+		return nil
+
+	case build.ContainerRef != "":
+		container, err := c.containerLister.Containers(adapter.Namespace).Get(build.ContainerRef)
+		if err != nil {
+			if errors.IsNotFound(err) {
+				adapter.Status.MarkBuildNotFound("container", build.ContainerRef)
+				return nil
+			}
+			return err
+		}
+		if container.Status.LatestImage == "" {
+			adapter.Status.MarkBuildLatestImageMissing("container", build.ContainerRef)
+			return nil
+		}
+		adapter.Status.LatestImage = container.Status.LatestImage
+		adapter.Status.MarkBuildReady()
+
+		// track function for new images
+		gvk := buildv1alpha1.SchemeGroupVersion.WithKind("Container")
+		if err := c.tracker.Track(reconciler.MakeObjectRef(container, gvk), adapter); err != nil {
 			return err
 		}
 		return nil

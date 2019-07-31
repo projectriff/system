@@ -225,6 +225,7 @@ func main() {
 			adapterInformer,
 
 			applicationInformer,
+			containerAgressiveInformer,
 			functionInformer,
 			knserviceInformer,
 			knconfigurationInformer,
