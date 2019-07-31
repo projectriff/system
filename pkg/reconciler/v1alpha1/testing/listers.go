@@ -25,12 +25,10 @@ import (
 	knservingv1alpha1listers "github.com/knative/serving/pkg/client/listers/serving/v1alpha1"
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	knativev1alpha1 "github.com/projectriff/system/pkg/apis/knative/v1alpha1"
-	requestv1alpha1 "github.com/projectriff/system/pkg/apis/request/v1alpha1"
 	streamv1alpha1 "github.com/projectriff/system/pkg/apis/stream/v1alpha1"
 	fakeprojectriffclientset "github.com/projectriff/system/pkg/client/clientset/versioned/fake"
 	buildv1alpha1listers "github.com/projectriff/system/pkg/client/listers/build/v1alpha1"
 	knativev1alpha1listers "github.com/projectriff/system/pkg/client/listers/knative/v1alpha1"
-	requestv1alpha1listers "github.com/projectriff/system/pkg/client/listers/request/v1alpha1"
 	streamv1alpha1listers "github.com/projectriff/system/pkg/client/listers/stream/v1alpha1"
 	"github.com/projectriff/system/pkg/reconciler/testing"
 	appsv1 "k8s.io/api/apps/v1"
@@ -100,11 +98,6 @@ func (l *Listers) GetContainerLister() buildv1alpha1listers.ContainerLister {
 func (l *Listers) GetFunctionLister() buildv1alpha1listers.FunctionLister {
 	return buildv1alpha1listers.NewFunctionLister(l.indexerFor(&buildv1alpha1.Function{}))
 }
-
-func (l *Listers) GetHandlerLister() requestv1alpha1listers.HandlerLister {
-	return requestv1alpha1listers.NewHandlerLister(l.indexerFor(&requestv1alpha1.Handler{}))
-}
-
 func (l *Listers) GetStreamLister() streamv1alpha1listers.StreamLister {
 	return streamv1alpha1listers.NewStreamLister(l.indexerFor(&streamv1alpha1.Stream{}))
 }
@@ -113,8 +106,12 @@ func (l *Listers) GetProcessorLister() streamv1alpha1listers.ProcessorLister {
 	return streamv1alpha1listers.NewProcessorLister(l.indexerFor(&streamv1alpha1.Processor{}))
 }
 
-func (l *Listers) GetAdapterLister() knativev1alpha1listers.AdapterLister {
+func (l *Listers) GetKnativeAdapterLister() knativev1alpha1listers.AdapterLister {
 	return knativev1alpha1listers.NewAdapterLister(l.indexerFor(&knativev1alpha1.Adapter{}))
+}
+
+func (l *Listers) GetKnativeHandlerLister() knativev1alpha1listers.HandlerLister {
+	return knativev1alpha1listers.NewHandlerLister(l.indexerFor(&knativev1alpha1.Handler{}))
 }
 
 func (l *Listers) GetKnBuildLister() knbuildv1alpha1listers.BuildLister {

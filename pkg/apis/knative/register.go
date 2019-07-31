@@ -21,4 +21,5 @@ const (
 	GroupName = "knative.projectriff.io"
 
 	AdapterLabelKey = GroupName + "/adapter"
+	HandlerLabelKey = GroupName + "/handler"
 )

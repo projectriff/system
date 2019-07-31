@@ -16,3 +16,5 @@
 package v1alpha1
 
 type AdapterExpansion interface{}
+
+type HandlerExpansion interface{}

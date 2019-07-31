@@ -1,7 +1,0 @@
-apiVersion: request.projectriff.io/v1alpha1
-kind: Handler
-metadata:
-  name: uppercase
-spec:
-  build:
-    functionRef: uppercase

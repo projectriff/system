@@ -29,6 +29,10 @@ func (c *FakeKnativeV1alpha1) Adapters(namespace string) v1alpha1.AdapterInterfa
 	return &FakeAdapters{c, namespace}
 }
 
+func (c *FakeKnativeV1alpha1) Handlers(namespace string) v1alpha1.HandlerInterface {
+	return &FakeHandlers{c, namespace}
+}
+
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
 func (c *FakeKnativeV1alpha1) RESTClient() rest.Interface {

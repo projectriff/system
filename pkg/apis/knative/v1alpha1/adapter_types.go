@@ -53,17 +53,6 @@ type AdapterSpec struct {
 	Target Target `json:"target"`
 }
 
-type Build struct {
-	// ApplicationRef references an application in this namespace.
-	ApplicationRef string `json:"applicationRef,omitempty"`
-
-	// ContainerRef references an container in this namespace.
-	ContainerRef string `json:"containerRef,omitempty"`
-
-	// FunctionRef references an application in this namespace.
-	FunctionRef string `json:"functionRef,omitempty"`
-}
-
 type Target struct {
 	// ServiceRef references a Knative Service in this namespace.
 	ServiceRef string `json:"serviceRef,omitempty"`

@@ -26,7 +26,7 @@ const (
 	AdapterConditionTargetFound knapis.ConditionType = "TargetFound"
 )
 
-var handlerCondSet = knapis.NewLivingConditionSet(
+var adapterCondSet = knapis.NewLivingConditionSet(
 	AdapterConditionBuildReady,
 	AdapterConditionTargetFound,
 )
@@ -36,7 +36,7 @@ func (as *AdapterStatus) GetObservedGeneration() int64 {
 }
 
 func (as *AdapterStatus) IsReady() bool {
-	return handlerCondSet.Manage(as).IsHappy()
+	return adapterCondSet.Manage(as).IsHappy()
 }
 
 func (*AdapterStatus) GetReadyConditionType() knapis.ConditionType {
@@ -44,37 +44,37 @@ func (*AdapterStatus) GetReadyConditionType() knapis.ConditionType {
 }
 
 func (as *AdapterStatus) GetCondition(t knapis.ConditionType) *knapis.Condition {
-	return handlerCondSet.Manage(as).GetCondition(t)
+	return adapterCondSet.Manage(as).GetCondition(t)
 }
 
 func (as *AdapterStatus) InitializeConditions() {
-	handlerCondSet.Manage(as).InitializeConditions()
+	adapterCondSet.Manage(as).InitializeConditions()
 }
 
 func (as *AdapterStatus) MarkBuildNotFound(kind, name string) {
-	handlerCondSet.Manage(as).MarkFalse(AdapterConditionBuildReady, "NotFound",
+	adapterCondSet.Manage(as).MarkFalse(AdapterConditionBuildReady, "NotFound",
 		"The %s %q was not found.", kind, name)
 }
 
 func (as *AdapterStatus) MarkBuildLatestImageMissing(kind, name string) {
-	handlerCondSet.Manage(as).MarkFalse(AdapterConditionBuildReady, "LatestImageMissing",
+	adapterCondSet.Manage(as).MarkFalse(AdapterConditionBuildReady, "LatestImageMissing",
 		"The %s %q is missing the latest image.", kind, name)
 }
 
 func (as *AdapterStatus) MarkBuildReady() {
-	handlerCondSet.Manage(as).MarkTrue(AdapterConditionBuildReady)
+	adapterCondSet.Manage(as).MarkTrue(AdapterConditionBuildReady)
 }
 
 func (as *AdapterStatus) MarkTargetNotFound(kind, name string) {
-	handlerCondSet.Manage(as).MarkFalse(AdapterConditionTargetFound, "NotFound",
+	adapterCondSet.Manage(as).MarkFalse(AdapterConditionTargetFound, "NotFound",
 		"The %s %q was not found.", kind, name)
 }
 
 func (as *AdapterStatus) MarkTargetInvalid(kind, name string, err error) {
-	handlerCondSet.Manage(as).MarkFalse(AdapterConditionTargetFound, "Invalid",
+	adapterCondSet.Manage(as).MarkFalse(AdapterConditionTargetFound, "Invalid",
 		"The %s %q errored: %s", kind, name, err)
 }
 
 func (as *AdapterStatus) MarkTargetFound() {
-	handlerCondSet.Manage(as).MarkTrue(AdapterConditionTargetFound)
+	adapterCondSet.Manage(as).MarkTrue(AdapterConditionTargetFound)
 }

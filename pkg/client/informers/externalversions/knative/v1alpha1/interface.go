@@ -23,6 +23,8 @@ import (
 type Interface interface {
 	// Adapters returns a AdapterInformer.
 	Adapters() AdapterInformer
+	// Handlers returns a HandlerInformer.
+	Handlers() HandlerInformer
 }
 
 type version struct {
@@ -39,4 +41,9 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 // Adapters returns a AdapterInformer.
 func (v *version) Adapters() AdapterInformer {
 	return &adapterInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// Handlers returns a HandlerInformer.
+func (v *version) Handlers() HandlerInformer {
+	return &handlerInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

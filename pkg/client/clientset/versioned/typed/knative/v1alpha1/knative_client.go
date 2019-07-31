@@ -25,6 +25,7 @@ import (
 type KnativeV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	AdaptersGetter
+	HandlersGetter
 }
 
 // KnativeV1alpha1Client is used to interact with features provided by the knative.projectriff.io group.
@@ -34,6 +35,10 @@ type KnativeV1alpha1Client struct {
 
 func (c *KnativeV1alpha1Client) Adapters(namespace string) AdapterInterface {
 	return newAdapters(c, namespace)
+}
+
+func (c *KnativeV1alpha1Client) Handlers(namespace string) HandlerInterface {
+	return newHandlers(c, namespace)
 }
 
 // NewForConfig creates a new KnativeV1alpha1Client for the given config.

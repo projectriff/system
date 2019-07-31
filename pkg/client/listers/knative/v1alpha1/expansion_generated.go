@@ -22,3 +22,11 @@ type AdapterListerExpansion interface{}
 // AdapterNamespaceListerExpansion allows custom methods to be added to
 // AdapterNamespaceLister.
 type AdapterNamespaceListerExpansion interface{}
+
+// HandlerListerExpansion allows custom methods to be added to
+// HandlerLister.
+type HandlerListerExpansion interface{}
+
+// HandlerNamespaceListerExpansion allows custom methods to be added to
+// HandlerNamespaceLister.
+type HandlerNamespaceListerExpansion interface{}

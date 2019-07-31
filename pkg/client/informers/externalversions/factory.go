@@ -24,7 +24,6 @@ import (
 	build "github.com/projectriff/system/pkg/client/informers/externalversions/build"
 	internalinterfaces "github.com/projectriff/system/pkg/client/informers/externalversions/internalinterfaces"
 	knative "github.com/projectriff/system/pkg/client/informers/externalversions/knative"
-	request "github.com/projectriff/system/pkg/client/informers/externalversions/request"
 	stream "github.com/projectriff/system/pkg/client/informers/externalversions/stream"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
@@ -174,7 +173,6 @@ type SharedInformerFactory interface {
 
 	Build() build.Interface
 	Knative() knative.Interface
-	Request() request.Interface
 	Stream() stream.Interface
 }
 
@@ -184,10 +182,6 @@ func (f *sharedInformerFactory) Build() build.Interface {
 
 func (f *sharedInformerFactory) Knative() knative.Interface {
 	return knative.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Request() request.Interface {
-	return request.New(f, f.namespace, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Stream() stream.Interface {

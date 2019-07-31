@@ -44,42 +44,6 @@ func (as AdapterSpec) Validate(ctx context.Context) *apis.FieldError {
 	return errs
 }
 
-func (b *Build) Validate(ctx context.Context) *apis.FieldError {
-	if equality.Semantic.DeepEqual(b, &Build{}) {
-		return apis.ErrMissingField(apis.CurrentField)
-	}
-
-	errs := &apis.FieldError{}
-	used := []string{}
-	unused := []string{}
-
-	if b.ApplicationRef != "" {
-		used = append(used, "applicationRef")
-	} else {
-		unused = append(unused, "applicationRef")
-	}
-
-	if b.ContainerRef != "" {
-		used = append(used, "containerRef")
-	} else {
-		unused = append(unused, "containerRef")
-	}
-
-	if b.FunctionRef != "" {
-		used = append(used, "functionRef")
-	} else {
-		unused = append(unused, "functionRef")
-	}
-
-	if len(used) == 0 {
-		errs = errs.Also(apis.ErrMissingOneOf(unused...))
-	} else if len(used) > 1 {
-		errs = errs.Also(apis.ErrMultipleOneOf(used...))
-	}
-
-	return errs
-}
-
 func (t *Target) Validate(ctx context.Context) *apis.FieldError {
 	if equality.Semantic.DeepEqual(t, &Target{}) {
 		return apis.ErrMissingField(apis.CurrentField)
