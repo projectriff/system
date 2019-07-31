@@ -44,6 +44,7 @@ import (
 	"github.com/projectriff/system/pkg/logging"
 	"github.com/projectriff/system/pkg/metrics"
 	"github.com/projectriff/system/pkg/reconciler"
+	"github.com/projectriff/system/pkg/reconciler/v1alpha1/adapter"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/application"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/builder"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/credential"
@@ -136,6 +137,7 @@ func main() {
 	handlerInformer := projectriffInformerFactory.Request().V1alpha1().Handlers()
 	streamInformer := projectriffInformerFactory.Stream().V1alpha1().Streams()
 	processorInformer := projectriffInformerFactory.Stream().V1alpha1().Processors()
+	adapterInformer := projectriffInformerFactory.Knative().V1alpha1().Adapters()
 
 	deploymentInformer := kubeInformerFactory.Apps().V1().Deployments()
 	configmapInformer := kubeInformerFactory.Core().V1().ConfigMaps()
@@ -144,6 +146,7 @@ func main() {
 	serviceaccountInformer := kubeInformerFactory.Core().V1().ServiceAccounts()
 	knbuildInformer := knbuildInformerFactory.Build().V1alpha1().Builds()
 	knclusterbuildtemplateInformer := knbuildInformerFactory.Build().V1alpha1().ClusterBuildTemplates()
+	knserviceInformer := knservingInformerFactory.Serving().V1alpha1().Services()
 	knconfigurationInformer := knservingInformerFactory.Serving().V1alpha1().Configurations()
 	knrouteInformer := knservingInformerFactory.Serving().V1alpha1().Routes()
 
@@ -204,6 +207,16 @@ func main() {
 			streamInformer,
 			deploymentInformer,
 		),
+		// knative.projectriff.io
+		adapter.NewController(
+			opt,
+			adapterInformer,
+
+			applicationInformer,
+			functionInformer,
+			knserviceInformer,
+			knconfigurationInformer,
+		),
 	}
 
 	// Watch the logging config map and dynamically update logging levels.
@@ -228,11 +241,13 @@ func main() {
 		handlerInformer.Informer().HasSynced,
 		streamInformer.Informer().HasSynced,
 		processorInformer.Informer().HasSynced,
+		adapterInformer.Informer().HasSynced,
 		deploymentInformer.Informer().HasSynced,
 		pvcInformer.Informer().HasSynced,
 		secretInformer.Informer().HasSynced,
 		serviceaccountInformer.Informer().HasSynced,
 		knbuildInformer.Informer().HasSynced,
+		knserviceInformer.Informer().HasSynced,
 		knconfigurationInformer.Informer().HasSynced,
 		knrouteInformer.Informer().HasSynced,
 	} {

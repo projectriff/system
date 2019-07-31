@@ -33,6 +33,7 @@ import (
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	requestv1alpha1 "github.com/projectriff/system/pkg/apis/request/v1alpha1"
 	streamv1alpha1 "github.com/projectriff/system/pkg/apis/stream/v1alpha1"
+	knativev1alpha1 "github.com/projectriff/system/pkg/apis/knative/v1alpha1"
 	"github.com/projectriff/system/pkg/logging"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
@@ -104,6 +105,7 @@ func main() {
 			requestv1alpha1.SchemeGroupVersion.WithKind("Handler"):   &requestv1alpha1.Handler{},
 			streamv1alpha1.SchemeGroupVersion.WithKind("Stream"):     &streamv1alpha1.Stream{},
 			streamv1alpha1.SchemeGroupVersion.WithKind("Processor"):  &streamv1alpha1.Processor{},
+			knativev1alpha1.SchemeGroupVersion.WithKind("Adapter"):   &knativev1alpha1.Adapter{},
 		},
 		Logger: logger,
 	}

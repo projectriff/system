@@ -3,7 +3,7 @@ kind: Application
 metadata:
   name: node-sample
 spec:
-  image: gcr.io/cf-sandbox-sandrews/sample
+  image: _
   cacheSize: 8Gi
   source:
     git:

@@ -24,10 +24,12 @@ import (
 	fakeknservingclientset "github.com/knative/serving/pkg/client/clientset/versioned/fake"
 	knservingv1alpha1listers "github.com/knative/serving/pkg/client/listers/serving/v1alpha1"
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
+	knativev1alpha1 "github.com/projectriff/system/pkg/apis/knative/v1alpha1"
 	requestv1alpha1 "github.com/projectriff/system/pkg/apis/request/v1alpha1"
 	streamv1alpha1 "github.com/projectriff/system/pkg/apis/stream/v1alpha1"
 	fakeprojectriffclientset "github.com/projectriff/system/pkg/client/clientset/versioned/fake"
 	buildv1alpha1listers "github.com/projectriff/system/pkg/client/listers/build/v1alpha1"
+	knativev1alpha1listers "github.com/projectriff/system/pkg/client/listers/knative/v1alpha1"
 	requestv1alpha1listers "github.com/projectriff/system/pkg/client/listers/request/v1alpha1"
 	streamv1alpha1listers "github.com/projectriff/system/pkg/client/listers/stream/v1alpha1"
 	"github.com/projectriff/system/pkg/reconciler/testing"
@@ -107,12 +109,20 @@ func (l *Listers) GetProcessorLister() streamv1alpha1listers.ProcessorLister {
 	return streamv1alpha1listers.NewProcessorLister(l.indexerFor(&streamv1alpha1.Processor{}))
 }
 
+func (l *Listers) GetAdapterLister() knativev1alpha1listers.AdapterLister {
+	return knativev1alpha1listers.NewAdapterLister(l.indexerFor(&knativev1alpha1.Adapter{}))
+}
+
 func (l *Listers) GetKnBuildLister() knbuildv1alpha1listers.BuildLister {
 	return knbuildv1alpha1listers.NewBuildLister(l.indexerFor(&knbuildv1alpha1.Build{}))
 }
 
 func (l *Listers) GetKnClusterBuildTemplateLister() knbuildv1alpha1listers.ClusterBuildTemplateLister {
 	return knbuildv1alpha1listers.NewClusterBuildTemplateLister(l.indexerFor(&knbuildv1alpha1.ClusterBuildTemplate{}))
+}
+
+func (l *Listers) GetKnServiceLister() knservingv1alpha1listers.ServiceLister {
+	return knservingv1alpha1listers.NewServiceLister(l.indexerFor(&knservingv1alpha1.Service{}))
 }
 
 func (l *Listers) GetKnConfigurationLister() knservingv1alpha1listers.ConfigurationLister {
