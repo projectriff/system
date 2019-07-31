@@ -23,5 +23,7 @@ func (c *Container) SetDefaults(ctx context.Context) {
 }
 
 func (cs *ContainerSpec) SetDefaults(ctx context.Context) {
-	// nothing to do
+	if cs.Image == "" {
+		cs.Image = "_"
+	}
 }
