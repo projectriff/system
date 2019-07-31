@@ -23,5 +23,7 @@ func (a *Application) SetDefaults(ctx context.Context) {
 }
 
 func (as *ApplicationSpec) SetDefaults(ctx context.Context) {
-	// nothing to do
+	if as.Image == "" {
+		as.Image = "_"
+	}
 }

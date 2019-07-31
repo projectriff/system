@@ -48,7 +48,8 @@ var (
 
 type ApplicationSpec struct {
 	// Image repository to push built images. May contain a leading underscore
-	// to have the default image prefix applied.
+	// to have the default image prefix applied, or be `_` to combine the default
+	// image prefix with the resource's name as a default value.
 	Image string `json:"image"`
 
 	// CacheSize for an optional PersistentVolumeClaim used to store

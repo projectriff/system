@@ -48,6 +48,7 @@ func TestReconcile(t *testing.T) {
 			knconfigurationLister: listers.GetKnConfigurationLister(),
 			knrouteLister:         listers.GetKnRouteLister(),
 			applicationLister:     listers.GetApplicationLister(),
+			containerLister:       listers.GetContainerLister(),
 			functionLister:        listers.GetFunctionLister(),
 
 			tracker: &rtesting.NullTracker{},
@@ -67,6 +68,7 @@ func TestNew(t *testing.T) {
 	knconfigurationInformer := knservingInformer.Serving().V1alpha1().Configurations()
 	knrouteInformer := knservingInformer.Serving().V1alpha1().Routes()
 	applicationInformer := projectriffInformer.Build().V1alpha1().Applications()
+	containerInformer := projectriffInformer.Build().V1alpha1().Containers()
 	functionInformer := projectriffInformer.Build().V1alpha1().Functions()
 
 	c := NewController(reconciler.Options{
@@ -74,7 +76,7 @@ func TestNew(t *testing.T) {
 		ProjectriffClientSet: projectriffClient,
 		KnServingClientSet:   knservingClient,
 		Logger:               TestLogger(t),
-	}, handlerInformer, knconfigurationInformer, knrouteInformer, applicationInformer, functionInformer)
+	}, handlerInformer, knconfigurationInformer, knrouteInformer, applicationInformer, containerInformer, functionInformer)
 
 	if c == nil {
 		t.Fatal("Expected NewController to return a non-nil value")

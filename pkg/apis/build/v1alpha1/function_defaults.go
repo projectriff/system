@@ -23,5 +23,7 @@ func (f *Function) SetDefaults(ctx context.Context) {
 }
 
 func (fs *FunctionSpec) SetDefaults(ctx context.Context) {
-	// nothing to do
+	if fs.Image == "" {
+		fs.Image = "_"
+	}
 }
