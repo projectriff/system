@@ -49,7 +49,8 @@ import (
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/container"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/credential"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/function"
-	"github.com/projectriff/system/pkg/reconciler/v1alpha1/handler"
+	"github.com/projectriff/system/pkg/reconciler/v1alpha1/knativeadapter"
+	"github.com/projectriff/system/pkg/reconciler/v1alpha1/knativehandler"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/streamingprocessor"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/streamingstream"
 	"go.uber.org/zap"
@@ -138,9 +139,10 @@ func main() {
 	applicationInformer := projectriffInformerFactory.Build().V1alpha1().Applications()
 	containerAgressiveInformer := projectriffAgressiveInformerFactory.Build().V1alpha1().Containers()
 	functionInformer := projectriffInformerFactory.Build().V1alpha1().Functions()
-	handlerInformer := projectriffInformerFactory.Request().V1alpha1().Handlers()
 	streamInformer := projectriffInformerFactory.Streaming().V1alpha1().Streams()
 	processorInformer := projectriffInformerFactory.Streaming().V1alpha1().Processors()
+	knativeadapterInformer := projectriffInformerFactory.Knative().V1alpha1().Adapters()
+	knativehandlerInformer := projectriffInformerFactory.Knative().V1alpha1().Handlers()
 
 	deploymentInformer := kubeInformerFactory.Apps().V1().Deployments()
 	configmapInformer := kubeInformerFactory.Core().V1().ConfigMaps()
@@ -149,6 +151,7 @@ func main() {
 	serviceaccountInformer := kubeInformerFactory.Core().V1().ServiceAccounts()
 	knbuildInformer := knbuildInformerFactory.Build().V1alpha1().Builds()
 	knclusterbuildtemplateInformer := knbuildInformerFactory.Build().V1alpha1().ClusterBuildTemplates()
+	knserviceInformer := knservingInformerFactory.Serving().V1alpha1().Services()
 	knconfigurationInformer := knservingInformerFactory.Serving().V1alpha1().Configurations()
 	knrouteInformer := knservingInformerFactory.Serving().V1alpha1().Routes()
 
@@ -192,17 +195,6 @@ func main() {
 
 			knclusterbuildtemplateInformer,
 		),
-		// run.projectriff.io
-		handler.NewController(
-			opt,
-			handlerInformer,
-
-			knconfigurationInformer,
-			knrouteInformer,
-			applicationInformer,
-			containerAgressiveInformer,
-			functionInformer,
-		),
 		// streaming.projectriff.io
 		streamingstream.NewController(
 			opt,
@@ -215,6 +207,27 @@ func main() {
 			functionInformer,
 			streamInformer,
 			deploymentInformer,
+		),
+		// knative.projectriff.io
+		knativeadapter.NewController(
+			opt,
+			knativeadapterInformer,
+
+			applicationInformer,
+			containerAgressiveInformer,
+			functionInformer,
+			knserviceInformer,
+			knconfigurationInformer,
+		),
+		knativehandler.NewController(
+			opt,
+			knativehandlerInformer,
+
+			knconfigurationInformer,
+			knrouteInformer,
+			applicationInformer,
+			containerAgressiveInformer,
+			functionInformer,
 		),
 	}
 
@@ -239,14 +252,16 @@ func main() {
 		applicationInformer.Informer().HasSynced,
 		containerAgressiveInformer.Informer().HasSynced,
 		functionInformer.Informer().HasSynced,
-		handlerInformer.Informer().HasSynced,
 		streamInformer.Informer().HasSynced,
 		processorInformer.Informer().HasSynced,
+		knativeadapterInformer.Informer().HasSynced,
+		knativehandlerInformer.Informer().HasSynced,
 		deploymentInformer.Informer().HasSynced,
 		pvcInformer.Informer().HasSynced,
 		secretInformer.Informer().HasSynced,
 		serviceaccountInformer.Informer().HasSynced,
 		knbuildInformer.Informer().HasSynced,
+		knserviceInformer.Informer().HasSynced,
 		knconfigurationInformer.Informer().HasSynced,
 		knrouteInformer.Informer().HasSynced,
 	} {

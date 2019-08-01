@@ -17,7 +17,7 @@ package fake
 
 import (
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
-	requestv1alpha1 "github.com/projectriff/system/pkg/apis/request/v1alpha1"
+	knativev1alpha1 "github.com/projectriff/system/pkg/apis/knative/v1alpha1"
 	streamingv1alpha1 "github.com/projectriff/system/pkg/apis/streaming/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
@@ -31,7 +31,7 @@ var codecs = serializer.NewCodecFactory(scheme)
 var parameterCodec = runtime.NewParameterCodec(scheme)
 var localSchemeBuilder = runtime.SchemeBuilder{
 	buildv1alpha1.AddToScheme,
-	requestv1alpha1.AddToScheme,
+	knativev1alpha1.AddToScheme,
 	streamingv1alpha1.AddToScheme,
 }
 

@@ -3,7 +3,7 @@ kind: Function
 metadata:
   name: uppercase
 spec:
-  image: gcr.io/cf-sandbox-sandrews/uppercase
+  image: _
   cacheSize: 8Gi
   source:
     git:

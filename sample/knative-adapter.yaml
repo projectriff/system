@@ -1,0 +1,9 @@
+apiVersion: knative.projectriff.io/v1alpha1
+kind: Adapter
+metadata:
+  name: uppercase
+spec:
+  build:
+    functionRef: uppercase
+  target:
+    serviceRef: uppercase
