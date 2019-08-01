@@ -1,4 +1,4 @@
-apiVersion: stream.projectriff.io/v1alpha1
+apiVersion: streaming.projectriff.io/v1alpha1
 kind: Stream
 metadata:
   name: steampunk

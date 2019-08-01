@@ -50,8 +50,8 @@ import (
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/credential"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/function"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/handler"
-	"github.com/projectriff/system/pkg/reconciler/v1alpha1/processor"
-	"github.com/projectriff/system/pkg/reconciler/v1alpha1/stream"
+	"github.com/projectriff/system/pkg/reconciler/v1alpha1/streamingprocessor"
+	"github.com/projectriff/system/pkg/reconciler/v1alpha1/streamingstream"
 	"go.uber.org/zap"
 )
 
@@ -139,8 +139,8 @@ func main() {
 	containerAgressiveInformer := projectriffAgressiveInformerFactory.Build().V1alpha1().Containers()
 	functionInformer := projectriffInformerFactory.Build().V1alpha1().Functions()
 	handlerInformer := projectriffInformerFactory.Request().V1alpha1().Handlers()
-	streamInformer := projectriffInformerFactory.Stream().V1alpha1().Streams()
-	processorInformer := projectriffInformerFactory.Stream().V1alpha1().Processors()
+	streamInformer := projectriffInformerFactory.Streaming().V1alpha1().Streams()
+	processorInformer := projectriffInformerFactory.Streaming().V1alpha1().Processors()
 
 	deploymentInformer := kubeInformerFactory.Apps().V1().Deployments()
 	configmapInformer := kubeInformerFactory.Core().V1().ConfigMaps()
@@ -203,12 +203,12 @@ func main() {
 			containerAgressiveInformer,
 			functionInformer,
 		),
-		// streams.projectriff.io
-		stream.NewController(
+		// streaming.projectriff.io
+		streamingstream.NewController(
 			opt,
 			streamInformer,
 		),
-		processor.NewController(
+		streamingprocessor.NewController(
 			opt,
 			processorInformer,
 

@@ -24,7 +24,7 @@ import (
 	build "github.com/projectriff/system/pkg/client/informers/externalversions/build"
 	internalinterfaces "github.com/projectriff/system/pkg/client/informers/externalversions/internalinterfaces"
 	request "github.com/projectriff/system/pkg/client/informers/externalversions/request"
-	stream "github.com/projectriff/system/pkg/client/informers/externalversions/stream"
+	streaming "github.com/projectriff/system/pkg/client/informers/externalversions/streaming"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -173,7 +173,7 @@ type SharedInformerFactory interface {
 
 	Build() build.Interface
 	Request() request.Interface
-	Stream() stream.Interface
+	Streaming() streaming.Interface
 }
 
 func (f *sharedInformerFactory) Build() build.Interface {
@@ -184,6 +184,6 @@ func (f *sharedInformerFactory) Request() request.Interface {
 	return request.New(f, f.namespace, f.tweakListOptions)
 }
 
-func (f *sharedInformerFactory) Stream() stream.Interface {
-	return stream.New(f, f.namespace, f.tweakListOptions)
+func (f *sharedInformerFactory) Streaming() streaming.Interface {
+	return streaming.New(f, f.namespace, f.tweakListOptions)
 }

@@ -35,7 +35,6 @@ import (
 	requestinformers "github.com/projectriff/system/pkg/client/informers/externalversions/request/v1alpha1"
 	buildlisters "github.com/projectriff/system/pkg/client/listers/build/v1alpha1"
 	requestlisters "github.com/projectriff/system/pkg/client/listers/request/v1alpha1"
-	streamlisters "github.com/projectriff/system/pkg/client/listers/stream/v1alpha1"
 	"github.com/projectriff/system/pkg/reconciler"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/handler/resources"
 	resourcenames "github.com/projectriff/system/pkg/reconciler/v1alpha1/handler/resources/names"
@@ -60,7 +59,6 @@ type Reconciler struct {
 
 	// listers index properties about resources
 	handlerLister         requestlisters.HandlerLister
-	processorLister       streamlisters.ProcessorLister
 	knconfigurationLister knservinglisters.ConfigurationLister
 	knrouteLister         knservinglisters.RouteLister
 	applicationLister     buildlisters.ApplicationLister

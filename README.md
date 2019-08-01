@@ -11,7 +11,7 @@ riff System contains three API groups with CustomResourceDefinitions that are th
   - `Function` - functions built from source using function buildpacks
 - `request.projectriff.io/v1alpha1`
   - `Handler` - handlers map HTTP requests to applications, functions or images
-- `stream.projectriff.io/v1alpha1`
+- `streaming.projectriff.io/v1alpha1`
   - `Stream` - streams of messages
   - `Processor` - processors apply functions to messages on streams
 
