@@ -20,6 +20,7 @@ import (
 
 	v1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	knative_v1alpha1 "github.com/projectriff/system/pkg/apis/knative/v1alpha1"
+	request_v1alpha1 "github.com/projectriff/system/pkg/apis/request/v1alpha1"
 	streaming_v1alpha1 "github.com/projectriff/system/pkg/apis/streaming/v1alpha1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
@@ -64,6 +65,10 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Knative().V1alpha1().Adapters().Informer()}, nil
 	case knative_v1alpha1.SchemeGroupVersion.WithResource("handlers"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Knative().V1alpha1().Handlers().Informer()}, nil
+
+		// Group=request.projectriff.io, Version=v1alpha1
+	case request_v1alpha1.SchemeGroupVersion.WithResource("handlers"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Request().V1alpha1().Handlers().Informer()}, nil
 
 		// Group=streaming.projectriff.io, Version=v1alpha1
 	case streaming_v1alpha1.SchemeGroupVersion.WithResource("processors"):

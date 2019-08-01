@@ -18,6 +18,7 @@ package versioned
 import (
 	buildv1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/build/v1alpha1"
 	knativev1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/knative/v1alpha1"
+	requestv1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/request/v1alpha1"
 	streamingv1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/streaming/v1alpha1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
@@ -32,6 +33,9 @@ type Interface interface {
 	KnativeV1alpha1() knativev1alpha1.KnativeV1alpha1Interface
 	// Deprecated: please explicitly pick a version if possible.
 	Knative() knativev1alpha1.KnativeV1alpha1Interface
+	RequestV1alpha1() requestv1alpha1.RequestV1alpha1Interface
+	// Deprecated: please explicitly pick a version if possible.
+	Request() requestv1alpha1.RequestV1alpha1Interface
 	StreamingV1alpha1() streamingv1alpha1.StreamingV1alpha1Interface
 	// Deprecated: please explicitly pick a version if possible.
 	Streaming() streamingv1alpha1.StreamingV1alpha1Interface
@@ -43,6 +47,7 @@ type Clientset struct {
 	*discovery.DiscoveryClient
 	buildV1alpha1     *buildv1alpha1.BuildV1alpha1Client
 	knativeV1alpha1   *knativev1alpha1.KnativeV1alpha1Client
+	requestV1alpha1   *requestv1alpha1.RequestV1alpha1Client
 	streamingV1alpha1 *streamingv1alpha1.StreamingV1alpha1Client
 }
 
@@ -66,6 +71,17 @@ func (c *Clientset) KnativeV1alpha1() knativev1alpha1.KnativeV1alpha1Interface {
 // Please explicitly pick a version.
 func (c *Clientset) Knative() knativev1alpha1.KnativeV1alpha1Interface {
 	return c.knativeV1alpha1
+}
+
+// RequestV1alpha1 retrieves the RequestV1alpha1Client
+func (c *Clientset) RequestV1alpha1() requestv1alpha1.RequestV1alpha1Interface {
+	return c.requestV1alpha1
+}
+
+// Deprecated: Request retrieves the default version of RequestClient.
+// Please explicitly pick a version.
+func (c *Clientset) Request() requestv1alpha1.RequestV1alpha1Interface {
+	return c.requestV1alpha1
 }
 
 // StreamingV1alpha1 retrieves the StreamingV1alpha1Client
@@ -103,6 +119,10 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	if err != nil {
 		return nil, err
 	}
+	cs.requestV1alpha1, err = requestv1alpha1.NewForConfig(&configShallowCopy)
+	if err != nil {
+		return nil, err
+	}
 	cs.streamingV1alpha1, err = streamingv1alpha1.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
@@ -121,6 +141,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 	var cs Clientset
 	cs.buildV1alpha1 = buildv1alpha1.NewForConfigOrDie(c)
 	cs.knativeV1alpha1 = knativev1alpha1.NewForConfigOrDie(c)
+	cs.requestV1alpha1 = requestv1alpha1.NewForConfigOrDie(c)
 	cs.streamingV1alpha1 = streamingv1alpha1.NewForConfigOrDie(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClientForConfigOrDie(c)
@@ -132,6 +153,7 @@ func New(c rest.Interface) *Clientset {
 	var cs Clientset
 	cs.buildV1alpha1 = buildv1alpha1.New(c)
 	cs.knativeV1alpha1 = knativev1alpha1.New(c)
+	cs.requestV1alpha1 = requestv1alpha1.New(c)
 	cs.streamingV1alpha1 = streamingv1alpha1.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)

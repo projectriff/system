@@ -51,6 +51,7 @@ import (
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/function"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/knativeadapter"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/knativehandler"
+	"github.com/projectriff/system/pkg/reconciler/v1alpha1/requesthandler"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/streamingprocessor"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/streamingstream"
 	"go.uber.org/zap"
@@ -139,12 +140,14 @@ func main() {
 	applicationInformer := projectriffInformerFactory.Build().V1alpha1().Applications()
 	containerAgressiveInformer := projectriffAgressiveInformerFactory.Build().V1alpha1().Containers()
 	functionInformer := projectriffInformerFactory.Build().V1alpha1().Functions()
+	requesthandlerInformer := projectriffInformerFactory.Request().V1alpha1().Handlers()
 	streamInformer := projectriffInformerFactory.Streaming().V1alpha1().Streams()
 	processorInformer := projectriffInformerFactory.Streaming().V1alpha1().Processors()
 	knativeadapterInformer := projectriffInformerFactory.Knative().V1alpha1().Adapters()
 	knativehandlerInformer := projectriffInformerFactory.Knative().V1alpha1().Handlers()
 
 	deploymentInformer := kubeInformerFactory.Apps().V1().Deployments()
+	serviceInformer := kubeInformerFactory.Core().V1().Services()
 	configmapInformer := kubeInformerFactory.Core().V1().ConfigMaps()
 	pvcInformer := kubeInformerFactory.Core().V1().PersistentVolumeClaims()
 	secretInformer := kubeInformerFactory.Core().V1().Secrets()
@@ -194,6 +197,17 @@ func main() {
 			configmapInformer,
 
 			knclusterbuildtemplateInformer,
+		),
+		// request.projectriff.io
+		requesthandler.NewController(
+			opt,
+			requesthandlerInformer,
+
+			deploymentInformer,
+			serviceInformer,
+			applicationInformer,
+			containerAgressiveInformer,
+			functionInformer,
 		),
 		// streaming.projectriff.io
 		streamingstream.NewController(
@@ -252,11 +266,13 @@ func main() {
 		applicationInformer.Informer().HasSynced,
 		containerAgressiveInformer.Informer().HasSynced,
 		functionInformer.Informer().HasSynced,
+		requesthandlerInformer.Informer().HasSynced,
 		streamInformer.Informer().HasSynced,
 		processorInformer.Informer().HasSynced,
 		knativeadapterInformer.Informer().HasSynced,
 		knativehandlerInformer.Informer().HasSynced,
 		deploymentInformer.Informer().HasSynced,
+		serviceInformer.Informer().HasSynced,
 		pvcInformer.Informer().HasSynced,
 		secretInformer.Informer().HasSynced,
 		serviceaccountInformer.Informer().HasSynced,

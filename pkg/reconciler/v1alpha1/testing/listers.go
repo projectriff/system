@@ -25,10 +25,12 @@ import (
 	knservingv1alpha1listers "github.com/knative/serving/pkg/client/listers/serving/v1alpha1"
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	knativev1alpha1 "github.com/projectriff/system/pkg/apis/knative/v1alpha1"
+	requestv1alpha1 "github.com/projectriff/system/pkg/apis/request/v1alpha1"
 	streamingv1alpha1 "github.com/projectriff/system/pkg/apis/streaming/v1alpha1"
 	fakeprojectriffclientset "github.com/projectriff/system/pkg/client/clientset/versioned/fake"
 	buildv1alpha1listers "github.com/projectriff/system/pkg/client/listers/build/v1alpha1"
 	knativev1alpha1listers "github.com/projectriff/system/pkg/client/listers/knative/v1alpha1"
+	requestv1alpha1listers "github.com/projectriff/system/pkg/client/listers/request/v1alpha1"
 	streamingv1alpha1listers "github.com/projectriff/system/pkg/client/listers/streaming/v1alpha1"
 	"github.com/projectriff/system/pkg/reconciler/testing"
 	appsv1 "k8s.io/api/apps/v1"
@@ -99,6 +101,10 @@ func (l *Listers) GetFunctionLister() buildv1alpha1listers.FunctionLister {
 	return buildv1alpha1listers.NewFunctionLister(l.indexerFor(&buildv1alpha1.Function{}))
 }
 
+func (l *Listers) GetRequestHandlerLister() requestv1alpha1listers.HandlerLister {
+	return requestv1alpha1listers.NewHandlerLister(l.indexerFor(&requestv1alpha1.Handler{}))
+}
+
 func (l *Listers) GetStreamingStreamLister() streamingv1alpha1listers.StreamLister {
 	return streamingv1alpha1listers.NewStreamLister(l.indexerFor(&streamingv1alpha1.Stream{}))
 }
@@ -145,6 +151,10 @@ func (l *Listers) GetConfigMapLister() corev1listers.ConfigMapLister {
 
 func (l *Listers) GetDeploymentLister() appsv1listers.DeploymentLister {
 	return appsv1listers.NewDeploymentLister(l.indexerFor(&appsv1.Deployment{}))
+}
+
+func (l *Listers) GetServiceLister() corev1listers.ServiceLister {
+	return corev1listers.NewServiceLister(l.indexerFor(&corev1.Service{}))
 }
 
 func (l *Listers) GetSecretLister() corev1listers.SecretLister {
