@@ -14,7 +14,7 @@ rules:
   - apiGroups: ["request.projectriff.io"]
     resources: ["*"]
     verbs: ["*"]
-  - apiGroups: ["stream.projectriff.io"]
+  - apiGroups: ["streaming.projectriff.io"]
     resources: ["*"]
     verbs: ["*"]
 
@@ -34,7 +34,7 @@ rules:
   - apiGroups: ["request.projectriff.io"]
     resources: ["*"]
     verbs: ["get", "list", "watch"]
-  - apiGroups: ["stream.projectriff.io"]
+  - apiGroups: ["streaming.projectriff.io"]
     resources: ["*"]
     verbs: ["get", "list", "watch"]
 
@@ -52,7 +52,7 @@ rules:
   - apiGroups: ["request.projectriff.io"]
     resources: ["*"]
     verbs: ["*"]
-  - apiGroups: ["stream.projectriff.io"]
+  - apiGroups: ["streaming.projectriff.io"]
     resources: ["*"]
     verbs: ["*"]
   - apiGroups: [""]

@@ -21,8 +21,8 @@ import (
 	fakebuildv1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/build/v1alpha1/fake"
 	requestv1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/request/v1alpha1"
 	fakerequestv1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/request/v1alpha1/fake"
-	streamv1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/stream/v1alpha1"
-	fakestreamv1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/stream/v1alpha1/fake"
+	streamingv1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/streaming/v1alpha1"
+	fakestreamingv1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/streaming/v1alpha1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -92,12 +92,12 @@ func (c *Clientset) Request() requestv1alpha1.RequestV1alpha1Interface {
 	return &fakerequestv1alpha1.FakeRequestV1alpha1{Fake: &c.Fake}
 }
 
-// StreamV1alpha1 retrieves the StreamV1alpha1Client
-func (c *Clientset) StreamV1alpha1() streamv1alpha1.StreamV1alpha1Interface {
-	return &fakestreamv1alpha1.FakeStreamV1alpha1{Fake: &c.Fake}
+// StreamingV1alpha1 retrieves the StreamingV1alpha1Client
+func (c *Clientset) StreamingV1alpha1() streamingv1alpha1.StreamingV1alpha1Interface {
+	return &fakestreamingv1alpha1.FakeStreamingV1alpha1{Fake: &c.Fake}
 }
 
-// Stream retrieves the StreamV1alpha1Client
-func (c *Clientset) Stream() streamv1alpha1.StreamV1alpha1Interface {
-	return &fakestreamv1alpha1.FakeStreamV1alpha1{Fake: &c.Fake}
+// Streaming retrieves the StreamingV1alpha1Client
+func (c *Clientset) Streaming() streamingv1alpha1.StreamingV1alpha1Interface {
+	return &fakestreamingv1alpha1.FakeStreamingV1alpha1{Fake: &c.Fake}
 }

@@ -25,11 +25,11 @@ import (
 	knservingv1alpha1listers "github.com/knative/serving/pkg/client/listers/serving/v1alpha1"
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	requestv1alpha1 "github.com/projectriff/system/pkg/apis/request/v1alpha1"
-	streamv1alpha1 "github.com/projectriff/system/pkg/apis/stream/v1alpha1"
+	streamingv1alpha1 "github.com/projectriff/system/pkg/apis/streaming/v1alpha1"
 	fakeprojectriffclientset "github.com/projectriff/system/pkg/client/clientset/versioned/fake"
 	buildv1alpha1listers "github.com/projectriff/system/pkg/client/listers/build/v1alpha1"
 	requestv1alpha1listers "github.com/projectriff/system/pkg/client/listers/request/v1alpha1"
-	streamv1alpha1listers "github.com/projectriff/system/pkg/client/listers/stream/v1alpha1"
+	streamingv1alpha1listers "github.com/projectriff/system/pkg/client/listers/streaming/v1alpha1"
 	"github.com/projectriff/system/pkg/reconciler/testing"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -103,12 +103,12 @@ func (l *Listers) GetHandlerLister() requestv1alpha1listers.HandlerLister {
 	return requestv1alpha1listers.NewHandlerLister(l.indexerFor(&requestv1alpha1.Handler{}))
 }
 
-func (l *Listers) GetStreamLister() streamv1alpha1listers.StreamLister {
-	return streamv1alpha1listers.NewStreamLister(l.indexerFor(&streamv1alpha1.Stream{}))
+func (l *Listers) GetStreamingStreamLister() streamingv1alpha1listers.StreamLister {
+	return streamingv1alpha1listers.NewStreamLister(l.indexerFor(&streamingv1alpha1.Stream{}))
 }
 
-func (l *Listers) GetProcessorLister() streamv1alpha1listers.ProcessorLister {
-	return streamv1alpha1listers.NewProcessorLister(l.indexerFor(&streamv1alpha1.Processor{}))
+func (l *Listers) GetStreamingProcessorLister() streamingv1alpha1listers.ProcessorLister {
+	return streamingv1alpha1listers.NewProcessorLister(l.indexerFor(&streamingv1alpha1.Processor{}))
 }
 
 func (l *Listers) GetKnBuildLister() knbuildv1alpha1listers.BuildLister {
