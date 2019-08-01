@@ -51,8 +51,8 @@ import (
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/function"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/knativeadapter"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/knativehandler"
-	"github.com/projectriff/system/pkg/reconciler/v1alpha1/processor"
-	"github.com/projectriff/system/pkg/reconciler/v1alpha1/stream"
+	"github.com/projectriff/system/pkg/reconciler/v1alpha1/streamingprocessor"
+	"github.com/projectriff/system/pkg/reconciler/v1alpha1/streamingstream"
 	"go.uber.org/zap"
 )
 
@@ -139,8 +139,8 @@ func main() {
 	applicationInformer := projectriffInformerFactory.Build().V1alpha1().Applications()
 	containerAgressiveInformer := projectriffAgressiveInformerFactory.Build().V1alpha1().Containers()
 	functionInformer := projectriffInformerFactory.Build().V1alpha1().Functions()
-	streamInformer := projectriffInformerFactory.Stream().V1alpha1().Streams()
-	processorInformer := projectriffInformerFactory.Stream().V1alpha1().Processors()
+	streamInformer := projectriffInformerFactory.Streaming().V1alpha1().Streams()
+	processorInformer := projectriffInformerFactory.Streaming().V1alpha1().Processors()
 	knativeadapterInformer := projectriffInformerFactory.Knative().V1alpha1().Adapters()
 	knativehandlerInformer := projectriffInformerFactory.Knative().V1alpha1().Handlers()
 
@@ -195,12 +195,12 @@ func main() {
 
 			knclusterbuildtemplateInformer,
 		),
-		// streams.projectriff.io
-		stream.NewController(
+		// streaming.projectriff.io
+		streamingstream.NewController(
 			opt,
 			streamInformer,
 		),
-		processor.NewController(
+		streamingprocessor.NewController(
 			opt,
 			processorInformer,
 
