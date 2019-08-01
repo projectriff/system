@@ -10,12 +10,14 @@ riff System contains three API groups with CustomResourceDefinitions that are th
   - `Application` - applications built from source using application buildpacks
   - `Function` - functions built from source using function buildpacks
   - `Container` - watch a container repository for the latest image
+- `core.projectriff.io/v1alpha1`
+  - `Handler` - handlers map HTTP requests to applications, functions, containers or images with Kubernetes core resources
 - `streaming.projectriff.io/v1alpha1`
   - `Stream` - streams of messages
   - `Processor` - processors apply functions to messages on streams
 - `knative.projectriff.io/v1alpha1`
   - `Adapter` - adapters map applications, functions or container images into an existing Knative Service or Configuration.
-  - `Handler` - handlers map HTTP requests to applications, functions, containers or images
+  - `Handler` - handlers map HTTP requests to applications, functions, containers or images with Knative
 
 ### Runtime
 

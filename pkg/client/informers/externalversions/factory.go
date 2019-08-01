@@ -22,9 +22,9 @@ import (
 
 	versioned "github.com/projectriff/system/pkg/client/clientset/versioned"
 	build "github.com/projectriff/system/pkg/client/informers/externalversions/build"
+	core "github.com/projectriff/system/pkg/client/informers/externalversions/core"
 	internalinterfaces "github.com/projectriff/system/pkg/client/informers/externalversions/internalinterfaces"
 	knative "github.com/projectriff/system/pkg/client/informers/externalversions/knative"
-	request "github.com/projectriff/system/pkg/client/informers/externalversions/request"
 	streaming "github.com/projectriff/system/pkg/client/informers/externalversions/streaming"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
@@ -173,8 +173,8 @@ type SharedInformerFactory interface {
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
 	Build() build.Interface
+	Core() core.Interface
 	Knative() knative.Interface
-	Request() request.Interface
 	Streaming() streaming.Interface
 }
 
@@ -182,12 +182,12 @@ func (f *sharedInformerFactory) Build() build.Interface {
 	return build.New(f, f.namespace, f.tweakListOptions)
 }
 
-func (f *sharedInformerFactory) Knative() knative.Interface {
-	return knative.New(f, f.namespace, f.tweakListOptions)
+func (f *sharedInformerFactory) Core() core.Interface {
+	return core.New(f, f.namespace, f.tweakListOptions)
 }
 
-func (f *sharedInformerFactory) Request() request.Interface {
-	return request.New(f, f.namespace, f.tweakListOptions)
+func (f *sharedInformerFactory) Knative() knative.Interface {
+	return knative.New(f, f.namespace, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Streaming() streaming.Interface {

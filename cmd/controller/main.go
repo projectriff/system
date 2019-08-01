@@ -47,11 +47,11 @@ import (
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/application"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/builder"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/container"
+	"github.com/projectriff/system/pkg/reconciler/v1alpha1/corehandler"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/credential"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/function"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/knativeadapter"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/knativehandler"
-	"github.com/projectriff/system/pkg/reconciler/v1alpha1/requesthandler"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/streamingprocessor"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/streamingstream"
 	"go.uber.org/zap"
@@ -140,7 +140,7 @@ func main() {
 	applicationInformer := projectriffInformerFactory.Build().V1alpha1().Applications()
 	containerAgressiveInformer := projectriffAgressiveInformerFactory.Build().V1alpha1().Containers()
 	functionInformer := projectriffInformerFactory.Build().V1alpha1().Functions()
-	requesthandlerInformer := projectriffInformerFactory.Request().V1alpha1().Handlers()
+	corehandlerInformer := projectriffInformerFactory.Core().V1alpha1().Handlers()
 	streamInformer := projectriffInformerFactory.Streaming().V1alpha1().Streams()
 	processorInformer := projectriffInformerFactory.Streaming().V1alpha1().Processors()
 	knativeadapterInformer := projectriffInformerFactory.Knative().V1alpha1().Adapters()
@@ -198,10 +198,10 @@ func main() {
 
 			knclusterbuildtemplateInformer,
 		),
-		// request.projectriff.io
-		requesthandler.NewController(
+		// core.projectriff.io
+		corehandler.NewController(
 			opt,
-			requesthandlerInformer,
+			corehandlerInformer,
 
 			deploymentInformer,
 			serviceInformer,
@@ -266,7 +266,7 @@ func main() {
 		applicationInformer.Informer().HasSynced,
 		containerAgressiveInformer.Informer().HasSynced,
 		functionInformer.Informer().HasSynced,
-		requesthandlerInformer.Informer().HasSynced,
+		corehandlerInformer.Informer().HasSynced,
 		streamInformer.Informer().HasSynced,
 		processorInformer.Informer().HasSynced,
 		knativeadapterInformer.Informer().HasSynced,
