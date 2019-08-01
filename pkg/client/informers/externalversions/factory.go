@@ -22,6 +22,7 @@ import (
 
 	versioned "github.com/projectriff/system/pkg/client/clientset/versioned"
 	build "github.com/projectriff/system/pkg/client/informers/externalversions/build"
+	core "github.com/projectriff/system/pkg/client/informers/externalversions/core"
 	internalinterfaces "github.com/projectriff/system/pkg/client/informers/externalversions/internalinterfaces"
 	knative "github.com/projectriff/system/pkg/client/informers/externalversions/knative"
 	streaming "github.com/projectriff/system/pkg/client/informers/externalversions/streaming"
@@ -172,12 +173,17 @@ type SharedInformerFactory interface {
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
 	Build() build.Interface
+	Core() core.Interface
 	Knative() knative.Interface
 	Streaming() streaming.Interface
 }
 
 func (f *sharedInformerFactory) Build() build.Interface {
 	return build.New(f, f.namespace, f.tweakListOptions)
+}
+
+func (f *sharedInformerFactory) Core() core.Interface {
+	return core.New(f, f.namespace, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Knative() knative.Interface {

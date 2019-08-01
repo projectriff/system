@@ -19,6 +19,8 @@ import (
 	clientset "github.com/projectriff/system/pkg/client/clientset/versioned"
 	buildv1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/build/v1alpha1"
 	fakebuildv1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/build/v1alpha1/fake"
+	corev1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/core/v1alpha1"
+	fakecorev1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/core/v1alpha1/fake"
 	knativev1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/knative/v1alpha1"
 	fakeknativev1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/knative/v1alpha1/fake"
 	streamingv1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/streaming/v1alpha1"
@@ -80,6 +82,16 @@ func (c *Clientset) BuildV1alpha1() buildv1alpha1.BuildV1alpha1Interface {
 // Build retrieves the BuildV1alpha1Client
 func (c *Clientset) Build() buildv1alpha1.BuildV1alpha1Interface {
 	return &fakebuildv1alpha1.FakeBuildV1alpha1{Fake: &c.Fake}
+}
+
+// CoreV1alpha1 retrieves the CoreV1alpha1Client
+func (c *Clientset) CoreV1alpha1() corev1alpha1.CoreV1alpha1Interface {
+	return &fakecorev1alpha1.FakeCoreV1alpha1{Fake: &c.Fake}
+}
+
+// Core retrieves the CoreV1alpha1Client
+func (c *Clientset) Core() corev1alpha1.CoreV1alpha1Interface {
+	return &fakecorev1alpha1.FakeCoreV1alpha1{Fake: &c.Fake}
 }
 
 // KnativeV1alpha1 retrieves the KnativeV1alpha1Client
