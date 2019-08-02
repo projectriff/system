@@ -57,7 +57,7 @@ type Reconciler struct {
 	// listers index properties about resources
 	adapterLister         knativelisters.AdapterLister
 	applicationLister     buildlisters.ApplicationLister
-	containerLister       buildlisters.ContainerLister
+	imageLister           buildlisters.ImageLister
 	functionLister        buildlisters.FunctionLister
 	knconfigurationLister knservinglisters.ConfigurationLister
 	knserviceLister       knservinglisters.ServiceLister
@@ -74,8 +74,8 @@ func NewController(
 	opt reconciler.Options,
 	adapterInformer knativeinformers.AdapterInformer,
 	applicationInformer buildinformers.ApplicationInformer,
-	containerInformer buildinformers.ContainerInformer,
 	functionInformer buildinformers.FunctionInformer,
+	imageInformer buildinformers.ImageInformer,
 	knserviceInformer knservinginformers.ServiceInformer,
 	knconfigurationInformer knservinginformers.ConfigurationInformer,
 ) *controller.Impl {
@@ -84,8 +84,8 @@ func NewController(
 		Base:                  reconciler.NewBase(opt, controllerAgentName),
 		adapterLister:         adapterInformer.Lister(),
 		applicationLister:     applicationInformer.Lister(),
-		containerLister:       containerInformer.Lister(),
 		functionLister:        functionInformer.Lister(),
+		imageLister:           imageInformer.Lister(),
 		knserviceLister:       knserviceInformer.Lister(),
 		knconfigurationLister: knconfigurationInformer.Lister(),
 	}
@@ -105,15 +105,6 @@ func NewController(
 			buildv1alpha1.SchemeGroupVersion.WithKind("Application"),
 		),
 	))
-	containerInformer.Informer().AddEventHandler(reconciler.Handler(
-		// Call the tracker's OnChanged method, but we've seen the objects
-		// coming through this path missing TypeMeta, so ensure it is properly
-		// populated.
-		controller.EnsureTypeMeta(
-			c.tracker.OnChanged,
-			buildv1alpha1.SchemeGroupVersion.WithKind("Container"),
-		),
-	))
 	functionInformer.Informer().AddEventHandler(reconciler.Handler(
 		// Call the tracker's OnChanged method, but we've seen the objects
 		// coming through this path missing TypeMeta, so ensure it is properly
@@ -121,6 +112,15 @@ func NewController(
 		controller.EnsureTypeMeta(
 			c.tracker.OnChanged,
 			buildv1alpha1.SchemeGroupVersion.WithKind("Function"),
+		),
+	))
+	imageInformer.Informer().AddEventHandler(reconciler.Handler(
+		// Call the tracker's OnChanged method, but we've seen the objects
+		// coming through this path missing TypeMeta, so ensure it is properly
+		// populated.
+		controller.EnsureTypeMeta(
+			c.tracker.OnChanged,
+			buildv1alpha1.SchemeGroupVersion.WithKind("Image"),
 		),
 	))
 
@@ -271,25 +271,25 @@ func (c *Reconciler) reconcileBuild(adapter *knativev1alpha1.Adapter) error {
 		}
 		return nil
 
-	case build.ContainerRef != "":
-		container, err := c.containerLister.Containers(adapter.Namespace).Get(build.ContainerRef)
+	case build.ImageRef != "":
+		image, err := c.imageLister.Images(adapter.Namespace).Get(build.ImageRef)
 		if err != nil {
 			if errors.IsNotFound(err) {
-				adapter.Status.MarkBuildNotFound("container", build.ContainerRef)
+				adapter.Status.MarkBuildNotFound("image", build.ImageRef)
 				return nil
 			}
 			return err
 		}
-		if container.Status.LatestImage == "" {
-			adapter.Status.MarkBuildLatestImageMissing("container", build.ContainerRef)
+		if image.Status.LatestImage == "" {
+			adapter.Status.MarkBuildLatestImageMissing("image", build.ImageRef)
 			return nil
 		}
-		adapter.Status.LatestImage = container.Status.LatestImage
+		adapter.Status.LatestImage = image.Status.LatestImage
 		adapter.Status.MarkBuildReady()
 
 		// track function for new images
-		gvk := buildv1alpha1.SchemeGroupVersion.WithKind("Container")
-		if err := c.tracker.Track(reconciler.MakeObjectRef(container, gvk), adapter); err != nil {
+		gvk := buildv1alpha1.SchemeGroupVersion.WithKind("Image")
+		if err := c.tracker.Track(reconciler.MakeObjectRef(image, gvk), adapter); err != nil {
 			return err
 		}
 		return nil

@@ -55,10 +55,10 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 	// Group=build.projectriff.io, Version=v1alpha1
 	case v1alpha1.SchemeGroupVersion.WithResource("applications"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Build().V1alpha1().Applications().Informer()}, nil
-	case v1alpha1.SchemeGroupVersion.WithResource("containers"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Build().V1alpha1().Containers().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("functions"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Build().V1alpha1().Functions().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("images"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Build().V1alpha1().Images().Informer()}, nil
 
 		// Group=core.projectriff.io, Version=v1alpha1
 	case core_v1alpha1.SchemeGroupVersion.WithResource("handlers"):

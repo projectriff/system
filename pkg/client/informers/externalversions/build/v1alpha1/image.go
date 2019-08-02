@@ -28,59 +28,59 @@ import (
 	cache "k8s.io/client-go/tools/cache"
 )
 
-// ContainerInformer provides access to a shared informer and lister for
-// Containers.
-type ContainerInformer interface {
+// ImageInformer provides access to a shared informer and lister for
+// Images.
+type ImageInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha1.ContainerLister
+	Lister() v1alpha1.ImageLister
 }
 
-type containerInformer struct {
+type imageInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
 	tweakListOptions internalinterfaces.TweakListOptionsFunc
 	namespace        string
 }
 
-// NewContainerInformer constructs a new informer for Container type.
+// NewImageInformer constructs a new informer for Image type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewContainerInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredContainerInformer(client, namespace, resyncPeriod, indexers, nil)
+func NewImageInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	return NewFilteredImageInformer(client, namespace, resyncPeriod, indexers, nil)
 }
 
-// NewFilteredContainerInformer constructs a new informer for Container type.
+// NewFilteredImageInformer constructs a new informer for Image type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredContainerInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewFilteredImageInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.BuildV1alpha1().Containers(namespace).List(options)
+				return client.BuildV1alpha1().Images(namespace).List(options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.BuildV1alpha1().Containers(namespace).Watch(options)
+				return client.BuildV1alpha1().Images(namespace).Watch(options)
 			},
 		},
-		&build_v1alpha1.Container{},
+		&build_v1alpha1.Image{},
 		resyncPeriod,
 		indexers,
 	)
 }
 
-func (f *containerInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredContainerInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
+func (f *imageInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewFilteredImageInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
-func (f *containerInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&build_v1alpha1.Container{}, f.defaultInformer)
+func (f *imageInformer) Informer() cache.SharedIndexInformer {
+	return f.factory.InformerFor(&build_v1alpha1.Image{}, f.defaultInformer)
 }
 
-func (f *containerInformer) Lister() v1alpha1.ContainerLister {
-	return v1alpha1.NewContainerLister(f.Informer().GetIndexer())
+func (f *imageInformer) Lister() v1alpha1.ImageLister {
+	return v1alpha1.NewImageLister(f.Informer().GetIndexer())
 }

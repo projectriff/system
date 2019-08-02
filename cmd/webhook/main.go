@@ -100,8 +100,8 @@ func main() {
 		Options: options,
 		Handlers: map[schema.GroupVersionKind]webhook.GenericCRD{
 			buildv1alpha1.SchemeGroupVersion.WithKind("Application"):   &buildv1alpha1.Application{},
-			buildv1alpha1.SchemeGroupVersion.WithKind("Container"):     &buildv1alpha1.Container{},
 			buildv1alpha1.SchemeGroupVersion.WithKind("Function"):      &buildv1alpha1.Function{},
+			buildv1alpha1.SchemeGroupVersion.WithKind("Image"):         &buildv1alpha1.Image{},
 			streamingv1alpha1.SchemeGroupVersion.WithKind("Stream"):    &streamingv1alpha1.Stream{},
 			streamingv1alpha1.SchemeGroupVersion.WithKind("Processor"): &streamingv1alpha1.Processor{},
 			knativev1alpha1.SchemeGroupVersion.WithKind("Adapter"):     &knativev1alpha1.Adapter{},

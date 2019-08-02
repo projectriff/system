@@ -45,8 +45,8 @@ func TestReconcile(t *testing.T) {
 			Base:                  reconciler.NewBase(opt, controllerAgentName),
 			adapterLister:         listers.GetKnativeAdapterLister(),
 			applicationLister:     listers.GetApplicationLister(),
-			containerLister:       listers.GetContainerLister(),
 			functionLister:        listers.GetFunctionLister(),
+			imageLister:           listers.GetImageLister(),
 			knserviceLister:       listers.GetKnServiceLister(),
 			knconfigurationLister: listers.GetKnConfigurationLister(),
 
@@ -65,8 +65,8 @@ func TestNew(t *testing.T) {
 
 	adapterInformer := projectriffInformer.Knative().V1alpha1().Adapters()
 	applicationInformer := projectriffInformer.Build().V1alpha1().Applications()
-	containerInformer := projectriffInformer.Build().V1alpha1().Containers()
 	functionInformer := projectriffInformer.Build().V1alpha1().Functions()
+	imageInformer := projectriffInformer.Build().V1alpha1().Images()
 	knserviceInformer := knservingInformer.Serving().V1alpha1().Services()
 	knconfigurationInformer := knservingInformer.Serving().V1alpha1().Configurations()
 
@@ -75,7 +75,7 @@ func TestNew(t *testing.T) {
 		ProjectriffClientSet: projectriffClient,
 		KnServingClientSet:   knservingClient,
 		Logger:               TestLogger(t),
-	}, adapterInformer, applicationInformer, containerInformer, functionInformer, knserviceInformer, knconfigurationInformer)
+	}, adapterInformer, applicationInformer, functionInformer, imageInformer, knserviceInformer, knconfigurationInformer)
 
 	if c == nil {
 		t.Fatal("Expected NewController to return a non-nil value")

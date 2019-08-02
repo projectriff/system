@@ -24,21 +24,21 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 )
 
-func (a *Container) Validate(ctx context.Context) *apis.FieldError {
+func (i *Image) Validate(ctx context.Context) *apis.FieldError {
 	errs := &apis.FieldError{}
-	errs = errs.Also(systemapis.ValidateObjectMetadata(a.GetObjectMeta()).ViaField("metadata"))
-	errs = errs.Also(a.Spec.Validate(ctx).ViaField("spec"))
+	errs = errs.Also(systemapis.ValidateObjectMetadata(i.GetObjectMeta()).ViaField("metadata"))
+	errs = errs.Also(i.Spec.Validate(ctx).ViaField("spec"))
 	return errs
 }
 
-func (cs *ContainerSpec) Validate(ctx context.Context) *apis.FieldError {
-	if equality.Semantic.DeepEqual(cs, &ContainerSpec{}) {
+func (is *ImageSpec) Validate(ctx context.Context) *apis.FieldError {
+	if equality.Semantic.DeepEqual(is, &ImageSpec{}) {
 		return apis.ErrMissingField(apis.CurrentField)
 	}
 
 	errs := &apis.FieldError{}
 
-	if cs.Image == "" {
+	if is.Image == "" {
 		errs = errs.Also(apis.ErrMissingField("image"))
 	}
 

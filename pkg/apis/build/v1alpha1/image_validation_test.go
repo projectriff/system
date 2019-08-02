@@ -25,38 +25,38 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestValidateContainer(t *testing.T) {
+func TestValidateImage(t *testing.T) {
 	for _, c := range []struct {
 		name  string
-		build *Container
+		build *Image
 		want  *apis.FieldError
 	}{{
 		name: "valid",
-		build: &Container{
+		build: &Image{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "test-container",
 			},
-			Spec: ContainerSpec{
+			Spec: ImageSpec{
 				Image: "test-image",
 			},
 		},
 		want: nil,
 	}, {
 		name: "validates metadata",
-		build: &Container{
+		build: &Image{
 			ObjectMeta: metav1.ObjectMeta{},
-			Spec: ContainerSpec{
+			Spec: ImageSpec{
 				Image: "test-image",
 			},
 		},
 		want: apis.ErrMissingOneOf("metadata.generateName", "metadata.name"),
 	}, {
 		name: "validates spec",
-		build: &Container{
+		build: &Image{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "test-container",
 			},
-			Spec: ContainerSpec{},
+			Spec: ImageSpec{},
 		},
 		want: apis.ErrMissingField("spec"),
 	}} {
@@ -64,33 +64,33 @@ func TestValidateContainer(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			got := c.build.Validate(context.Background())
 			if diff := cmp.Diff(c.want.Error(), got.Error()); diff != "" {
-				t.Errorf("validateContainer(%s) (-want, +got) = %v", name, diff)
+				t.Errorf("validateImage(%s) (-want, +got) = %v", name, diff)
 			}
 		})
 	}
 }
 
-func TestValidateContainerSpec(t *testing.T) {
+func TestValidateImageSpec(t *testing.T) {
 	for _, c := range []struct {
 		name  string
-		build *ContainerSpec
+		build *ImageSpec
 		want  *apis.FieldError
 	}{{
 		name: "valid",
-		build: &ContainerSpec{
+		build: &ImageSpec{
 			Image: "test-image",
 		},
 		want: nil,
 	}, {
 		name:  "empty",
-		build: &ContainerSpec{},
+		build: &ImageSpec{},
 		want:  apis.ErrMissingField(apis.CurrentField),
 	}} {
 		name := c.name
 		t.Run(name, func(t *testing.T) {
 			got := c.build.Validate(context.Background())
 			if diff := cmp.Diff(c.want.Error(), got.Error()); diff != "" {
-				t.Errorf("validateContainerSpec(%s) (-want, +got) = %v", name, diff)
+				t.Errorf("validateImageSpec(%s) (-want, +got) = %v", name, diff)
 			}
 		})
 	}

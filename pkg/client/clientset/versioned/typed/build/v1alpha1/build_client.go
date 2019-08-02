@@ -25,8 +25,8 @@ import (
 type BuildV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	ApplicationsGetter
-	ContainersGetter
 	FunctionsGetter
+	ImagesGetter
 }
 
 // BuildV1alpha1Client is used to interact with features provided by the build.projectriff.io group.
@@ -38,12 +38,12 @@ func (c *BuildV1alpha1Client) Applications(namespace string) ApplicationInterfac
 	return newApplications(c, namespace)
 }
 
-func (c *BuildV1alpha1Client) Containers(namespace string) ContainerInterface {
-	return newContainers(c, namespace)
-}
-
 func (c *BuildV1alpha1Client) Functions(namespace string) FunctionInterface {
 	return newFunctions(c, namespace)
+}
+
+func (c *BuildV1alpha1Client) Images(namespace string) ImageInterface {
+	return newImages(c, namespace)
 }
 
 // NewForConfig creates a new BuildV1alpha1Client for the given config.

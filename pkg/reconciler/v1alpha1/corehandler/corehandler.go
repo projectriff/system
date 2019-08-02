@@ -64,8 +64,8 @@ type Reconciler struct {
 	deploymentLister  appslisters.DeploymentLister
 	serviceLister     corelisters.ServiceLister
 	applicationLister buildlisters.ApplicationLister
-	containerLister   buildlisters.ContainerLister
 	functionLister    buildlisters.FunctionLister
+	imageLister       buildlisters.ImageLister
 
 	tracker tracker.Interface
 }
@@ -81,8 +81,8 @@ func NewController(
 	deploymentInformer appsinformers.DeploymentInformer,
 	serviceInformer coreinformers.ServiceInformer,
 	applicationInformer buildinformers.ApplicationInformer,
-	containerInformer buildinformers.ContainerInformer,
 	functionInformer buildinformers.FunctionInformer,
+	imageInformer buildinformers.ImageInformer,
 ) *controller.Impl {
 
 	c := &Reconciler{
@@ -91,8 +91,8 @@ func NewController(
 		deploymentLister:  deploymentInformer.Lister(),
 		serviceLister:     serviceInformer.Lister(),
 		applicationLister: applicationInformer.Lister(),
-		containerLister:   containerInformer.Lister(),
 		functionLister:    functionInformer.Lister(),
+		imageLister:       imageInformer.Lister(),
 	}
 	impl := controller.NewImpl(c, c.Logger, ReconcilerName)
 
@@ -120,15 +120,6 @@ func NewController(
 			buildv1alpha1.SchemeGroupVersion.WithKind("Application"),
 		),
 	))
-	containerInformer.Informer().AddEventHandler(reconciler.Handler(
-		// Call the tracker's OnChanged method, but we've seen the objects
-		// coming through this path missing TypeMeta, so ensure it is properly
-		// populated.
-		controller.EnsureTypeMeta(
-			c.tracker.OnChanged,
-			buildv1alpha1.SchemeGroupVersion.WithKind("Container"),
-		),
-	))
 	functionInformer.Informer().AddEventHandler(reconciler.Handler(
 		// Call the tracker's OnChanged method, but we've seen the objects
 		// coming through this path missing TypeMeta, so ensure it is properly
@@ -136,6 +127,15 @@ func NewController(
 		controller.EnsureTypeMeta(
 			c.tracker.OnChanged,
 			buildv1alpha1.SchemeGroupVersion.WithKind("Function"),
+		),
+	))
+	imageInformer.Informer().AddEventHandler(reconciler.Handler(
+		// Call the tracker's OnChanged method, but we've seen the objects
+		// coming through this path missing TypeMeta, so ensure it is properly
+		// populated.
+		controller.EnsureTypeMeta(
+			c.tracker.OnChanged,
+			buildv1alpha1.SchemeGroupVersion.WithKind("Image"),
 		),
 	))
 
@@ -318,23 +318,6 @@ func (c *Reconciler) reconcileBuild(handler *corev1alpha1.Handler) error {
 		}
 		return nil
 
-	case build.ContainerRef != "":
-		container, err := c.containerLister.Containers(handler.Namespace).Get(build.ContainerRef)
-		if err != nil {
-			return err
-		}
-		if container.Status.LatestImage == "" {
-			return fmt.Errorf("container %q does not have a ready image", build.ContainerRef)
-		}
-		handler.Spec.Template.Containers[0].Image = container.Status.LatestImage
-
-		// track container for new images
-		gvk := buildv1alpha1.SchemeGroupVersion.WithKind("Container")
-		if err := c.tracker.Track(reconciler.MakeObjectRef(container, gvk), handler); err != nil {
-			return err
-		}
-		return nil
-
 	case build.FunctionRef != "":
 		function, err := c.functionLister.Functions(handler.Namespace).Get(build.FunctionRef)
 		if err != nil {
@@ -348,6 +331,23 @@ func (c *Reconciler) reconcileBuild(handler *corev1alpha1.Handler) error {
 		// track function for new images
 		gvk := buildv1alpha1.SchemeGroupVersion.WithKind("Function")
 		if err := c.tracker.Track(reconciler.MakeObjectRef(function, gvk), handler); err != nil {
+			return err
+		}
+		return nil
+
+	case build.ImageRef != "":
+		image, err := c.imageLister.Images(handler.Namespace).Get(build.ImageRef)
+		if err != nil {
+			return err
+		}
+		if image.Status.LatestImage == "" {
+			return fmt.Errorf("image %q does not have a ready image", build.ImageRef)
+		}
+		handler.Spec.Template.Containers[0].Image = image.Status.LatestImage
+
+		// track image for new images
+		gvk := buildv1alpha1.SchemeGroupVersion.WithKind("Image")
+		if err := c.tracker.Track(reconciler.MakeObjectRef(image, gvk), handler); err != nil {
 			return err
 		}
 		return nil

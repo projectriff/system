@@ -58,11 +58,11 @@ type Build struct {
 	// ApplicationRef references an application in this namespace.
 	ApplicationRef string `json:"applicationRef,omitempty"`
 
-	// ContainerRef references a container in this namespace.
-	ContainerRef string `json:"containerRef,omitempty"`
-
 	// FunctionRef references an application in this namespace.
 	FunctionRef string `json:"functionRef,omitempty"`
+
+	// ImageRef references a image in this namespace.
+	ImageRef string `json:"imageRef,omitempty"`
 }
 
 type HandlerStatus struct {

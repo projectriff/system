@@ -23,10 +23,10 @@ import (
 type Interface interface {
 	// Applications returns a ApplicationInformer.
 	Applications() ApplicationInformer
-	// Containers returns a ContainerInformer.
-	Containers() ContainerInformer
 	// Functions returns a FunctionInformer.
 	Functions() FunctionInformer
+	// Images returns a ImageInformer.
+	Images() ImageInformer
 }
 
 type version struct {
@@ -45,12 +45,12 @@ func (v *version) Applications() ApplicationInformer {
 	return &applicationInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
-// Containers returns a ContainerInformer.
-func (v *version) Containers() ContainerInformer {
-	return &containerInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
 // Functions returns a FunctionInformer.
 func (v *version) Functions() FunctionInformer {
 	return &functionInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// Images returns a ImageInformer.
+func (v *version) Images() ImageInformer {
+	return &imageInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

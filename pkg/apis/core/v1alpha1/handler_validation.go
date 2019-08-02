@@ -79,10 +79,10 @@ func (b *Build) Validate(ctx context.Context) *apis.FieldError {
 		unused = append(unused, "applicationRef")
 	}
 
-	if b.ContainerRef != "" {
-		used = append(used, "containerRef")
+	if b.ImageRef != "" {
+		used = append(used, "imageRef")
 	} else {
-		unused = append(unused, "containerRef")
+		unused = append(unused, "imageRef")
 	}
 
 	if b.FunctionRef != "" {
@@ -100,9 +100,9 @@ func (b *Build) Validate(ctx context.Context) *apis.FieldError {
 	return errs
 }
 
-func filterInvalidContainers(containers []corev1.Container) []corev1.Container {
+func filterInvalidContainers(images []corev1.Container) []corev1.Container {
 	// TODO remove unsupported fields
-	return containers
+	return images
 }
 
 func filterInvalidVolumes(volumes []corev1.Volume) []corev1.Volume {

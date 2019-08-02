@@ -28,52 +28,52 @@ import (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// Container watches a repository for new images
-type Container struct {
+// Image watches a repository for new images
+type Image struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   ContainerSpec   `json:"spec"`
-	Status ContainerStatus `json:"status"`
+	Spec   ImageSpec   `json:"spec"`
+	Status ImageStatus `json:"status"`
 }
 
 var (
-	_ knapis.Validatable = (*Container)(nil)
-	_ knapis.Defaultable = (*Container)(nil)
-	_ kmeta.OwnerRefable = (*Container)(nil)
-	_ apis.Object        = (*Container)(nil)
-	_ ImageResource      = (*Container)(nil)
+	_ knapis.Validatable = (*Image)(nil)
+	_ knapis.Defaultable = (*Image)(nil)
+	_ kmeta.OwnerRefable = (*Image)(nil)
+	_ apis.Object        = (*Image)(nil)
+	_ ImageResource      = (*Image)(nil)
 )
 
-type ContainerSpec struct {
+type ImageSpec struct {
 	// Image repository to watch for built images. May contain a leading underscore
 	// to have the default image prefix applied, or be `_` to combine the default
 	// image prefix with the resource's name as a default value.
 	Image string `json:"image"`
 }
 
-type ContainerStatus struct {
+type ImageStatus struct {
 	duckv1beta1.Status `json:",inline"`
 	BuildStatus        `json:",inline"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-type ContainerList struct {
+type ImageList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 
-	Items []Container `json:"items"`
+	Items []Image `json:"items"`
 }
 
-func (*Container) GetGroupVersionKind() schema.GroupVersionKind {
-	return SchemeGroupVersion.WithKind("Container")
+func (*Image) GetGroupVersionKind() schema.GroupVersionKind {
+	return SchemeGroupVersion.WithKind("Image")
 }
 
-func (c *Container) GetStatus() apis.Status {
-	return &c.Status
+func (i *Image) GetStatus() apis.Status {
+	return &i.Status
 }
 
-func (c *Container) GetImage() string {
-	return c.Spec.Image
+func (i *Image) GetImage() string {
+	return i.Spec.Image
 }

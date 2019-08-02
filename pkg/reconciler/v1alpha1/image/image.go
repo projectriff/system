@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package container
+package image
 
 import (
 	"context"
@@ -43,18 +43,18 @@ import (
 
 const (
 	// ReconcilerName is the name of the reconciler
-	ReconcilerName      = "Containers"
-	controllerAgentName = "container-controller"
+	ReconcilerName      = "Images"
+	controllerAgentName = "image-controller"
 )
 
 var errMissingDefaultPrefix = fmt.Errorf("missing default image prefix")
 
-// Reconciler implements controller.Reconciler for Container resources.
+// Reconciler implements controller.Reconciler for Image resources.
 type Reconciler struct {
 	*reconciler.Base
 
 	// listers index properties about resources
-	containerLister buildlisters.ContainerLister
+	imageLister     buildlisters.ImageLister
 	configmapLister corelisters.ConfigMapLister
 
 	resolver digest.Resolver
@@ -67,13 +67,13 @@ var _ controller.Reconciler = (*Reconciler)(nil)
 // Registers eventhandlers to enqueue events
 func NewController(
 	opt reconciler.Options,
-	containerInformer buildinformers.ContainerInformer,
+	imageInformer buildinformers.ImageInformer,
 	configmapInformer coreinformers.ConfigMapInformer,
 ) *controller.Impl {
 
 	c := &Reconciler{
 		Base:            reconciler.NewBase(opt, controllerAgentName),
-		containerLister: containerInformer.Lister(),
+		imageLister:     imageInformer.Lister(),
 		configmapLister: configmapInformer.Lister(),
 
 		resolver: digest.NewDefaultResolver(opt),
@@ -81,13 +81,13 @@ func NewController(
 	impl := controller.NewImpl(c, c.Logger, ReconcilerName)
 
 	c.Logger.Info("Setting up event handlers")
-	containerInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
+	imageInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
 
 	return impl
 }
 
 // Reconcile compares the actual state with the desired, and attempts to
-// converge the two. It then updates the Status block of the Container resource
+// converge the two. It then updates the Status block of the Image resource
 // with the current status of the resource.
 func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	// Convert the namespace/name string into a distinct namespace and name
@@ -98,43 +98,43 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	}
 	logger := logging.FromContext(ctx)
 
-	// Get the Container resource with this namespace/name
-	original, err := c.containerLister.Containers(namespace).Get(name)
+	// Get the Image resource with this namespace/name
+	original, err := c.imageLister.Images(namespace).Get(name)
 	if apierrs.IsNotFound(err) {
 		// The resource may no longer exist, in which case we stop processing.
-		logger.Errorf("container %q in work queue no longer exists", key)
+		logger.Errorf("image %q in work queue no longer exists", key)
 		return nil
 	} else if err != nil {
 		return err
 	}
 
 	// Don't modify the informers copy
-	container := original.DeepCopy()
+	image := original.DeepCopy()
 
-	// Reconcile this copy of the container and then write back any status
+	// Reconcile this copy of the image and then write back any status
 	// updates regardless of whether the reconciliation errored out.
-	err = c.reconcile(ctx, container)
+	err = c.reconcile(ctx, image)
 
-	if equality.Semantic.DeepEqual(original.Status, container.Status) {
+	if equality.Semantic.DeepEqual(original.Status, image.Status) {
 		// If we didn't change anything then don't call updateStatus.
 		// This is important because the copy we loaded from the informer's
 		// cache may be stale and we don't want to overwrite a prior update
 		// to status with this stale state.
 
-	} else if _, uErr := c.updateStatus(container); uErr != nil {
-		logger.Warn("Failed to update container status", zap.Error(uErr))
-		c.Recorder.Eventf(container, corev1.EventTypeWarning, "UpdateFailed",
-			"Failed to update status for Container %q: %v", container.Name, uErr)
+	} else if _, uErr := c.updateStatus(image); uErr != nil {
+		logger.Warn("Failed to update image status", zap.Error(uErr))
+		c.Recorder.Eventf(image, corev1.EventTypeWarning, "UpdateFailed",
+			"Failed to update status for Image %q: %v", image.Name, uErr)
 		return uErr
 	} else if err == nil {
 		// If there was a difference and there was no error.
-		c.Recorder.Eventf(container, corev1.EventTypeNormal, "Updated", "Updated Container %q", container.GetName())
+		c.Recorder.Eventf(image, corev1.EventTypeNormal, "Updated", "Updated Image %q", image.GetName())
 	}
 	return err
 }
 
-func (c *Reconciler) reconcile(ctx context.Context, container *buildv1alpha1.Container) error {
-	if container.GetDeletionTimestamp() != nil {
+func (c *Reconciler) reconcile(ctx context.Context, image *buildv1alpha1.Image) error {
+	if image.GetDeletionTimestamp() != nil {
 		return nil
 	}
 
@@ -142,71 +142,71 @@ func (c *Reconciler) reconcile(ctx context.Context, container *buildv1alpha1.Con
 	// and may not have had all of the assumed defaults specified.  This won't result
 	// in this getting written back to the API Server, but lets downstream logic make
 	// assumptions about defaulting.
-	container.SetDefaults(context.Background())
+	image.SetDefaults(context.Background())
 
-	container.Status.InitializeConditions()
+	image.Status.InitializeConditions()
 
-	targetImage, err := c.resolveTargetImage(container)
+	targetImage, err := c.resolveTargetImage(image)
 	if err != nil {
 		if err == errMissingDefaultPrefix {
-			container.Status.MarkImageDefaultPrefixMissing(err.Error())
+			image.Status.MarkImageDefaultPrefixMissing(err.Error())
 		} else {
-			container.Status.MarkImageInvalid(err.Error())
+			image.Status.MarkImageInvalid(err.Error())
 		}
 		return err
 	}
-	container.Status.TargetImage = targetImage
+	image.Status.TargetImage = targetImage
 
 	// resolve image name
 	opt := k8schain.Options{
-		Namespace:          container.Namespace,
+		Namespace:          image.Namespace,
 		ServiceAccountName: "riff-build",
 	}
 	// TODO load from a configmap
 	skipRegistries := sets.NewString()
 	skipRegistries.Insert("ko.local")
 	skipRegistries.Insert("dev.local")
-	digest, err := c.resolver.Resolve(container.Status.TargetImage, opt, skipRegistries)
+	digest, err := c.resolver.Resolve(image.Status.TargetImage, opt, skipRegistries)
 	if err != nil {
-		container.Status.MarkImageMissing(fmt.Sprintf("Unable to fetch image %q: %s", container.Status.TargetImage, err.Error()))
+		image.Status.MarkImageMissing(fmt.Sprintf("Unable to fetch image %q: %s", image.Status.TargetImage, err.Error()))
 		return err
 	}
-	container.Status.LatestImage = digest
-	container.Status.MarkImageResolved()
+	image.Status.LatestImage = digest
+	image.Status.MarkImageResolved()
 
-	container.Status.ObservedGeneration = container.Generation
+	image.Status.ObservedGeneration = image.Generation
 
 	return nil
 }
 
-func (c *Reconciler) updateStatus(desired *buildv1alpha1.Container) (*buildv1alpha1.Container, error) {
-	container, err := c.containerLister.Containers(desired.Namespace).Get(desired.Name)
+func (c *Reconciler) updateStatus(desired *buildv1alpha1.Image) (*buildv1alpha1.Image, error) {
+	image, err := c.imageLister.Images(desired.Namespace).Get(desired.Name)
 	if err != nil {
 		return nil, err
 	}
 	// If there's nothing to update, just return.
-	if reflect.DeepEqual(container.Status, desired.Status) {
-		return container, nil
+	if reflect.DeepEqual(image.Status, desired.Status) {
+		return image, nil
 	}
-	becomesReady := desired.Status.IsReady() && !container.Status.IsReady()
+	becomesReady := desired.Status.IsReady() && !image.Status.IsReady()
 	// Don't modify the informers copy.
-	existing := container.DeepCopy()
+	existing := image.DeepCopy()
 	existing.Status = desired.Status
 
-	f, err := c.ProjectriffClientSet.BuildV1alpha1().Containers(desired.Namespace).UpdateStatus(existing)
+	f, err := c.ProjectriffClientSet.BuildV1alpha1().Images(desired.Namespace).UpdateStatus(existing)
 	if err == nil && becomesReady {
 		duration := time.Now().Sub(f.ObjectMeta.CreationTimestamp.Time)
-		c.Logger.Infof("Container %q became ready after %v", container.Name, duration)
+		c.Logger.Infof("Image %q became ready after %v", image.Name, duration)
 	}
 
 	return f, err
 }
 
-func (c *Reconciler) resolveTargetImage(container *buildv1alpha1.Container) (string, error) {
-	if !strings.HasPrefix(container.Spec.Image, "_") {
-		return container.Spec.Image, nil
+func (c *Reconciler) resolveTargetImage(image *buildv1alpha1.Image) (string, error) {
+	if !strings.HasPrefix(image.Spec.Image, "_") {
+		return image.Spec.Image, nil
 	}
-	riffBuildConfig, err := c.configmapLister.ConfigMaps(container.Namespace).Get("riff-build")
+	riffBuildConfig, err := c.configmapLister.ConfigMaps(image.Namespace).Get("riff-build")
 	if err != nil {
 		if apierrs.IsNotFound(err) {
 			return "", errMissingDefaultPrefix
@@ -217,9 +217,9 @@ func (c *Reconciler) resolveTargetImage(container *buildv1alpha1.Container) (str
 	if defaultPrefix == "" {
 		return "", errMissingDefaultPrefix
 	}
-	image, err := buildv1alpha1.ResolveDefaultImage(container, defaultPrefix)
+	targetImage, err := buildv1alpha1.ResolveDefaultImage(image, defaultPrefix)
 	if err != nil {
 		return "", err
 	}
-	return image, nil
+	return targetImage, nil
 }

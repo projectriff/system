@@ -16,35 +16,14 @@
 
 package v1alpha1
 
-import (
-	"context"
-	"testing"
+import "context"
 
-	"github.com/google/go-cmp/cmp"
-)
+func (i *Image) SetDefaults(ctx context.Context) {
+	i.Spec.SetDefaults(ctx)
+}
 
-func TestContainerDefaulting(t *testing.T) {
-	tests := []struct {
-		name string
-		in   *Container
-		want *Container
-	}{{
-		name: "empty",
-		in:   &Container{},
-		want: &Container{
-			Spec: ContainerSpec{
-				Image: "_",
-			},
-		},
-	}}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			got := test.in
-			got.SetDefaults(context.Background())
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("SetDefaults (-want, +got) = %v", diff)
-			}
-		})
+func (is *ImageSpec) SetDefaults(ctx context.Context) {
+	if is.Image == "" {
+		is.Image = "_"
 	}
 }

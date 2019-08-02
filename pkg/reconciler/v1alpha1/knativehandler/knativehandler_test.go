@@ -47,8 +47,8 @@ func TestReconcile(t *testing.T) {
 			knconfigurationLister: listers.GetKnConfigurationLister(),
 			knrouteLister:         listers.GetKnRouteLister(),
 			applicationLister:     listers.GetApplicationLister(),
-			containerLister:       listers.GetContainerLister(),
 			functionLister:        listers.GetFunctionLister(),
+			imageLister:           listers.GetImageLister(),
 
 			tracker: &rtesting.NullTracker{},
 		}
@@ -67,15 +67,15 @@ func TestNew(t *testing.T) {
 	knconfigurationInformer := knservingInformer.Serving().V1alpha1().Configurations()
 	knrouteInformer := knservingInformer.Serving().V1alpha1().Routes()
 	applicationInformer := projectriffInformer.Build().V1alpha1().Applications()
-	containerInformer := projectriffInformer.Build().V1alpha1().Containers()
 	functionInformer := projectriffInformer.Build().V1alpha1().Functions()
+	imageInformer := projectriffInformer.Build().V1alpha1().Images()
 
 	c := NewController(reconciler.Options{
 		KubeClientSet:        kubeClient,
 		ProjectriffClientSet: projectriffClient,
 		KnServingClientSet:   knservingClient,
 		Logger:               TestLogger(t),
-	}, handlerInformer, knconfigurationInformer, knrouteInformer, applicationInformer, containerInformer, functionInformer)
+	}, handlerInformer, knconfigurationInformer, knrouteInformer, applicationInformer, functionInformer, imageInformer)
 
 	if c == nil {
 		t.Fatal("Expected NewController to return a non-nil value")

@@ -46,10 +46,10 @@ import (
 	"github.com/projectriff/system/pkg/reconciler"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/application"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/builder"
-	"github.com/projectriff/system/pkg/reconciler/v1alpha1/container"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/corehandler"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/credential"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/function"
+	"github.com/projectriff/system/pkg/reconciler/v1alpha1/image"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/knativeadapter"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/knativehandler"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/streamingprocessor"
@@ -138,8 +138,8 @@ func main() {
 	knservingInformerFactory := knservinginformers.NewSharedInformerFactory(knservingClient, opt.ResyncPeriod)
 
 	applicationInformer := projectriffInformerFactory.Build().V1alpha1().Applications()
-	containerAgressiveInformer := projectriffAgressiveInformerFactory.Build().V1alpha1().Containers()
 	functionInformer := projectriffInformerFactory.Build().V1alpha1().Functions()
+	imageAgressiveInformer := projectriffAgressiveInformerFactory.Build().V1alpha1().Images()
 	corehandlerInformer := projectriffInformerFactory.Core().V1alpha1().Handlers()
 	streamInformer := projectriffInformerFactory.Streaming().V1alpha1().Streams()
 	processorInformer := projectriffInformerFactory.Streaming().V1alpha1().Processors()
@@ -170,12 +170,6 @@ func main() {
 			pvcInformer,
 			knbuildInformer,
 		),
-		container.NewController(
-			agressiveOpt,
-			containerAgressiveInformer,
-
-			configmapInformer,
-		),
 		function.NewController(
 			opt,
 			functionInformer,
@@ -183,6 +177,12 @@ func main() {
 			configmapInformer,
 			pvcInformer,
 			knbuildInformer,
+		),
+		image.NewController(
+			agressiveOpt,
+			imageAgressiveInformer,
+
+			configmapInformer,
 		),
 		credential.NewController(
 			opt,
@@ -206,8 +206,8 @@ func main() {
 			deploymentInformer,
 			serviceInformer,
 			applicationInformer,
-			containerAgressiveInformer,
 			functionInformer,
+			imageAgressiveInformer,
 		),
 		// streaming.projectriff.io
 		streamingstream.NewController(
@@ -228,8 +228,8 @@ func main() {
 			knativeadapterInformer,
 
 			applicationInformer,
-			containerAgressiveInformer,
 			functionInformer,
+			imageAgressiveInformer,
 			knserviceInformer,
 			knconfigurationInformer,
 		),
@@ -240,8 +240,8 @@ func main() {
 			knconfigurationInformer,
 			knrouteInformer,
 			applicationInformer,
-			containerAgressiveInformer,
 			functionInformer,
+			imageAgressiveInformer,
 		),
 	}
 
@@ -264,8 +264,8 @@ func main() {
 	logger.Info("Waiting for informer caches to sync")
 	for i, synced := range []cache.InformerSynced{
 		applicationInformer.Informer().HasSynced,
-		containerAgressiveInformer.Informer().HasSynced,
 		functionInformer.Informer().HasSynced,
+		imageAgressiveInformer.Informer().HasSynced,
 		corehandlerInformer.Informer().HasSynced,
 		streamInformer.Informer().HasSynced,
 		processorInformer.Informer().HasSynced,

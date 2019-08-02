@@ -17,6 +17,6 @@ package v1alpha1
 
 type ApplicationExpansion interface{}
 
-type ContainerExpansion interface{}
-
 type FunctionExpansion interface{}
+
+type ImageExpansion interface{}
