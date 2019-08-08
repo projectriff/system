@@ -59,23 +59,29 @@ func (hs *HandlerStatus) MarkDeploymentNotOwned(name string) {
 }
 
 func (hs *HandlerStatus) PropagateDeploymentStatus(ds *appsv1.DeploymentStatus) {
-	var ac *appsv1.DeploymentCondition
+	var available, progressing *appsv1.DeploymentCondition
 	for _, c := range ds.Conditions {
-		if c.Type == appsv1.DeploymentAvailable {
-			ac = &c
-			break
+		switch c.Type {
+		case appsv1.DeploymentAvailable:
+			available = &c
+		case appsv1.DeploymentProgressing:
+			progressing = &c
 		}
 	}
-	if ac == nil {
+	if available == nil || progressing == nil {
+		return
+	}
+	if progressing.Status != corev1.ConditionTrue {
+		handlerCondSet.Manage(hs).MarkUnknown(HandlerConditionDeploymentReady, progressing.Reason, progressing.Message)
 		return
 	}
 	switch {
-	case ac.Status == corev1.ConditionUnknown:
-		handlerCondSet.Manage(hs).MarkUnknown(HandlerConditionDeploymentReady, ac.Reason, ac.Message)
-	case ac.Status == corev1.ConditionTrue:
+	case available.Status == corev1.ConditionUnknown:
+		handlerCondSet.Manage(hs).MarkUnknown(HandlerConditionDeploymentReady, available.Reason, available.Message)
+	case available.Status == corev1.ConditionTrue:
 		handlerCondSet.Manage(hs).MarkTrue(HandlerConditionDeploymentReady)
-	case ac.Status == corev1.ConditionFalse:
-		handlerCondSet.Manage(hs).MarkFalse(HandlerConditionDeploymentReady, ac.Reason, ac.Message)
+	case available.Status == corev1.ConditionFalse:
+		handlerCondSet.Manage(hs).MarkFalse(HandlerConditionDeploymentReady, available.Reason, available.Message)
 	}
 }
 
