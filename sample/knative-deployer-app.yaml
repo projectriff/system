@@ -1,5 +1,5 @@
 apiVersion: knative.projectriff.io/v1alpha1
-kind: Configurer
+kind: Deployer
 metadata:
   name: node-sample
 spec:

@@ -24,16 +24,16 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-func TestConfigurerDefaulting(t *testing.T) {
+func TestDeployerDefaulting(t *testing.T) {
 	tests := []struct {
 		name string
-		in   *Configurer
-		want *Configurer
+		in   *Deployer
+		want *Deployer
 	}{{
 		name: "empty",
-		in:   &Configurer{},
-		want: &Configurer{
-			Spec: ConfigurerSpec{
+		in:   &Deployer{},
+		want: &Deployer{
+			Spec: DeployerSpec{
 				Template: &corev1.PodSpec{
 					Containers: []corev1.Container{
 						{},
@@ -54,15 +54,15 @@ func TestConfigurerDefaulting(t *testing.T) {
 	}
 }
 
-func TestConfigurerSpecDefaulting(t *testing.T) {
+func TestDeployerSpecDefaulting(t *testing.T) {
 	tests := []struct {
 		name string
-		in   *ConfigurerSpec
-		want *ConfigurerSpec
+		in   *DeployerSpec
+		want *DeployerSpec
 	}{{
 		name: "ensure at least one container",
-		in:   &ConfigurerSpec{},
-		want: &ConfigurerSpec{
+		in:   &DeployerSpec{},
+		want: &DeployerSpec{
 			Template: &corev1.PodSpec{
 				Containers: []corev1.Container{
 					{},

@@ -72,20 +72,20 @@ func (ds *DeployerStatus) PropagateDeploymentStatus(cds *appsv1.DeploymentStatus
 		return
 	}
 	if progressing.Status != corev1.ConditionTrue {
-		handlerCondSet.Manage(ds).MarkUnknown(HandlerConditionDeploymentReady, progressing.Reason, progressing.Message)
+		deployerCondSet.Manage(ds).MarkUnknown(DeployerConditionDeploymentReady, progressing.Reason, progressing.Message)
 		return
 	}
 	if available.Status == corev1.ConditionTrue && cds.ReadyReplicas == 0 {
-		handlerCondSet.Manage(ds).MarkUnknown(HandlerConditionDeploymentReady, "PendingReady", "waiting for at least one pod to be available")
+		deployerCondSet.Manage(ds).MarkUnknown(DeployerConditionDeploymentReady, "PendingReady", "waiting for at least one pod to be available")
 		return
 	}
 	switch {
 	case available.Status == corev1.ConditionUnknown:
-		handlerCondSet.Manage(ds).MarkUnknown(HandlerConditionDeploymentReady, available.Reason, available.Message)
+		deployerCondSet.Manage(ds).MarkUnknown(DeployerConditionDeploymentReady, available.Reason, available.Message)
 	case available.Status == corev1.ConditionTrue:
-		handlerCondSet.Manage(ds).MarkTrue(HandlerConditionDeploymentReady)
+		deployerCondSet.Manage(ds).MarkTrue(DeployerConditionDeploymentReady)
 	case available.Status == corev1.ConditionFalse:
-		handlerCondSet.Manage(ds).MarkFalse(HandlerConditionDeploymentReady, available.Reason, available.Message)
+		deployerCondSet.Manage(ds).MarkFalse(DeployerConditionDeploymentReady, available.Reason, available.Message)
 	}
 }
 

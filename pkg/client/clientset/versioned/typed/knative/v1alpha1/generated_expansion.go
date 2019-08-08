@@ -17,4 +17,4 @@ package v1alpha1
 
 type AdapterExpansion interface{}
 
-type ConfigurerExpansion interface{}
+type DeployerExpansion interface{}

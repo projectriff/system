@@ -117,8 +117,8 @@ func (l *Listers) GetKnativeAdapterLister() knativev1alpha1listers.AdapterLister
 	return knativev1alpha1listers.NewAdapterLister(l.indexerFor(&knativev1alpha1.Adapter{}))
 }
 
-func (l *Listers) GetKnativeConfigurerLister() knativev1alpha1listers.ConfigurerLister {
-	return knativev1alpha1listers.NewConfigurerLister(l.indexerFor(&knativev1alpha1.Configurer{}))
+func (l *Listers) GetKnativeDeployerLister() knativev1alpha1listers.DeployerLister {
+	return knativev1alpha1listers.NewDeployerLister(l.indexerFor(&knativev1alpha1.Deployer{}))
 }
 
 func (l *Listers) GetKnBuildLister() knbuildv1alpha1listers.BuildLister {

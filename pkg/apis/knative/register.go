@@ -21,5 +21,5 @@ const (
 	GroupName = "knative.projectriff.io"
 
 	AdapterLabelKey    = GroupName + "/adapter"
-	ConfigurerLabelKey = GroupName + "/configurer"
+	DeployerLabelKey = GroupName + "/deployer"
 )

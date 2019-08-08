@@ -17,7 +17,7 @@ riff System contains three API groups with CustomResourceDefinitions that are th
   - `Processor` - processors apply functions to messages on streams
 - `knative.projectriff.io/v1alpha1`
   - `Adapter` - adapters map applications, functions or container images into an existing Knative Service or Configuration.
-  - `Configurer` - configurers map HTTP requests to applications, functions, containers or images with Knative
+  - `Deployer` - deployers map HTTP requests to applications, functions, containers or images with Knative
 
 ### Runtime
 

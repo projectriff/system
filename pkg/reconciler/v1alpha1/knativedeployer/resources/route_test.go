@@ -23,7 +23,7 @@ import (
 )
 
 func TestRoute(t *testing.T) {
-	c := createConfigurerMeta()
+	c := createDeployerMeta()
 	c.Labels = map[string]string{testLabelKey: testLabelValue}
 	c.Status.ConfigurationName = testConfigurationName
 
@@ -32,7 +32,7 @@ func TestRoute(t *testing.T) {
 	if got, want := r.Name, testRouteName; got != want {
 		t.Errorf("expected %q for route name got %q", want, got)
 	}
-	if got, want := r.Namespace, testConfigurerNamespace; got != want {
+	if got, want := r.Namespace, testDeployerNamespace; got != want {
 		t.Errorf("expected %q for route namespace got %q", want, got)
 	}
 	expectOwnerReferencesSetCorrectly(t, r.OwnerReferences)
@@ -43,7 +43,7 @@ func TestRoute(t *testing.T) {
 	if got, want := r.Labels[testLabelKey], testLabelValue; got != want {
 		t.Errorf("expected %q labels got %q", want, got)
 	}
-	if got, want := r.Labels[knative.ConfigurerLabelKey], testConfigurerName; got != want {
+	if got, want := r.Labels[knative.DeployerLabelKey], testDeployerName; got != want {
 		t.Errorf("expected %q labels got %q", want, got)
 	}
 

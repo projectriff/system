@@ -22,11 +22,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-func (c *Configurer) SetDefaults(ctx context.Context) {
+func (c *Deployer) SetDefaults(ctx context.Context) {
 	c.Spec.SetDefaults(ctx)
 }
 
-func (cs *ConfigurerSpec) SetDefaults(ctx context.Context) {
+func (cs *DeployerSpec) SetDefaults(ctx context.Context) {
 	if cs.Template == nil {
 		cs.Template = &corev1.PodSpec{}
 	}

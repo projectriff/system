@@ -27,10 +27,10 @@ import (
 )
 
 const (
-	testConfigurerName      = "test-configurer"
-	testConfigurerNamespace = "test-configurer-namespace"
-	testConfigurationName   = "test-configurer"
-	testRouteName           = "test-configurer"
+	testDeployerName      = "test-deployer"
+	testDeployerNamespace = "test-deployer-namespace"
+	testConfigurationName   = "test-deployer"
+	testRouteName           = "test-deployer"
 	testLabelKey            = "test-label-key"
 	testLabelValue          = "test-label-value"
 	testServiceAccount      = "test-sa"
@@ -45,21 +45,21 @@ func expectOwnerReferencesSetCorrectly(t *testing.T, ownerRefs []metav1.OwnerRef
 
 	expectedRefs := []metav1.OwnerReference{{
 		APIVersion: "knative.projectriff.io/v1alpha1",
-		Kind:       "Configurer",
-		Name:       testConfigurerName,
+		Kind:       "Deployer",
+		Name:       testDeployerName,
 	}}
 	if diff := cmp.Diff(expectedRefs, ownerRefs, cmpopts.IgnoreFields(expectedRefs[0], "Controller", "BlockOwnerDeletion")); diff != "" {
-		t.Errorf("Unexpected configurer owner refs diff (-want +got): %v", diff)
+		t.Errorf("Unexpected deployer owner refs diff (-want +got): %v", diff)
 	}
 }
 
-func createConfigurerMeta() *knativev1alpha1.Configurer {
-	return &knativev1alpha1.Configurer{
+func createDeployerMeta() *knativev1alpha1.Deployer {
+	return &knativev1alpha1.Deployer{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      testConfigurerName,
-			Namespace: testConfigurerNamespace,
+			Name:      testDeployerName,
+			Namespace: testDeployerNamespace,
 		},
-		Spec: knativev1alpha1.ConfigurerSpec{
+		Spec: knativev1alpha1.DeployerSpec{
 			Template: &corev1.PodSpec{
 				Containers: []corev1.Container{
 					{},

@@ -26,12 +26,12 @@ import (
 func TestNames(t *testing.T) {
 	tests := []struct {
 		name       string
-		configurer *knativev1alpha1.Configurer
-		f          func(*knativev1alpha1.Configurer) string
+		deployer *knativev1alpha1.Deployer
+		f          func(*knativev1alpha1.Deployer) string
 		want       string
 	}{{
 		name: "Route",
-		configurer: &knativev1alpha1.Configurer{
+		deployer: &knativev1alpha1.Deployer{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "foo",
 				Namespace: "default",
@@ -41,7 +41,7 @@ func TestNames(t *testing.T) {
 		want: "foo",
 	}, {
 		name: "Configuration",
-		configurer: &knativev1alpha1.Configurer{
+		deployer: &knativev1alpha1.Deployer{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "foo",
 				Namespace: "default",
@@ -53,7 +53,7 @@ func TestNames(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got := test.f(test.configurer)
+			got := test.f(test.deployer)
 			if got != test.want {
 				t.Errorf("%s() = %v, wanted %v", test.name, got, test.want)
 			}

@@ -23,12 +23,12 @@ import (
 	knservingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
 	knservingv1beta1 "github.com/knative/serving/pkg/apis/serving/v1beta1"
 	knativev1alpha1 "github.com/projectriff/system/pkg/apis/knative/v1alpha1"
-	"github.com/projectriff/system/pkg/reconciler/v1alpha1/knativeconfigurer/resources/names"
+	"github.com/projectriff/system/pkg/reconciler/v1alpha1/knativedeployer/resources/names"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// MakeRoute creates a Route from a Configurer object.
-func MakeRoute(c *knativev1alpha1.Configurer) (*knservingv1alpha1.Route, error) {
+// MakeRoute creates a Route from a Deployer object.
+func MakeRoute(c *knativev1alpha1.Deployer) (*knservingv1alpha1.Route, error) {
 	if c.Status.ConfigurationName == "" {
 		return nil, fmt.Errorf("unable to create Route, waiting for Configuration")
 	}

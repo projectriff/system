@@ -21,13 +21,13 @@ import (
 	knservingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
 	knservingv1beta1 "github.com/knative/serving/pkg/apis/serving/v1beta1"
 	knativev1alpha1 "github.com/projectriff/system/pkg/apis/knative/v1alpha1"
-	"github.com/projectriff/system/pkg/reconciler/v1alpha1/knativeconfigurer/resources/names"
+	"github.com/projectriff/system/pkg/reconciler/v1alpha1/knativedeployer/resources/names"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// MakeConfiguration creates a Configuration from a Configurer object.
-func MakeConfiguration(c *knativev1alpha1.Configurer) (*knservingv1alpha1.Configuration, error) {
+// MakeConfiguration creates a Configuration from a Deployer object.
+func MakeConfiguration(c *knativev1alpha1.Deployer) (*knservingv1alpha1.Configuration, error) {
 	configuration := &knservingv1alpha1.Configuration{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      names.Configuration(c),

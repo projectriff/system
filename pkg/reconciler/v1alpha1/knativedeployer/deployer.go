@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package knativeconfigurer
+package knativedeployer
 
 import (
 	"context"
@@ -36,8 +36,8 @@ import (
 	buildlisters "github.com/projectriff/system/pkg/client/listers/build/v1alpha1"
 	knativelisters "github.com/projectriff/system/pkg/client/listers/knative/v1alpha1"
 	"github.com/projectriff/system/pkg/reconciler"
-	"github.com/projectriff/system/pkg/reconciler/v1alpha1/knativeconfigurer/resources"
-	resourcenames "github.com/projectriff/system/pkg/reconciler/v1alpha1/knativeconfigurer/resources/names"
+	"github.com/projectriff/system/pkg/reconciler/v1alpha1/knativedeployer/resources"
+	resourcenames "github.com/projectriff/system/pkg/reconciler/v1alpha1/knativedeployer/resources/names"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -49,16 +49,16 @@ import (
 
 const (
 	// ReconcilerName is the name of the reconciler
-	ReconcilerName      = "Configurers"
-	controllerAgentName = "configurer-controller"
+	ReconcilerName      = "Deployers"
+	controllerAgentName = "deployer-controller"
 )
 
-// Reconciler implements controller.Reconciler for Configurer resources.
+// Reconciler implements controller.Reconciler for Deployer resources.
 type Reconciler struct {
 	*reconciler.Base
 
 	// listers index properties about resources
-	configurerLister      knativelisters.ConfigurerLister
+	deployerLister      knativelisters.DeployerLister
 	knconfigurationLister knservinglisters.ConfigurationLister
 	knrouteLister         knservinglisters.RouteLister
 	applicationLister     buildlisters.ApplicationLister
@@ -72,10 +72,10 @@ type Reconciler struct {
 var _ controller.Reconciler = (*Reconciler)(nil)
 
 // NewController initializes the controller and is called by the generated code
-// Registers eventconfigurers to enqueue events
+// Registers eventdeployers to enqueue events
 func NewController(
 	opt reconciler.Options,
-	configurerInformer knativeinformers.ConfigurerInformer,
+	deployerInformer knativeinformers.DeployerInformer,
 	knconfigurationInformer knservinginformers.ConfigurationInformer,
 	knrouteInformer knservinginformers.RouteInformer,
 	applicationInformer buildinformers.ApplicationInformer,
@@ -85,7 +85,7 @@ func NewController(
 
 	c := &Reconciler{
 		Base:                  reconciler.NewBase(opt, controllerAgentName),
-		configurerLister:      configurerInformer.Lister(),
+		deployerLister:      deployerInformer.Lister(),
 		knconfigurationLister: knconfigurationInformer.Lister(),
 		knrouteLister:         knrouteInformer.Lister(),
 		applicationLister:     applicationInformer.Lister(),
@@ -94,16 +94,16 @@ func NewController(
 	}
 	impl := controller.NewImpl(c, c.Logger, ReconcilerName)
 
-	c.Logger.Info("Setting up event configurers")
-	configurerInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
+	c.Logger.Info("Setting up event deployers")
+	deployerInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
 
 	// controlled resources
 	knconfigurationInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(knativev1alpha1.SchemeGroupVersion.WithKind("Configurer")),
+		FilterFunc: controller.Filter(knativev1alpha1.SchemeGroupVersion.WithKind("Deployer")),
 		Handler:    reconciler.Handler(impl.EnqueueControllerOf),
 	})
 	knrouteInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(knativev1alpha1.SchemeGroupVersion.WithKind("Configurer")),
+		FilterFunc: controller.Filter(knativev1alpha1.SchemeGroupVersion.WithKind("Deployer")),
 		Handler:    reconciler.Handler(impl.EnqueueControllerOf),
 	})
 
@@ -141,7 +141,7 @@ func NewController(
 }
 
 // Reconcile compares the actual state with the desired, and attempts to
-// converge the two. It then updates the Status block of the Configurer resource
+// converge the two. It then updates the Status block of the Deployer resource
 // with the current status of the resource.
 func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	// Convert the namespace/name string into a distinct namespace and name
@@ -152,44 +152,44 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	}
 	logger := logging.FromContext(ctx)
 
-	// Get the Configurer resource with this namespace/name
-	original, err := c.configurerLister.Configurers(namespace).Get(name)
+	// Get the Deployer resource with this namespace/name
+	original, err := c.deployerLister.Deployers(namespace).Get(name)
 	if apierrs.IsNotFound(err) {
 		// The resource may no longer exist, in which case we stop processing.
-		logger.Errorf("configurer %q in work queue no longer exists", key)
+		logger.Errorf("deployer %q in work queue no longer exists", key)
 		return nil
 	} else if err != nil {
 		return err
 	}
 
 	// Don't modify the informers copy
-	configurer := original.DeepCopy()
+	deployer := original.DeepCopy()
 
-	// Reconcile this copy of the configurer and then write back any status
+	// Reconcile this copy of the deployer and then write back any status
 	// updates regardless of whether the reconciliation errored out.
-	err = c.reconcile(ctx, configurer)
+	err = c.reconcile(ctx, deployer)
 
-	if equality.Semantic.DeepEqual(original.Status, configurer.Status) {
+	if equality.Semantic.DeepEqual(original.Status, deployer.Status) {
 		// If we didn't change anything then don't call updateStatus.
 		// This is important because the copy we loaded from the informer's
 		// cache may be stale and we don't want to overwrite a prior update
 		// to status with this stale state.
 
-	} else if _, uErr := c.updateStatus(configurer); uErr != nil {
-		logger.Warn("Failed to update configurer status", zap.Error(uErr))
-		c.Recorder.Eventf(configurer, corev1.EventTypeWarning, "UpdateFailed",
-			"Failed to update status for Configurer %q: %v", configurer.Name, uErr)
+	} else if _, uErr := c.updateStatus(deployer); uErr != nil {
+		logger.Warn("Failed to update deployer status", zap.Error(uErr))
+		c.Recorder.Eventf(deployer, corev1.EventTypeWarning, "UpdateFailed",
+			"Failed to update status for Deployer %q: %v", deployer.Name, uErr)
 		return uErr
 	} else if err == nil {
 		// If there was a difference and there was no error.
-		c.Recorder.Eventf(configurer, corev1.EventTypeNormal, "Updated", "Updated Configurer %q", configurer.GetName())
+		c.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Updated", "Updated Deployer %q", deployer.GetName())
 	}
 	return err
 }
 
-func (c *Reconciler) reconcile(ctx context.Context, configurer *knativev1alpha1.Configurer) error {
+func (c *Reconciler) reconcile(ctx context.Context, deployer *knativev1alpha1.Deployer) error {
 	logger := logging.FromContext(ctx)
-	if configurer.GetDeletionTimestamp() != nil {
+	if deployer.GetDeletionTimestamp() != nil {
 		return nil
 	}
 
@@ -197,166 +197,166 @@ func (c *Reconciler) reconcile(ctx context.Context, configurer *knativev1alpha1.
 	// and may not have had all of the assumed defaults specified.  This won't result
 	// in this getting written back to the API Server, but lets downstream logic make
 	// assumptions about defaulting.
-	configurer.SetDefaults(context.Background())
+	deployer.SetDefaults(context.Background())
 
-	configurer.Status.InitializeConditions()
+	deployer.Status.InitializeConditions()
 
-	if err := c.reconcileBuild(configurer); err != nil {
+	if err := c.reconcileBuild(deployer); err != nil {
 		return err
 	}
 
-	configurationName := resourcenames.Configuration(configurer)
-	configuration, err := c.knconfigurationLister.Configurations(configurer.Namespace).Get(configurationName)
+	configurationName := resourcenames.Configuration(deployer)
+	configuration, err := c.knconfigurationLister.Configurations(deployer.Namespace).Get(configurationName)
 	if errors.IsNotFound(err) {
-		configuration, err = c.createConfiguration(configurer)
+		configuration, err = c.createConfiguration(deployer)
 		if err != nil {
 			logger.Errorf("Failed to create Configuration %q: %v", configurationName, err)
-			c.Recorder.Eventf(configurer, corev1.EventTypeWarning, "CreationFailed", "Failed to create Configuration %q: %v", configurationName, err)
+			c.Recorder.Eventf(deployer, corev1.EventTypeWarning, "CreationFailed", "Failed to create Configuration %q: %v", configurationName, err)
 			return err
 		}
 		if configuration != nil {
-			c.Recorder.Eventf(configurer, corev1.EventTypeNormal, "Created", "Created Configuration %q", configurationName)
+			c.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Created", "Created Configuration %q", configurationName)
 		}
 	} else if err != nil {
-		logger.Errorf("Failed to reconcile Configurer: %q failed to Get Configuration: %q; %v", configurer.Name, configurationName, zap.Error(err))
+		logger.Errorf("Failed to reconcile Deployer: %q failed to Get Configuration: %q; %v", deployer.Name, configurationName, zap.Error(err))
 		return err
-	} else if !metav1.IsControlledBy(configuration, configurer) {
-		// Surface an error in the configurer's status,and return an error.
-		configurer.Status.MarkConfigurationNotOwned(configurationName)
-		return fmt.Errorf("Configurer: %q does not own Configuration: %q", configurer.Name, configurationName)
+	} else if !metav1.IsControlledBy(configuration, deployer) {
+		// Surface an error in the deployer's status,and return an error.
+		deployer.Status.MarkConfigurationNotOwned(configurationName)
+		return fmt.Errorf("Deployer: %q does not own Configuration: %q", deployer.Name, configurationName)
 	} else {
-		configuration, err = c.reconcileConfiguration(ctx, configurer, configuration)
+		configuration, err = c.reconcileConfiguration(ctx, deployer, configuration)
 		if err != nil {
-			logger.Errorf("Failed to reconcile Configurer: %q failed to reconcile Configuration: %q; %v", configurer.Name, configuration, zap.Error(err))
+			logger.Errorf("Failed to reconcile Deployer: %q failed to reconcile Configuration: %q; %v", deployer.Name, configuration, zap.Error(err))
 			return err
 		}
 	}
 
 	// Update our Status based on the state of our underlying Configuration.
-	configurer.Status.ConfigurationName = configuration.Name
-	configurer.Status.PropagateConfigurationStatus(&configuration.Status)
+	deployer.Status.ConfigurationName = configuration.Name
+	deployer.Status.PropagateConfigurationStatus(&configuration.Status)
 
-	routeName := resourcenames.Route(configurer)
-	route, err := c.knrouteLister.Routes(configurer.Namespace).Get(routeName)
+	routeName := resourcenames.Route(deployer)
+	route, err := c.knrouteLister.Routes(deployer.Namespace).Get(routeName)
 	if errors.IsNotFound(err) {
-		route, err = c.createRoute(configurer)
+		route, err = c.createRoute(deployer)
 		if err != nil {
 			logger.Errorf("Failed to create Route %q: %v", routeName, err)
-			c.Recorder.Eventf(configurer, corev1.EventTypeWarning, "CreationFailed", "Failed to create Route %q: %v", routeName, err)
+			c.Recorder.Eventf(deployer, corev1.EventTypeWarning, "CreationFailed", "Failed to create Route %q: %v", routeName, err)
 			return err
 		}
 		if route != nil {
-			c.Recorder.Eventf(configurer, corev1.EventTypeNormal, "Created", "Created Route %q", routeName)
+			c.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Created", "Created Route %q", routeName)
 		}
 	} else if err != nil {
-		logger.Errorf("Failed to reconcile Configurer: %q failed to Get Route: %q; %v", configurer.Name, routeName, zap.Error(err))
+		logger.Errorf("Failed to reconcile Deployer: %q failed to Get Route: %q; %v", deployer.Name, routeName, zap.Error(err))
 		return err
-	} else if !metav1.IsControlledBy(route, configurer) {
-		// Surface an error in the configurer's status,and return an error.
-		configurer.Status.MarkRouteNotOwned(routeName)
-		return fmt.Errorf("Configurer: %q does not own Route: %q", configurer.Name, routeName)
-	} else if route, err = c.reconcileRoute(ctx, configurer, route); err != nil {
-		logger.Errorf("Failed to reconcile Configurer: %q failed to reconcile Route: %q; %v", configurer.Name, route, zap.Error(err))
+	} else if !metav1.IsControlledBy(route, deployer) {
+		// Surface an error in the deployer's status,and return an error.
+		deployer.Status.MarkRouteNotOwned(routeName)
+		return fmt.Errorf("Deployer: %q does not own Route: %q", deployer.Name, routeName)
+	} else if route, err = c.reconcileRoute(ctx, deployer, route); err != nil {
+		logger.Errorf("Failed to reconcile Deployer: %q failed to reconcile Route: %q; %v", deployer.Name, route, zap.Error(err))
 		return err
 	}
 
 	// Update our Status based on the state of our underlying Route.
-	configurer.Status.RouteName = route.Name
-	configurer.Status.PropagateRouteStatus(&route.Status)
+	deployer.Status.RouteName = route.Name
+	deployer.Status.PropagateRouteStatus(&route.Status)
 
-	configurer.Status.ObservedGeneration = configurer.Generation
+	deployer.Status.ObservedGeneration = deployer.Generation
 
 	return nil
 }
 
-func (c *Reconciler) updateStatus(desired *knativev1alpha1.Configurer) (*knativev1alpha1.Configurer, error) {
-	configurer, err := c.configurerLister.Configurers(desired.Namespace).Get(desired.Name)
+func (c *Reconciler) updateStatus(desired *knativev1alpha1.Deployer) (*knativev1alpha1.Deployer, error) {
+	deployer, err := c.deployerLister.Deployers(desired.Namespace).Get(desired.Name)
 	if err != nil {
 		return nil, err
 	}
 	// If there's nothing to update, just return.
-	if reflect.DeepEqual(configurer.Status, desired.Status) {
-		return configurer, nil
+	if reflect.DeepEqual(deployer.Status, desired.Status) {
+		return deployer, nil
 	}
-	becomesReady := desired.Status.IsReady() && !configurer.Status.IsReady()
+	becomesReady := desired.Status.IsReady() && !deployer.Status.IsReady()
 	// Don't modify the informers copy.
-	existing := configurer.DeepCopy()
+	existing := deployer.DeepCopy()
 	existing.Status = desired.Status
 
-	h, err := c.ProjectriffClientSet.KnativeV1alpha1().Configurers(desired.Namespace).UpdateStatus(existing)
+	h, err := c.ProjectriffClientSet.KnativeV1alpha1().Deployers(desired.Namespace).UpdateStatus(existing)
 	if err == nil && becomesReady {
 		duration := time.Now().Sub(h.ObjectMeta.CreationTimestamp.Time)
-		c.Logger.Infof("Configurer %q became ready after %v", configurer.Name, duration)
+		c.Logger.Infof("Deployer %q became ready after %v", deployer.Name, duration)
 	}
 
 	return h, err
 }
 
-func (c *Reconciler) reconcileBuild(configurer *knativev1alpha1.Configurer) error {
-	build := configurer.Spec.Build
+func (c *Reconciler) reconcileBuild(deployer *knativev1alpha1.Deployer) error {
+	build := deployer.Spec.Build
 	if build == nil {
 		return nil
 	}
 
 	switch {
 	case build.ApplicationRef != "":
-		application, err := c.applicationLister.Applications(configurer.Namespace).Get(build.ApplicationRef)
+		application, err := c.applicationLister.Applications(deployer.Namespace).Get(build.ApplicationRef)
 		if err != nil {
 			return err
 		}
 		if application.Status.LatestImage == "" {
 			return fmt.Errorf("application %q does not have a ready image", build.ApplicationRef)
 		}
-		configurer.Spec.Template.Containers[0].Image = application.Status.LatestImage
+		deployer.Spec.Template.Containers[0].Image = application.Status.LatestImage
 
 		// track application for new images
 		gvk := buildv1alpha1.SchemeGroupVersion.WithKind("Application")
-		if err := c.tracker.Track(reconciler.MakeObjectRef(application, gvk), configurer); err != nil {
+		if err := c.tracker.Track(reconciler.MakeObjectRef(application, gvk), deployer); err != nil {
 			return err
 		}
 		return nil
 
 	case build.ContainerRef != "":
-		container, err := c.containerLister.Containers(configurer.Namespace).Get(build.ContainerRef)
+		container, err := c.containerLister.Containers(deployer.Namespace).Get(build.ContainerRef)
 		if err != nil {
 			return err
 		}
 		if container.Status.LatestImage == "" {
 			return fmt.Errorf("container %q does not have a ready image", build.ContainerRef)
 		}
-		configurer.Spec.Template.Containers[0].Image = container.Status.LatestImage
+		deployer.Spec.Template.Containers[0].Image = container.Status.LatestImage
 
 		// track container for new images
 		gvk := buildv1alpha1.SchemeGroupVersion.WithKind("Container")
-		if err := c.tracker.Track(reconciler.MakeObjectRef(container, gvk), configurer); err != nil {
+		if err := c.tracker.Track(reconciler.MakeObjectRef(container, gvk), deployer); err != nil {
 			return err
 		}
 		return nil
 
 	case build.FunctionRef != "":
-		function, err := c.functionLister.Functions(configurer.Namespace).Get(build.FunctionRef)
+		function, err := c.functionLister.Functions(deployer.Namespace).Get(build.FunctionRef)
 		if err != nil {
 			return err
 		}
 		if function.Status.LatestImage == "" {
 			return fmt.Errorf("function %q does not have a ready image", build.FunctionRef)
 		}
-		configurer.Spec.Template.Containers[0].Image = function.Status.LatestImage
+		deployer.Spec.Template.Containers[0].Image = function.Status.LatestImage
 
 		// track function for new images
 		gvk := buildv1alpha1.SchemeGroupVersion.WithKind("Function")
-		if err := c.tracker.Track(reconciler.MakeObjectRef(function, gvk), configurer); err != nil {
+		if err := c.tracker.Track(reconciler.MakeObjectRef(function, gvk), deployer); err != nil {
 			return err
 		}
 		return nil
 	}
 
-	return fmt.Errorf("invalid configurer build")
+	return fmt.Errorf("invalid deployer build")
 }
 
-func (c *Reconciler) reconcileConfiguration(ctx context.Context, configurer *knativev1alpha1.Configurer, configuration *knservingv1alpha1.Configuration) (*knservingv1alpha1.Configuration, error) {
+func (c *Reconciler) reconcileConfiguration(ctx context.Context, deployer *knativev1alpha1.Deployer, configuration *knservingv1alpha1.Configuration) (*knservingv1alpha1.Configuration, error) {
 	logger := logging.FromContext(ctx)
-	desiredConfiguration, err := resources.MakeConfiguration(configurer)
+	desiredConfiguration, err := resources.MakeConfiguration(deployer)
 	if err != nil {
 		return nil, err
 	}
@@ -376,15 +376,15 @@ func (c *Reconciler) reconcileConfiguration(ctx context.Context, configurer *kna
 	// Preserve the rest of the object (e.g. ObjectMeta except for labels).
 	existing.Spec = desiredConfiguration.Spec
 	existing.ObjectMeta.Labels = desiredConfiguration.ObjectMeta.Labels
-	return c.KnServingClientSet.ServingV1alpha1().Configurations(configurer.Namespace).Update(existing)
+	return c.KnServingClientSet.ServingV1alpha1().Configurations(deployer.Namespace).Update(existing)
 }
 
-func (c *Reconciler) createConfiguration(configurer *knativev1alpha1.Configurer) (*knservingv1alpha1.Configuration, error) {
-	configuration, err := resources.MakeConfiguration(configurer)
+func (c *Reconciler) createConfiguration(deployer *knativev1alpha1.Deployer) (*knservingv1alpha1.Configuration, error) {
+	configuration, err := resources.MakeConfiguration(deployer)
 	if err != nil {
 		return nil, err
 	}
-	return c.KnServingClientSet.ServingV1alpha1().Configurations(configurer.Namespace).Create(configuration)
+	return c.KnServingClientSet.ServingV1alpha1().Configurations(deployer.Namespace).Create(configuration)
 }
 
 func configurationSemanticEquals(desiredConfiguration, configuration *knservingv1alpha1.Configuration) bool {
@@ -392,9 +392,9 @@ func configurationSemanticEquals(desiredConfiguration, configuration *knservingv
 		equality.Semantic.DeepEqual(desiredConfiguration.ObjectMeta.Labels, configuration.ObjectMeta.Labels)
 }
 
-func (c *Reconciler) reconcileRoute(ctx context.Context, configurer *knativev1alpha1.Configurer, route *knservingv1alpha1.Route) (*knservingv1alpha1.Route, error) {
+func (c *Reconciler) reconcileRoute(ctx context.Context, deployer *knativev1alpha1.Deployer, route *knservingv1alpha1.Route) (*knservingv1alpha1.Route, error) {
 	logger := logging.FromContext(ctx)
-	desiredRoute, err := resources.MakeRoute(configurer)
+	desiredRoute, err := resources.MakeRoute(deployer)
 	if err != nil {
 		return nil, err
 	}
@@ -414,15 +414,15 @@ func (c *Reconciler) reconcileRoute(ctx context.Context, configurer *knativev1al
 	// Preserve the rest of the object (e.g. ObjectMeta except for labels).
 	existing.Spec = desiredRoute.Spec
 	existing.ObjectMeta.Labels = desiredRoute.ObjectMeta.Labels
-	return c.KnServingClientSet.ServingV1alpha1().Routes(configurer.Namespace).Update(existing)
+	return c.KnServingClientSet.ServingV1alpha1().Routes(deployer.Namespace).Update(existing)
 }
 
-func (c *Reconciler) createRoute(configurer *knativev1alpha1.Configurer) (*knservingv1alpha1.Route, error) {
-	route, err := resources.MakeRoute(configurer)
+func (c *Reconciler) createRoute(deployer *knativev1alpha1.Deployer) (*knservingv1alpha1.Route, error) {
+	route, err := resources.MakeRoute(deployer)
 	if err != nil {
 		return nil, err
 	}
-	return c.KnServingClientSet.ServingV1alpha1().Routes(configurer.Namespace).Create(route)
+	return c.KnServingClientSet.ServingV1alpha1().Routes(deployer.Namespace).Create(route)
 }
 
 func routeSemanticEquals(desiredRoute, route *knservingv1alpha1.Route) bool {

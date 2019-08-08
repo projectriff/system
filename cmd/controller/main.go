@@ -51,7 +51,7 @@ import (
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/credential"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/function"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/knativeadapter"
-	"github.com/projectriff/system/pkg/reconciler/v1alpha1/knativeconfigurer"
+	"github.com/projectriff/system/pkg/reconciler/v1alpha1/knativedeployer"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/streamingprocessor"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/streamingstream"
 	"go.uber.org/zap"
@@ -144,7 +144,7 @@ func main() {
 	streamInformer := projectriffInformerFactory.Streaming().V1alpha1().Streams()
 	processorInformer := projectriffInformerFactory.Streaming().V1alpha1().Processors()
 	knativeadapterInformer := projectriffInformerFactory.Knative().V1alpha1().Adapters()
-	knativeconfigurerInformer := projectriffInformerFactory.Knative().V1alpha1().Configurers()
+	knativedeployerInformer := projectriffInformerFactory.Knative().V1alpha1().Deployers()
 
 	deploymentInformer := kubeInformerFactory.Apps().V1().Deployments()
 	serviceInformer := kubeInformerFactory.Core().V1().Services()
@@ -233,9 +233,9 @@ func main() {
 			knserviceInformer,
 			knconfigurationInformer,
 		),
-		knativeconfigurer.NewController(
+		knativedeployer.NewController(
 			opt,
-			knativeconfigurerInformer,
+			knativedeployerInformer,
 
 			knconfigurationInformer,
 			knrouteInformer,
@@ -270,7 +270,7 @@ func main() {
 		streamInformer.Informer().HasSynced,
 		processorInformer.Informer().HasSynced,
 		knativeadapterInformer.Informer().HasSynced,
-		knativeconfigurerInformer.Informer().HasSynced,
+		knativedeployerInformer.Informer().HasSynced,
 		deploymentInformer.Informer().HasSynced,
 		serviceInformer.Informer().HasSynced,
 		pvcInformer.Informer().HasSynced,

@@ -27,15 +27,15 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 )
 
-func (c *Configurer) Validate(ctx context.Context) *apis.FieldError {
+func (c *Deployer) Validate(ctx context.Context) *apis.FieldError {
 	errs := &apis.FieldError{}
 	errs = errs.Also(systemapis.ValidateObjectMetadata(c.GetObjectMeta()).ViaField("metadata"))
 	errs = errs.Also(c.Spec.Validate(ctx).ViaField("spec"))
 	return errs
 }
 
-func (cs ConfigurerSpec) Validate(ctx context.Context) *apis.FieldError {
-	if equality.Semantic.DeepEqual(cs, ConfigurerSpec{}) {
+func (cs DeployerSpec) Validate(ctx context.Context) *apis.FieldError {
+	if equality.Semantic.DeepEqual(cs, DeployerSpec{}) {
 		return apis.ErrMissingField(apis.CurrentField)
 	}
 

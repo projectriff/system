@@ -107,7 +107,7 @@ func main() {
 			streamingv1alpha1.SchemeGroupVersion.WithKind("Stream"):    &streamingv1alpha1.Stream{},
 			streamingv1alpha1.SchemeGroupVersion.WithKind("Processor"): &streamingv1alpha1.Processor{},
 			knativev1alpha1.SchemeGroupVersion.WithKind("Adapter"):     &knativev1alpha1.Adapter{},
-			knativev1alpha1.SchemeGroupVersion.WithKind("Configurer"):  &knativev1alpha1.Configurer{},
+			knativev1alpha1.SchemeGroupVersion.WithKind("Deployer"):  &knativev1alpha1.Deployer{},
 		},
 		Logger: logger,
 	}

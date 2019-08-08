@@ -25,7 +25,7 @@ import (
 )
 
 func TestBuild(t *testing.T) {
-	c := createConfigurerMeta()
+	c := createDeployerMeta()
 	c.Labels = map[string]string{testLabelKey: testLabelValue}
 	c.Spec.Template.ServiceAccountName = testServiceAccount
 	c.Spec.Template.Containers[0].Image = testImage
@@ -39,7 +39,7 @@ func TestBuild(t *testing.T) {
 	if got, want := kc.Name, testConfigurationName; got != want {
 		t.Errorf("expected %q for configuration name got %q", want, got)
 	}
-	if got, want := kc.Namespace, testConfigurerNamespace; got != want {
+	if got, want := kc.Namespace, testDeployerNamespace; got != want {
 		t.Errorf("expected %q for configuration namespace got %q", want, got)
 	}
 	expectOwnerReferencesSetCorrectly(t, kc.OwnerReferences)
@@ -50,7 +50,7 @@ func TestBuild(t *testing.T) {
 	if got, want := kc.Labels[testLabelKey], testLabelValue; got != want {
 		t.Errorf("expected %q labels got %q", want, got)
 	}
-	if got, want := kc.Labels[knative.ConfigurerLabelKey], testConfigurerName; got != want {
+	if got, want := kc.Labels[knative.DeployerLabelKey], testDeployerName; got != want {
 		t.Errorf("expected %q labels got %q", want, got)
 	}
 	if diff := cmp.Diff(kc.Labels, kc.Spec.Template.Labels); diff != "" {

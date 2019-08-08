@@ -28,6 +28,9 @@ spec:
     categories:
     - riff
     - core
+    shortNames:
+    - cdeployer
+    - coredeployer
   scope: Namespaced
   subresources:
     status: {}

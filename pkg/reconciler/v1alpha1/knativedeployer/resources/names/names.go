@@ -13,21 +13,17 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package resources
+
+package names
 
 import (
-	"github.com/projectriff/system/pkg/apis/knative"
 	knativev1alpha1 "github.com/projectriff/system/pkg/apis/knative/v1alpha1"
 )
 
-// makeLabels constructs the labels we will apply to Configurer resource.
-func makeLabels(c *knativev1alpha1.Configurer) map[string]string {
-	labels := make(map[string]string, len(c.ObjectMeta.Labels)+1)
-	labels[knative.ConfigurerLabelKey] = c.Name
+func Configuration(c *knativev1alpha1.Deployer) string {
+	return c.Name
+}
 
-	// Pass through the labels on the Function to child resources.
-	for k, v := range c.ObjectMeta.Labels {
-		labels[k] = v
-	}
-	return labels
+func Route(c *knativev1alpha1.Deployer) string {
+	return c.Name
 }

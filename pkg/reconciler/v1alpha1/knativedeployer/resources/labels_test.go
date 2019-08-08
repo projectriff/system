@@ -29,22 +29,22 @@ import (
 func TestMakeLabels(t *testing.T) {
 	tests := []struct {
 		name       string
-		configurer *knativev1alpha1.Configurer
+		deployer *knativev1alpha1.Deployer
 		want       map[string]string
 	}{{
 		name: "just application name",
-		configurer: &knativev1alpha1.Configurer{
+		deployer: &knativev1alpha1.Deployer{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: "foo",
 				Name:      "bar",
 			},
 		},
 		want: map[string]string{
-			knative.ConfigurerLabelKey: "bar",
+			knative.DeployerLabelKey: "bar",
 		},
 	}, {
 		name: "pass through labels",
-		configurer: &knativev1alpha1.Configurer{
+		deployer: &knativev1alpha1.Deployer{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: "baz",
 				Name:      "blah",
@@ -55,7 +55,7 @@ func TestMakeLabels(t *testing.T) {
 			},
 		},
 		want: map[string]string{
-			knative.ConfigurerLabelKey: "blah",
+			knative.DeployerLabelKey: "blah",
 			"asdf":                     "bazinga",
 			"ooga":                     "booga",
 		},
@@ -63,7 +63,7 @@ func TestMakeLabels(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got := makeLabels(test.configurer)
+			got := makeLabels(test.deployer)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("makeLabels (-want, +got) = %v", diff)
 			}
