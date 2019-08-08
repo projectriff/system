@@ -15,4 +15,4 @@
  */
 package v1alpha1
 
-type HandlerExpansion interface{}
+type DeployerExpansion interface{}

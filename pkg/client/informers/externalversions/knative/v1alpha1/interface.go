@@ -23,8 +23,8 @@ import (
 type Interface interface {
 	// Adapters returns a AdapterInformer.
 	Adapters() AdapterInformer
-	// Handlers returns a HandlerInformer.
-	Handlers() HandlerInformer
+	// Configurers returns a ConfigurerInformer.
+	Configurers() ConfigurerInformer
 }
 
 type version struct {
@@ -43,7 +43,7 @@ func (v *version) Adapters() AdapterInformer {
 	return &adapterInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
-// Handlers returns a HandlerInformer.
-func (v *version) Handlers() HandlerInformer {
-	return &handlerInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+// Configurers returns a ConfigurerInformer.
+func (v *version) Configurers() ConfigurerInformer {
+	return &configurerInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

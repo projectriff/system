@@ -29,8 +29,8 @@ func (c *FakeKnativeV1alpha1) Adapters(namespace string) v1alpha1.AdapterInterfa
 	return &FakeAdapters{c, namespace}
 }
 
-func (c *FakeKnativeV1alpha1) Handlers(namespace string) v1alpha1.HandlerInterface {
-	return &FakeHandlers{c, namespace}
+func (c *FakeKnativeV1alpha1) Configurers(namespace string) v1alpha1.ConfigurerInterface {
+	return &FakeConfigurers{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

@@ -1,7 +1,0 @@
-apiVersion: knative.projectriff.io/v1alpha1
-kind: Handler
-metadata:
-  name: node-sample
-spec:
-  build:
-    applicationRef: node-sample
