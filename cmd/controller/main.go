@@ -67,6 +67,8 @@ var (
 	kubeconfig = flag.String("kubeconfig", "", "Path to a kubeconfig. Only required if out-of-cluster.")
 )
 
+var knativeRuntime = false
+
 func main() {
 	flag.Parse()
 	loggingConfigMap, err := configmap.Load("/etc/config-logging")
@@ -117,6 +119,16 @@ func main() {
 	}
 
 	configMapWatcher := configmap.NewInformedWatcher(kubeClient, system.Namespace())
+
+	resources, err := kubeClient.DiscoveryClient.ServerResources()
+	if err != nil {
+		logger.Fatalw("Error fetching server resources", zap.Error(err))
+	}
+	for _, resource := range resources {
+		if resource.GroupVersion == "serving.knative.dev/v1alpha1" {
+			knativeRuntime = true
+		}
+	}
 
 	opt := reconciler.Options{
 		KubeClientSet:        kubeClient,
@@ -222,27 +234,31 @@ func main() {
 			streamInformer,
 			deploymentInformer,
 		),
-		// knative.projectriff.io
-		knativeadapter.NewController(
-			opt,
-			knativeadapterInformer,
+	}
+	if knativeRuntime {
+		controllers = append(controllers,
+			// knative.projectriff.io
+			knativeadapter.NewController(
+				opt,
+				knativeadapterInformer,
 
-			applicationInformer,
-			containerAgressiveInformer,
-			functionInformer,
-			knserviceInformer,
-			knconfigurationInformer,
-		),
-		knativedeployer.NewController(
-			opt,
-			knativedeployerInformer,
+				applicationInformer,
+				containerAgressiveInformer,
+				functionInformer,
+				knserviceInformer,
+				knconfigurationInformer,
+			),
+			knativedeployer.NewController(
+				opt,
+				knativedeployerInformer,
 
-			knconfigurationInformer,
-			knrouteInformer,
-			applicationInformer,
-			containerAgressiveInformer,
-			functionInformer,
-		),
+				knconfigurationInformer,
+				knrouteInformer,
+				applicationInformer,
+				containerAgressiveInformer,
+				functionInformer,
+			),
+		)
 	}
 
 	// Watch the logging config map and dynamically update logging levels.
@@ -255,14 +271,16 @@ func main() {
 	projectriffInformerFactory.Start(stopCh)
 	projectriffAgressiveInformerFactory.Start(stopCh)
 	knbuildInformerFactory.Start(stopCh)
-	knservingInformerFactory.Start(stopCh)
+	if knativeRuntime {
+		knservingInformerFactory.Start(stopCh)
+	}
 	if err := configMapWatcher.Start(stopCh); err != nil {
 		logger.Fatalw("failed to start configuration manager", zap.Error(err))
 	}
 
 	// Wait for the caches to be synced before starting controllers.
 	logger.Info("Waiting for informer caches to sync")
-	for i, synced := range []cache.InformerSynced{
+	informersSynced := []cache.InformerSynced{
 		applicationInformer.Informer().HasSynced,
 		containerAgressiveInformer.Informer().HasSynced,
 		functionInformer.Informer().HasSynced,
@@ -277,10 +295,15 @@ func main() {
 		secretInformer.Informer().HasSynced,
 		serviceaccountInformer.Informer().HasSynced,
 		knbuildInformer.Informer().HasSynced,
-		knserviceInformer.Informer().HasSynced,
-		knconfigurationInformer.Informer().HasSynced,
-		knrouteInformer.Informer().HasSynced,
-	} {
+	}
+	if knativeRuntime {
+		informersSynced = append(informersSynced,
+			knserviceInformer.Informer().HasSynced,
+			knconfigurationInformer.Informer().HasSynced,
+			knrouteInformer.Informer().HasSynced,
+		)
+	}
+	for i, synced := range informersSynced {
 		if ok := cache.WaitForCacheSync(stopCh, synced); !ok {
 			logger.Fatalf("Failed to wait for cache at index %d to sync", i)
 		}
