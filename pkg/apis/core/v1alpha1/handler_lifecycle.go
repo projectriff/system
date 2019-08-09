@@ -75,6 +75,10 @@ func (hs *HandlerStatus) PropagateDeploymentStatus(ds *appsv1.DeploymentStatus) 
 		handlerCondSet.Manage(hs).MarkUnknown(HandlerConditionDeploymentReady, progressing.Reason, progressing.Message)
 		return
 	}
+	if available.Status == corev1.ConditionTrue && ds.ReadyReplicas == 0 {
+		handlerCondSet.Manage(hs).MarkUnknown(HandlerConditionDeploymentReady, "PendingReady", "waiting for at least one pod to be available")
+		return
+	}
 	switch {
 	case available.Status == corev1.ConditionUnknown:
 		handlerCondSet.Manage(hs).MarkUnknown(HandlerConditionDeploymentReady, available.Reason, available.Message)
