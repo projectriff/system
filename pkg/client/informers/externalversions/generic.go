@@ -61,14 +61,14 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Build().V1alpha1().Functions().Informer()}, nil
 
 		// Group=core.projectriff.io, Version=v1alpha1
-	case core_v1alpha1.SchemeGroupVersion.WithResource("handlers"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Core().V1alpha1().Handlers().Informer()}, nil
+	case core_v1alpha1.SchemeGroupVersion.WithResource("deployers"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Core().V1alpha1().Deployers().Informer()}, nil
 
 		// Group=knative.projectriff.io, Version=v1alpha1
 	case knative_v1alpha1.SchemeGroupVersion.WithResource("adapters"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Knative().V1alpha1().Adapters().Informer()}, nil
-	case knative_v1alpha1.SchemeGroupVersion.WithResource("handlers"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Knative().V1alpha1().Handlers().Informer()}, nil
+	case knative_v1alpha1.SchemeGroupVersion.WithResource("deployers"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Knative().V1alpha1().Deployers().Informer()}, nil
 
 		// Group=streaming.projectriff.io, Version=v1alpha1
 	case streaming_v1alpha1.SchemeGroupVersion.WithResource("processors"):

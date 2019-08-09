@@ -1,0 +1,7 @@
+apiVersion: knative.projectriff.io/v1alpha1
+kind: Deployer
+metadata:
+  name: uppercase
+spec:
+  build:
+    functionRef: uppercase

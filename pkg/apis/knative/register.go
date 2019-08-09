@@ -20,6 +20,6 @@ package knative
 const (
 	GroupName = "knative.projectriff.io"
 
-	AdapterLabelKey = GroupName + "/adapter"
-	HandlerLabelKey = GroupName + "/handler"
+	AdapterLabelKey    = GroupName + "/adapter"
+	DeployerLabelKey = GroupName + "/deployer"
 )

@@ -15,10 +15,10 @@
  */
 package v1alpha1
 
-// HandlerListerExpansion allows custom methods to be added to
-// HandlerLister.
-type HandlerListerExpansion interface{}
+// DeployerListerExpansion allows custom methods to be added to
+// DeployerLister.
+type DeployerListerExpansion interface{}
 
-// HandlerNamespaceListerExpansion allows custom methods to be added to
-// HandlerNamespaceLister.
-type HandlerNamespaceListerExpansion interface{}
+// DeployerNamespaceListerExpansion allows custom methods to be added to
+// DeployerNamespaceLister.
+type DeployerNamespaceListerExpansion interface{}

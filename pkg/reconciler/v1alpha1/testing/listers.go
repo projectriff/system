@@ -101,8 +101,8 @@ func (l *Listers) GetFunctionLister() buildv1alpha1listers.FunctionLister {
 	return buildv1alpha1listers.NewFunctionLister(l.indexerFor(&buildv1alpha1.Function{}))
 }
 
-func (l *Listers) GetRequestHandlerLister() corev1alpha1listers.HandlerLister {
-	return corev1alpha1listers.NewHandlerLister(l.indexerFor(&corev1alpha1.Handler{}))
+func (l *Listers) GetCoreDeployerLister() corev1alpha1listers.DeployerLister {
+	return corev1alpha1listers.NewDeployerLister(l.indexerFor(&corev1alpha1.Deployer{}))
 }
 
 func (l *Listers) GetStreamingStreamLister() streamingv1alpha1listers.StreamLister {
@@ -117,8 +117,8 @@ func (l *Listers) GetKnativeAdapterLister() knativev1alpha1listers.AdapterLister
 	return knativev1alpha1listers.NewAdapterLister(l.indexerFor(&knativev1alpha1.Adapter{}))
 }
 
-func (l *Listers) GetKnativeHandlerLister() knativev1alpha1listers.HandlerLister {
-	return knativev1alpha1listers.NewHandlerLister(l.indexerFor(&knativev1alpha1.Handler{}))
+func (l *Listers) GetKnativeDeployerLister() knativev1alpha1listers.DeployerLister {
+	return knativev1alpha1listers.NewDeployerLister(l.indexerFor(&knativev1alpha1.Deployer{}))
 }
 
 func (l *Listers) GetKnBuildLister() knbuildv1alpha1listers.BuildLister {

@@ -24,7 +24,7 @@ import (
 
 type CoreV1alpha1Interface interface {
 	RESTClient() rest.Interface
-	HandlersGetter
+	DeployersGetter
 }
 
 // CoreV1alpha1Client is used to interact with features provided by the core.projectriff.io group.
@@ -32,8 +32,8 @@ type CoreV1alpha1Client struct {
 	restClient rest.Interface
 }
 
-func (c *CoreV1alpha1Client) Handlers(namespace string) HandlerInterface {
-	return newHandlers(c, namespace)
+func (c *CoreV1alpha1Client) Deployers(namespace string) DeployerInterface {
+	return newDeployers(c, namespace)
 }
 
 // NewForConfig creates a new CoreV1alpha1Client for the given config.

@@ -31,6 +31,7 @@ import (
 	"github.com/knative/pkg/version"
 	"github.com/knative/pkg/webhook"
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
+	corev1alpha1 "github.com/projectriff/system/pkg/apis/core/v1alpha1"
 	knativev1alpha1 "github.com/projectriff/system/pkg/apis/knative/v1alpha1"
 	streamingv1alpha1 "github.com/projectriff/system/pkg/apis/streaming/v1alpha1"
 	"github.com/projectriff/system/pkg/logging"
@@ -102,10 +103,11 @@ func main() {
 			buildv1alpha1.SchemeGroupVersion.WithKind("Application"):   &buildv1alpha1.Application{},
 			buildv1alpha1.SchemeGroupVersion.WithKind("Container"):     &buildv1alpha1.Container{},
 			buildv1alpha1.SchemeGroupVersion.WithKind("Function"):      &buildv1alpha1.Function{},
+			corev1alpha1.SchemeGroupVersion.WithKind("Deployer"):       &corev1alpha1.Deployer{},
 			streamingv1alpha1.SchemeGroupVersion.WithKind("Stream"):    &streamingv1alpha1.Stream{},
 			streamingv1alpha1.SchemeGroupVersion.WithKind("Processor"): &streamingv1alpha1.Processor{},
 			knativev1alpha1.SchemeGroupVersion.WithKind("Adapter"):     &knativev1alpha1.Adapter{},
-			knativev1alpha1.SchemeGroupVersion.WithKind("Handler"):     &knativev1alpha1.Handler{},
+			knativev1alpha1.SchemeGroupVersion.WithKind("Deployer"):  &knativev1alpha1.Deployer{},
 		},
 		Logger: logger,
 	}

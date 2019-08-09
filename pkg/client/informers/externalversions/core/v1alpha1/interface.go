@@ -21,8 +21,8 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
-	// Handlers returns a HandlerInformer.
-	Handlers() HandlerInformer
+	// Deployers returns a DeployerInformer.
+	Deployers() DeployerInformer
 }
 
 type version struct {
@@ -36,7 +36,7 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 }
 
-// Handlers returns a HandlerInformer.
-func (v *version) Handlers() HandlerInformer {
-	return &handlerInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+// Deployers returns a DeployerInformer.
+func (v *version) Deployers() DeployerInformer {
+	return &deployerInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

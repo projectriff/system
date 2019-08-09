@@ -20,5 +20,5 @@ package core
 const (
 	GroupName = "core.projectriff.io"
 
-	HandlerLabelKey = GroupName + "/handler"
+	DeployerLabelKey = GroupName + "/deployer"
 )
