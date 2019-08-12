@@ -62,7 +62,7 @@ func makePodSpec(d *corev1alpha1.Deployer) corev1.PodSpec {
 	if podSpec.Containers[0].LivenessProbe == nil {
 		podSpec.Containers[0].LivenessProbe = &corev1.Probe{
 			Handler: corev1.Handler{
-				HTTPGet: &corev1.HTTPGetAction{
+				TCPSocket: &corev1.TCPSocketAction{
 					Port: intstr.FromInt(8080),
 				},
 			},
@@ -71,7 +71,7 @@ func makePodSpec(d *corev1alpha1.Deployer) corev1.PodSpec {
 	if podSpec.Containers[0].ReadinessProbe == nil {
 		podSpec.Containers[0].ReadinessProbe = &corev1.Probe{
 			Handler: corev1.Handler{
-				HTTPGet: &corev1.HTTPGetAction{
+				TCPSocket: &corev1.TCPSocketAction{
 					Port: intstr.FromInt(8080),
 				},
 			},
