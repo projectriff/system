@@ -21,6 +21,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/projectriff/system/pkg/apis/core"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 func TestDeployment(t *testing.T) {
@@ -52,7 +54,23 @@ func TestDeployment(t *testing.T) {
 		t.Errorf("deployment and pod template labels differ (-want, +got) = %v", diff)
 	}
 
-	if diff := cmp.Diff(d.Spec.Template, &kd.Spec.Template.Spec); diff != "" {
+	podSpec := kd.Spec.Template.Spec.DeepCopy()
+	podSpec.Containers[0].LivenessProbe = nil
+	podSpec.Containers[0].ReadinessProbe = nil
+	if diff := cmp.Diff(d.Spec.Template, podSpec); diff != "" {
 		t.Errorf("deployment and deployer pod templates differ (-want, +got) = %v", diff)
+	}
+	defaultProbe := &corev1.Probe{
+		Handler: corev1.Handler{
+			TCPSocket: &corev1.TCPSocketAction{
+				Port: intstr.FromInt(8080),
+			},
+		},
+	}
+	if diff := cmp.Diff(defaultProbe, kd.Spec.Template.Spec.Containers[0].LivenessProbe); diff != "" {
+		t.Errorf("deployment and deployer liveness probes differ (-want, +got) = %v", diff)
+	}
+	if diff := cmp.Diff(defaultProbe, kd.Spec.Template.Spec.Containers[0].ReadinessProbe); diff != "" {
+		t.Errorf("deployment and deployer readiness probes differ (-want, +got) = %v", diff)
 	}
 }

@@ -24,6 +24,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 // MakeDeployment creates a Deployment from a Deployer object.
@@ -47,10 +48,35 @@ func MakeDeployment(d *corev1alpha1.Deployer) (*appsv1.Deployment, error) {
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: makeLabels(d),
 				},
-				Spec: *d.Spec.Template,
+				Spec: makePodSpec(d),
 			},
 		},
 	}
 
 	return deployment, nil
+}
+
+func makePodSpec(d *corev1alpha1.Deployer) corev1.PodSpec {
+	podSpec := *d.Spec.Template.DeepCopy()
+
+	if podSpec.Containers[0].LivenessProbe == nil {
+		podSpec.Containers[0].LivenessProbe = &corev1.Probe{
+			Handler: corev1.Handler{
+				TCPSocket: &corev1.TCPSocketAction{
+					Port: intstr.FromInt(8080),
+				},
+			},
+		}
+	}
+	if podSpec.Containers[0].ReadinessProbe == nil {
+		podSpec.Containers[0].ReadinessProbe = &corev1.Probe{
+			Handler: corev1.Handler{
+				TCPSocket: &corev1.TCPSocketAction{
+					Port: intstr.FromInt(8080),
+				},
+			},
+		}
+	}
+
+	return podSpec
 }
