@@ -129,6 +129,11 @@ func main() {
 			knativeRuntime = true
 		}
 	}
+	if knativeRuntime {
+		logger.Info("Starting with Knative runtime")
+	} else {
+		logger.Warn("Starting without Knative runtime")
+	}
 
 	opt := reconciler.Options{
 		KubeClientSet:        kubeClient,
@@ -287,8 +292,6 @@ func main() {
 		coredeployerInformer.Informer().HasSynced,
 		streamInformer.Informer().HasSynced,
 		processorInformer.Informer().HasSynced,
-		knativeadapterInformer.Informer().HasSynced,
-		knativedeployerInformer.Informer().HasSynced,
 		deploymentInformer.Informer().HasSynced,
 		serviceInformer.Informer().HasSynced,
 		pvcInformer.Informer().HasSynced,
@@ -298,6 +301,8 @@ func main() {
 	}
 	if knativeRuntime {
 		informersSynced = append(informersSynced,
+			knativeadapterInformer.Informer().HasSynced,
+			knativedeployerInformer.Informer().HasSynced,
 			knserviceInformer.Informer().HasSynced,
 			knconfigurationInformer.Informer().HasSynced,
 			knrouteInformer.Informer().HasSynced,
