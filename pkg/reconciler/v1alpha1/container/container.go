@@ -168,7 +168,7 @@ func (c *Reconciler) reconcile(ctx context.Context, container *buildv1alpha1.Con
 	skipRegistries.Insert("dev.local")
 	digest, err := c.resolver.Resolve(container.Status.TargetImage, opt, skipRegistries)
 	if err != nil {
-		container.Status.MarkImageMissing(fmt.Sprintf("Unable to fetch image %q: %s", container.Status.TargetImage, err.Error()))
+		c.Recorder.Eventf(container, corev1.EventTypeNormal, "ImageMissing", "Unable to fetch image %q: %s", container.Status.TargetImage, err.Error())
 		return err
 	}
 	container.Status.LatestImage = digest

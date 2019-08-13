@@ -85,10 +85,6 @@ func (as *ApplicationStatus) MarkImageInvalid(message string) {
 	applicationCondSet.Manage(as).MarkFalse(ApplicationConditionImageResolved, "ImageInvalid", message)
 }
 
-func (as *ApplicationStatus) MarkImageMissing(message string) {
-	applicationCondSet.Manage(as).MarkFalse(ApplicationConditionImageResolved, "ImageMissing", message)
-}
-
 func (as *ApplicationStatus) MarkImageResolved() {
 	applicationCondSet.Manage(as).MarkTrue(ApplicationConditionImageResolved)
 }

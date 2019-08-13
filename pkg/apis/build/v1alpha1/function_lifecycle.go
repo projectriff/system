@@ -85,10 +85,6 @@ func (fs *FunctionStatus) MarkImageInvalid(message string) {
 	functionCondSet.Manage(fs).MarkFalse(FunctionConditionImageResolved, "ImageInvalid", message)
 }
 
-func (fs *FunctionStatus) MarkImageMissing(message string) {
-	functionCondSet.Manage(fs).MarkFalse(FunctionConditionImageResolved, "ImageMissing", message)
-}
-
 func (fs *FunctionStatus) MarkImageResolved() {
 	functionCondSet.Manage(fs).MarkTrue(FunctionConditionImageResolved)
 }
