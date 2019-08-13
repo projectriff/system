@@ -893,6 +893,20 @@
   version = "kubernetes-1.12.6"
 
 [[projects]]
+  digest = "1:51f330b7a61ac0e8b6e082490586ff2b18008eb514a67eccbe5ec78ffd32ee25"
+  name = "k8s.io/apiextensions-apiserver"
+  packages = [
+    "pkg/apis/apiextensions",
+    "pkg/apis/apiextensions/v1beta1",
+    "pkg/client/clientset/clientset",
+    "pkg/client/clientset/clientset/scheme",
+    "pkg/client/clientset/clientset/typed/apiextensions/v1beta1",
+  ]
+  pruneopts = "NUT"
+  revision = "bd0469a053ff88529a61145790499fe78a09a49d"
+  version = "kubernetes-1.12.6"
+
+[[projects]]
   digest = "1:119ae04ee44c5d179dcde1ee686f057cfe3fc54a7ee8484b920932a80309e88b"
   name = "k8s.io/apimachinery"
   packages = [
@@ -1257,6 +1271,7 @@
     "go.uber.org/zap/zapcore",
     "k8s.io/api/apps/v1",
     "k8s.io/api/core/v1",
+    "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset",
     "k8s.io/apimachinery/pkg/api/equality",
     "k8s.io/apimachinery/pkg/api/errors",
     "k8s.io/apimachinery/pkg/api/meta",
