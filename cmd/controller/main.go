@@ -21,13 +21,8 @@ import (
 	"log"
 	"time"
 
-	kubeinformers "k8s.io/client-go/informers"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/cache"
-	"k8s.io/client-go/tools/clientcmd"
-
 	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
+	"k8s.io/apimachinery/pkg/api/errors"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
 	knbuildclientset "github.com/knative/build/pkg/client/clientset/versioned"
@@ -55,6 +50,13 @@ import (
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/streamingprocessor"
 	"github.com/projectriff/system/pkg/reconciler/v1alpha1/streamingstream"
 	"go.uber.org/zap"
+	apiextensionsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kubeinformers "k8s.io/client-go/informers"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 const (
@@ -120,15 +122,7 @@ func main() {
 
 	configMapWatcher := configmap.NewInformedWatcher(kubeClient, system.Namespace())
 
-	resources, err := kubeClient.DiscoveryClient.ServerResources()
-	if err != nil {
-		logger.Fatalw("Error fetching server resources", zap.Error(err))
-	}
-	for _, resource := range resources {
-		if resource.GroupVersion == "serving.knative.dev/v1alpha1" {
-			knativeRuntime = true
-		}
-	}
+	knativeRuntime = detectKnativeRuntime(cfg, logger)
 	if knativeRuntime {
 		logger.Info("Starting with Knative runtime")
 	} else {
@@ -326,4 +320,21 @@ func main() {
 	}
 
 	<-stopCh
+}
+
+func detectKnativeRuntime(cfg *rest.Config, logger *zap.SugaredLogger) bool {
+	apiextensionsClient, err := apiextensionsclientset.NewForConfig(cfg)
+	if err != nil {
+		logger.Fatalw("Error building apiextensions clientset", zap.Error(err))
+	}
+
+	_, err = apiextensionsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Get("revisions.serving.knative.dev", metav1.GetOptions{})
+	if err != nil {
+		if errors.IsNotFound(err) {
+			return false
+		}
+		logger.Fatalw("Error resolving Knative runtime", zap.Error(err))
+	}
+
+	return true
 }
