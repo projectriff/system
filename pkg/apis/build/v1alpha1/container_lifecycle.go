@@ -57,10 +57,6 @@ func (cs *ContainerStatus) MarkImageInvalid(message string) {
 	containerCondSet.Manage(cs).MarkFalse(ContainerConditionImageResolved, "ImageInvalid", message)
 }
 
-func (cs *ContainerStatus) MarkImageMissing(message string) {
-	containerCondSet.Manage(cs).MarkFalse(ContainerConditionImageResolved, "ImageMissing", message)
-}
-
 func (cs *ContainerStatus) MarkImageResolved() {
 	containerCondSet.Manage(cs).MarkTrue(ContainerConditionImageResolved)
 }
