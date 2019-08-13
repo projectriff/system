@@ -71,12 +71,9 @@ func (ds *DeployerStatus) PropagateDeploymentStatus(cds *appsv1.DeploymentStatus
 	if available == nil || progressing == nil {
 		return
 	}
-	if progressing.Status != corev1.ConditionTrue {
+	if progressing.Status == corev1.ConditionTrue && available.Status == corev1.ConditionFalse {
+		// DeploymentAvailable is False while progressing, avoid reporting DeployerConditionReady as False
 		deployerCondSet.Manage(ds).MarkUnknown(DeployerConditionDeploymentReady, progressing.Reason, progressing.Message)
-		return
-	}
-	if available.Status == corev1.ConditionTrue && cds.ReadyReplicas == 0 {
-		deployerCondSet.Manage(ds).MarkUnknown(DeployerConditionDeploymentReady, "PendingReady", "waiting for at least one pod to be available")
 		return
 	}
 	switch {
