@@ -145,17 +145,14 @@ func main() {
 		ResyncPeriod:         10 * time.Hour, // Based on controller-runtime default.
 		StopChannel:          stopCh,
 	}
-	agressiveOpt := opt
-	agressiveOpt.ResyncPeriod = 5 * time.Minute // be agressive, be be agressive
 
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, opt.ResyncPeriod)
 	projectriffInformerFactory := projectriffinformers.NewSharedInformerFactory(projectriffClient, opt.ResyncPeriod)
-	projectriffAgressiveInformerFactory := projectriffinformers.NewSharedInformerFactory(projectriffClient, agressiveOpt.ResyncPeriod)
 	knbuildInformerFactory := knbuildinformers.NewSharedInformerFactory(knbuildClient, opt.ResyncPeriod)
 	knservingInformerFactory := knservinginformers.NewSharedInformerFactory(knservingClient, opt.ResyncPeriod)
 
 	applicationInformer := projectriffInformerFactory.Build().V1alpha1().Applications()
-	containerAgressiveInformer := projectriffAgressiveInformerFactory.Build().V1alpha1().Containers()
+	containerInformer := projectriffInformerFactory.Build().V1alpha1().Containers()
 	functionInformer := projectriffInformerFactory.Build().V1alpha1().Functions()
 	coredeployerInformer := projectriffInformerFactory.Core().V1alpha1().Deployers()
 	streamInformer := projectriffInformerFactory.Streaming().V1alpha1().Streams()
@@ -188,8 +185,8 @@ func main() {
 			knbuildInformer,
 		),
 		container.NewController(
-			agressiveOpt,
-			containerAgressiveInformer,
+			opt,
+			containerInformer,
 
 			configmapInformer,
 		),
@@ -223,7 +220,7 @@ func main() {
 			deploymentInformer,
 			serviceInformer,
 			applicationInformer,
-			containerAgressiveInformer,
+			containerInformer,
 			functionInformer,
 		),
 		// streaming.projectriff.io
@@ -248,7 +245,7 @@ func main() {
 				knativeadapterInformer,
 
 				applicationInformer,
-				containerAgressiveInformer,
+				containerInformer,
 				functionInformer,
 				knserviceInformer,
 				knconfigurationInformer,
@@ -260,7 +257,7 @@ func main() {
 				knconfigurationInformer,
 				knrouteInformer,
 				applicationInformer,
-				containerAgressiveInformer,
+				containerInformer,
 				functionInformer,
 			),
 		)
@@ -274,7 +271,6 @@ func main() {
 	// These are non-blocking.
 	kubeInformerFactory.Start(stopCh)
 	projectriffInformerFactory.Start(stopCh)
-	projectriffAgressiveInformerFactory.Start(stopCh)
 	knbuildInformerFactory.Start(stopCh)
 	if knativeRuntime {
 		knservingInformerFactory.Start(stopCh)
@@ -287,7 +283,7 @@ func main() {
 	logger.Info("Waiting for informer caches to sync")
 	informersSynced := []cache.InformerSynced{
 		applicationInformer.Informer().HasSynced,
-		containerAgressiveInformer.Informer().HasSynced,
+		containerInformer.Informer().HasSynced,
 		functionInformer.Informer().HasSynced,
 		coredeployerInformer.Informer().HasSynced,
 		streamInformer.Informer().HasSynced,

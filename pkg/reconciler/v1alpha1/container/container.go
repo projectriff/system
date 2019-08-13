@@ -81,7 +81,7 @@ func NewController(
 	impl := controller.NewImpl(c, c.Logger, ReconcilerName)
 
 	c.Logger.Info("Setting up event handlers")
-	containerInformer.Informer().AddEventHandler(reconciler.Handler(impl.Enqueue))
+	containerInformer.Informer().AddEventHandlerWithResyncPeriod(reconciler.Handler(impl.Enqueue), 5*time.Minute)
 
 	return impl
 }
