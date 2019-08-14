@@ -363,6 +363,9 @@ func (c *Reconciler) reconcileDeployment(ctx context.Context, deployer *corev1al
 		return nil, err
 	}
 
+	// copy spec fields that should be preserved
+	desiredDeployment.Spec.Replicas = deployment.Spec.Replicas
+
 	if deploymentSemanticEquals(desiredDeployment, deployment) {
 		// No differences to reconcile.
 		return deployment, nil
@@ -400,6 +403,9 @@ func (c *Reconciler) reconcileService(ctx context.Context, deployer *corev1alpha
 	if err != nil {
 		return nil, err
 	}
+
+	// copy spec fields that should be preserved
+	desiredService.Spec.ClusterIP = service.Spec.ClusterIP
 
 	if serviceSemanticEquals(desiredService, service) {
 		// No differences to reconcile.
