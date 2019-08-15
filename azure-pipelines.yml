@@ -66,5 +66,5 @@ steps:
   env:
     GCLOUD_CLIENT_SECRET: '$(GcloudClientSecret)'
   workingDirectory: '$(modulePath)'
-  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/v0.4.x'))
   displayName: 'Publish riff System'
