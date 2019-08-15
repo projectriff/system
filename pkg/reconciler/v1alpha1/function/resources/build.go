@@ -73,7 +73,7 @@ func makeBuildArguments(f *buildv1alpha1.Function) []knbuildv1alpha1.ArgumentSpe
 	args := []knbuildv1alpha1.ArgumentSpec{
 		{Name: "IMAGE", Value: f.Status.TargetImage},
 		{Name: "FUNCTION_ARTIFACT", Value: f.Spec.Artifact},
-		{Name: "FUNCTION_HANDLER", Value: f.Spec.Handler},
+		{Name: "FUNCTION_DEPLOYER", Value: f.Spec.Deployer},
 		{Name: "FUNCTION_LANGUAGE", Value: f.Spec.Invoker},
 	}
 	if f.Status.BuildCacheName != "" {

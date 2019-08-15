@@ -21,7 +21,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-// Handler wraps the provided handler function into a cache.ResourceEventHandler
+// Deployer wraps the provided handler function into a cache.ResourceEventHandler
 // that sends all events to the given handler.  For Updates, only the new object
 // is forwarded.
 func Handler(h func(interface{})) cache.ResourceEventHandler {

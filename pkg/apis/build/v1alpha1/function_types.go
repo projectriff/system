@@ -60,9 +60,9 @@ type FunctionSpec struct {
 	// Artifact file containing the function within the build workspace.
 	Artifact string `json:"artifact,omitempty"`
 
-	// Handler name of the method or class to invoke. The value depends on the
+	// Deployer name of the method or class to invoke. The value depends on the
 	// invoker.
-	Handler string `json:"handler,omitempty"`
+	Deployer string `json:"handler,omitempty"`
 
 	// Invoker language runtime name. Detected by default.
 	Invoker string `json:"invoker,omitempty"`

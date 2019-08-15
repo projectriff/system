@@ -20,7 +20,7 @@ import (
 	corev1alpha1 "github.com/projectriff/system/pkg/apis/core/v1alpha1"
 )
 
-// makeLabels constructs the labels we will apply to Handler resource.
+// makeLabels constructs the labels we will apply to Deployer resource.
 func makeLabels(d *corev1alpha1.Deployer) map[string]string {
 	labels := make(map[string]string, len(d.ObjectMeta.Labels)+1)
 	labels[core.DeployerLabelKey] = d.Name

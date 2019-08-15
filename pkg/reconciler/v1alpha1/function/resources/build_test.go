@@ -36,7 +36,7 @@ func TestBuild(t *testing.T) {
 	}
 	f.Status.BuildCacheName = testBuildCacheName
 	f.Spec.Artifact = testFunctionArtifact
-	f.Spec.Handler = testFunctionHandler
+	f.Spec.Deployer = testFunctionHandler
 	f.Spec.Invoker = testFunctionInvoker
 
 	b, _ := MakeBuild(f)
@@ -81,7 +81,7 @@ func TestBuild(t *testing.T) {
 	if got, want := b.Spec.Template.Arguments[1].Value, testFunctionArtifact; got != want {
 		t.Errorf("expected %q for function artifact arg value got %q", want, got)
 	}
-	if got, want := b.Spec.Template.Arguments[2].Name, "FUNCTION_HANDLER"; got != want {
+	if got, want := b.Spec.Template.Arguments[2].Name, "FUNCTION_DEPLOYER"; got != want {
 		t.Errorf("expected %q for function handler arg name got %q", want, got)
 	}
 	if got, want := b.Spec.Template.Arguments[2].Value, testFunctionHandler; got != want {
