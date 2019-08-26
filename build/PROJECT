@@ -1,0 +1,13 @@
+version: "2"
+domain: projectriff.io
+repo: github.com/projectriff/system
+resources:
+- group: build
+  version: v1alpha1
+  kind: Function
+- group: build
+  version: v1alpha1
+  kind: Application
+- group: build
+  version: v1alpha1
+  kind: Container

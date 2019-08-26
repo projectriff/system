@@ -1,5 +1,6 @@
 # Release artifacats
 /riff-system.yaml
+bin/
 
 # Operating system temporary files
 .DS_Store
