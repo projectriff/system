@@ -36,10 +36,24 @@ type DeployerReconciler struct {
 // +kubebuilder:rbac:groups=core.projectriff.io,resources=deployers/status,verbs=get;update;patch
 
 func (r *DeployerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	_ = context.Background()
-	_ = r.Log.WithValues("deployer", req.NamespacedName)
+	ctx := context.Background()
+	log := r.Log.WithValues("deployer", req.NamespacedName)
 
-	// your logic here
+	var deployer corev1alpha1.Deployer
+	if err := r.Get(ctx, req.NamespacedName, &deployer); err != nil {
+		log.Error(err, "unable to fetch core deployer")
+		// ignore notFound errors
+		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+	build := deployer.Spec.Build
+	if build == nil {
+		// nothing to do
+		return ctrl.Result{}, nil
+	}
+	switch {
+	case build.ApplicationRef != "":
+
+	}
 
 	return ctrl.Result{}, nil
 }
