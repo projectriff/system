@@ -1,0 +1,7 @@
+version: "2"
+domain: projectriff.io
+repo: github.com/projectriff/system/core
+resources:
+- group: core
+  version: v1alpha1
+  kind: Deployer

@@ -1,0 +1,7 @@
+apiVersion: streaming.projectriff.io/v1alpha1
+kind: Stream
+metadata:
+  name: stream-sample
+spec:
+  # Add fields here
+  foo: bar

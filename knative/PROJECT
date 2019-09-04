@@ -1,0 +1,10 @@
+version: "2"
+domain: projectriff.io
+repo: github.com/projectriff/system/knative
+resources:
+- group: knative
+  version: v1alpha1
+  kind: Adapter
+- group: knative
+  version: v1alpha1
+  kind: Deployer
