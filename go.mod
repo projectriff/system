@@ -14,3 +14,5 @@ require (
 	knative.dev/pkg v0.0.0-20190906142605-014d54e62f0b
 	sigs.k8s.io/controller-runtime v0.2.0
 )
+
+replace knative.dev/pkg => github.com/scothis/pkg v0.0.0-20190906211521-8c516b31da1d
