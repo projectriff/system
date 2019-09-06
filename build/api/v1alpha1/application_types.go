@@ -17,22 +17,43 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+var (
+	ApplicationLabelKey = GroupVersion.Group + "/application"
+)
+
 // ApplicationSpec defines the desired state of Application
 type ApplicationSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+
+	// Image repository to push built images. May contain a leading underscore
+	// to have the default image prefix applied, or be `_` to combine the default
+	// image prefix with the resource's name as a default value.
+	Image string `json:"image"`
+
+	// CacheSize for an optional PersistentVolumeClaim used to store
+	// intermediate build artifacts, like a maven cache, for future builds.
+	CacheSize *resource.Quantity `json:"cacheSize,omitempty"`
+
+	// Source location. Required for on cluster builds.
+	Source *Source `json:"source,omitempty"`
 }
 
 // ApplicationStatus defines the observed state of Application
 type ApplicationStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+
+	duckv1.Status `json:",inline"`
+	BuildStatus   `json:",inline"`
 }
 
 // +kubebuilder:object:root=true

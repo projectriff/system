@@ -18,21 +18,34 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+var (
+	ContainerLabelKey = GroupVersion.Group + "/container"
+)
+
 // ContainerSpec defines the desired state of Container
 type ContainerSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+
+	// Image repository to watch for built images. May contain a leading underscore
+	// to have the default image prefix applied, or be `_` to combine the default
+	// image prefix with the resource's name as a default value.
+	Image string `json:"image"`
 }
 
 // ContainerStatus defines the observed state of Container
 type ContainerStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+
+	duckv1.Status `json:",inline"`
+	BuildStatus   `json:",inline"`
 }
 
 // +kubebuilder:object:root=true

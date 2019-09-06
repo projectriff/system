@@ -17,22 +17,45 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"fmt"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+var (
+	StreamLabelKey = GroupVersion.Group + "/stream"
+)
+
 // StreamSpec defines the desired state of Stream
 type StreamSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+
+	Provider    string `json:"provider"`
+	ContentType string `json:"contentType"`
 }
 
 // StreamStatus defines the observed state of Stream
 type StreamStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+
+	duckv1.Status `json:",inline"`
+
+	Address StreamAddress `json:"address,omitempty"`
+}
+
+type StreamAddress struct {
+	Gateway string `json:"gateway,omitempty"`
+	Topic   string `json:"topic,omitempty"`
+}
+
+func (a StreamAddress) String() string {
+	return fmt.Sprintf("%s/%s", a.Gateway, a.Topic)
 }
 
 // +kubebuilder:object:root=true

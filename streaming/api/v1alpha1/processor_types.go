@@ -18,21 +18,38 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+var (
+	ProcessorLabelKey = GroupVersion.Group + "/processor"
+)
+
 // ProcessorSpec defines the desired state of Processor
 type ProcessorSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+
+	FunctionRef string   `json:"functionRef"`
+	Inputs      []string `json:"inputs"`
+	Outputs     []string `json:"outputs"`
 }
 
 // ProcessorStatus defines the observed state of Processor
 type ProcessorStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+
+	duckv1.Status `json:",inline"`
+
+	InputAddresses     []string `json:"inputAddresses,omitempty"`
+	OutputAddresses    []string `json:"outputAddresses,omitempty"`
+	OutputContentTypes []string `json:"outputContentTypes,omitempty"`
+	DeploymentName     string   `json:"deploymentName,omitempty"`
+	FunctionImage      string   `json:"functionImage,omitempty"`
 }
 
 // +kubebuilder:object:root=true

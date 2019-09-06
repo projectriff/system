@@ -18,21 +18,48 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+var (
+	AdapterLabelKey = GroupVersion.Group + "/adapter"
+)
+
 // AdapterSpec defines the desired state of Adapter
 type AdapterSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+
+	// Build resolves the image from a build resource. As the target build
+	// produces new images, they will be automatically rolled out to the
+	// handler.
+	Build Build `json:"build"`
+
+	// Target Knative resource
+	Target AdapterTarget `json:"target"`
+}
+
+type AdapterTarget struct {
+	// ServiceRef references a Knative Service in this namespace.
+	ServiceRef string `json:"serviceRef,omitempty"`
+
+	// ConfigurationRef references a Knative Configuration in this namespace.
+	ConfigurationRef string `json:"configurationRef,omitempty"`
 }
 
 // AdapterStatus defines the observed state of Adapter
 type AdapterStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+
+	duckv1.Status `json:",inline"`
+
+	// LatestImage is the most recent image resolved from the build and applied
+	// to the target
+	LatestImage string `json:"latestImage,omitempty"`
 }
 
 // +kubebuilder:object:root=true

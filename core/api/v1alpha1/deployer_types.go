@@ -17,22 +17,51 @@ limitations under the License.
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+var (
+	DeployerLabelKey = GroupVersion.Group + "/deployer"
+)
+
 // DeployerSpec defines the desired state of Deployer
 type DeployerSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+
+	// Build resolves the image from a build resource. As the target build
+	// produces new images, they will be automatically rolled out to the
+	// deployer.
+	Build *Build `json:"build,omitempty"`
+
+	// Template pod
+	Template *corev1.PodSpec `json:"template,omitempty"`
+}
+
+type Build struct {
+	// ApplicationRef references an application in this namespace.
+	ApplicationRef string `json:"applicationRef,omitempty"`
+
+	// ContainerRef references a container in this namespace.
+	ContainerRef string `json:"containerRef,omitempty"`
+
+	// FunctionRef references an application in this namespace.
+	FunctionRef string `json:"functionRef,omitempty"`
 }
 
 // DeployerStatus defines the observed state of Deployer
 type DeployerStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+
+	duckv1.Status  `json:",inline"`
+	DeploymentName string `json:"deploymentName,omitempty"`
+	ServiceName    string `json:"serviceName,omitempty"`
 }
 
 // +kubebuilder:object:root=true

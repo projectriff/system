@@ -17,22 +17,53 @@ limitations under the License.
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/apis"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+var (
+	DeployerLabelKey = GroupVersion.Group + "/deployer"
+)
+
 // DeployerSpec defines the desired state of Deployer
 type DeployerSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+
+	// Build resolves the image from a build resource. As the target build
+	// produces new images, they will be automatically rolled out to the
+	// deployer.
+	Build *Build `json:"build,omitempty"`
+
+	// Template pod
+	Template *corev1.PodSpec `json:"template,omitempty"`
 }
 
 // DeployerStatus defines the observed state of Deployer
 type DeployerStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+
+	duckv1.Status `json:",inline"`
+
+	// ConfigurationName is the name of the Knative Serving configuration
+	// backing this deployer.
+	ConfigurationName string `json:"configurationName,omitempty"`
+
+	// RouteName is the name of the Knative Serving route backing this
+	// deployer.
+	RouteName string `json:"routeName,omitempty"`
+
+	// Address to target this deployer internally
+	Address *duckv1.Addressable `json:"address,omitempty"`
+
+	// URL to target this deployer publicly
+	URL *apis.URL `json:"url,omitempty"`
 }
 
 // +kubebuilder:object:root=true
