@@ -33,6 +33,7 @@ jobs:
           xargs curl -O -L
         mv kustomize_*_${opsys}_amd64 kustomize
         chmod u+x kustomize
+        sudo mv kustomize /usr/local/bin/
     - name: Build & Test
       run: make all test
     - name: Report coverage
