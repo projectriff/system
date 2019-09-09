@@ -23,7 +23,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	buildv1alpha1 "github.com/projectriff/system/build/api/v1alpha1"
+	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 )
 
 // ContainerReconciler reconciles a Container object

@@ -23,7 +23,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	streamingv1alpha1 "github.com/projectriff/system/streaming/api/v1alpha1"
+	streamingv1alpha1 "github.com/projectriff/system/pkg/apis/streaming/v1alpha1"
 )
 
 // StreamReconciler reconciles a Stream object

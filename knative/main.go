@@ -20,8 +20,8 @@ import (
 	"flag"
 	"os"
 
-	knativev1alpha1 "github.com/projectriff/system/knative/api/v1alpha1"
 	"github.com/projectriff/system/knative/controllers"
+	knativev1alpha1 "github.com/projectriff/system/pkg/apis/knative/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"

@@ -23,7 +23,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	corev1alpha1 "github.com/projectriff/system/core/api/v1alpha1"
+	corev1alpha1 "github.com/projectriff/system/pkg/apis/core/v1alpha1"
 )
 
 // DeployerReconciler reconciles a Deployer object

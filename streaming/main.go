@@ -20,7 +20,7 @@ import (
 	"flag"
 	"os"
 
-	streamingv1alpha1 "github.com/projectriff/system/streaming/api/v1alpha1"
+	streamingv1alpha1 "github.com/projectriff/system/pkg/apis/streaming/v1alpha1"
 	"github.com/projectriff/system/streaming/controllers"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"

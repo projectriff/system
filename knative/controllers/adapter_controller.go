@@ -23,7 +23,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	knativev1alpha1 "github.com/projectriff/system/knative/api/v1alpha1"
+	knativev1alpha1 "github.com/projectriff/system/pkg/apis/knative/v1alpha1"
 )
 
 // AdapterReconciler reconciles a Adapter object

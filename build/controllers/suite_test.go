@@ -23,7 +23,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	buildv1alpha1 "github.com/projectriff/system/build/api/v1alpha1"
+	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
