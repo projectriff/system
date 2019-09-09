@@ -1,5 +1,10 @@
 
-components := build core knative streaming
+# Target component to build/run
+COMPONENT ?= build
+# Image URL to use all building/pushing image targets
+IMG ?= $(COMPONENT)-controller:latest
+# Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
+CRD_OPTIONS ?= crd:trivialVersions=true
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -9,7 +14,33 @@ GOBIN=$(shell go env GOBIN)
 endif
 
 .PHONY: all
-all: manager
+all: manager package
+
+# Run component against the configured Kubernetes cluster in ~/.kube/config
+.PHONY: run
+run: manifests
+	go run ./cmd/managers/$(COMPONENT)/main.go
+
+# Install component CRDs into a cluster
+.PHONY: install
+install: manifests
+	kustomize build config/$(COMPONENT)/crd | kubectl apply -f -
+
+# Deploy component controller in the configured Kubernetes cluster in ~/.kube/config
+.PHONY: deploy
+deploy: manifests
+	cd config/$(COMPONENT)/manager && kustomize edit set image controller=${IMG}
+	kustomize build config/$(COMPONENT)/default | kubectl apply -f -
+
+# Build component docker image
+.PHONY: docker-build
+docker-build: test
+	docker build . --build-arg component=$(COMPONENT) -t ${IMG}
+
+# Push a docker image
+.PHONY: docker-push
+docker-push:
+	docker push ${IMG}
 
 # Run tests
 .PHONY: test
@@ -27,18 +58,18 @@ package: generate fmt vet manifests
 # Build manager binaries
 .PHONY: manager
 manager: generate
-	$(MAKE) -C build manager
-	$(MAKE) -C core manager
-	$(MAKE) -C knative manager
-	$(MAKE) -C streaming manager
+	go build -o bin/build-manager ./cmd/managers/build/main.go
+	go build -o bin/core-manager ./cmd/managers/core/main.go
+	go build -o bin/knative-manager ./cmd/managers/knative/main.go
+	go build -o bin/streaming-manager ./cmd/managers/streaming/main.go
 
 # Generate manifests e.g. CRD, RBAC etc.
 .PHONY: manifests
 manifests:
-	$(MAKE) -C build manifests
-	$(MAKE) -C core manifests
-	$(MAKE) -C knative manifests
-	$(MAKE) -C streaming manifests
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./pkg/apis/build/..." output:crd:artifacts:config=./config/build/crd/bases
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./pkg/apis/core/..." output:crd:artifacts:config=./config/core/crd/bases
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./pkg/apis/knative/..." output:crd:artifacts:config=./config/knative/crd/bases
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./pkg/apis/streaming/..." output:crd:artifacts:config=./config/streaming/crd/bases
 
 # Run go fmt against code
 .PHONY: fmt
