@@ -19,10 +19,10 @@ test: generate fmt vet manifests
 # Package for distribution
 .PHONY: package
 package: generate fmt vet manifests
-	kustomize build build/config/default > config/riff-build.yaml
-	kustomize build core/config/default > config/riff-core.yaml
-	kustomize build knative/config/default > config/riff-knative.yaml
-	kustomize build streaming/config/default > config/riff-streaming.yaml
+	kustomize build config/build/default > config/riff-build.yaml
+	kustomize build config/core/default > config/riff-core.yaml
+	kustomize build config/knative/default > config/riff-knative.yaml
+	kustomize build config/streaming/default > config/riff-streaming.yaml
 
 # Build manager binaries
 .PHONY: manager
