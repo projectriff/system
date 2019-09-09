@@ -16,6 +16,14 @@ all: manager
 test: generate fmt vet manifests
 	go test ./... -coverprofile cover.out
 
+# Package for distribution
+.PHONY: package
+package: generate fmt vet manifests
+	kustomize build build/config/default > config/riff-build.yaml
+	kustomize build core/config/default > config/riff-core.yaml
+	kustomize build knative/config/default > config/riff-knative.yaml
+	kustomize build streaming/config/default > config/riff-streaming.yaml
+
 # Build manager binaries
 .PHONY: manager
 manager: generate
