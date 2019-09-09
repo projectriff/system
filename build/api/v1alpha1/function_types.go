@@ -17,9 +17,9 @@ limitations under the License.
 package v1alpha1
 
 import (
+	apis "github.com/projectriff/system/pkg/apis"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -61,8 +61,8 @@ type FunctionStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	duckv1.Status `json:",inline"`
-	BuildStatus   `json:",inline"`
+	apis.Status `json:",inline"`
+	BuildStatus `json:",inline"`
 }
 
 // +kubebuilder:object:root=true

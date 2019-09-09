@@ -17,10 +17,9 @@ limitations under the License.
 package v1alpha1
 
 import (
+	apis "github.com/projectriff/system/pkg/apis"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"knative.dev/pkg/apis"
-	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -49,7 +48,7 @@ type DeployerStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	duckv1.Status `json:",inline"`
+	apis.Status `json:",inline"`
 
 	// ConfigurationName is the name of the Knative Serving configuration
 	// backing this deployer.
@@ -60,10 +59,10 @@ type DeployerStatus struct {
 	RouteName string `json:"routeName,omitempty"`
 
 	// Address to target this deployer internally
-	Address *duckv1.Addressable `json:"address,omitempty"`
+	Address *apis.Addressable `json:"address,omitempty"`
 
 	// URL to target this deployer publicly
-	URL *apis.URL `json:"url,omitempty"`
+	URL string `json:"url,omitempty"`
 }
 
 // +kubebuilder:object:root=true

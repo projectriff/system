@@ -19,8 +19,8 @@ package v1alpha1
 import (
 	"fmt"
 
+	apis "github.com/projectriff/system/pkg/apis"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -44,7 +44,7 @@ type StreamStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	duckv1.Status `json:",inline"`
+	apis.Status `json:",inline"`
 
 	Address StreamAddress `json:"address,omitempty"`
 }
