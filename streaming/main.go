@@ -21,7 +21,7 @@ import (
 	"os"
 
 	streamingv1alpha1 "github.com/projectriff/system/pkg/apis/streaming/v1alpha1"
-	"github.com/projectriff/system/streaming/controllers"
+	controllers "github.com/projectriff/system/pkg/controllers/streaming"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"

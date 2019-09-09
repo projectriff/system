@@ -20,8 +20,8 @@ import (
 	"flag"
 	"os"
 
-	"github.com/projectriff/system/build/controllers"
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
+	controllers "github.com/projectriff/system/pkg/controllers/build"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
