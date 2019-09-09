@@ -6,11 +6,20 @@ metadata:
   creationTimestamp: null
   name: applications.build.projectriff.io
 spec:
+  additionalPrinterColumns:
+  - JSONPath: .status.conditions[?(@.type=="Ready")].status
+    name: Ready
+    type: string
+  - JSONPath: .status.conditions[?(@.type=="Ready")].reason
+    name: Reason
+    type: string
   group: build.projectriff.io
   names:
     kind: Application
     plural: applications
   scope: ""
+  subresources:
+    status: {}
   validation:
     openAPIV3Schema:
       description: Application is the Schema for the applications API

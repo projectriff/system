@@ -6,11 +6,20 @@ metadata:
   creationTimestamp: null
   name: adapters.knative.projectriff.io
 spec:
+  additionalPrinterColumns:
+  - JSONPath: .status.conditions[?(@.type=="Ready")].status
+    name: Ready
+    type: string
+  - JSONPath: .status.conditions[?(@.type=="Ready")].reason
+    name: Reason
+    type: string
   group: knative.projectriff.io
   names:
     kind: Adapter
     plural: adapters
   scope: ""
+  subresources:
+    status: {}
   validation:
     openAPIV3Schema:
       description: Adapter is the Schema for the adapters API

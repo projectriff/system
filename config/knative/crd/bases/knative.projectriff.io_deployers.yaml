@@ -6,11 +6,23 @@ metadata:
   creationTimestamp: null
   name: deployers.knative.projectriff.io
 spec:
+  additionalPrinterColumns:
+  - JSONPath: .status.url
+    name: URL
+    type: string
+  - JSONPath: .status.conditions[?(@.type=="Ready")].status
+    name: Ready
+    type: string
+  - JSONPath: .status.conditions[?(@.type=="Ready")].reason
+    name: Reason
+    type: string
   group: knative.projectriff.io
   names:
     kind: Deployer
     plural: deployers
   scope: ""
+  subresources:
+    status: {}
   validation:
     openAPIV3Schema:
       description: Deployer is the Schema for the deployers API

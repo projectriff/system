@@ -13,11 +13,20 @@ metadata:
     component: streaming.projectriff.io
   name: processors.streaming.projectriff.io
 spec:
+  additionalPrinterColumns:
+  - JSONPath: .status.conditions[?(@.type=="Ready")].status
+    name: Ready
+    type: string
+  - JSONPath: .status.conditions[?(@.type=="Ready")].reason
+    name: Reason
+    type: string
   group: streaming.projectriff.io
   names:
     kind: Processor
     plural: processors
   scope: ""
+  subresources:
+    status: {}
   validation:
     openAPIV3Schema:
       description: Processor is the Schema for the processors API
@@ -133,11 +142,20 @@ metadata:
     component: streaming.projectriff.io
   name: streams.streaming.projectriff.io
 spec:
+  additionalPrinterColumns:
+  - JSONPath: .status.conditions[?(@.type=="Ready")].status
+    name: Ready
+    type: string
+  - JSONPath: .status.conditions[?(@.type=="Ready")].reason
+    name: Reason
+    type: string
   group: streaming.projectriff.io
   names:
     kind: Stream
     plural: streams
   scope: ""
+  subresources:
+    status: {}
   validation:
     openAPIV3Schema:
       description: Stream is the Schema for the streams API
