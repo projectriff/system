@@ -1,0 +1,160 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  creationTimestamp: null
+  name: functions.build.projectriff.io
+spec:
+  additionalPrinterColumns:
+  - JSONPath: .status.conditions[?(@.type=="Ready")].status
+    name: Ready
+    type: string
+  - JSONPath: .status.conditions[?(@.type=="Ready")].reason
+    name: Reason
+    type: string
+  group: build.projectriff.io
+  names:
+    kind: Function
+    plural: functions
+  scope: ""
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      description: Function is the Schema for the functions API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: FunctionSpec defines the desired state of Function
+          properties:
+            artifact:
+              description: Artifact file containing the function within the build
+                workspace.
+              type: string
+            cacheSize:
+              description: CacheSize of persistent volume to store resources between
+                builds
+              type: string
+            handler:
+              description: Handler name of the method or class to invoke. The value
+                depends on the invoker.
+              type: string
+            image:
+              description: Image repository to push built images. May contain a leading
+                underscore to have the default image prefix applied, or be `_` to
+                combine the default image prefix with the resource's name as a default
+                value.
+              type: string
+            invoker:
+              description: Invoker language runtime name. Detected by default.
+              type: string
+            source:
+              description: Source location. Required for on cluster builds.
+              properties:
+                git:
+                  description: Git source location to clone and checkout for the build.
+                  properties:
+                    revision:
+                      description: Revision in the git repository to checkout. May
+                        be any valid refspec including commit sha, tags or branches.
+                      type: string
+                    url:
+                      description: URL to a cloneable git repository.
+                      type: string
+                  required:
+                  - revision
+                  - url
+                  type: object
+                subPath:
+                  description: SubPath within the source to mount. Files outside of
+                    the sub path will not be available to tbe build.
+                  type: string
+              required:
+              - git
+              type: object
+          required:
+          - image
+          type: object
+        status:
+          description: FunctionStatus defines the observed state of Function
+          properties:
+            buildCacheName:
+              description: BuildCacheName is the name of the PersistentVolumeClaim
+                used as a cache for intermediate build resources.
+              type: string
+            buildName:
+              description: BuildName is the name of the Knative Build backing this
+                build.
+              type: string
+            conditions:
+              description: Conditions the latest available observations of a resource's
+                current state.
+              items:
+                description: 'Conditions defines a readiness condition for a Knative
+                  resource. See: https://github.com/kubernetes/community/blob/master/contributors/devel/api-conventions.md#typical-status-properties'
+                properties:
+                  lastTransitionTime:
+                    description: LastTransitionTime is the last time the condition
+                      transitioned from one status to another. We use VolatileTime
+                      in place of metav1.Time to exclude this from creating equality.Semantic
+                      differences (all other things held constant).
+                    type: object
+                  message:
+                    description: A human readable message indicating details about
+                      the transition.
+                    type: string
+                  reason:
+                    description: The reason for the condition's last transition.
+                    type: string
+                  severity:
+                    description: Severity with which to treat failures of this type
+                      of condition. When this is not specified, it defaults to Error.
+                    type: string
+                  status:
+                    description: Status of the condition, one of True, False, Unknown.
+                    type: string
+                  type:
+                    description: Type of condition.
+                    type: string
+                required:
+                - status
+                - type
+                type: object
+              type: array
+            latestImage:
+              description: LatestImage is the most recent image for this build.
+              type: string
+            observedGeneration:
+              description: ObservedGeneration is the 'Generation' of the Service that
+                was last processed by the controller.
+              format: int64
+              type: integer
+            targetImage:
+              description: TargetImage is the resolved image repository where built
+                images are pushed.
+              type: string
+          type: object
+      type: object
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

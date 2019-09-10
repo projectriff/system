@@ -1,7 +1,0 @@
-apiVersion: streaming.projectriff.io/v1alpha1
-kind: Stream
-metadata:
-  name: steampunk
-spec:
-  provider: kafka-provider
-  content-type: text/csv

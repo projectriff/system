@@ -1,6 +1,0 @@
-apiVersion: build.projectriff.io/v1alpha1
-kind: Container
-metadata:
-  name: upper
-spec:
-  image: _

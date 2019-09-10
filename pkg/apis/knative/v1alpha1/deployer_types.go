@@ -1,51 +1,39 @@
 /*
- * Copyright 2019 The original author or authors
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+Copyright 2019 the original author or authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 
 package v1alpha1
 
 import (
-	knapis "github.com/knative/pkg/apis"
-	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
-	duckv1beta1 "github.com/knative/pkg/apis/duck/v1beta1"
-	"github.com/knative/pkg/kmeta"
-	"github.com/projectriff/system/pkg/apis"
+	apis "github.com/projectriff/system/pkg/apis"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// +genclient
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-type Deployer struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	Spec   DeployerSpec   `json:"spec"`
-	Status DeployerStatus `json:"status"`
-}
+// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
+// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 var (
-	_ knapis.Validatable = (*Deployer)(nil)
-	_ knapis.Defaultable = (*Deployer)(nil)
-	_ kmeta.OwnerRefable = (*Deployer)(nil)
-	_ apis.Object        = (*Deployer)(nil)
+	DeployerLabelKey = GroupVersion.Group + "/deployer"
 )
 
+// DeployerSpec defines the desired state of Deployer
 type DeployerSpec struct {
+	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+	// Important: Run "make" to regenerate code after modifying this file
+
 	// Build resolves the image from a build resource. As the target build
 	// produces new images, they will be automatically rolled out to the
 	// deployer.
@@ -55,8 +43,12 @@ type DeployerSpec struct {
 	Template *corev1.PodSpec `json:"template,omitempty"`
 }
 
+// DeployerStatus defines the observed state of Deployer
 type DeployerStatus struct {
-	duckv1beta1.Status `json:",inline"`
+	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
+	// Important: Run "make" to regenerate code after modifying this file
+
+	apis.Status `json:",inline"`
 
 	// ConfigurationName is the name of the Knative Serving configuration
 	// backing this deployer.
@@ -67,25 +59,36 @@ type DeployerStatus struct {
 	RouteName string `json:"routeName,omitempty"`
 
 	// Address to target this deployer internally
-	Address *duckv1alpha1.Addressable `json:"address,omitempty"`
+	Address *apis.Addressable `json:"address,omitempty"`
 
 	// URL to target this deployer publicly
-	URL *knapis.URL `json:"url,omitempty"`
+	URL string `json:"url,omitempty"`
 }
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="URL",type=string,JSONPath=`.status.url`
+// +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
+// +kubebuilder:printcolumn:name="Reason",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].reason`
 
+// Deployer is the Schema for the deployers API
+type Deployer struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec   DeployerSpec   `json:"spec,omitempty"`
+	Status DeployerStatus `json:"status,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+
+// DeployerList contains a list of Deployer
 type DeployerList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata"`
-
-	Items []Deployer `json:"items"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []Deployer `json:"items"`
 }
 
-func (*Deployer) GetGroupVersionKind() schema.GroupVersionKind {
-	return SchemeGroupVersion.WithKind("Deployer")
-}
-
-func (c *Deployer) GetStatus() apis.Status {
-	return &c.Status
+func init() {
+	SchemeBuilder.Register(&Deployer{}, &DeployerList{})
 }

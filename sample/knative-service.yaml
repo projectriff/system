@@ -1,9 +1,0 @@
-apiVersion: serving.knative.dev/v1alpha1
-kind: Service
-metadata:
-  name: uppercase
-spec:
-  template:
-    spec:
-      containers:
-      - image: ubuntu:18.04

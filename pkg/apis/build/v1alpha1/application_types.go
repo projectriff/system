@@ -1,52 +1,39 @@
 /*
- * Copyright 2019 The original author or authors
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+Copyright 2019 the original author or authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 
 package v1alpha1
 
 import (
-	knapis "github.com/knative/pkg/apis"
-	duckv1beta1 "github.com/knative/pkg/apis/duck/v1beta1"
-	"github.com/knative/pkg/kmeta"
-	"github.com/projectriff/system/pkg/apis"
+	apis "github.com/projectriff/system/pkg/apis"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// +genclient
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-// Application builds from source using application buildpacks
-type Application struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	Spec   ApplicationSpec   `json:"spec"`
-	Status ApplicationStatus `json:"status"`
-}
+// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
+// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 var (
-	_ knapis.Validatable = (*Application)(nil)
-	_ knapis.Defaultable = (*Application)(nil)
-	_ kmeta.OwnerRefable = (*Application)(nil)
-	_ apis.Object        = (*Application)(nil)
-	_ ImageResource      = (*Application)(nil)
+	ApplicationLabelKey = GroupVersion.Group + "/application"
 )
 
+// ApplicationSpec defines the desired state of Application
 type ApplicationSpec struct {
+	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+	// Important: Run "make" to regenerate code after modifying this file
+
 	// Image repository to push built images. May contain a leading underscore
 	// to have the default image prefix applied, or be `_` to combine the default
 	// image prefix with the resource's name as a default value.
@@ -60,28 +47,38 @@ type ApplicationSpec struct {
 	Source *Source `json:"source,omitempty"`
 }
 
+// ApplicationStatus defines the observed state of Application
 type ApplicationStatus struct {
-	duckv1beta1.Status `json:",inline"`
-	BuildStatus        `json:",inline"`
+	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
+	// Important: Run "make" to regenerate code after modifying this file
+
+	apis.Status `json:",inline"`
+	BuildStatus `json:",inline"`
 }
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
+// +kubebuilder:printcolumn:name="Reason",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].reason`
 
+// Application is the Schema for the applications API
+type Application struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec   ApplicationSpec   `json:"spec,omitempty"`
+	Status ApplicationStatus `json:"status,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+
+// ApplicationList contains a list of Application
 type ApplicationList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata"`
-
-	Items []Application `json:"items"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []Application `json:"items"`
 }
 
-func (*Application) GetGroupVersionKind() schema.GroupVersionKind {
-	return SchemeGroupVersion.WithKind("Application")
-}
-
-func (a *Application) GetStatus() apis.Status {
-	return &a.Status
-}
-
-func (a *Application) GetImage() string {
-	return a.Spec.Image
+func init() {
+	SchemeBuilder.Register(&Application{}, &ApplicationList{})
 }
