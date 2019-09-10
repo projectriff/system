@@ -1,5 +1,5 @@
 /*
-Copyright 2019 the original author or authors.
+Copyright 2018 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,15 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controllers
+package tracker
 
 import (
-	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	corev1 "k8s.io/api/core/v1"
 )
 
-func IgnoreNotFound(err error) error {
-	if apierrs.IsNotFound(err) {
-		return nil
-	}
-	return err
+// Interface defines the interface through which an object can register
+// that it is tracking another object by reference.
+type Interface interface {
+	// Track tells us that "obj" is tracking changes to the
+	// referenced object.
+	Track(ref corev1.ObjectReference, obj interface{}) error
+
+	// OnChanged is a callback to register with the InformerFactory
+	// so that we are notified for appropriate object changes.
+	OnChanged(obj interface{})
 }

@@ -20,6 +20,7 @@ import (
 	"flag"
 	"os"
 
+	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	corev1alpha1 "github.com/projectriff/system/pkg/apis/core/v1alpha1"
 	controllers "github.com/projectriff/system/pkg/controllers/core"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -39,6 +40,7 @@ func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
 
 	_ = corev1alpha1.AddToScheme(scheme)
+	_ = buildv1alpha1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
 
