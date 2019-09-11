@@ -91,3 +91,7 @@ type FunctionList struct {
 func init() {
 	SchemeBuilder.Register(&Function{}, &FunctionList{})
 }
+
+func (f *Function) GetImage() string {
+	return f.Spec.Image
+}

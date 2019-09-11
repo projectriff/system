@@ -22,6 +22,7 @@ import (
 
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	controllers "github.com/projectriff/system/pkg/controllers/build"
+	"github.com/projectriff/system/pkg/controllers/build/digest"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -70,10 +71,12 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Application")
 		os.Exit(1)
 	}
+	containerLogger := ctrl.Log.WithName("controllers").WithName("Container")
 	if err = (&controllers.ContainerReconciler{
 		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("Container"),
+		Log:    containerLogger,
 		Scheme: mgr.GetScheme(),
+		Resolver: digest.NewDefaultResolver(containerLogger),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Container")
 		os.Exit(1)

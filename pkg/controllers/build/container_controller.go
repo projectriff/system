@@ -18,32 +18,126 @@ package build
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/go-logr/logr"
+	"github.com/google/go-containerregistry/pkg/authn/k8schain"
+	"github.com/projectriff/system/pkg/controllers/build/digest"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/sets"
 	ctrl "sigs.k8s.io/controller-runtime"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 )
+
+var errMissingDefaultPrefix = fmt.Errorf("missing default image prefix")
 
 // ContainerReconciler reconciles a Container object
 type ContainerReconciler struct {
 	client.Client
 	Log    logr.Logger
 	Scheme *runtime.Scheme
+	Resolver digest.Resolver
 }
 
 // +kubebuilder:rbac:groups=build.projectriff.io,resources=containers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=build.projectriff.io,resources=containers/status,verbs=get;update;patch
 
 func (r *ContainerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	_ = context.Background()
-	_ = r.Log.WithValues("container", req.NamespacedName)
+	ctx := context.Background()
+	log := r.Log.WithValues("container", req.NamespacedName)
 
-	// your logic here
+	var originalContainer buildv1alpha1.Container
+	if err := r.Get(ctx, req.NamespacedName, &originalContainer); err != nil {
+		if apierrs.IsNotFound(err) {
+			// we'll ignore not-found errors, since they can't be fixed by an immediate
+			// requeue (we'll need to wait for a new notification), and we can get them
+			// on deleted requests.
+			return ctrl.Result{}, nil
+		}
+		log.Error(err, "unable to fetch container")
+		return ctrl.Result{}, err
+	}
+
+	container := originalContainer.DeepCopy()
+	container.SetDefaults(ctx)
+	container.Status.InitializeConditions()
+
+	result, err := r.reconcile(ctx, log, container)
+
+	// check if status has changed before updating, unless requeued
+	if !result.Requeue && !equality.Semantic.DeepEqual(container.Status, originalContainer.Status) {
+		// update status
+		if updateErr := r.Status().Update(ctx, container); updateErr != nil {
+			log.Error(updateErr, "unable to update Container status", "container", container)
+			return ctrl.Result{Requeue: true}, updateErr
+		}
+	}
+	return result, err
+}
+
+func (r *ContainerReconciler) reconcile(ctx context.Context, log logr.Logger, container *buildv1alpha1.Container) (ctrl.Result, error) {
+	if container.GetDeletionTimestamp() != nil {
+		return ctrl.Result{}, nil
+	}
+	targetImage, err := r.resolveTargetImage(ctx, container)
+	if err != nil {
+		if err == errMissingDefaultPrefix {
+			container.Status.MarkImageDefaultPrefixMissing(err.Error())
+		} else {
+			container.Status.MarkImageInvalid(err.Error())
+		}
+		return ctrl.Result{}, err
+	}
+	container.Status.TargetImage = targetImage
+
+	// resolve image name
+	opt := k8schain.Options{
+		Namespace:          container.Namespace,
+		ServiceAccountName: "riff-build",
+	}
+	// TODO load from a configmap
+	skipRegistries := sets.NewString()
+	skipRegistries.Insert("ko.local")
+	skipRegistries.Insert("dev.local")
+	digest, err := r.Resolver.Resolve(container.Status.TargetImage, opt, skipRegistries)
+	if err != nil {
+		return ctrl.Result{Requeue: true}, err
+	}
+	container.Status.LatestImage = digest
+	container.Status.MarkImageResolved()
+	container.Status.ObservedGeneration = container.Generation
 
 	return ctrl.Result{}, nil
+}
+
+func (r *ContainerReconciler) resolveTargetImage(ctx context.Context, container *buildv1alpha1.Container) (string, error) {
+	if !strings.HasPrefix(container.Spec.Image, "_") {
+		return container.Spec.Image, nil
+	}
+
+	var riffBuildConfig v1.ConfigMap
+	if err := r.Get(ctx, types.NamespacedName{Namespace: container.Namespace, Name: "riff-build"}, &riffBuildConfig); err != nil {
+		if apierrs.IsNotFound(err) {
+			return "", errMissingDefaultPrefix
+		}
+		return "", err
+	}
+	defaultPrefix := riffBuildConfig.Data["default-image-prefix"]
+	if defaultPrefix == "" {
+		return "", errMissingDefaultPrefix
+	}
+	image, err := buildv1alpha1.ResolveDefaultImage(container, defaultPrefix)
+	if err != nil {
+		return "", err
+	}
+	return image, nil
 }
 
 func (r *ContainerReconciler) SetupWithManager(mgr ctrl.Manager) error {

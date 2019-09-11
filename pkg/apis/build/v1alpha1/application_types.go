@@ -82,3 +82,7 @@ type ApplicationList struct {
 func init() {
 	SchemeBuilder.Register(&Application{}, &ApplicationList{})
 }
+
+func (a *Application) GetImage() string {
+	return a.Spec.Image
+}
