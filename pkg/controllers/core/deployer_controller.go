@@ -37,13 +37,15 @@ import (
 
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	corev1alpha1 "github.com/projectriff/system/pkg/apis/core/v1alpha1"
+	"github.com/projectriff/system/pkg/tracker"
 )
 
 // DeployerReconciler reconciles a Deployer object
 type DeployerReconciler struct {
 	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
+	Log     logr.Logger
+	Scheme  *runtime.Scheme
+	Tracker tracker.Tracker
 }
 
 // +kubebuilder:rbac:groups=core.projectriff.io,resources=deployers,verbs=get;list;watch;create;update;patch;delete
@@ -127,8 +129,11 @@ func (r *DeployerReconciler) reconcileBuildImage(ctx context.Context, log logr.L
 		}
 		deployer.Spec.Template.Containers[0].Image = application.Status.LatestImage
 
-		// TODO track application for new images
-		return nil
+		// track application for new images
+		return r.Tracker.Track(&application, types.NamespacedName{
+			Namespace: deployer.GetNamespace(),
+			Name:      deployer.GetName(),
+		})
 
 	case build.ContainerRef != "":
 		var container buildv1alpha1.Container
@@ -140,8 +145,11 @@ func (r *DeployerReconciler) reconcileBuildImage(ctx context.Context, log logr.L
 		}
 		deployer.Spec.Template.Containers[0].Image = container.Status.LatestImage
 
-		// TODO track container for new images
-		return nil
+		// track container for new images
+		return r.Tracker.Track(&container, types.NamespacedName{
+			Namespace: deployer.GetNamespace(),
+			Name:      deployer.GetName(),
+		})
 
 	case build.FunctionRef != "":
 		var function buildv1alpha1.Function
@@ -153,8 +161,11 @@ func (r *DeployerReconciler) reconcileBuildImage(ctx context.Context, log logr.L
 		}
 		deployer.Spec.Template.Containers[0].Image = function.Status.LatestImage
 
-		// TODO track function for new images
-		return nil
+		// track function for new images
+		return r.Tracker.Track(&function, types.NamespacedName{
+			Namespace: deployer.GetNamespace(),
+			Name:      deployer.GetName(),
+		})
 	}
 
 	return fmt.Errorf("invalid deployer build")
@@ -390,23 +401,23 @@ func (r *DeployerReconciler) constructLabelsForDeployer(deployer *corev1alpha1.D
 }
 
 func (r *DeployerReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	enqueueTrackedResources := &handler.EnqueueRequestsFromMapFunc{
+		ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
+			requests := []reconcile.Request{}
+			for _, item := range r.Tracker.Lookup(a.Object.(metav1.ObjectMetaAccessor)) {
+				requests = append(requests, reconcile.Request{NamespacedName: item})
+			}
+			return requests
+		}),
+	}
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1alpha1.Deployer{}).
 		Owns(&appsv1.Deployment{}).
 		Owns(&corev1.Service{}).
-		// TODO implement trigger for build mutations to update dependent deployers
-		Watches(&source.Kind{Type: &buildv1alpha1.Application{}}, &handler.EnqueueRequestsFromMapFunc{
-			ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
-				application := a.Object.(*buildv1alpha1.Application)
-				// TODO
-				return []reconcile.Request{
-					{
-						NamespacedName: types.NamespacedName{Namespace: application.Namespace, Name: "TODO"},
-					},
-				}
-			}),
-		}).
-		Watches(&source.Kind{Type: &buildv1alpha1.Container{}}, &handler.EnqueueRequestsFromMapFunc{}).
-		Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, &handler.EnqueueRequestsFromMapFunc{}).
+		// watch for build mutations to update dependent deployers
+		Watches(&source.Kind{Type: &buildv1alpha1.Application{}}, enqueueTrackedResources).
+		Watches(&source.Kind{Type: &buildv1alpha1.Container{}}, enqueueTrackedResources).
+		Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, enqueueTrackedResources).
 		Complete(r)
 }
