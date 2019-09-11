@@ -57,8 +57,8 @@ func (r *DeployerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 	log := r.Log.WithValues("deployer", req.NamespacedName)
 
-	var deployer corev1alpha1.Deployer
-	if err := r.Get(ctx, req.NamespacedName, &deployer); err != nil {
+	var originalDeployer corev1alpha1.Deployer
+	if err := r.Get(ctx, req.NamespacedName, &originalDeployer); err != nil {
 		if apierrs.IsNotFound(err) {
 			// we'll ignore not-found errors, since they can't be fixed by an immediate
 			// requeue (we'll need to wait for a new notification), and we can get them
@@ -68,7 +68,7 @@ func (r *DeployerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		log.Error(err, "unable to fetch Deployer")
 		return ctrl.Result{}, err
 	}
-	originalDeployer := deployer.DeepCopy()
+	deployer := *(originalDeployer.DeepCopy())
 
 	deployer.SetDefaults(ctx)
 	deployer.Status.InitializeConditions()
