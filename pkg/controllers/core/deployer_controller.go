@@ -192,7 +192,7 @@ func (r *DeployerReconciler) reconcileChildDeployment(ctx context.Context, log l
 			// be recreated
 			deployer.Status.DeploymentName = ""
 		}
-		// check that the service is not controlled by another resource
+		// check that the deployment is not controlled by another resource
 		if !metav1.IsControlledBy(&actualDeployment, deployer) {
 			deployer.Status.MarkDeploymentNotOwned()
 			return nil, fmt.Errorf("Deployer %q does not own Deployment %q", deployer.Name, actualDeployment.Name)
@@ -213,7 +213,7 @@ func (r *DeployerReconciler) reconcileChildDeployment(ctx context.Context, log l
 		return nil, nil
 	}
 
-	// create service if it doesn't exist
+	// create deployment if it doesn't exist
 	if deployer.Status.DeploymentName == "" {
 		if err := r.Create(ctx, desiredDeployment); err != nil {
 			log.Error(err, "unable to create Deployment for Deployer", "deployment", desiredDeployment)
@@ -226,11 +226,11 @@ func (r *DeployerReconciler) reconcileChildDeployment(ctx context.Context, log l
 	desiredDeployment.Spec.Replicas = actualDeployment.Spec.Replicas
 
 	if r.deploymentSemanticEquals(desiredDeployment, &actualDeployment) {
-		// service is unchanged
+		// deployment is unchanged
 		return &actualDeployment, nil
 	}
 
-	// update service with desired changes
+	// update deployment with desired changes
 	deployment := actualDeployment.DeepCopy()
 	deployment.ObjectMeta.Labels = desiredDeployment.ObjectMeta.Labels
 	deployment.Spec = desiredDeployment.Spec
