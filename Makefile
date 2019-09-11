@@ -66,10 +66,10 @@ manager: generate
 # Generate manifests e.g. CRD, RBAC etc.
 .PHONY: manifests
 manifests:
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./pkg/apis/build/..." output:crd:artifacts:config=./config/build/crd/bases
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./pkg/apis/core/..." output:crd:artifacts:config=./config/core/crd/bases
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./pkg/apis/knative/..." output:crd:artifacts:config=./config/knative/crd/bases
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./pkg/apis/streaming/..." output:crd:artifacts:config=./config/streaming/crd/bases
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./pkg/apis/build/...;./pkg//build/..." output:crd:artifacts:config=./config/build/crd/bases output:rbac:artifacts:config=./config/build/rbac output:webhook:artifacts:config=./config/build/webhook
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./pkg/apis/core/...;./pkg/controllers/core/..." output:crd:artifacts:config=./config/core/crd/bases output:rbac:artifacts:config=./config/core/rbac output:webhook:artifacts:config=./config/core/webhook
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./pkg/apis/knative/...;./pkg/controllers/knative/..." output:crd:artifacts:config=./config/knative/crd/bases output:rbac:artifacts:config=./config/knative/rbac output:webhook:artifacts:config=./config/knative/webhook
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./pkg/apis/streaming/...;./pkg/controllers/streaming/..." output:crd:artifacts:config=./config/streaming/crd/bases output:rbac:artifacts:config=./config/streaming/rbac output:webhook:artifacts:config=./config/streaming/webhook
 
 # Run go fmt against code
 .PHONY: fmt
