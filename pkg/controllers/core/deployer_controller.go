@@ -73,18 +73,35 @@ func (r *DeployerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	deployer.SetDefaults(ctx)
 	deployer.Status.InitializeConditions()
 
+	result, err := r.reconcile(ctx, log, &deployer)
+
+	// check if status has changed before updating, unless requeued
+	if !result.Requeue && !equality.Semantic.DeepEqual(deployer.Status, originalDeployer.Status) {
+		// update status
+		if updateErr := r.Status().Update(ctx, &deployer); updateErr != nil {
+			log.Error(updateErr, "unable to update Deployer status", "deployer", deployer)
+			return ctrl.Result{Requeue: true}, updateErr
+		}
+	}
+
+	// return original reconcile result
+	return result, err
+}
+
+func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, deployer *corev1alpha1.Deployer) (ctrl.Result, error) {
 	// resolve build image
-	if err := r.reconcileBuildImage(ctx, log, &deployer); err != nil {
+	if err := r.reconcileBuildImage(ctx, log, deployer); err != nil {
 		log.Error(err, "unable to resolve image for Deployer", "deployer", deployer)
 		if apierrs.IsNotFound(err) {
 			// we'll ignore not-found errors, since the reference build resource
 			// may not exist yet.
 			return ctrl.Result{}, nil
 		}
-		return ctrl.Result{}, err
+		return ctrl.Result{Requeue: true}, err
 	}
 
-	childDeployment, err := r.reconcileChildDeployment(ctx, log, &deployer)
+	// reconcile deployment
+	childDeployment, err := r.reconcileChildDeployment(ctx, log, deployer)
 	if err != nil {
 		log.Error(err, "unable to reconcile child Deployment", "deployer", deployer)
 		return ctrl.Result{}, err
@@ -92,22 +109,14 @@ func (r *DeployerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	deployer.Status.DeploymentName = childDeployment.Name
 	deployer.Status.PropagateDeploymentStatus(&childDeployment.Status)
 
-	childService, err := r.reconcileChildService(ctx, log, &deployer)
+	// reconcile service
+	childService, err := r.reconcileChildService(ctx, log, deployer)
 	if err != nil {
 		log.Error(err, "unable to reconcile child Service", "deployer", deployer)
 		return ctrl.Result{}, err
 	}
 	deployer.Status.ServiceName = childService.Name
 	deployer.Status.PropagateServiceStatus(&childService.Status)
-
-	// check if status has changed before updating
-	if !equality.Semantic.DeepEqual(deployer.Status, originalDeployer.Status) {
-		// update status
-		if err := r.Status().Update(ctx, &deployer); err != nil {
-			log.Error(err, "unable to update Deployer status", "deployer", deployer)
-			return ctrl.Result{}, err
-		}
-	}
 
 	return ctrl.Result{}, nil
 }
