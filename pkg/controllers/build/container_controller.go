@@ -22,15 +22,12 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
-	"github.com/google/go-containerregistry/pkg/authn/k8schain"
-	"github.com/projectriff/system/pkg/controllers/build/digest"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/sets"
 	ctrl "sigs.k8s.io/controller-runtime"
-	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
@@ -43,7 +40,6 @@ type ContainerReconciler struct {
 	client.Client
 	Log    logr.Logger
 	Scheme *runtime.Scheme
-	Resolver digest.Resolver
 }
 
 // +kubebuilder:rbac:groups=build.projectriff.io,resources=containers,verbs=get;list;watch;create;update;patch;delete
@@ -96,21 +92,9 @@ func (r *ContainerReconciler) reconcile(ctx context.Context, log logr.Logger, co
 		return ctrl.Result{}, err
 	}
 	container.Status.TargetImage = targetImage
+	// TODO: resolve the digest for the latest image
+	container.Status.LatestImage = targetImage
 
-	// resolve image name
-	opt := k8schain.Options{
-		Namespace:          container.Namespace,
-		ServiceAccountName: "riff-build",
-	}
-	// TODO load from a configmap
-	skipRegistries := sets.NewString()
-	skipRegistries.Insert("ko.local")
-	skipRegistries.Insert("dev.local")
-	digest, err := r.Resolver.Resolve(container.Status.TargetImage, opt, skipRegistries)
-	if err != nil {
-		return ctrl.Result{Requeue: true}, err
-	}
-	container.Status.LatestImage = digest
 	container.Status.MarkImageResolved()
 	container.Status.ObservedGeneration = container.Generation
 
