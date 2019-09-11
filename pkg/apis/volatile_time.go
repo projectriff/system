@@ -24,6 +24,7 @@ import (
 // VolatileTime wraps metav1.Time
 // +k8s:deepcopy-gen=true
 // +k8s:openapi-gen=true
+// +kubebuilder:validation:Type=string
 type VolatileTime struct {
 	Inner metav1.Time `json:"-"`
 }
