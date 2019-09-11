@@ -4,6 +4,7 @@ go 1.12
 
 require (
 	github.com/go-logr/logr v0.1.0
+	github.com/google/go-cmp v0.3.1
 	github.com/onsi/ginkgo v1.8.0
 	github.com/onsi/gomega v1.5.0
 	k8s.io/api v0.0.0-20190409021203-6e4e0e4f393b
