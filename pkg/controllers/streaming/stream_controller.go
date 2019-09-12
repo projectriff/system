@@ -17,7 +17,17 @@ limitations under the License.
 package streaming
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
+	"k8s.io/apimachinery/pkg/api/equality"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
+	"reflect"
+
+	"net/http"
+	"time"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -38,16 +48,119 @@ type StreamReconciler struct {
 // +kubebuilder:rbac:groups=streaming.projectriff.io,resources=streams/status,verbs=get;update;patch
 
 func (r *StreamReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	_ = context.Background()
-	_ = r.Log.WithValues("stream", req.NamespacedName)
+	ctx := context.Background()
+	log := r.Log.WithValues("stream", req.NamespacedName)
 
-	// your logic here
+	var original streamingv1alpha1.Stream
+	if err := r.Client.Get(ctx, req.NamespacedName, &original); err != nil {
+		return ctrl.Result{}, ignoreNotFound(err)
+	}
 
-	return ctrl.Result{}, nil
+	// Don't modify the informers copy
+	stream := original.DeepCopy()
+
+	// Reconcile this copy of the stream and then write back any status
+	// updates regardless of whether the reconciliation errored out.
+	result, err := r.reconcile(ctx, log, stream)
+
+	if !result.Requeue && !equality.Semantic.DeepEqual(original.Status, stream.Status) {
+		if _, uErr := r.updateStatus(ctx, log, stream); uErr != nil {
+			log.Error(uErr, "Failed to update stream status", "stream", stream)
+			return ctrl.Result{Requeue: true}, ignoreNotFound(err)
+		}
+	}
+	return result, err
 }
 
 func (r *StreamReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&streamingv1alpha1.Stream{}).
 		Complete(r)
+}
+
+func (r *StreamReconciler) reconcile(ctx context.Context, logger logr.Logger, stream *streamingv1alpha1.Stream) (ctrl.Result, error) {
+	if stream.GetDeletionTimestamp() != nil {
+		return ctrl.Result{}, nil
+	}
+
+	// We may be reading a version of the object that was stored at an older version
+	// and may not have had all of the assumed defaults specified.  This won't result
+	// in this getting written back to the API Server, but lets downstream logic make
+	// assumptions about defaulting.
+	stream.SetDefaults(ctx)
+
+	stream.Status.InitializeConditions()
+
+	// delegate to the provider via its REST API
+	logger.Info("Creating Stream %s with Provider %s", stream.Name, stream.Spec.Provider)
+	address, err := createStream(logger, stream.Spec.Provider, stream.Name)
+	if err != nil {
+		stream.Status.MarkStreamProvisionFailed(err.Error())
+		return ctrl.Result{}, err
+	}
+	stream.Status.MarkStreamProvisioned()
+	stream.Status.Address = *address
+	stream.Status.ObservedGeneration = stream.Generation
+
+	return ctrl.Result{}, nil
+}
+
+func (r *StreamReconciler) updateStatus(ctx context.Context, logger logr.Logger, desired *streamingv1alpha1.Stream) (*streamingv1alpha1.Stream, error) {
+	desiredNamespacedName := types.NamespacedName{
+		Namespace: desired.Namespace,
+		Name:      desired.Name,
+	}
+	var stream streamingv1alpha1.Stream
+	if err := r.Client.Get(ctx, desiredNamespacedName, &stream); err != nil {
+		return nil, err
+	}
+	// If there's nothing to update, just return.
+	if reflect.DeepEqual(stream.Status, desired.Status) {
+		return &stream, nil
+	}
+
+	becomesReady := desired.Status.IsReady() && !stream.Status.IsReady()
+	// Don't modify the informers copy.
+	existing := stream.DeepCopy()
+	existing.Status = desired.Status
+
+	err := r.Client.Status().Update(ctx, existing)
+	if err == nil && becomesReady {
+		duration := time.Now().Sub(existing.ObjectMeta.CreationTimestamp.Time)
+		logger.Info("Stream %q became ready after %v", existing.Name, duration)
+	}
+	return existing, err
+}
+
+func createStream(logger logr.Logger, provider string, stream string) (*streamingv1alpha1.StreamAddress, error) {
+	url := fmt.Sprintf("http://%s.default.svc.cluster.local/%s", provider, stream)
+	req, err := http.NewRequest(http.MethodPut, url, bytes.NewReader([]byte{}))
+	if err != nil {
+		return nil, err
+	}
+	//req.Header.Add("content-type", "application/json")
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err := res.Body.Close(); err != nil {
+			logger.Error(err, "Error closing stream creation response body")
+		}
+	}()
+	if res.StatusCode >= 400 {
+		return nil, fmt.Errorf("status: %d", res.StatusCode)
+	}
+	address := &streamingv1alpha1.StreamAddress{}
+	if err := json.NewDecoder(res.Body).Decode(address); err != nil {
+		return nil, err
+	}
+	return address, nil
+}
+
+func ignoreNotFound(err error) error {
+	if apierrs.IsNotFound(err) {
+		return nil
+	}
+	return err
 }
