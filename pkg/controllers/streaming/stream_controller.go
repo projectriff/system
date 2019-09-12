@@ -60,7 +60,14 @@ func (r *StreamReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// updates regardless of whether the reconciliation errored out.
 	result, err := r.reconcile(ctx, log, stream)
 
-	if !result.Requeue && !equality.Semantic.DeepEqual(original.Status, stream.Status) {
+	// check if status has changed before updating, unless requeued
+	if !result.Requeue && !equality.Semantic.DeepEqual(stream.Status, original.Status) {
+		// update status
+		if updateErr := r.Status().Update(ctx, &stream); updateErr != nil {
+			log.Error(updateErr, "unable to update Stream status", "stream", stream)
+			return ctrl.Result{Requeue: true}, updateErr
+		}
+	}
 		if _, uErr := r.updateStatus(ctx, log, stream); uErr != nil {
 			log.Error(uErr, "Failed to update stream status", "stream", stream)
 			return ctrl.Result{Requeue: true}, ignoreNotFound(err)
