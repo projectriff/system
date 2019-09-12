@@ -17,16 +17,12 @@ limitations under the License.
 package streaming
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"fmt"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"reflect"
 
-	"net/http"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -40,8 +36,9 @@ import (
 // StreamReconciler reconciles a Stream object
 type StreamReconciler struct {
 	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
+	Log                     logr.Logger
+	Scheme                  *runtime.Scheme
+	StreamProvisionerClient StreamProvisionerClient
 }
 
 // +kubebuilder:rbac:groups=streaming.projectriff.io,resources=streams,verbs=get;list;watch;create;update;patch;delete
@@ -93,10 +90,10 @@ func (r *StreamReconciler) reconcile(ctx context.Context, logger logr.Logger, st
 
 	// delegate to the provider via its REST API
 	logger.Info("Creating Stream %s with Provider %s", stream.Name, stream.Spec.Provider)
-	address, err := createStream(logger, stream.Spec.Provider, stream.Name)
+	address, err := r.StreamProvisionerClient.CreateStream(stream.Spec.Provider, stream.Name)
 	if err != nil {
 		stream.Status.MarkStreamProvisionFailed(err.Error())
-		return ctrl.Result{}, err
+		return ctrl.Result{Requeue: true}, err
 	}
 	stream.Status.MarkStreamProvisioned()
 	stream.Status.Address = *address
@@ -130,32 +127,6 @@ func (r *StreamReconciler) updateStatus(ctx context.Context, logger logr.Logger,
 		logger.Info("Stream %q became ready after %v", existing.Name, duration)
 	}
 	return existing, err
-}
-
-func createStream(logger logr.Logger, provider string, stream string) (*streamingv1alpha1.StreamAddress, error) {
-	url := fmt.Sprintf("http://%s.default.svc.cluster.local/%s", provider, stream)
-	req, err := http.NewRequest(http.MethodPut, url, bytes.NewReader([]byte{}))
-	if err != nil {
-		return nil, err
-	}
-	//req.Header.Add("content-type", "application/json")
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		if err := res.Body.Close(); err != nil {
-			logger.Error(err, "Error closing stream creation response body")
-		}
-	}()
-	if res.StatusCode >= 400 {
-		return nil, fmt.Errorf("status: %d", res.StatusCode)
-	}
-	address := &streamingv1alpha1.StreamAddress{}
-	if err := json.NewDecoder(res.Body).Decode(address); err != nil {
-		return nil, err
-	}
-	return address, nil
 }
 
 func ignoreNotFound(err error) error {

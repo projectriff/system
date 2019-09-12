@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"net/http"
 	"os"
 
 	streamingv1alpha1 "github.com/projectriff/system/pkg/apis/streaming/v1alpha1"
@@ -62,10 +63,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	streamControllerLogger := ctrl.Log.WithName("controllers").WithName("Stream")
 	if err = (&controllers.StreamReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("Stream"),
-		Scheme: mgr.GetScheme(),
+		Client:                  mgr.GetClient(),
+		Log:                     streamControllerLogger,
+		Scheme:                  mgr.GetScheme(),
+		StreamProvisionerClient: controllers.NewStreamProvisionerClient(http.DefaultClient, streamControllerLogger),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Stream")
 		os.Exit(1)
