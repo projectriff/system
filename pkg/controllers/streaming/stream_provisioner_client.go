@@ -26,7 +26,7 @@ import (
 )
 
 type StreamProvisionerClient interface {
-	CreateStream(provider, stream string) (*streamingv1alpha1.StreamAddress, error)
+	ProvisionStream(stream *streamingv1alpha1.Stream) (*streamingv1alpha1.StreamAddress, error)
 }
 
 type streamProvisionerRestClient struct {
@@ -41,8 +41,8 @@ func NewStreamProvisionerClient(httpClient *http.Client, logger logr.Logger) Str
 	}
 }
 
-func (s *streamProvisionerRestClient) CreateStream(provider, stream string) (*streamingv1alpha1.StreamAddress, error) {
-	url := fmt.Sprintf("http://%s.default.svc.cluster.local/%s", provider, stream)
+func (s *streamProvisionerRestClient) ProvisionStream(stream *streamingv1alpha1.Stream) (*streamingv1alpha1.StreamAddress, error) {
+	url := fmt.Sprintf("http://%s.%s.svc.cluster.local/%s", stream.Spec.Provider, stream.Namespace, stream.Name)
 	req, err := http.NewRequest(http.MethodPut, url, bytes.NewReader([]byte{}))
 	if err != nil {
 		return nil, err

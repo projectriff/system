@@ -87,7 +87,7 @@ func (r *StreamReconciler) reconcile(ctx context.Context, logger logr.Logger, st
 
 	// delegate to the provider via its REST API
 	logger.Info("Creating Stream %s with Provider %s", stream.Name, stream.Spec.Provider)
-	address, err := r.StreamProvisionerClient.CreateStream(stream.Spec.Provider, stream.Name)
+	address, err := r.StreamProvisionerClient.ProvisionStream(stream)
 	if err != nil {
 		stream.Status.MarkStreamProvisionFailed(err.Error())
 		return ctrl.Result{Requeue: true}, err
