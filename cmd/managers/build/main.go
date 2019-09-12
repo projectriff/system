@@ -19,9 +19,12 @@ package main
 import (
 	"flag"
 	"os"
+	"time"
 
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
+	knbuild "github.com/projectriff/system/pkg/apis/thirdparty/knative/build/v1alpha1"
 	controllers "github.com/projectriff/system/pkg/controllers/build"
+	"github.com/projectriff/system/pkg/tracker"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -31,13 +34,14 @@ import (
 )
 
 var (
-	scheme   = runtime.NewScheme()
-	setupLog = ctrl.Log.WithName("setup")
+	scheme     = runtime.NewScheme()
+	setupLog   = ctrl.Log.WithName("setup")
+	syncPeriod = 10 * time.Hour
 )
 
 func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
-
+	_ = knbuild.AddToScheme(scheme)
 	_ = buildv1alpha1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
@@ -56,6 +60,7 @@ func main() {
 		Scheme:             scheme,
 		MetricsBindAddress: metricsAddr,
 		LeaderElection:     enableLeaderElection,
+		SyncPeriod:         &syncPeriod,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
@@ -63,25 +68,28 @@ func main() {
 	}
 
 	if err = (&controllers.ApplicationReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("Application"),
-		Scheme: mgr.GetScheme(),
+		Client:  mgr.GetClient(),
+		Log:     ctrl.Log.WithName("controllers").WithName("Application"),
+		Scheme:  mgr.GetScheme(),
+		Tracker: tracker.New(syncPeriod),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Application")
 		os.Exit(1)
 	}
 	if err = (&controllers.ContainerReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("Container"),
-		Scheme: mgr.GetScheme(),
+		Client:  mgr.GetClient(),
+		Log:     ctrl.Log.WithName("controllers").WithName("Container"),
+		Scheme:  mgr.GetScheme(),
+		Tracker: tracker.New(syncPeriod),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Container")
 		os.Exit(1)
 	}
 	if err = (&controllers.FunctionReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("Function"),
-		Scheme: mgr.GetScheme(),
+		Client:  mgr.GetClient(),
+		Log:     ctrl.Log.WithName("controllers").WithName("Function"),
+		Scheme:  mgr.GetScheme(),
+		Tracker: tracker.New(syncPeriod),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Function")
 		os.Exit(1)

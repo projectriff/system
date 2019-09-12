@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
+	"github.com/projectriff/system/pkg/tracker"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -38,8 +39,9 @@ var errMissingDefaultPrefix = fmt.Errorf("missing default image prefix")
 // ContainerReconciler reconciles a Container object
 type ContainerReconciler struct {
 	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
+	Log     logr.Logger
+	Scheme  *runtime.Scheme
+	Tracker tracker.Tracker
 }
 
 // +kubebuilder:rbac:groups=build.projectriff.io,resources=containers,verbs=get;list;watch;create;update;patch;delete
@@ -70,6 +72,8 @@ func (r *ContainerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// check if status has changed before updating, unless requeued
 	if !result.Requeue && !equality.Semantic.DeepEqual(container.Status, originalContainer.Status) {
 		// update status
+		log.Info("updating container status", "container", container.Name,
+			"status", container.Status)
 		if updateErr := r.Status().Update(ctx, container); updateErr != nil {
 			log.Error(updateErr, "unable to update Container status", "container", container)
 			return ctrl.Result{Requeue: true}, updateErr
@@ -79,6 +83,8 @@ func (r *ContainerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 }
 
 func (r *ContainerReconciler) reconcile(ctx context.Context, log logr.Logger, container *buildv1alpha1.Container) (ctrl.Result, error) {
+	log.V(1).Info("reconciling container", "container", container.Name)
+	log.V(5).Info("reconciling container", "spec", container.Spec, "labels", container.Labels)
 	if container.GetDeletionTimestamp() != nil {
 		return ctrl.Result{}, nil
 	}
@@ -91,6 +97,7 @@ func (r *ContainerReconciler) reconcile(ctx context.Context, log logr.Logger, co
 		}
 		return ctrl.Result{}, err
 	}
+	log.V(1).Info("resolved target image", "container", container.Name, "image", targetImage)
 	container.Status.TargetImage = targetImage
 	// TODO: resolve the digest for the latest image
 	container.Status.LatestImage = targetImage
