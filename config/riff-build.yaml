@@ -488,6 +488,15 @@ rules:
 - apiGroups:
   - build.projectriff.io
   resources:
+  - applications
+  - functions
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - build.projectriff.io
+  resources:
   - applications/status
   verbs:
   - get
@@ -533,6 +542,26 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - serviceaccounts
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
