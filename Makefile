@@ -16,19 +16,16 @@ endif
 .PHONY: all
 all: manager package
 
-# Run component against the configured Kubernetes cluster in ~/.kube/config
 .PHONY: run
-run: manifests
+run: manifests ## Run component against the configured Kubernetes cluster in ~/.kube/config
 	go run ./cmd/managers/$(COMPONENT)/main.go
 
-# Install component CRDs into a cluster
 .PHONY: install
-install: manifests
+install: manifests ## Install component CRDs into a cluster
 	kustomize build config/$(COMPONENT)/crd | kubectl apply -f -
 
-# Deploy component controller in the configured Kubernetes cluster in ~/.kube/config
 .PHONY: deploy
-deploy: manifests
+deploy: manifests ## Deploy component controller in the configured Kubernetes cluster in ~/.kube/config
 	cd config/$(COMPONENT)/manager && kustomize edit set image controller=${IMG}
 	kustomize build config/$(COMPONENT)/default | kubectl apply -f -
 
@@ -42,14 +39,12 @@ docker-build: test
 docker-push:
 	docker push ${IMG}
 
-# Run tests
 .PHONY: test
-test: generate fmt vet manifests
+test: generate fmt vet manifests ## Run tests
 	go test ./... -coverprofile cover.out
 
-# Package for distribution
 .PHONY: package
-package: generate fmt vet manifests
+package: generate fmt vet manifests ## Package for distribution
 	kustomize build config/build/default > config/riff-build.yaml
 	kustomize build config/core/default > config/riff-core.yaml
 	kustomize build config/knative/default > config/riff-knative.yaml
@@ -66,10 +61,26 @@ manager: generate
 # Generate manifests e.g. CRD, RBAC etc.
 .PHONY: manifests
 manifests:
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./pkg/apis/build/...;./pkg//build/..." output:crd:artifacts:config=./config/build/crd/bases output:rbac:artifacts:config=./config/build/rbac output:webhook:artifacts:config=./config/build/webhook
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./pkg/apis/core/...;./pkg/controllers/core/..." output:crd:artifacts:config=./config/core/crd/bases output:rbac:artifacts:config=./config/core/rbac output:webhook:artifacts:config=./config/core/webhook
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./pkg/apis/knative/...;./pkg/controllers/knative/..." output:crd:artifacts:config=./config/knative/crd/bases output:rbac:artifacts:config=./config/knative/rbac output:webhook:artifacts:config=./config/knative/webhook
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./pkg/apis/streaming/...;./pkg/controllers/streaming/..." output:crd:artifacts:config=./config/streaming/crd/bases output:rbac:artifacts:config=./config/streaming/rbac output:webhook:artifacts:config=./config/streaming/webhook
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook \
+		paths="./pkg/apis/build/...;./pkg/controllers/build/..." \
+		output:crd:artifacts:config=./config/build/crd/bases \
+		output:rbac:artifacts:config=./config/build/rbac \
+		output:webhook:artifacts:config=./config/build/webhook
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook \
+		paths="./pkg/apis/core/...;./pkg/controllers/core/..." \
+		output:crd:artifacts:config=./config/core/crd/bases \
+		output:rbac:artifacts:config=./config/core/rbac \
+		output:webhook:artifacts:config=./config/core/webhook
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook \
+		paths="./pkg/apis/knative/...;./pkg/controllers/knative/..." \
+		output:crd:artifacts:config=./config/knative/crd/bases \
+		output:rbac:artifacts:config=./config/knative/rbac \
+		output:webhook:artifacts:config=./config/knative/webhook
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook \
+		paths="./pkg/apis/streaming/...;./pkg/controllers/streaming/..." \
+		output:crd:artifacts:config=./config/streaming/crd/bases \
+		output:rbac:artifacts:config=./config/streaming/rbac \
+		output:webhook:artifacts:config=./config/streaming/webhook
 
 # Run go fmt against code
 .PHONY: fmt
@@ -81,13 +92,11 @@ fmt:
 vet:
 	go vet ./...
 
-# Generate code
 .PHONY: generate
-generate: controller-gen
+generate: controller-gen ## Generate code
 	$(CONTROLLER_GEN) object:headerFile=./hack/boilerplate.go.txt paths="./..."
 
-# find or download controller-gen
-# download controller-gen if necessary
+# find or download controller-gen, download controller-gen if necessary
 controller-gen:
 ifeq (, $(shell which controller-gen))
 	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.0
@@ -95,3 +104,7 @@ CONTROLLER_GEN=$(GOBIN)/controller-gen
 else
 CONTROLLER_GEN=$(shell which controller-gen)
 endif
+
+# Absolutely awesome: http://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
+help: ## Print help for each make target
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
