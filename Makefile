@@ -14,7 +14,7 @@ GOBIN=$(shell go env GOBIN)
 endif
 
 .PHONY: all
-all: manager package
+all: manager test
 
 .PHONY: run
 run: manifests ## Run component against the configured Kubernetes cluster in ~/.kube/config

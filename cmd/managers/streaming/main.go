@@ -18,8 +18,10 @@ package main
 
 import (
 	"flag"
+	"github.com/projectriff/system/pkg/tracker"
 	"net/http"
 	"os"
+	"time"
 
 	streamingv1alpha1 "github.com/projectriff/system/pkg/apis/streaming/v1alpha1"
 	controllers "github.com/projectriff/system/pkg/controllers/streaming"
@@ -32,8 +34,10 @@ import (
 )
 
 var (
-	scheme   = runtime.NewScheme()
-	setupLog = ctrl.Log.WithName("setup")
+	scheme     = runtime.NewScheme()
+	setupLog   = ctrl.Log.WithName("setup")
+	syncPeriod = 10 * time.Hour
+	namespace  = os.Getenv("SYSTEM_NAMESPACE")
 )
 
 func init() {
@@ -57,6 +61,7 @@ func main() {
 		Scheme:             scheme,
 		MetricsBindAddress: metricsAddr,
 		LeaderElection:     enableLeaderElection,
+		SyncPeriod:         &syncPeriod,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
@@ -64,6 +69,16 @@ func main() {
 	}
 
 	streamControllerLogger := ctrl.Log.WithName("controllers").WithName("Stream")
+	if err = (&controllers.ProviderReconciler{
+		Client:    mgr.GetClient(),
+		Log:       ctrl.Log.WithName("controllers").WithName("Provider"),
+		Scheme:    mgr.GetScheme(),
+		Tracker:   tracker.New(syncPeriod),
+		Namespace: namespace,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Provider")
+		os.Exit(1)
+	}
 	if err = (&controllers.StreamReconciler{
 		Client:                  mgr.GetClient(),
 		Log:                     streamControllerLogger,

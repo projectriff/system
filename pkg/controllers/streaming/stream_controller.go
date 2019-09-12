@@ -20,7 +20,6 @@ import (
 	"context"
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/equality"
-	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -97,11 +96,4 @@ func (r *StreamReconciler) reconcile(ctx context.Context, logger logr.Logger, st
 	stream.Status.ObservedGeneration = stream.Generation
 
 	return ctrl.Result{}, nil
-}
-
-func ignoreNotFound(err error) error {
-	if apierrs.IsNotFound(err) {
-		return nil
-	}
-	return err
 }

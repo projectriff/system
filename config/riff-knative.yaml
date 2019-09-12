@@ -4481,7 +4481,7 @@ spec:
         - --enable-leader-election
         command:
         - /manager
-        image: controller:latest
+        image: knative-controller:latest
         name: manager
         resources:
           limits:

@@ -686,7 +686,7 @@ spec:
         - --enable-leader-election
         command:
         - /manager
-        image: controller:latest
+        image: build-controller:latest
         name: manager
         resources:
           limits:

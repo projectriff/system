@@ -27,3 +27,6 @@ resources:
 - group: streaming
   version: v1alpha1
   kind: Processor
+- group: streaming
+  version: v1alpha1
+  kind: Provider

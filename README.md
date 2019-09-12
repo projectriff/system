@@ -13,6 +13,7 @@ riff System contains three API groups with CustomResourceDefinitions that are th
 - `core.projectriff.io/v1alpha1`
   - `Deployer` - deployers map HTTP requests to applications, functions, containers or images with Kubernetes core resources
 - `streaming.projectriff.io/v1alpha1`
+  - `Provider` - an abstraction over a message broker
   - `Stream` - streams of messages
   - `Processor` - processors apply functions to messages on streams
 - `knative.projectriff.io/v1alpha1`

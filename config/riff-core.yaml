@@ -4311,7 +4311,7 @@ spec:
         - --enable-leader-election
         command:
         - /manager
-        image: controller:latest
+        image: core-controller:latest
         name: manager
         resources:
           limits:
