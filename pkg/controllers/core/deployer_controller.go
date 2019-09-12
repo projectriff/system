@@ -50,6 +50,7 @@ type DeployerReconciler struct {
 
 // +kubebuilder:rbac:groups=core.projectriff.io,resources=deployers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core.projectriff.io,resources=deployers/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=build.projectriff.io,resources=applications;containers;functions,verbs=get;list;watch
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=services,verbs=get;list;watch;create;update;patch;delete
 
@@ -91,12 +92,12 @@ func (r *DeployerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, deployer *corev1alpha1.Deployer) (ctrl.Result, error) {
 	// resolve build image
 	if err := r.reconcileBuildImage(ctx, log, deployer); err != nil {
-		log.Error(err, "unable to resolve image for Deployer", "deployer", deployer)
 		if apierrs.IsNotFound(err) {
 			// we'll ignore not-found errors, since the reference build resource
 			// may not exist yet.
 			return ctrl.Result{}, nil
 		}
+		log.Error(err, "unable to resolve image for Deployer", "deployer", deployer)
 		return ctrl.Result{Requeue: true}, err
 	}
 
@@ -117,6 +118,8 @@ func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, dep
 	}
 	deployer.Status.ServiceName = childService.Name
 	deployer.Status.PropagateServiceStatus(&childService.Status)
+
+	deployer.Status.ObservedGeneration = deployer.Generation
 
 	return ctrl.Result{}, nil
 }

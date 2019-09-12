@@ -4282,6 +4282,16 @@ metadata:
   name: riff-knative-manager-role
 rules:
 - apiGroups:
+  - build.projectriff.io
+  resources:
+  - applications
+  - containers
+  - functions
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
   - knative.projectriff.io
   resources:
   - adapters
@@ -4326,6 +4336,19 @@ rules:
   resources:
   - configurations
   - routes
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - serving.knative.dev
+  resources:
+  - configurations
+  - services
   verbs:
   - create
   - delete

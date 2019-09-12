@@ -71,9 +71,10 @@ func main() {
 	}
 
 	if err = (&controllers.AdapterReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("Adapter"),
-		Scheme: mgr.GetScheme(),
+		Client:  mgr.GetClient(),
+		Log:     ctrl.Log.WithName("controllers").WithName("Adapter"),
+		Scheme:  mgr.GetScheme(),
+		Tracker: tracker.New(syncPeriod),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Adapter")
 		os.Exit(1)

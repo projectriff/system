@@ -19,6 +19,16 @@ rules:
   - update
   - watch
 - apiGroups:
+  - build.projectriff.io
+  resources:
+  - applications
+  - containers
+  - functions
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
   - ""
   resources:
   - services
