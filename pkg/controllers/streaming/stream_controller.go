@@ -18,14 +18,9 @@ package streaming
 
 import (
 	"context"
+	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/types"
-	"reflect"
-
-	"time"
-
-	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -63,14 +58,9 @@ func (r *StreamReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// check if status has changed before updating, unless requeued
 	if !result.Requeue && !equality.Semantic.DeepEqual(stream.Status, original.Status) {
 		// update status
-		if updateErr := r.Status().Update(ctx, &stream); updateErr != nil {
+		if updateErr := r.Status().Update(ctx, stream); updateErr != nil {
 			log.Error(updateErr, "unable to update Stream status", "stream", stream)
 			return ctrl.Result{Requeue: true}, updateErr
-		}
-	}
-		if _, uErr := r.updateStatus(ctx, log, stream); uErr != nil {
-			log.Error(uErr, "Failed to update stream status", "stream", stream)
-			return ctrl.Result{Requeue: true}, ignoreNotFound(err)
 		}
 	}
 	return result, err
@@ -107,33 +97,6 @@ func (r *StreamReconciler) reconcile(ctx context.Context, logger logr.Logger, st
 	stream.Status.ObservedGeneration = stream.Generation
 
 	return ctrl.Result{}, nil
-}
-
-func (r *StreamReconciler) updateStatus(ctx context.Context, logger logr.Logger, desired *streamingv1alpha1.Stream) (*streamingv1alpha1.Stream, error) {
-	desiredNamespacedName := types.NamespacedName{
-		Namespace: desired.Namespace,
-		Name:      desired.Name,
-	}
-	var stream streamingv1alpha1.Stream
-	if err := r.Client.Get(ctx, desiredNamespacedName, &stream); err != nil {
-		return nil, err
-	}
-	// If there's nothing to update, just return.
-	if reflect.DeepEqual(stream.Status, desired.Status) {
-		return &stream, nil
-	}
-
-	becomesReady := desired.Status.IsReady() && !stream.Status.IsReady()
-	// Don't modify the informers copy.
-	existing := stream.DeepCopy()
-	existing.Status = desired.Status
-
-	err := r.Client.Status().Update(ctx, existing)
-	if err == nil && becomesReady {
-		duration := time.Now().Sub(existing.ObjectMeta.CreationTimestamp.Time)
-		logger.Info("Stream %q became ready after %v", existing.Name, duration)
-	}
-	return existing, err
 }
 
 func ignoreNotFound(err error) error {
