@@ -19,6 +19,13 @@ rules:
   - update
   - watch
 - apiGroups:
+  - build.projectriff.io
+  resources:
+  - functions
+  verbs:
+  - get
+  - watch
+- apiGroups:
   - ""
   resources:
   - configmaps
@@ -37,6 +44,13 @@ rules:
   - list
   - patch
   - update
+  - watch
+- apiGroups:
+  - keda.k8s.io
+  resources:
+  - scaledobject
+  verbs:
+  - get
   - watch
 - apiGroups:
   - streaming.projectriff.io

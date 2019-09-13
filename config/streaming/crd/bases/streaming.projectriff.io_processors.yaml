@@ -113,6 +113,8 @@ spec:
               items:
                 type: string
               type: array
+            scaledObjectName:
+              type: string
           type: object
       type: object
   version: v1alpha1

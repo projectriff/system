@@ -28,6 +28,9 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	kedav1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/keda/v1alpha1"
+
+	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	streamingv1alpha1 "github.com/projectriff/system/pkg/apis/streaming/v1alpha1"
 	controllers "github.com/projectriff/system/pkg/controllers/streaming"
 	"github.com/projectriff/system/pkg/tracker"
@@ -43,6 +46,8 @@ var (
 
 func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
+	_ = buildv1alpha1.AddToScheme(scheme)
+	_ = kedav1alpha1.AddToScheme(scheme)
 
 	_ = streamingv1alpha1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
@@ -90,9 +95,11 @@ func main() {
 		os.Exit(1)
 	}
 	if err = (&controllers.ProcessorReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("Processor"),
-		Scheme: mgr.GetScheme(),
+		Client:    mgr.GetClient(),
+		Log:       ctrl.Log.WithName("controllers").WithName("Processor"),
+		Scheme:    mgr.GetScheme(),
+		Tracker:   tracker.New(syncPeriod),
+		Namespace: namespace,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Processor")
 		os.Exit(1)

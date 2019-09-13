@@ -17,8 +17,12 @@
 package streaming
 
 const (
-	kustomizePrefix     = "riff-streaming"              // kustomize adds this prefix to all our resource names
+	kustomizePrefix = "riff-streaming" // kustomize adds this prefix to all our resource names
+
 	providerImages      = kustomizePrefix + "-provider" // contains image names for the provider
 	liiklusImageKey     = "liiklus"
 	provisionerImageKey = "provisioner"
+
+	processorImages   = kustomizePrefix + "-processor" // contains image names for the streaming processor
+	processorImageKey = "processor"
 )

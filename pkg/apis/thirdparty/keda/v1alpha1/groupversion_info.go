@@ -14,26 +14,22 @@
  * limitations under the License.
  */
 
-package streaming
+// +kubebuilder:object:generate=true
+// +groupName=keda.k8s.io
+package v1alpha1
 
 import (
-	apierrs "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"sigs.k8s.io/controller-runtime/pkg/scheme"
 )
 
-/*
-We generally want to ignore (not requeue) NotFound errors, since we'll get a
-reconciliation request once the object exists, and requeuing in the meantime
-won't help.
-*/
-func ignoreNotFound(err error) error {
-	if apierrs.IsNotFound(err) {
-		return nil
-	}
-	return err
-}
+var (
+	// GroupVersion is group version used to register these objects
+	GroupVersion = schema.GroupVersion{Group: "keda.k8s.io", Version: "v1alpha1"}
 
-func namespacedNamedFor(ref metav1.ObjectMetaAccessor) types.NamespacedName {
-	return types.NamespacedName{Namespace: ref.GetObjectMeta().GetNamespace(), Name: ref.GetObjectMeta().GetName()}
-}
+	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
+	SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion}
+
+	// AddToScheme adds the types in this group-version to the given scheme.
+	AddToScheme = SchemeBuilder.AddToScheme
+)
