@@ -16,13 +16,14 @@ limitations under the License.
 
 package v1alpha1
 
-type Build struct {
-	// ApplicationRef references an application in this namespace.
-	ApplicationRef string `json:"applicationRef,omitempty"`
+import (
+	"context"
+)
 
-	// ContainerRef references a container in this namespace.
-	ContainerRef string `json:"containerRef,omitempty"`
+func (a *Adapter) SetDefaults(ctx context.Context) {
+	a.Spec.SetDefaults(ctx)
+}
 
-	// FunctionRef references an application in this namespace.
-	FunctionRef string `json:"functionRef,omitempty"`
+func (as *AdapterSpec) SetDefaults(ctx context.Context) {
+	// nothing to do
 }

@@ -16,13 +16,21 @@ limitations under the License.
 
 package v1alpha1
 
-type Build struct {
-	// ApplicationRef references an application in this namespace.
-	ApplicationRef string `json:"applicationRef,omitempty"`
+import (
+	"context"
 
-	// ContainerRef references a container in this namespace.
-	ContainerRef string `json:"containerRef,omitempty"`
+	corev1 "k8s.io/api/core/v1"
+)
 
-	// FunctionRef references an application in this namespace.
-	FunctionRef string `json:"functionRef,omitempty"`
+func (c *Deployer) SetDefaults(ctx context.Context) {
+	c.Spec.SetDefaults(ctx)
+}
+
+func (cs *DeployerSpec) SetDefaults(ctx context.Context) {
+	if cs.Template == nil {
+		cs.Template = &corev1.PodSpec{}
+	}
+	if len(cs.Template.Containers) == 0 {
+		cs.Template.Containers = append(cs.Template.Containers, corev1.Container{})
+	}
 }
