@@ -86,6 +86,13 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Function")
 		os.Exit(1)
 	}
+	if err = (&controllers.CredentialReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("Credentials"),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Credential")
+		os.Exit(1)
+	}
 	// +kubebuilder:scaffold:builder
 
 	setupLog.Info("starting manager")
