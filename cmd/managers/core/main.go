@@ -21,15 +21,16 @@ import (
 	"os"
 	"time"
 
-	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
-	corev1alpha1 "github.com/projectriff/system/pkg/apis/core/v1alpha1"
-	controllers "github.com/projectriff/system/pkg/controllers/core"
-	"github.com/projectriff/system/pkg/tracker"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+
+	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
+	corev1alpha1 "github.com/projectriff/system/pkg/apis/core/v1alpha1"
+	controllers "github.com/projectriff/system/pkg/controllers/core"
+	"github.com/projectriff/system/pkg/tracker"
 	// +kubebuilder:scaffold:imports
 )
 

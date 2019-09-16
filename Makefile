@@ -84,8 +84,8 @@ manifests:
 
 # Run go fmt against code
 .PHONY: fmt
-fmt:
-	go fmt ./...
+fmt: goimports
+	$(GOIMPORTS) --format-only --local github.com/projectriff/system -w pkg/ cmd/
 
 # Run go vet against code
 .PHONY: vet
@@ -93,7 +93,10 @@ vet:
 	go vet ./...
 
 .PHONY: generate
-generate: controller-gen ## Generate code
+generate: generate-internal fmt ## Generate code
+
+.PHONY: generate-internal
+generate-internal: controller-gen
 	$(CONTROLLER_GEN) object:headerFile=./hack/boilerplate.go.txt paths="./..."
 
 # find or download controller-gen, download controller-gen if necessary
@@ -103,6 +106,15 @@ ifeq (, $(shell which controller-gen))
 CONTROLLER_GEN=$(GOBIN)/controller-gen
 else
 CONTROLLER_GEN=$(shell which controller-gen)
+endif
+
+# find or download goimports, download goimports if necessary
+goimports:
+ifeq (, $(shell which goimports))
+	go get golang.org/x/tools/cmd/goimports@release-branch.go1.13
+GOIMPORTS=$(GOBIN)/goimports
+else
+GOIMPORTS=$(shell which goimports)
 endif
 
 # Absolutely awesome: http://marmelab.com/blog/2016/02/29/auto-documented-makefile.html

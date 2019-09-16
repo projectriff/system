@@ -18,18 +18,19 @@ package main
 
 import (
 	"flag"
-	"github.com/projectriff/system/pkg/tracker"
 	"net/http"
 	"os"
 	"time"
 
-	streamingv1alpha1 "github.com/projectriff/system/pkg/apis/streaming/v1alpha1"
-	controllers "github.com/projectriff/system/pkg/controllers/streaming"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+
+	streamingv1alpha1 "github.com/projectriff/system/pkg/apis/streaming/v1alpha1"
+	controllers "github.com/projectriff/system/pkg/controllers/streaming"
+	"github.com/projectriff/system/pkg/tracker"
 	// +kubebuilder:scaffold:imports
 )
 
