@@ -88,6 +88,10 @@ func (r *AdapterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 }
 
 func (r *AdapterReconciler) reconcile(ctx context.Context, log logr.Logger, adapter *knativev1alpha1.Adapter) (ctrl.Result, error) {
+	if adapter.GetDeletionTimestamp() != nil {
+		return ctrl.Result{}, nil
+	}
+
 	// resolve build image
 	if err := r.reconcileBuildImage(ctx, log, adapter); err != nil {
 		if apierrs.IsNotFound(err) {
