@@ -17,8 +17,8 @@
 package streaming
 
 const (
-	kustomizePrefix     = "riff-streaming"              // kustomize adds this prefix to all our resource names
-	providerImages      = kustomizePrefix + "-provider" // contains image names for the provider
+	kustomizePrefix     = "riff-streaming"                    // kustomize adds this prefix to all our resource names
+	kafkaProviderImages = kustomizePrefix + "-kafka-provider" // contains image names for the kafka provider
 	liiklusImageKey     = "liiklus"
 	provisionerImageKey = "provisioner"
 )

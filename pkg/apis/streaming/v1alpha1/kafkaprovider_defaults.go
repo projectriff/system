@@ -19,9 +19,9 @@ import (
 	"context"
 )
 
-func (d *Provider) SetDefaults(ctx context.Context) {
-	d.Spec.SetDefaults(ctx)
+func (p *KafkaProvider) SetDefaults(ctx context.Context) {
+	p.Spec.SetDefaults(ctx)
 }
 
-func (ds *ProviderSpec) SetDefaults(ctx context.Context) {
+func (ps *KafkaProviderSpec) SetDefaults(ctx context.Context) {
 }
