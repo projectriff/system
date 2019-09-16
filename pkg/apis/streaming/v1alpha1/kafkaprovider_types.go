@@ -26,29 +26,26 @@ import (
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 var (
-	ProviderLabelKey            = GroupVersion.Group + "/provider"             // Identifies all resources originating from a provider
-	ProviderLiiklusLabelKey     = GroupVersion.Group + "/provider-liiklus"     // Used as a selector
-	ProviderProvisionerLabelKey = GroupVersion.Group + "/provider-provisioner" // Used as a selector
+	KafkaProviderLabelKey            = GroupVersion.Group + "/kafka-provider"             // Identifies all resources originating from a provider
+	KafkaProviderLiiklusLabelKey     = GroupVersion.Group + "/kafka-provider-liiklus"     // Used as a selector
+	KafkaProviderProvisionerLabelKey = GroupVersion.Group + "/kafka-provider-provisioner" // Used as a selector
 )
 
-// ProviderSpec defines the desired state of Provider
-type ProviderSpec struct {
+// KafkaProviderSpec defines the desired state of KafkaProvider
+type KafkaProviderSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	BrokerType BrokerType `json:"brokerType"`
-
-	Config map[string]string `json:"config"`
+	// BootstrapServers is a comma-separated list of host and port pairs that are the
+	// addresses of the Kafka brokers in a "bootstrap" Kafka cluster that a Kafka client
+	// connects to initially to bootstrap itself.
+	//
+	// A host and port pair uses `:` as the separator.
+	BootstrapServers string `json:"bootstrapServers"`
 }
 
-type BrokerType string
-
-const (
-	KafkaBroker BrokerType = "Kafka"
-)
-
-// ProviderStatus defines the observed state of Provider
-type ProviderStatus struct {
+// KafkaProviderStatus defines the observed state of KafkaProvider
+type KafkaProviderStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
@@ -64,24 +61,24 @@ type ProviderStatus struct {
 // +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
 // +kubebuilder:printcolumn:name="Reason",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].reason`
 
-// Provider is the Schema for the providers API
-type Provider struct {
+// KafkaProvider is the Schema for the providers API
+type KafkaProvider struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   ProviderSpec   `json:"spec,omitempty"`
-	Status ProviderStatus `json:"status,omitempty"`
+	Spec   KafkaProviderSpec   `json:"spec,omitempty"`
+	Status KafkaProviderStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
-// ProviderList contains a list of Provider
-type ProviderList struct {
+// KafkaProviderList contains a list of KafkaProvider
+type KafkaProviderList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Provider `json:"items"`
+	Items           []KafkaProvider `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&Provider{}, &ProviderList{})
+	SchemeBuilder.Register(&KafkaProvider{}, &KafkaProviderList{})
 }

@@ -4,7 +4,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
-  name: providers.streaming.projectriff.io
+  name: kafkaproviders.streaming.projectriff.io
 spec:
   additionalPrinterColumns:
   - JSONPath: .status.conditions[?(@.type=="Ready")].status
@@ -15,14 +15,14 @@ spec:
     type: string
   group: streaming.projectriff.io
   names:
-    kind: Provider
-    plural: providers
+    kind: KafkaProvider
+    plural: kafkaproviders
   scope: ""
   subresources:
     status: {}
   validation:
     openAPIV3Schema:
-      description: Provider is the Schema for the providers API
+      description: KafkaProvider is the Schema for the providers API
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
@@ -37,20 +37,19 @@ spec:
         metadata:
           type: object
         spec:
-          description: ProviderSpec defines the desired state of Provider
+          description: KafkaProviderSpec defines the desired state of KafkaProvider
           properties:
-            brokerType:
+            bootstrapServers:
+              description: "BootstrapServers is a comma-separated list of host and
+                port pairs that are the addresses of the Kafka brokers in a \"bootstrap\"
+                Kafka cluster that a Kafka client connects to initially to bootstrap
+                itself. \n A host and port pair uses `:` as the separator."
               type: string
-            config:
-              additionalProperties:
-                type: string
-              type: object
           required:
-          - brokerType
-          - config
+          - bootstrapServers
           type: object
         status:
-          description: ProviderStatus defines the observed state of Provider
+          description: KafkaProviderStatus defines the observed state of KafkaProvider
           properties:
             conditions:
               description: Conditions the latest available observations of a resource's

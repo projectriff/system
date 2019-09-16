@@ -1,7 +1,7 @@
 apiVersion: streaming.projectriff.io/v1alpha1
 kind: Stream
 metadata:
-  name: stream-sample
+  name: in
 spec:
-  # Add fields here
-  foo: bar
+  contentType: application/json
+  provider: franz-kafka-provisioner

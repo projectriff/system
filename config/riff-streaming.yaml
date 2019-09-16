@@ -11,6 +11,126 @@ metadata:
   creationTimestamp: null
   labels:
     component: streaming.projectriff.io
+  name: kafkaproviders.streaming.projectriff.io
+spec:
+  additionalPrinterColumns:
+  - JSONPath: .status.conditions[?(@.type=="Ready")].status
+    name: Ready
+    type: string
+  - JSONPath: .status.conditions[?(@.type=="Ready")].reason
+    name: Reason
+    type: string
+  group: streaming.projectriff.io
+  names:
+    kind: KafkaProvider
+    plural: kafkaproviders
+  scope: ""
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      description: KafkaProvider is the Schema for the providers API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: KafkaProviderSpec defines the desired state of KafkaProvider
+          properties:
+            bootstrapServers:
+              description: "BootstrapServers is a comma-separated list of host and
+                port pairs that are the addresses of the Kafka brokers in a \"bootstrap\"
+                Kafka cluster that a Kafka client connects to initially to bootstrap
+                itself. \n A host and port pair uses `:` as the separator."
+              type: string
+          required:
+          - bootstrapServers
+          type: object
+        status:
+          description: KafkaProviderStatus defines the observed state of KafkaProvider
+          properties:
+            conditions:
+              description: Conditions the latest available observations of a resource's
+                current state.
+              items:
+                description: 'Conditions defines a readiness condition for a Knative
+                  resource. See: https://github.com/kubernetes/community/blob/master/contributors/devel/api-conventions.md#typical-status-properties'
+                properties:
+                  lastTransitionTime:
+                    description: LastTransitionTime is the last time the condition
+                      transitioned from one status to another. We use VolatileTime
+                      in place of metav1.Time to exclude this from creating equality.Semantic
+                      differences (all other things held constant).
+                    type: string
+                  message:
+                    description: A human readable message indicating details about
+                      the transition.
+                    type: string
+                  reason:
+                    description: The reason for the condition's last transition.
+                    type: string
+                  severity:
+                    description: Severity with which to treat failures of this type
+                      of condition. When this is not specified, it defaults to Error.
+                    type: string
+                  status:
+                    description: Status of the condition, one of True, False, Unknown.
+                    type: string
+                  type:
+                    description: Type of condition.
+                    type: string
+                required:
+                - status
+                - type
+                type: object
+              type: array
+            liiklusDeploymentName:
+              type: string
+            liiklusServiceName:
+              type: string
+            observedGeneration:
+              description: ObservedGeneration is the 'Generation' of the Service that
+                was last processed by the controller.
+              format: int64
+              type: integer
+            provisionerDeploymentName:
+              type: string
+            provisionerServiceName:
+              type: string
+          required:
+          - liiklusDeploymentName
+          - liiklusServiceName
+          - provisionerDeploymentName
+          - provisionerServiceName
+          type: object
+      type: object
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  creationTimestamp: null
+  labels:
+    component: streaming.projectriff.io
   name: processors.streaming.projectriff.io
 spec:
   additionalPrinterColumns:
@@ -122,127 +242,6 @@ spec:
               type: array
             scaledObjectName:
               type: string
-          type: object
-      type: object
-  version: v1alpha1
-  versions:
-  - name: v1alpha1
-    served: true
-    storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
----
-apiVersion: apiextensions.k8s.io/v1beta1
-kind: CustomResourceDefinition
-metadata:
-  creationTimestamp: null
-  labels:
-    component: streaming.projectriff.io
-  name: providers.streaming.projectriff.io
-spec:
-  additionalPrinterColumns:
-  - JSONPath: .status.conditions[?(@.type=="Ready")].status
-    name: Ready
-    type: string
-  - JSONPath: .status.conditions[?(@.type=="Ready")].reason
-    name: Reason
-    type: string
-  group: streaming.projectriff.io
-  names:
-    kind: Provider
-    plural: providers
-  scope: ""
-  subresources:
-    status: {}
-  validation:
-    openAPIV3Schema:
-      description: Provider is the Schema for the providers API
-      properties:
-        apiVersion:
-          description: 'APIVersion defines the versioned schema of this representation
-            of an object. Servers should convert recognized schemas to the latest
-            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
-          type: string
-        kind:
-          description: 'Kind is a string value representing the REST resource this
-            object represents. Servers may infer this from the endpoint the client
-            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
-          type: string
-        metadata:
-          type: object
-        spec:
-          description: ProviderSpec defines the desired state of Provider
-          properties:
-            brokerType:
-              type: string
-            config:
-              additionalProperties:
-                type: string
-              type: object
-          required:
-          - brokerType
-          - config
-          type: object
-        status:
-          description: ProviderStatus defines the observed state of Provider
-          properties:
-            conditions:
-              description: Conditions the latest available observations of a resource's
-                current state.
-              items:
-                description: 'Conditions defines a readiness condition for a Knative
-                  resource. See: https://github.com/kubernetes/community/blob/master/contributors/devel/api-conventions.md#typical-status-properties'
-                properties:
-                  lastTransitionTime:
-                    description: LastTransitionTime is the last time the condition
-                      transitioned from one status to another. We use VolatileTime
-                      in place of metav1.Time to exclude this from creating equality.Semantic
-                      differences (all other things held constant).
-                    type: string
-                  message:
-                    description: A human readable message indicating details about
-                      the transition.
-                    type: string
-                  reason:
-                    description: The reason for the condition's last transition.
-                    type: string
-                  severity:
-                    description: Severity with which to treat failures of this type
-                      of condition. When this is not specified, it defaults to Error.
-                    type: string
-                  status:
-                    description: Status of the condition, one of True, False, Unknown.
-                    type: string
-                  type:
-                    description: Type of condition.
-                    type: string
-                required:
-                - status
-                - type
-                type: object
-              type: array
-            liiklusDeploymentName:
-              type: string
-            liiklusServiceName:
-              type: string
-            observedGeneration:
-              description: ObservedGeneration is the 'Generation' of the Service that
-                was last processed by the controller.
-              format: int64
-              type: integer
-            provisionerDeploymentName:
-              type: string
-            provisionerServiceName:
-              type: string
-          required:
-          - liiklusDeploymentName
-          - liiklusServiceName
-          - provisionerDeploymentName
-          - provisionerServiceName
           type: object
       type: object
   version: v1alpha1
@@ -467,6 +466,26 @@ rules:
 - apiGroups:
   - streaming.projectriff.io
   resources:
+  - kafkaproviders
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - streaming.projectriff.io
+  resources:
+  - kafkaproviders/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - streaming.projectriff.io
+  resources:
   - processors
   verbs:
   - create
@@ -480,26 +499,6 @@ rules:
   - streaming.projectriff.io
   resources:
   - processors/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - streaming.projectriff.io
-  resources:
-  - providers
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - streaming.projectriff.io
-  resources:
-  - providers/status
   verbs:
   - get
   - patch
@@ -593,23 +592,23 @@ subjects:
 ---
 apiVersion: v1
 data:
-  processor: projectriff/streaming-processor
-kind: ConfigMap
-metadata:
-  labels:
-    component: streaming.projectriff.io
-  name: riff-streaming-processor
-  namespace: riff-system
----
-apiVersion: v1
-data:
   liiklus: bsideup/liiklus:0.9.0
   provisioner: gcr.io/projectriff/kafka-provider/github.com/projectriff/kafka-provider/cmd/provider@sha256:60063d8e2232baf2101a553c6481809da5d0a24a3e47f9361e4a01c721549a9d
 kind: ConfigMap
 metadata:
   labels:
     component: streaming.projectriff.io
-  name: riff-streaming-provider
+  name: riff-streaming-kafka-provider
+  namespace: riff-system
+---
+apiVersion: v1
+data:
+  processor: projectriff/streaming-processor
+kind: ConfigMap
+metadata:
+  labels:
+    component: streaming.projectriff.io
+  name: riff-streaming-processor
   namespace: riff-system
 ---
 apiVersion: v1

@@ -75,14 +75,14 @@ func main() {
 	}
 
 	streamControllerLogger := ctrl.Log.WithName("controllers").WithName("Stream")
-	if err = (&controllers.ProviderReconciler{
+	if err = (&controllers.KafkaProviderReconciler{
 		Client:    mgr.GetClient(),
-		Log:       ctrl.Log.WithName("controllers").WithName("Provider"),
+		Log:       ctrl.Log.WithName("controllers").WithName("KafkaProvider"),
 		Scheme:    mgr.GetScheme(),
 		Tracker:   tracker.New(syncPeriod),
 		Namespace: namespace,
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Provider")
+		setupLog.Error(err, "unable to create controller", "controller", "KafkaProvider")
 		os.Exit(1)
 	}
 	if err = (&controllers.StreamReconciler{

@@ -60,6 +60,26 @@ rules:
 - apiGroups:
   - streaming.projectriff.io
   resources:
+  - kafkaproviders
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - streaming.projectriff.io
+  resources:
+  - kafkaproviders/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - streaming.projectriff.io
+  resources:
   - processors
   verbs:
   - create
@@ -73,26 +93,6 @@ rules:
   - streaming.projectriff.io
   resources:
   - processors/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - streaming.projectriff.io
-  resources:
-  - providers
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - streaming.projectriff.io
-  resources:
-  - providers/status
   verbs:
   - get
   - patch

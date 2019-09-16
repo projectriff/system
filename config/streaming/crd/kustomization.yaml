@@ -4,7 +4,8 @@
 resources:
 - bases/streaming.projectriff.io_streams.yaml
 - bases/streaming.projectriff.io_processors.yaml
-- bases/streaming.projectriff.io_providers.yaml
+# providers
+- bases/streaming.projectriff.io_kafkaproviders.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patchesStrategicMerge:
