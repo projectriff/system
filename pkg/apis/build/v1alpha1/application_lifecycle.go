@@ -56,7 +56,7 @@ func (as *ApplicationStatus) InitializeConditions() {
 	applicationCondSet.Manage(as).InitializeConditions()
 }
 
-func (as *ApplicationStatus) MarkBuildNotOwned(name string) {
+func (as *ApplicationStatus) MarkBuildNotOwned() {
 	applicationCondSet.Manage(as).MarkFalse(ApplicationConditionBuildSucceeded, "NotOwned",
 		fmt.Sprintf("There is an existing Build %q that we do not own.", name))
 }

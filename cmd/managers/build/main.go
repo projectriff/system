@@ -27,7 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
-	knbuild "github.com/projectriff/system/pkg/apis/thirdparty/knative/build/v1alpha1"
+	knbuildv1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/knative/build/v1alpha1"
 	controllers "github.com/projectriff/system/pkg/controllers/build"
 	// +kubebuilder:scaffold:imports
 )

@@ -49,7 +49,7 @@ type FunctionReconciler struct {
 
 // +kubebuilder:rbac:groups=build.projectriff.io,resources=functions,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=build.projectriff.io,resources=functions/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=build.knative.dev,resources=builds,verbs=get;list;watch
+// +kubebuilder:rbac:groups=build.knative.dev,resources=builds,verbs= get;list;watch;create;update;patch;delete
 
 func (r *FunctionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
@@ -79,7 +79,7 @@ func (r *FunctionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		log.Info("updating function status", "function", function.Name,
 			"status", function.Status)
 		if updateErr := r.Status().Update(ctx, function); updateErr != nil {
-			log.Error(updateErr, "unable to update Container status", "container", function)
+			log.Error(updateErr, "unable to update Function status", "function", function)
 			return ctrl.Result{Requeue: true}, updateErr
 		}
 	}
@@ -87,8 +87,8 @@ func (r *FunctionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 }
 
 func (r *FunctionReconciler) reconcile(ctx context.Context, log logr.Logger, function *buildv1alpha1.Function) (ctrl.Result, error) {
-	log.V(1).Info("reconciling application", "application", function.Name)
-	log.V(5).Info("reconciling application", "spec", function.Spec, "labels", function.Labels)
+	log.V(1).Info("reconciling function", "function", function.Name)
+	log.V(5).Info("reconciling function", "spec", function.Spec, "labels", function.Labels)
 	if function.GetDeletionTimestamp() != nil {
 		return ctrl.Result{}, nil
 	}
@@ -103,7 +103,7 @@ func (r *FunctionReconciler) reconcile(ctx context.Context, log logr.Logger, fun
 		}
 		return ctrl.Result{}, err
 	}
-	log.V(1).Info("resolved target image", "application", function.Name, "image", targetImage)
+	log.V(1).Info("resolved target image", "function", function.Name, "image", targetImage)
 	function.Status.TargetImage = targetImage
 
 	buildName := names.FunctionBuild(function)
@@ -140,8 +140,8 @@ func (r *FunctionReconciler) reconcile(ctx context.Context, log logr.Logger, fun
 		log.V(1).Info("marking build not used", "build", build.Name)
 		function.Status.MarkBuildNotUsed()
 	} else {
-		log.V(1).Info("updating build status for application", "build", build.Name, "status", build.Status,
-			"application", function.Name)
+		log.V(1).Info("updating build status for function", "build", build.Name, "status", build.Status,
+			"function", function.Name)
 		function.Status.BuildName = build.Name
 		function.Status.PropagateBuildStatus(&build.Status)
 	}

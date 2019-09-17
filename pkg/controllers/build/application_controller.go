@@ -49,7 +49,7 @@ type ApplicationReconciler struct {
 
 // +kubebuilder:rbac:groups=build.projectriff.io,resources=applications,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=build.projectriff.io,resources=applications/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=build.knative.dev,resources=builds,verbs=get;list;watch
+// +kubebuilder:rbac:groups=build.knative.dev,resources=builds,verbs= get;list;watch;create;update;patch;delete
 
 func (r *ApplicationReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
@@ -79,7 +79,7 @@ func (r *ApplicationReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 		log.Info("updating application status", "application", application.Name,
 			"status", application.Status)
 		if updateErr := r.Status().Update(ctx, application); updateErr != nil {
-			log.Error(updateErr, "unable to update Container status", "container", application)
+			log.Error(updateErr, "unable to update Application status", "application", application)
 			return ctrl.Result{Requeue: true}, updateErr
 		}
 	}
