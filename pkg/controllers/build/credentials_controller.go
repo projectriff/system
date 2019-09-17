@@ -74,6 +74,10 @@ func (r *CredentialReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 }
 
 func (r *CredentialReconciler) reconcile(ctx context.Context, log logr.Logger, serviceAccount *corev1.ServiceAccount, namespace string) (ctrl.Result, error) {
+	if serviceAccount != nil && serviceAccount.GetDeletionTimestamp() != nil {
+		return ctrl.Result{}, nil
+	}
+
 	secretNames := sets.NewString()
 	var secrets corev1.SecretList
 	if err := r.List(ctx, &secrets, client.InNamespace(namespace), MatchingLabels(buildv1alpha1.CredentialLabelKey)); err != nil {

@@ -88,6 +88,9 @@ func (r *ProviderReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 }
 
 func (r *ProviderReconciler) reconcile(ctx context.Context, log logr.Logger, provider *streamingv1alpha1.Provider) (ctrl.Result, error) {
+	if provider.GetDeletionTimestamp() != nil {
+		return ctrl.Result{}, nil
+	}
 
 	// Lookup and track configMap to know which images to use
 	cm := corev1.ConfigMap{}
