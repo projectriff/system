@@ -80,6 +80,10 @@ type Function struct {
 	Status FunctionStatus `json:"status,omitempty"`
 }
 
+func (f *Function) GetImage() string {
+	return f.Spec.Image
+}
+
 // +kubebuilder:object:root=true
 
 // FunctionList contains a list of Function

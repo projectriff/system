@@ -71,6 +71,10 @@ type Application struct {
 	Status ApplicationStatus `json:"status,omitempty"`
 }
 
+func (a *Application) GetImage() string {
+	return a.Spec.Image
+}
+
 // +kubebuilder:object:root=true
 
 // ApplicationList contains a list of Application

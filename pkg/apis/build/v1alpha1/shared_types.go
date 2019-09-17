@@ -16,6 +16,13 @@ limitations under the License.
 
 package v1alpha1
 
+import (
+	"fmt"
+	"strings"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
 var (
 	// credentials are not a CRD, but a Secret with this label
 	CredentialLabelKey       = GroupVersion.Group + "/credential"
@@ -54,4 +61,35 @@ type BuildStatus struct {
 	// TargetImage is the resolved image repository where built images are
 	// pushed.
 	TargetImage string `json:"targetImage,omitempty"`
+}
+
+// +k8s:deepcopy-gen=false
+type ImageResource interface {
+	metav1.ObjectMetaAccessor
+	GetImage() string
+}
+
+// ResolveDefaultImage applies the default image prefix as needed to an image.
+//
+// The default image prefix may apply to either a repository whose value is '_'
+// or a repository with a leading '_/'.
+//
+// For a leading '_/', the underscore is replaced with the default image prefix.
+// For a repository of '_', the default image prefix is combined with the name
+// of the build resource.
+func ResolveDefaultImage(resource ImageResource, defaultImagePrefix string) (string, error) {
+	if defaultImagePrefix == "" {
+		return "", fmt.Errorf("invalid default image prefix %q", defaultImagePrefix)
+	}
+	image := resource.GetImage()
+	if image == "_" {
+		// combine registry prefix and application name
+		image = fmt.Sprintf("%s/%s", defaultImagePrefix, resource.GetObjectMeta().GetName())
+	} else if strings.HasPrefix(image, "_/") {
+		// add the prefix to the specified image name
+		image = strings.Replace(image, "_", defaultImagePrefix, 1)
+	} else {
+		return "", fmt.Errorf("unable to default registry")
+	}
+	return image, nil
 }

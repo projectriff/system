@@ -474,6 +474,18 @@ metadata:
   name: riff-build-manager-role
 rules:
 - apiGroups:
+  - build.knative.dev
+  resources:
+  - builds
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - build.projectriff.io
   resources:
   - applications

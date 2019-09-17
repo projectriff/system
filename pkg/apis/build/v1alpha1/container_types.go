@@ -60,6 +60,10 @@ type Container struct {
 	Status ContainerStatus `json:"status,omitempty"`
 }
 
+func (c *Container) GetImage() string {
+	return c.Spec.Image
+}
+
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
