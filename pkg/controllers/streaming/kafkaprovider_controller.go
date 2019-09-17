@@ -87,6 +87,9 @@ func (r *KafkaProviderReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 }
 
 func (r *KafkaProviderReconciler) reconcile(ctx context.Context, log logr.Logger, kafkaProvider *streamingv1alpha1.KafkaProvider) (ctrl.Result, error) {
+	if kafkaProvider.GetDeletionTimestamp() != nil {
+		return ctrl.Result{}, nil
+	}
 
 	// Lookup and track configMap to know which images to use
 	cm := corev1.ConfigMap{}

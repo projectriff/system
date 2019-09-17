@@ -90,6 +90,10 @@ func (r *DeployerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 }
 
 func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, deployer *corev1alpha1.Deployer) (ctrl.Result, error) {
+	if deployer.GetDeletionTimestamp() != nil {
+		return ctrl.Result{}, nil
+	}
+
 	// resolve build image
 	if err := r.reconcileBuildImage(ctx, log, deployer); err != nil {
 		if apierrs.IsNotFound(err) {
