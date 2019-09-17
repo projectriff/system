@@ -5,7 +5,6 @@ go 1.13
 require (
 	github.com/go-logr/logr v0.1.0
 	github.com/google/go-cmp v0.3.1
-	github.com/google/go-containerregistry v0.0.0-20190911162635-ffd186870143 // indirect
 	github.com/json-iterator/go v1.1.6 // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/onsi/ginkgo v1.8.0

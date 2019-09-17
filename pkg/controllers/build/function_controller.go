@@ -36,15 +36,13 @@ import (
 	knbuildv1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/knative/build/v1alpha1"
 	"github.com/projectriff/system/pkg/controllers/build/resources"
 	"github.com/projectriff/system/pkg/controllers/build/resources/names"
-	"github.com/projectriff/system/pkg/tracker"
 )
 
 // FunctionReconciler reconciles a Function object
 type FunctionReconciler struct {
 	client.Client
-	Log     logr.Logger
-	Scheme  *runtime.Scheme
-	Tracker tracker.Tracker
+	Log    logr.Logger
+	Scheme *runtime.Scheme
 }
 
 // +kubebuilder:rbac:groups=build.projectriff.io,resources=functions,verbs=get;list;watch;create;update;patch;delete
@@ -124,7 +122,7 @@ func (r *FunctionReconciler) reconcile(ctx context.Context, log logr.Logger, fun
 	}
 
 	if !metav1.IsControlledBy(&build, function) {
-		function.Status.MarkBuildNotOwned(buildName)
+		function.Status.MarkBuildNotOwned()
 		return ctrl.Result{}, fmt.Errorf("function: %q does not own Build: %q", function.Name, buildName)
 	}
 

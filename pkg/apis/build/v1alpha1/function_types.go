@@ -80,6 +80,10 @@ type Function struct {
 	Status FunctionStatus `json:"status,omitempty"`
 }
 
+func (f *Function) GetImage() string {
+	return f.Spec.Image
+}
+
 // +kubebuilder:object:root=true
 
 // FunctionList contains a list of Function
@@ -91,8 +95,4 @@ type FunctionList struct {
 
 func init() {
 	SchemeBuilder.Register(&Function{}, &FunctionList{})
-}
-
-func (f *Function) GetImage() string {
-	return f.Spec.Image
 }

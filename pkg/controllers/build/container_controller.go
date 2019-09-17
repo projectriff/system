@@ -30,8 +30,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/projectriff/system/pkg/tracker"
-
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 )
 
@@ -40,9 +38,8 @@ var errMissingDefaultPrefix = fmt.Errorf("missing default image prefix")
 // ContainerReconciler reconciles a Container object
 type ContainerReconciler struct {
 	client.Client
-	Log     logr.Logger
-	Scheme  *runtime.Scheme
-	Tracker tracker.Tracker
+	Log    logr.Logger
+	Scheme *runtime.Scheme
 }
 
 // +kubebuilder:rbac:groups=build.projectriff.io,resources=containers,verbs=get;list;watch;create;update;patch;delete

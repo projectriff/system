@@ -36,15 +36,13 @@ import (
 	knbuildv1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/knative/build/v1alpha1"
 	"github.com/projectriff/system/pkg/controllers/build/resources"
 	"github.com/projectriff/system/pkg/controllers/build/resources/names"
-	"github.com/projectriff/system/pkg/tracker"
 )
 
 // ApplicationReconciler reconciles a Application object
 type ApplicationReconciler struct {
 	client.Client
-	Log     logr.Logger
-	Scheme  *runtime.Scheme
-	Tracker tracker.Tracker
+	Log    logr.Logger
+	Scheme *runtime.Scheme
 }
 
 // +kubebuilder:rbac:groups=build.projectriff.io,resources=applications,verbs=get;list;watch;create;update;patch;delete
@@ -124,7 +122,7 @@ func (r *ApplicationReconciler) reconcile(ctx context.Context, log logr.Logger, 
 	}
 
 	if !metav1.IsControlledBy(&build, application) {
-		application.Status.MarkBuildNotOwned(buildName)
+		application.Status.MarkBuildNotOwned()
 		return ctrl.Result{}, fmt.Errorf("application: %q does not own Build: %q", application.Name, buildName)
 	}
 

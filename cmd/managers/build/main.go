@@ -39,7 +39,7 @@ var (
 
 func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
-	_ = knbuild.AddToScheme(scheme)
+	_ = knbuildv1alpha1.AddToScheme(scheme)
 	_ = buildv1alpha1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }

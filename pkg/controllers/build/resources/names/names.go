@@ -22,16 +22,8 @@ import (
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 )
 
-func FunctionBuildCache(f *buildv1alpha1.Function) string {
-	return fmt.Sprintf("build-cache-%s-function", f.Name)
-}
-
 func FunctionBuild(f *buildv1alpha1.Function) string {
 	return fmt.Sprintf("%s-function", f.Name)
-}
-
-func ApplicationBuildCache(a *buildv1alpha1.Application) string {
-	return fmt.Sprintf("build-cache-%s-application", a.Name)
 }
 
 func ApplicationBuild(a *buildv1alpha1.Application) string {

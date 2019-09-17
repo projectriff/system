@@ -11,8 +11,12 @@ rules:
   resources:
   - builds
   verbs:
+  - create
+  - delete
   - get
   - list
+  - patch
+  - update
   - watch
 - apiGroups:
   - build.projectriff.io
