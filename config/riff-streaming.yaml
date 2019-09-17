@@ -577,7 +577,7 @@ kind: ConfigMap
 metadata:
   labels:
     component: streaming.projectriff.io
-  name: riff-streaming-provider
+  name: riff-streaming-kafka-provider
   namespace: riff-system
 ---
 apiVersion: v1
