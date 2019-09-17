@@ -17,10 +17,11 @@ limitations under the License.
 package resources
 
 import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	knbuildv1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/knative/build/v1alpha1"
 	"github.com/projectriff/system/pkg/controllers/build/resources/names"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // MakeFunctionBuild creates a Build from an Function object.

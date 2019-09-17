@@ -23,11 +23,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"
-	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
-	knbuildv1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/knative/build/v1alpha1"
-	"github.com/projectriff/system/pkg/controllers/build/resources"
-	"github.com/projectriff/system/pkg/controllers/build/resources/names"
-	"github.com/projectriff/system/pkg/tracker"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -36,6 +31,12 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
+	knbuildv1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/knative/build/v1alpha1"
+	"github.com/projectriff/system/pkg/controllers/build/resources"
+	"github.com/projectriff/system/pkg/controllers/build/resources/names"
+	"github.com/projectriff/system/pkg/tracker"
 )
 
 // ApplicationReconciler reconciles a Application object

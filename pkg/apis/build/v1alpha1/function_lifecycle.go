@@ -19,15 +19,16 @@ package v1alpha1
 import (
 	"fmt"
 
+	corev1 "k8s.io/api/core/v1"
+
 	"github.com/projectriff/system/pkg/apis"
 	knbuildv1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/knative/build/v1alpha1"
-	corev1 "k8s.io/api/core/v1"
 )
 
 const (
-	FunctionConditionReady                              = apis.ConditionReady
-	FunctionConditionBuildSucceeded  apis.ConditionType = "BuildSucceeded"
-	FunctionConditionImageResolved   apis.ConditionType = "ImageResolved"
+	FunctionConditionReady                             = apis.ConditionReady
+	FunctionConditionBuildSucceeded apis.ConditionType = "BuildSucceeded"
+	FunctionConditionImageResolved  apis.ConditionType = "ImageResolved"
 )
 
 var functionCondSet = apis.NewLivingConditionSet(
