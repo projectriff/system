@@ -102,7 +102,10 @@ generate-internal: controller-gen
 # find or download controller-gen, download controller-gen if necessary
 controller-gen:
 ifeq (, $(shell which controller-gen))
+	# avoid go.* mutations from go get
+	cp go.mod go.mod~ && cp go.sum go.sum~
 	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.0
+	mv go.mod~ go.mod && mv go.sum~ go.sum
 CONTROLLER_GEN=$(GOBIN)/controller-gen
 else
 CONTROLLER_GEN=$(shell which controller-gen)
@@ -111,7 +114,10 @@ endif
 # find or download goimports, download goimports if necessary
 goimports:
 ifeq (, $(shell which goimports))
+	# avoid go.* mutations from go get
+	cp go.mod go.mod~ && cp go.sum go.sum~
 	go get golang.org/x/tools/cmd/goimports@release-branch.go1.13
+	mv go.mod~ go.mod && mv go.sum~ go.sum
 GOIMPORTS=$(GOBIN)/goimports
 else
 GOIMPORTS=$(shell which goimports)

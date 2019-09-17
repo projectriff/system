@@ -35,7 +35,9 @@ jobs:
         chmod u+x kustomize
         sudo mv kustomize /usr/local/bin/
     - name: Build & Test
-      run: make all test
+      run: make manager package test
+    - name: Check generated code is up to date
+      run: git diff --exit-code .
     - name: Report coverage
       run: bash <(curl -s https://codecov.io/bash)
       env:
