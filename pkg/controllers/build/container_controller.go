@@ -18,7 +18,6 @@ package build
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/go-logr/logr"
@@ -32,8 +31,6 @@ import (
 
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 )
-
-var errMissingDefaultPrefix = fmt.Errorf("missing default image prefix")
 
 // ContainerReconciler reconciles a Container object
 type ContainerReconciler struct {
