@@ -1,8 +1,10 @@
 
 # Target component to build/run
 COMPONENT ?= build
+IMG_REPO ?= gcr.io/projectriff/system
+IMG_TAG ?= latest
 # Image URL to use all building/pushing image targets
-IMG ?= $(COMPONENT)-controller:latest
+IMG ?= $(IMG_REPO)/$(COMPONENT)-controller:$(IMG_TAG)
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= crd:trivialVersions=true
 
@@ -29,14 +31,12 @@ deploy: manifests ## Deploy component controller in the configured Kubernetes cl
 	cd config/$(COMPONENT)/manager && kustomize edit set image controller=${IMG}
 	kustomize build config/$(COMPONENT)/default | kubectl apply -f -
 
-# Build component docker image
-.PHONY: docker-build
+.PHONY: docker-build ## Build component docker image
 docker-build: test
 	docker build . --build-arg component=$(COMPONENT) -t ${IMG}
 
-# Push a docker image
 .PHONY: docker-push
-docker-push:
+docker-push: docker-build ## Push the docker image
 	docker push ${IMG}
 
 .PHONY: test

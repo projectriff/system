@@ -4481,7 +4481,7 @@ spec:
         - --enable-leader-election
         command:
         - /manager
-        image: knative-controller:latest
+        image: gcr.io/projectriff/system/knative-controller:latest
         name: manager
         resources:
           limits:

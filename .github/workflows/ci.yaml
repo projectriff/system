@@ -42,3 +42,110 @@ jobs:
       run: bash <(curl -s https://codecov.io/bash)
       env:
         CODECOV_TOKEN: 39b82cdd-7ed3-4692-b2ea-f31ed9b84cef
+
+  publish:
+    needs: test
+    # TODO limit to master
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-go@v1
+        with:
+          go-version: '1.13'
+      - name: Install kubebuilder
+        run: |
+          # from https://book.kubebuilder.io/quick-start.html#installation
+          os=`go env GOOS`
+          arch=`go env GOARCH`
+
+          # download kubebuilder and extract it to tmp
+          curl -sL https://go.kubebuilder.io/dl/2.0.0/${os}/${arch} | tar -xz -C /tmp/
+
+          # move to a long-term location and put it on your path
+          # (you'll need to set the KUBEBUILDER_ASSETS env var if you put it somewhere else)
+          sudo mv /tmp/kubebuilder_2.0.0_${os}_${arch} /usr/local/kubebuilder
+          echo "##[add-path]/usr/local/kubebuilder/bin"
+      - name: Install kustomize
+        run: |
+          opsys=`go env GOOS`
+          curl -s https://api.github.com/repos/kubernetes-sigs/kustomize/releases/latest |\
+            grep browser_download |\
+            grep $opsys |\
+            cut -d '"' -f 4 |\
+            xargs curl -O -L
+          mv kustomize_*_${opsys}_amd64 kustomize
+          chmod u+x kustomize
+          sudo mv kustomize /usr/local/bin/
+      - name: Package
+        run: make manager package
+      - name: gcloud auth
+        run: |
+          gcloud auth activate-service-account --key-file <(echo $GCLOUD_CLIENT_SECRET | base64 --decode)
+          gcloud auth configure-docker
+        env:
+          GCLOUD_CLIENT_SECRET: ${{ secrets.GCLOUD_CLIENT_SECRET }}
+      - name: publish images
+        run: |
+          readonly version=$(cat VERSION)
+          readonly git_branch=${1:11} # drop 'refs/head/' prefix
+          readonly git_sha=$(git rev-parse HEAD)
+          readonly git_timestamp=$(TZ=UTC git show --quiet --date='format-local:%Y%m%d%H%M%S' --format="%cd")
+          readonly slug=${version}-${git_timestamp}-${git_sha:0:16}
+
+          export IMG_REPO=gcr.io/projectriff/system
+          export IMG_TAG=$slug
+
+          # build
+          export COMPONENT=build
+          make docker-push
+          pushd config/$COMPONENT/manager
+          kustomize edit set image controller=$IMG_REPO/$COMPONENT-controller:$slug
+          popd
+
+          # core
+          export COMPONENT=core
+          make docker-push
+          pushd config/$COMPONENT/manager
+          kustomize edit set image controller=$IMG_REPO/$COMPONENT-controller:$slug
+          popd
+
+          # knative
+          export COMPONENT=knative
+          make docker-push
+          pushd config/$COMPONENT/manager
+          kustomize edit set image controller=$IMG_REPO/$COMPONENT-controller:$slug
+          popd
+
+          # streaming
+          export COMPONENT=streaming
+          make docker-push
+          pushd config/$COMPONENT/manager
+          kustomize edit set image controller=$IMG_REPO/$COMPONENT-controller:$slug
+          popd
+      - name: Package
+        run: make package
+      - name: publish artifacts
+        run: |
+          readonly version=$(cat VERSION)
+          readonly git_branch=${1:11} # drop 'refs/head/' prefix
+          readonly git_sha=$(git rev-parse HEAD)
+          readonly git_timestamp=$(TZ=UTC git show --quiet --date='format-local:%Y%m%d%H%M%S' --format="%cd")
+          readonly slug=${version}-${git_timestamp}-${git_sha:0:16}
+
+          echo "Publishing riff System"
+          gsutil cp -a public-read ${root}/config/riff-build.yaml gs://projectriff/riff-system/snapshots/riff-build-${slug}.yaml
+          gsutil cp -a public-read ${root}/config/riff-core.yaml gs://projectriff/riff-system/snapshots/riff-core-${slug}.yaml
+          gsutil cp -a public-read ${root}/config/riff-knative.yaml gs://projectriff/riff-system/snapshots/riff-knative-${slug}.yaml
+          gsutil cp -a public-read ${root}/config/riff-streaming.yaml gs://projectriff/riff-system/snapshots/riff-streaming-${slug}.yaml
+          gsutil cp -a public-read ${root}/config/riff-build.yaml gs://projectriff/riff-system/riff-build-${version}.yaml
+          gsutil cp -a public-read ${root}/config/riff-core.yaml gs://projectriff/riff-system/riff-core-${version}.yaml
+          gsutil cp -a public-read ${root}/config/riff-knative.yaml gs://projectriff/riff-system/riff-knative-${version}.yaml
+          gsutil cp -a public-read ${root}/config/riff-streaming.yaml gs://projectriff/riff-system/riff-streaming-${version}.yaml
+
+          echo "Publishing version references"
+          gsutil -h 'Content-Type: text/plain' -h 'Cache-Control: private' cp -a public-read <(echo "${slug}") gs://projectriff/riff-system/snapshots/versions/${git_branch}
+          gsutil -h 'Content-Type: text/plain' -h 'Cache-Control: private' cp -a public-read <(echo "${slug}") gs://projectriff/riff-system/snapshots/versions/${version}
+          if [[ ${version} != *"-snapshot" ]] ; then
+            gsutil -h 'Content-Type: text/plain' -h 'Cache-Control: private' cp -a public-read <(echo "${version}") gs://projectriff/riff-system/versions/releases/${git_branch}
+          fi
+
