@@ -48,9 +48,14 @@ rules:
 - apiGroups:
   - keda.k8s.io
   resources:
-  - scaledobject
+  - scaledobjects
   verbs:
+  - create
+  - delete
   - get
+  - list
+  - patch
+  - update
   - watch
 - apiGroups:
   - streaming.projectriff.io

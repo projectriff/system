@@ -56,12 +56,15 @@ type ProcessorReconciler struct {
 	Namespace string
 }
 
+// For
 // +kubebuilder:rbac:groups=streaming.projectriff.io,resources=processors,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=streaming.projectriff.io,resources=processors/status,verbs=get;update;patch
+// Owns
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=build.projectriff.io,resources=functions,verbs=get;watch
+// +kubebuilder:rbac:groups=keda.k8s.io,resources=scaledobjects,verbs=get;list;watch;create;update;patch;delete
+// Watches
 // +kubebuilder:rbac:groups=streaming.projectriff.io,resources=streams,verbs=get;watch
-// +kubebuilder:rbac:groups=keda.k8s.io,resources=scaledobject,verbs=get;watch
+// +kubebuilder:rbac:groups=build.projectriff.io,resources=functions,verbs=get;watch
 
 func (r *ProcessorReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
