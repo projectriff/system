@@ -27,19 +27,20 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
-	knbuildv1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/knative/build/v1alpha1"
+	kpackbuildv1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/kpack/build/v1alpha1"
 	controllers "github.com/projectriff/system/pkg/controllers/build"
 	// +kubebuilder:scaffold:imports
 )
 
 var (
-	scheme   = runtime.NewScheme()
-	setupLog = ctrl.Log.WithName("setup")
+	scheme    = runtime.NewScheme()
+	setupLog  = ctrl.Log.WithName("setup")
+	namespace = os.Getenv("SYSTEM_NAMESPACE")
 )
 
 func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
-	_ = knbuildv1alpha1.AddToScheme(scheme)
+	_ = kpackbuildv1alpha1.AddToScheme(scheme)
 	_ = buildv1alpha1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
@@ -94,6 +95,14 @@ func main() {
 		Log:    ctrl.Log.WithName("controllers").WithName("Credentials"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Credential")
+		os.Exit(1)
+	}
+	if err = (&controllers.ClusterBuilderReconciler{
+		Client:    mgr.GetClient(),
+		Log:       ctrl.Log.WithName("controllers").WithName("ClusterBuilders"),
+		Namespace: namespace,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "ClusterBuilder")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder

@@ -165,6 +165,10 @@ jobs:
           echo ""
           kubectl get riff --all-namespaces || true
           echo ""
+          echo "KPACK:"
+          echo ""
+          kubectl get clusterbuilders.build.pivotal.io,builders.build.pivotal.io,images.build.pivotal.io,sourceresolvers.build.pivotal.io,builds.build.pivotal.io --all-namespaces || true
+          echo ""
           echo "KNATIVE:"
           echo ""
           kubectl get knative --all-namespaces || true
@@ -198,8 +202,8 @@ jobs:
       - name: 'Dump riff Streaming Runtime logs'
         run: kubectl logs -n riff-system -l component=streaming.projectriff.io,control-plane=controller-manager -c manager --tail 10000 || true
         if: failure()
-      - name: 'Dump Knative Build logs'
-        run: kubectl logs -n knative-build -l app=build-controller --tail 10000 || true
+      - name: 'Dump kpack logs'
+        run: kubectl logs -n kpack -l app=kpack-controller --tail 10000 || true
         if: failure()
       - name: 'Dump Knative Serving logs'
         run: kubectl logs -n knative-serving -l app=controller --tail 10000 || true

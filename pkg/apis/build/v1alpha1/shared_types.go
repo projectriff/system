@@ -52,8 +52,8 @@ type BuildStatus struct {
 	// for intermediate build resources.
 	BuildCacheName string `json:"buildCacheName,omitempty"`
 
-	// BuildName is the name of the Knative Build backing this build.
-	BuildName string `json:"buildName,omitempty"`
+	// KpackImageName is the name of the kpack Image backing this build.
+	KpackImageName string `json:"kpackImageName,omitempty"`
 
 	// LatestImage is the most recent image for this build.
 	LatestImage string `json:"latestImage,omitempty"`

@@ -93,10 +93,6 @@ spec:
               description: BuildCacheName is the name of the PersistentVolumeClaim
                 used as a cache for intermediate build resources.
               type: string
-            buildName:
-              description: BuildName is the name of the Knative Build backing this
-                build.
-              type: string
             conditions:
               description: Conditions the latest available observations of a resource's
                 current state.
@@ -132,6 +128,10 @@ spec:
                 - type
                 type: object
               type: array
+            kpackImageName:
+              description: KpackImageName is the name of the kpack Image backing this
+                build.
+              type: string
             latestImage:
               description: LatestImage is the most recent image for this build.
               type: string
@@ -217,10 +217,6 @@ spec:
               description: BuildCacheName is the name of the PersistentVolumeClaim
                 used as a cache for intermediate build resources.
               type: string
-            buildName:
-              description: BuildName is the name of the Knative Build backing this
-                build.
-              type: string
             conditions:
               description: Conditions the latest available observations of a resource's
                 current state.
@@ -256,6 +252,10 @@ spec:
                 - type
                 type: object
               type: array
+            kpackImageName:
+              description: KpackImageName is the name of the kpack Image backing this
+                build.
+              type: string
             latestImage:
               description: LatestImage is the most recent image for this build.
               type: string
@@ -380,10 +380,6 @@ spec:
               description: BuildCacheName is the name of the PersistentVolumeClaim
                 used as a cache for intermediate build resources.
               type: string
-            buildName:
-              description: BuildName is the name of the Knative Build backing this
-                build.
-              type: string
             conditions:
               description: Conditions the latest available observations of a resource's
                 current state.
@@ -419,6 +415,10 @@ spec:
                 - type
                 type: object
               type: array
+            kpackImageName:
+              description: KpackImageName is the name of the kpack Image backing this
+                build.
+              type: string
             latestImage:
               description: LatestImage is the most recent image for this build.
               type: string
@@ -481,6 +481,23 @@ rules:
   - create
 ---
 apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    component: build.projectriff.io
+  name: riff-build-public-builders-role
+  namespace: riff-system
+rules:
+- apiGroups:
+  - ""
+  resourceNames:
+  - builders
+  resources:
+  - configmaps
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   creationTimestamp: null
@@ -489,9 +506,17 @@ metadata:
   name: riff-build-manager-role
 rules:
 - apiGroups:
-  - build.knative.dev
+  - build.pivotal.io
   resources:
-  - builds
+  - clusterbuilders
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - build.pivotal.io
+  resources:
+  - images
   verbs:
   - create
   - delete
@@ -574,8 +599,12 @@ rules:
   resources:
   - configmaps
   verbs:
+  - create
+  - delete
   - get
   - list
+  - patch
+  - update
   - watch
 - apiGroups:
   - ""
@@ -674,6 +703,22 @@ subjects:
   namespace: riff-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    component: build.projectriff.io
+  name: riff-build-public-builders-rolebinding
+  namespace: riff-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: riff-build-public-builders-role
+subjects:
+- apiGroup: rbac.authorization.k8s.io
+  kind: Group
+  name: system:authenticated
+---
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   labels:
@@ -758,6 +803,11 @@ spec:
       - args:
         - --metrics-addr=127.0.0.1:8080
         - --enable-leader-election
+        env:
+        - name: SYSTEM_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
         image: github.com/projectriff/system/cmd/managers/build
         name: manager
         resources:

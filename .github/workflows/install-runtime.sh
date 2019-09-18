@@ -36,8 +36,8 @@ helm init --wait --service-account ${tiller_service_account}
 helm repo add projectriff https://projectriff.storage.googleapis.com/charts/releases
 helm repo update
 
-echo "Installing Knative Build"
-kubectl apply -f https://storage.googleapis.com/knative-releases/build/previous/v0.7.0/build.yaml
+echo "Installing kpack"
+kubectl apply -f https://storage.googleapis.com/projectriff/internal/kpack/kpack-pre.yaml
 
 echo "Installing riff Build"
 if [ $MODE = "push" ]; then
@@ -45,8 +45,8 @@ if [ $MODE = "push" ]; then
 elif [ $MODE = "pull_request" ]; then
   ko apply -f config/riff-build.yaml
 fi
-kubectl apply -f https://storage.googleapis.com/projectriff/riff-buildtemplate/riff-application-clusterbuildtemplate.yaml
-kubectl apply -f https://storage.googleapis.com/projectriff/riff-buildtemplate/riff-function-clusterbuildtemplate.yaml
+kubectl apply -f https://storage.googleapis.com/projectriff/riff-buildtemplate/riff-application-clusterbuilder.yaml
+kubectl apply -f https://storage.googleapis.com/projectriff/riff-buildtemplate/riff-function-clusterbuilder.yaml
 
 if [ $RUNTIME = "core" ]; then
   echo "Installing riff Core Runtime"
