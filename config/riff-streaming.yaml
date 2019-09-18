@@ -120,6 +120,8 @@ spec:
               items:
                 type: string
               type: array
+            scaledObjectName:
+              type: string
           type: object
       type: object
   version: v1alpha1
@@ -424,6 +426,13 @@ rules:
   - update
   - watch
 - apiGroups:
+  - build.projectriff.io
+  resources:
+  - functions
+  verbs:
+  - get
+  - watch
+- apiGroups:
   - ""
   resources:
   - configmaps
@@ -442,6 +451,13 @@ rules:
   - list
   - patch
   - update
+  - watch
+- apiGroups:
+  - keda.k8s.io
+  resources:
+  - scaledobject
+  verbs:
+  - get
   - watch
 - apiGroups:
   - streaming.projectriff.io
@@ -568,6 +584,16 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: default
+  namespace: riff-system
+---
+apiVersion: v1
+data:
+  processor: projectriff/streaming-processor
+kind: ConfigMap
+metadata:
+  labels:
+    component: streaming.projectriff.io
+  name: riff-streaming-processor
   namespace: riff-system
 ---
 apiVersion: v1
