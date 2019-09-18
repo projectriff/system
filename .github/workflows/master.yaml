@@ -1,6 +1,9 @@
 name: publish
 
 on: push
+# TODO remove comment before merging
+#  branches:
+#    - master
 
 jobs:
   test:
@@ -45,7 +48,6 @@ jobs:
 
   publish:
     needs: test
-    # TODO limit to master
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
