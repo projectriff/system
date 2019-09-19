@@ -45,7 +45,7 @@ jobs:
 
   publish:
     needs: test
-    if: github.ref == 'master'
+#    if: github.ref == 'master'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
@@ -89,73 +89,8 @@ jobs:
         env:
           GCLOUD_CLIENT_SECRET: ${{ secrets.GCLOUD_CLIENT_SECRET }}
       - name: publish images
-        run: |
-          readonly version=$(cat VERSION)
-          readonly ref=${{ github.ref }}
-          readonly git_branch=${ref:11} # drop 'refs/head/' prefix
-          readonly git_sha=$(git rev-parse HEAD)
-          readonly git_timestamp=$(TZ=UTC git show --quiet --date='format-local:%Y%m%d%H%M%S' --format="%cd")
-          readonly slug=${version}-${git_timestamp}-${git_sha:0:16}
-
-          export IMG_REPO=gcr.io/projectriff/system
-          export IMG_TAG=$slug
-
-          # build
-          export COMPONENT=build
-          make docker-push
-          pushd config/$COMPONENT/manager
-          kustomize edit set image controller=$IMG_REPO/$COMPONENT-controller:$slug
-          popd
-
-          # core
-          export COMPONENT=core
-          make docker-push
-          pushd config/$COMPONENT/manager
-          kustomize edit set image controller=$IMG_REPO/$COMPONENT-controller:$slug
-          popd
-
-          # knative
-          export COMPONENT=knative
-          make docker-push
-          pushd config/$COMPONENT/manager
-          kustomize edit set image controller=$IMG_REPO/$COMPONENT-controller:$slug
-          popd
-
-          # streaming
-          export COMPONENT=streaming
-          make docker-push
-          pushd config/$COMPONENT/manager
-          kustomize edit set image controller=$IMG_REPO/$COMPONENT-controller:$slug
-          popd
+        run: source .github/workflows/publish_images.sh ${{ github.ref }}
       - name: Package
         run: make package
       - name: publish artifacts
-        run: |
-          readonly version=$(cat VERSION)
-          readonly ref=${{ github.ref }}
-          readonly git_branch=${ref:11} # drop 'refs/head/' prefix
-          readonly git_sha=$(git rev-parse HEAD)
-          readonly git_timestamp=$(TZ=UTC git show --quiet --date='format-local:%Y%m%d%H%M%S' --format="%cd")
-          readonly slug=${version}-${git_timestamp}-${git_sha:0:16}
-
-          echo "Stage riff System"
-          gsutil cp -a public-read config/riff-build.yaml gs://projectriff/riff-system/snapshots/riff-build-${slug}.yaml
-          gsutil cp -a public-read config/riff-core.yaml gs://projectriff/riff-system/snapshots/riff-core-${slug}.yaml
-          gsutil cp -a public-read config/riff-knative.yaml gs://projectriff/riff-system/snapshots/riff-knative-${slug}.yaml
-          gsutil cp -a public-read config/riff-streaming.yaml gs://projectriff/riff-system/snapshots/riff-streaming-${slug}.yaml
-
-          # TODO run integration tests on staged artifacts before publishing
-
-          echo "Publishing riff System"
-          gsutil cp -a public-read gs://projectriff/riff-system/snapshots/riff-build-${slug}.yaml gs://projectriff/riff-system/riff-build-${version}.yaml
-          gsutil cp -a public-read gs://projectriff/riff-system/snapshots/riff-core-${slug}.yaml gs://projectriff/riff-system/riff-core-${version}.yaml
-          gsutil cp -a public-read gs://projectriff/riff-system/snapshots/riff-knative-${slug}.yaml gs://projectriff/riff-system/riff-knative-${version}.yaml
-          gsutil cp -a public-read gs://projectriff/riff-system/snapshots/riff-streaming-${slug}.yaml gs://projectriff/riff-system/riff-streaming-${version}.yaml
-
-          echo "Publishing version references"
-          gsutil -h 'Content-Type: text/plain' -h 'Cache-Control: private' cp -a public-read <(echo "${slug}") gs://projectriff/riff-system/snapshots/versions/${git_branch}
-          gsutil -h 'Content-Type: text/plain' -h 'Cache-Control: private' cp -a public-read <(echo "${slug}") gs://projectriff/riff-system/snapshots/versions/${version}
-          if [[ ${version} != *"-snapshot" ]] ; then
-            gsutil -h 'Content-Type: text/plain' -h 'Cache-Control: private' cp -a public-read <(echo "${version}") gs://projectriff/riff-system/versions/releases/${git_branch}
-          fi
-
+        run: source .github/workflows/publish_artifacts.sh ${{ github.ref }}
