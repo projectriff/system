@@ -3,6 +3,7 @@ name: CI
 on: [push, pull_request]
 
 jobs:
+
   test:
     runs-on: ubuntu-latest
     steps:
@@ -43,9 +44,9 @@ jobs:
       env:
         CODECOV_TOKEN: 39b82cdd-7ed3-4692-b2ea-f31ed9b84cef
 
-  publish:
+  stage:
     needs: test
-    if: github.ref == 'master'
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
@@ -76,8 +77,6 @@ jobs:
           mv kustomize_*_${opsys}_amd64 kustomize
           chmod u+x kustomize
           sudo mv kustomize /usr/local/bin/
-      - name: Package
-        run: make manager package
       - name: gcloud auth
         run: |
           gcloud config set project cf-spring-pfs-eng
@@ -88,9 +87,22 @@ jobs:
           gcloud auth configure-docker
         env:
           GCLOUD_CLIENT_SECRET: ${{ secrets.GCLOUD_CLIENT_SECRET }}
-      - name: publish images
-        run: source .github/workflows/publish_images.sh ${{ github.ref }}
-      - name: Package
-        run: make package
-      - name: publish artifacts
-        run: source .github/workflows/publish_artifacts.sh ${{ github.ref }}
+      - name: Stage artifacts
+        run: .github/workflows/stage.sh
+
+  # TODO add acceptance tests
+
+  publish:
+    needs: stage
+    if: github.ref == 'refs/heads/master' || ( startsWith(github.ref, 'refs/heads/v') && endsWith(github.ref, 'x') )
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: gcloud auth
+        run: |
+          gcloud config set disable_prompts True
+          gcloud auth activate-service-account --key-file <(echo $GCLOUD_CLIENT_SECRET)
+        env:
+          GCLOUD_CLIENT_SECRET: ${{ secrets.GCLOUD_CLIENT_SECRET }}
+      - name: Publish artifacts
+        run: .github/workflows/publish.sh ${{ github.ref }}
