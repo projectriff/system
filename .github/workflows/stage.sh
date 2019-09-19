@@ -4,19 +4,14 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-readonly version=$(cat VERSION)
-readonly git_sha=$(git rev-parse HEAD)
-readonly git_timestamp=$(TZ=UTC git show --quiet --date='format-local:%Y%m%d%H%M%S' --format="%cd")
-readonly slug=${version}-${git_timestamp}-${git_sha:0:16}
-
-export IMG_REPO=gcr.io/projectriff/system
-export IMG_TAG=$slug
+source config.sh
 
 buildImage() {
   local component=$1
+  local img=$img_repo/$component-controller:$slug
 
-  ( cd config/$component/manager && kustomize edit set image controller=$IMG_REPO/$component-controller:$slug )
-  COMPONENT=$component make docker-push
+  ( cd config/$component/manager && kustomize edit set image controller=$img )
+  COMPONENT=$component IMG=$img make docker-push
 }
 
 echo "Build riff System"

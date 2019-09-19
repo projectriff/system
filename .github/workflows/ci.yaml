@@ -102,6 +102,7 @@ jobs:
         run: |
           gcloud config set disable_prompts True
           gcloud auth activate-service-account --key-file <(echo $GCLOUD_CLIENT_SECRET)
+          gcloud auth configure-docker
         env:
           GCLOUD_CLIENT_SECRET: ${{ secrets.GCLOUD_CLIENT_SECRET }}
       - name: Publish artifacts

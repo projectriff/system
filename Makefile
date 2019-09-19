@@ -1,8 +1,9 @@
 
 # Target component to build/run
 COMPONENT ?= build
+VERSION ?= $(shell cat VERSION)
 IMG_REPO ?= gcr.io/projectriff/system
-IMG_TAG ?= latest
+IMG_TAG ?= $(VERSION)
 # Image URL to use all building/pushing image targets
 IMG ?= $(IMG_REPO)/$(COMPONENT)-controller:$(IMG_TAG)
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
@@ -36,7 +37,7 @@ docker-build: test
 	docker build . --build-arg component=$(COMPONENT) -t ${IMG}
 
 .PHONY: docker-push
-docker-push: docker-build ## Push the docker image
+docker-push: docker-build ## Push component docker image
 	docker push ${IMG}
 
 .PHONY: test
@@ -45,9 +46,16 @@ test: generate fmt vet manifests ## Run tests
 
 .PHONY: package
 package: generate fmt vet manifests ## Package for distribution
+	cd config/build/manager && kustomize edit set image controller=$(IMG_REPO)/build-controller:$(IMG_TAG)
 	kustomize build config/build/default > config/riff-build.yaml
+
+	cd config/core/manager && kustomize edit set image controller=$(IMG_REPO)/core-controller:$(IMG_TAG)
 	kustomize build config/core/default > config/riff-core.yaml
+
+	cd config/knative/manager && kustomize edit set image controller=$(IMG_REPO)/knative-controller:$(IMG_TAG)
 	kustomize build config/knative/default > config/riff-knative.yaml
+
+	cd config/streaming/manager && kustomize edit set image controller=$(IMG_REPO)/streaming-controller:$(IMG_TAG)
 	kustomize build config/streaming/default > config/riff-streaming.yaml
 
 # Build manager binaries
