@@ -698,7 +698,7 @@ spec:
         - --enable-leader-election
         command:
         - /manager
-        image: build-controller:latest
+        image: gcr.io/projectriff/system/build-controller:latest
         name: manager
         resources:
           limits:
