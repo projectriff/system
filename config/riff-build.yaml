@@ -696,9 +696,7 @@ spec:
       - args:
         - --metrics-addr=127.0.0.1:8080
         - --enable-leader-election
-        command:
-        - /manager
-        image: gcr.io/projectriff/system/build-controller:latest
+        image: github.com/projectriff/system/cmd/managers/build
         name: manager
         resources:
           limits:
