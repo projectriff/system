@@ -1,6 +1,2 @@
 resources:
 - manager.yaml
-images:
-- name: controller
-  newName: gcr.io/projectriff/system/core-controller
-  newTag: latest

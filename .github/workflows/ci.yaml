@@ -36,7 +36,7 @@ jobs:
         chmod u+x kustomize
         sudo mv kustomize /usr/local/bin/
     - name: Build & Test
-      run: make manager package test
+      run: make compile test
     - name: Check generated code is up to date
       run: git diff --exit-code .
     - name: Report coverage
@@ -77,6 +77,12 @@ jobs:
           mv kustomize_*_${opsys}_amd64 kustomize
           chmod u+x kustomize
           sudo mv kustomize /usr/local/bin/
+      - name: Install ko
+        run: |
+          go get github.com/google/ko/cmd/ko
+          echo "##[add-path]$(go env GOPATH)/bin"
+        env:
+          GO111MODULE: "off"
       - name: gcloud auth
         run: |
           gcloud config set project cf-spring-pfs-eng
@@ -89,6 +95,8 @@ jobs:
           GCLOUD_CLIENT_SECRET: ${{ secrets.GCLOUD_CLIENT_SECRET }}
       - name: Stage artifacts
         run: .github/workflows/stage.sh
+        env:
+          KO_DOCKER_REPO: gcr.io/projectriff/system
 
   # TODO add acceptance tests
 

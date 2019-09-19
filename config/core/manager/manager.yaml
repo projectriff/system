@@ -23,11 +23,9 @@ spec:
         control-plane: controller-manager
     spec:
       containers:
-      - command:
-        - /manager
-        args:
+      - args:
         - --enable-leader-election
-        image: controller:latest
+        image: github.com/projectriff/system/cmd/managers/core
         name: manager
         resources:
           limits:

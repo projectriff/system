@@ -1,10 +1,7 @@
 
 # Target component to build/run
 COMPONENT ?= build
-IMG_REPO ?= gcr.io/projectriff/system
-IMG_TAG ?= latest
-# Image URL to use all building/pushing image targets
-IMG ?= $(IMG_REPO)/$(COMPONENT)-controller:$(IMG_TAG)
+VERSION ?= $(shell cat VERSION)
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= crd:trivialVersions=true
 
@@ -16,47 +13,26 @@ GOBIN=$(shell go env GOBIN)
 endif
 
 .PHONY: all
-all: manager test
+all: prepare test
 
 .PHONY: run
 run: manifests ## Run component against the configured Kubernetes cluster in ~/.kube/config
 	go run ./cmd/managers/$(COMPONENT)/main.go
 
-.PHONY: install
-install: manifests ## Install component CRDs into a cluster
-	kustomize build config/$(COMPONENT)/crd | kubectl apply -f -
-
-.PHONY: deploy
-deploy: manifests ## Deploy component controller in the configured Kubernetes cluster in ~/.kube/config
-	cd config/$(COMPONENT)/manager && kustomize edit set image controller=${IMG}
-	kustomize build config/$(COMPONENT)/default | kubectl apply -f -
-
-.PHONY: docker-build ## Build component docker image
-docker-build: test
-	docker build . --build-arg component=$(COMPONENT) -t ${IMG}
-
-.PHONY: docker-push
-docker-push: docker-build ## Push the docker image
-	docker push ${IMG}
-
 .PHONY: test
 test: generate fmt vet manifests ## Run tests
 	go test ./... -coverprofile cover.out
 
-.PHONY: package
-package: generate fmt vet manifests ## Package for distribution
+.PHONY: compile
+compile: prepare ko ## Compile target binaries
+	$(KO) resolve -L -f config/ > /dev/null
+
+.PHONY: prepare
+prepare: generate fmt vet manifests ## Create all generated and scaffolded files
 	kustomize build config/build/default > config/riff-build.yaml
 	kustomize build config/core/default > config/riff-core.yaml
 	kustomize build config/knative/default > config/riff-knative.yaml
 	kustomize build config/streaming/default > config/riff-streaming.yaml
-
-# Build manager binaries
-.PHONY: manager
-manager: generate
-	go build -o bin/build-manager ./cmd/managers/build/main.go
-	go build -o bin/core-manager ./cmd/managers/core/main.go
-	go build -o bin/knative-manager ./cmd/managers/knative/main.go
-	go build -o bin/streaming-manager ./cmd/managers/streaming/main.go
 
 # Generate manifests e.g. CRD, RBAC etc.
 .PHONY: manifests
@@ -121,6 +97,15 @@ ifeq (, $(shell which goimports))
 GOIMPORTS=$(GOBIN)/goimports
 else
 GOIMPORTS=$(shell which goimports)
+endif
+
+# find or download ko, download ko if necessary
+ko:
+ifeq (, $(shell which ko))
+	GO111MODULE=off go get github.com/google/ko/cmd/ko
+KO=$(GOBIN)/ko
+else
+KO=$(shell which ko)
 endif
 
 # Absolutely awesome: http://marmelab.com/blog/2016/02/29/auto-documented-makefile.html

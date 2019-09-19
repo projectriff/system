@@ -4479,9 +4479,7 @@ spec:
       - args:
         - --metrics-addr=127.0.0.1:8080
         - --enable-leader-election
-        command:
-        - /manager
-        image: gcr.io/projectriff/system/knative-controller:latest
+        image: github.com/projectriff/system/cmd/managers/knative
         name: manager
         resources:
           limits:
