@@ -93,7 +93,8 @@ jobs:
       - name: publish images
         run: |
           readonly version=$(cat VERSION)
-          readonly git_branch=${1:11} # drop 'refs/head/' prefix
+          readonly ref=${{ github.ref }}
+          readonly git_branch=${ref:11} # drop 'refs/head/' prefix
           readonly git_sha=$(git rev-parse HEAD)
           readonly git_timestamp=$(TZ=UTC git show --quiet --date='format-local:%Y%m%d%H%M%S' --format="%cd")
           readonly slug=${version}-${git_timestamp}-${git_sha:0:16}
@@ -133,7 +134,8 @@ jobs:
       - name: publish artifacts
         run: |
           readonly version=$(cat VERSION)
-          readonly git_branch=${1:11} # drop 'refs/head/' prefix
+          readonly ref=${{ github.ref }}
+          readonly git_branch=${ref:11} # drop 'refs/head/' prefix
           readonly git_sha=$(git rev-parse HEAD)
           readonly git_timestamp=$(TZ=UTC git show --quiet --date='format-local:%Y%m%d%H%M%S' --format="%cd")
           readonly slug=${version}-${git_timestamp}-${git_sha:0:16}
@@ -153,11 +155,9 @@ jobs:
           gsutil cp -a public-read gs://projectriff/riff-system/snapshots/riff-streaming-${slug}.yaml gs://projectriff/riff-system/riff-streaming-${version}.yaml
 
           echo "Publishing version references"
-          echo "${slug}" > slug.txt
-          echo "${version}" > version.txt 
-          gsutil -h 'Content-Type: text/plain' -h 'Cache-Control: private' cp -a public-read slug.txt gs://projectriff/riff-system/snapshots/versions/${git_branch}
-          gsutil -h 'Content-Type: text/plain' -h 'Cache-Control: private' cp -a public-read slug.txt gs://projectriff/riff-system/snapshots/versions/${version}
+          gsutil -h 'Content-Type: text/plain' -h 'Cache-Control: private' cp -a public-read <(echo "${slug}") gs://projectriff/riff-system/snapshots/versions/${git_branch}
+          gsutil -h 'Content-Type: text/plain' -h 'Cache-Control: private' cp -a public-read <(echo "${slug}") gs://projectriff/riff-system/snapshots/versions/${version}
           if [[ ${version} != *"-snapshot" ]] ; then
-            gsutil -h 'Content-Type: text/plain' -h 'Cache-Control: private' cp -a public-read version.txt gs://projectriff/riff-system/versions/releases/${git_branch}
+            gsutil -h 'Content-Type: text/plain' -h 'Cache-Control: private' cp -a public-read <(echo "${version}") gs://projectriff/riff-system/versions/releases/${git_branch}
           fi
 
