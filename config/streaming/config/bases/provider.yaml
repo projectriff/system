@@ -1,8 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: kafka-provider
-data:
-  liiklus: bsideup/liiklus:0.9.0
-  provisioner: gcr.io/projectriff/kafka-provider/github.com/projectriff/kafka-provider/cmd/provider@sha256:60063d8e2232baf2101a553c6481809da5d0a24a3e47f9361e4a01c721549a9d
-

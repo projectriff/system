@@ -44,7 +44,7 @@ func NewStreamProvisionerClient(httpClient *http.Client, logger logr.Logger) Str
 }
 
 func (s *streamProvisionerRestClient) ProvisionStream(stream *streamingv1alpha1.Stream) (*streamingv1alpha1.StreamAddress, error) {
-	url := fmt.Sprintf("http://%s.%s.svc.cluster.local/%s", stream.Spec.Provider, stream.Namespace, stream.Name)
+	url := fmt.Sprintf("http://%s.%s.svc.cluster.local/%s/%s", stream.Spec.Provider, stream.Namespace, stream.Namespace, stream.Name)
 	req, err := http.NewRequest(http.MethodPut, url, bytes.NewReader([]byte{}))
 	if err != nil {
 		return nil, err

@@ -1,3 +1,3 @@
 resources:
   - bases/processor.yaml
-  - bases/provider.yaml
+  - bases/kafka-provider.yaml
