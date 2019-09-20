@@ -58,6 +58,7 @@ func main() {
 		Scheme:             scheme,
 		MetricsBindAddress: metricsAddr,
 		LeaderElection:     enableLeaderElection,
+		LeaderElectionID:   "controller-leader-election-helper-build",
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
