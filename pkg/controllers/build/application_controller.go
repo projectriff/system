@@ -47,7 +47,8 @@ type ApplicationReconciler struct {
 
 // +kubebuilder:rbac:groups=build.projectriff.io,resources=applications,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=build.projectriff.io,resources=applications/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=build.knative.dev,resources=builds,verbs= get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=build.knative.dev,resources=builds,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch
 
 func (r *ApplicationReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
