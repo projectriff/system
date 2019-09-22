@@ -18,9 +18,11 @@ spec:
     type: string
   group: knative.projectriff.io
   names:
+    categories:
+    - riff
     kind: Deployer
     plural: deployers
-  scope: ""
+  scope: Namespaced
   subresources:
     status: {}
   validation:

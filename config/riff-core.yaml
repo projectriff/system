@@ -22,9 +22,11 @@ spec:
     type: string
   group: core.projectriff.io
   names:
+    categories:
+    - riff
     kind: Deployer
     plural: deployers
-  scope: ""
+  scope: Namespaced
   subresources:
     status: {}
   validation:

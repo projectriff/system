@@ -1,0 +1,15 @@
+#@ load("@ytt:overlay", "overlay")
+
+#@overlay/match by=overlay.subset({ "apiVersion": "apps/v1", "kind": "Deployment" }), expects="0+"
+---
+#@overlay/match-child-defaults expects="0+"
+spec:
+  template:
+    spec:
+      containers:
+      #@overlay/match by=overlay.all
+      - resources:
+          #@overlay/remove
+          limits: {}
+          #@overlay/remove
+          requests: {}

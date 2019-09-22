@@ -98,10 +98,94 @@ jobs:
         env:
           KO_DOCKER_REPO: gcr.io/projectriff/system
 
-  # TODO add acceptance tests
+  fats:
+    needs: stage
+    if: github.event_name == 'push'
+    strategy:
+      matrix:
+        runtime:
+        - core
+        - knative
+        # - streaming # TODO add acceptances tests
+      fail-fast: false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: 'Setup env'
+        run: |
+          echo "##[set-env name=CLUSTER]minikube"
+          echo "##[set-env name=REGISTRY]docker-daemon"
+          echo "##[set-env name=RUNTIME]${{ matrix.runtime }}"
+          echo "##[set-env name=CLUSTER_NAME]system-id-${{ matrix.runtime }}"
+          echo "##[set-env name=NAMESPACE]system-id-${{ matrix.runtime }}"
+          echo "##[set-env name=FATS_DIR]fats"
+          echo "##[set-env name=FATS_REPO]projectriff/fats"
+          echo "##[set-env name=FATS_REFSPEC]963813cd508045459d9f48e664a56b553a322a85" # master as of 2019-09-19
+      - name: 'Fetch FATS'
+        run: .github/workflows/fats-fetch.sh ${FATS_DIR} ${FATS_REFSPEC} ${FATS_REPO}
+      - name: 'Install tools'
+        run: |
+          ${FATS_DIR}/install.sh kubectl
+          ${FATS_DIR}/install.sh riff
+          ${FATS_DIR}/install.sh ytt 0.20.0
+      - name: 'Start FATS'
+        run: ${FATS_DIR}/start.sh
+      - name: 'Install runtime'
+        run: .github/workflows/install-runtime.sh
+      - name: 'Run tests'
+        run: .github/workflows/run-tests.sh
+      - name: 'Collect diagnostics'
+        run: |
+          kubectl get deployments,services,pods --all-namespaces || true
+          echo ""
+          echo "RIFF:"
+          echo ""
+          kubectl get riff --all-namespaces || true
+          echo ""
+          echo "KNATIVE:"
+          echo ""
+          kubectl get knative --all-namespaces || true
+          echo ""
+          echo "FAILING PODS:"
+          echo ""
+          kubectl get pods --all-namespaces --field-selector=status.phase!=Running \
+            | tail -n +2 | awk '{print "-n", $1, $2}' | xargs -L 1 kubectl describe pod || true
+          echo ""
+          echo "NODE:"
+          echo ""
+          kubectl describe node || true
+          echo ""
+          echo "RIFF:"
+          echo ""
+          kubectl describe riff --all-namespaces || true
+        if: failure()
+      - name: 'Dump riff Build logs'
+        run: kubectl logs -n riff-system -l component=build.projectriff.io,control-plane=controller-manager -c manager --tail 10000 || true
+        if: failure()
+      - name: 'Dump riff Core Runtime logs'
+        run: kubectl logs -n riff-system -l component=core.projectriff.io,control-plane=controller-manager -c manager --tail 10000 || true
+        if: failure()
+      - name: 'Dump riff Knative Runtime logs'
+        run: kubectl logs -n riff-system -l component=knative.projectriff.io,control-plane=controller-manager -c manager --tail 10000 || true
+        if: failure()
+      - name: 'Dump riff Streaming Runtime logs'
+        run: kubectl logs -n riff-system -l component=streaming.projectriff.io,control-plane=controller-manager -c manager --tail 10000 || true
+        if: failure()
+      - name: 'Dump Knative Build logs'
+        run: kubectl logs -n knative-build -l app=build-controller --tail 10000 || true
+        if: failure()
+      - name: 'Dump Knative Serving logs'
+        run: kubectl logs -n knative-serving -l app=controller --tail 10000 || true
+        if: failure()
+      - name: 'Uninstall runtime'
+        run: .github/workflows/cleanup-runtime.sh
+        if: always()
+      - name: 'Cleanup FATS'
+        run: ${FATS_DIR}/cleanup.sh
+        if: always()
 
   publish:
-    needs: stage
+    needs: fats
     if: github.ref == 'refs/heads/master' || ( startsWith(github.ref, 'refs/heads/v') && endsWith(github.ref, 'x') )
     runs-on: ubuntu-latest
     steps:
