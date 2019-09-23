@@ -120,13 +120,6 @@ jobs:
           job=$(date +%s) # TODO can use something that is assigned by CI to guarantee uniqueness
           echo "JOB_ID=${job}"
           if [ ! -z "$GCLOUD_CLIENT_SECRET" ]; then
-            gcloud config set project cf-spring-pfs-eng
-            gcloud config set compute/region us-central1
-            gcloud config set compute/zone us-central1-a
-            gcloud config set disable_prompts True
-            gcloud auth activate-service-account --key-file <(echo $GCLOUD_CLIENT_SECRET)
-            gcloud auth configure-docker
-            
             echo "##[set-env name=CLUSTER]gke"
             echo "##[set-env name=REGISTRY]gcr"
           else
@@ -149,8 +142,11 @@ jobs:
           ${FATS_DIR}/install.sh kubectl
           ${FATS_DIR}/install.sh riff
           ${FATS_DIR}/install.sh ytt 0.20.0
+          ${FATS_DIR}/install.sh gcloud
           GO111MODULE=off go get github.com/google/ko/cmd/ko
           echo "##[add-path]$(go env GOPATH)/bin"
+        env:
+          GCLOUD_CLIENT_SECRET: ${{ secrets.GCLOUD_CLIENT_SECRET }}
       - name: 'Start FATS'
         run: ${FATS_DIR}/start.sh
       - name: 'Install runtime'
