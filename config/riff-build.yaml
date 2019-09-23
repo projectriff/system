@@ -22,9 +22,11 @@ spec:
     type: string
   group: build.projectriff.io
   names:
+    categories:
+    - riff
     kind: Application
     plural: applications
-  scope: ""
+  scope: Namespaced
   subresources:
     status: {}
   validation:
@@ -164,11 +166,22 @@ metadata:
     component: build.projectriff.io
   name: containers.build.projectriff.io
 spec:
+  additionalPrinterColumns:
+  - JSONPath: .status.conditions[?(@.type=="Ready")].status
+    name: Ready
+    type: string
+  - JSONPath: .status.conditions[?(@.type=="Ready")].reason
+    name: Reason
+    type: string
   group: build.projectriff.io
   names:
+    categories:
+    - riff
     kind: Container
     plural: containers
-  scope: ""
+  scope: Namespaced
+  subresources:
+    status: {}
   validation:
     openAPIV3Schema:
       description: Container is the Schema for the containers API
@@ -286,9 +299,11 @@ spec:
     type: string
   group: build.projectriff.io
   names:
+    categories:
+    - riff
     kind: Function
     plural: functions
-  scope: ""
+  scope: Namespaced
   subresources:
     status: {}
   validation:

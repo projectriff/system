@@ -15,9 +15,11 @@ spec:
     type: string
   group: streaming.projectriff.io
   names:
+    categories:
+    - riff
     kind: KafkaProvider
     plural: kafkaproviders
-  scope: ""
+  scope: Namespaced
   subresources:
     status: {}
   validation:

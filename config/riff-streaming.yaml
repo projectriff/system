@@ -22,9 +22,11 @@ spec:
     type: string
   group: streaming.projectriff.io
   names:
+    categories:
+    - riff
     kind: KafkaProvider
     plural: kafkaproviders
-  scope: ""
+  scope: Namespaced
   subresources:
     status: {}
   validation:
@@ -142,9 +144,11 @@ spec:
     type: string
   group: streaming.projectriff.io
   names:
+    categories:
+    - riff
     kind: Processor
     plural: processors
-  scope: ""
+  scope: Namespaced
   subresources:
     status: {}
   validation:
@@ -273,9 +277,11 @@ spec:
     type: string
   group: streaming.projectriff.io
   names:
+    categories:
+    - riff
     kind: Stream
     plural: streams
-  scope: ""
+  scope: Namespaced
   subresources:
     status: {}
   validation:

@@ -15,9 +15,11 @@ spec:
     type: string
   group: knative.projectriff.io
   names:
+    categories:
+    - riff
     kind: Adapter
     plural: adapters
-  scope: ""
+  scope: Namespaced
   subresources:
     status: {}
   validation:

@@ -15,9 +15,11 @@ spec:
     type: string
   group: build.projectriff.io
   names:
+    categories:
+    - riff
     kind: Function
     plural: functions
-  scope: ""
+  scope: Namespaced
   subresources:
     status: {}
   validation:
