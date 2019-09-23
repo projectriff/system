@@ -153,6 +153,8 @@ jobs:
         run: .github/workflows/install-runtime.sh
       - name: 'Run tests'
         run: .github/workflows/run-tests.sh
+        env:
+          GCLOUD_CLIENT_SECRET: ${{ secrets.GCLOUD_CLIENT_SECRET }}
       - name: 'Collect diagnostics'
         run: |
           kubectl get deployments,services,pods --all-namespaces || true
