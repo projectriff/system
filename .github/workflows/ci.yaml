@@ -142,7 +142,9 @@ jobs:
           ${FATS_DIR}/install.sh kubectl
           ${FATS_DIR}/install.sh riff
           ${FATS_DIR}/install.sh ytt 0.20.0
-          ${FATS_DIR}/install.sh gcloud
+          if [ ! -z "$GCLOUD_CLIENT_SECRET" ]; then
+            ${FATS_DIR}/install.sh gcloud
+          fi
           GO111MODULE=off go get github.com/google/ko/cmd/ko
           echo "##[add-path]$(go env GOPATH)/bin"
         env:
