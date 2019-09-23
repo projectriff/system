@@ -100,6 +100,7 @@ jobs:
 
   fats:
     needs: stage
+    # run even if the stage job was skipped
     if: "!( cancelled() || failure() )"
     strategy:
       matrix:
@@ -212,7 +213,12 @@ jobs:
 
   publish:
     needs: fats
-    if: github.ref == 'refs/heads/master' || ( startsWith(github.ref, 'refs/heads/v') && endsWith(github.ref, 'x') )
+    if: |
+      github.event_name == 'push' && (
+        github.ref == 'refs/heads/master' || (
+          startsWith(github.ref, 'refs/heads/v') && endsWith(github.ref, 'x')
+        )
+      )
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
