@@ -89,7 +89,7 @@ jobs:
           gcloud config set compute/region us-central1
           gcloud config set compute/zone us-central1-a
           gcloud config set disable_prompts True
-          gcloud auth activate-service-account --key-file <(echo $GCLOUD_CLIENT_SECRET)
+          gcloud auth activate-service-account --key-file <(echo $GCLOUD_CLIENT_SECRET | base64 --decode)
           gcloud auth configure-docker
         env:
           GCLOUD_CLIENT_SECRET: ${{ secrets.GCLOUD_CLIENT_SECRET }}
@@ -100,7 +100,8 @@ jobs:
 
   fats:
     needs: stage
-    if: github.event_name == 'push'
+    # run even if the stage job was skipped
+    if: "!( cancelled() || failure() )"
     strategy:
       matrix:
         runtime:
@@ -111,16 +112,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
+      - uses: actions/setup-go@v1
+        with:
+          go-version: '1.13'
       - name: 'Setup env'
         run: |
-          echo "##[set-env name=CLUSTER]minikube"
-          echo "##[set-env name=REGISTRY]docker-daemon"
+          job=$(date +%s) # TODO can use something that is assigned by CI to guarantee uniqueness
+          echo "JOB_ID=${job}"
+          if [ ! -z "$GCLOUD_CLIENT_SECRET" ]; then
+            echo "##[set-env name=CLUSTER]gke"
+            echo "##[set-env name=REGISTRY]gcr"
+          else
+            echo "##[set-env name=CLUSTER]minikube"
+            echo "##[set-env name=REGISTRY]docker-daemon"
+          fi
+          echo "##[set-env name=MODE]${{ github.event_name }}"
           echo "##[set-env name=RUNTIME]${{ matrix.runtime }}"
-          echo "##[set-env name=CLUSTER_NAME]system-id-${{ matrix.runtime }}"
-          echo "##[set-env name=NAMESPACE]system-id-${{ matrix.runtime }}"
+          echo "##[set-env name=CLUSTER_NAME]system-${job}-${{ matrix.runtime }}"
+          echo "##[set-env name=NAMESPACE]system-${job}-${{ matrix.runtime }}"
           echo "##[set-env name=FATS_DIR]fats"
           echo "##[set-env name=FATS_REPO]projectriff/fats"
           echo "##[set-env name=FATS_REFSPEC]963813cd508045459d9f48e664a56b553a322a85" # master as of 2019-09-19
+        env:
+          GCLOUD_CLIENT_SECRET: ${{ secrets.GCLOUD_CLIENT_SECRET }}
       - name: 'Fetch FATS'
         run: .github/workflows/fats-fetch.sh ${FATS_DIR} ${FATS_REFSPEC} ${FATS_REPO}
       - name: 'Install tools'
@@ -128,12 +142,21 @@ jobs:
           ${FATS_DIR}/install.sh kubectl
           ${FATS_DIR}/install.sh riff
           ${FATS_DIR}/install.sh ytt 0.20.0
+          if [ ! -z "$GCLOUD_CLIENT_SECRET" ]; then
+            ${FATS_DIR}/install.sh gcloud
+          fi
+          GO111MODULE=off go get github.com/google/ko/cmd/ko
+          echo "##[add-path]$(go env GOPATH)/bin"
+        env:
+          GCLOUD_CLIENT_SECRET: ${{ secrets.GCLOUD_CLIENT_SECRET }}
       - name: 'Start FATS'
         run: ${FATS_DIR}/start.sh
       - name: 'Install runtime'
         run: .github/workflows/install-runtime.sh
       - name: 'Run tests'
         run: .github/workflows/run-tests.sh
+        env:
+          GCLOUD_CLIENT_SECRET: ${{ secrets.GCLOUD_CLIENT_SECRET }}
       - name: 'Collect diagnostics'
         run: |
           kubectl get deployments,services,pods --all-namespaces || true
@@ -158,6 +181,10 @@ jobs:
           echo "RIFF:"
           echo ""
           kubectl describe riff --all-namespaces || true
+          echo ""
+          echo "KNATIVE:"
+          echo ""
+          kubectl describe knative --all-namespaces || true
         if: failure()
       - name: 'Dump riff Build logs'
         run: kubectl logs -n riff-system -l component=build.projectriff.io,control-plane=controller-manager -c manager --tail 10000 || true
@@ -186,14 +213,19 @@ jobs:
 
   publish:
     needs: fats
-    if: github.ref == 'refs/heads/master' || ( startsWith(github.ref, 'refs/heads/v') && endsWith(github.ref, 'x') )
+    if: |
+      github.event_name == 'push' && (
+        github.ref == 'refs/heads/master' || (
+          startsWith(github.ref, 'refs/heads/v') && endsWith(github.ref, 'x')
+        )
+      )
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
       - name: gcloud auth
         run: |
           gcloud config set disable_prompts True
-          gcloud auth activate-service-account --key-file <(echo $GCLOUD_CLIENT_SECRET)
+          gcloud auth activate-service-account --key-file <(echo $GCLOUD_CLIENT_SECRET | base64 --decode)
         env:
           GCLOUD_CLIENT_SECRET: ${{ secrets.GCLOUD_CLIENT_SECRET }}
       - name: Publish artifacts

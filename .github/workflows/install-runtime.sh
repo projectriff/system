@@ -34,13 +34,18 @@ retry() {
 }
 
 apply_yaml() {
-  local file=$1
   local tmpfile=$(mktemp)
   
-  ytt --ignore-unknown-comments -f .github/overlays/ -f ${file} --file-mark $(basename ${file}):type=yaml-plain > $tmpfile
+  if [ $CLUSTER = "minikube" ]; then
+    ytt --ignore-unknown-comments -f .github/overlays/ -f - > $tmpfile
+  else
+    cat > $tmpfile
+  fi
   retry kubectl apply -f $tmpfile
   rm $tmpfile
 }
+
+export KO_DOCKER_REPO=$(fats_image_repo '#' | cut -d '#' -f 1 | sed 's|/$||g')
 
 echo "Initialize Helm"
 kubectl create serviceaccount ${tiller_service_account} -n ${tiller_namespace}
@@ -51,16 +56,24 @@ helm repo add projectriff https://projectriff.storage.googleapis.com/charts/rele
 helm repo update
 
 echo "Installing Knative Build"
-apply_yaml https://storage.googleapis.com/knative-releases/build/previous/v0.7.0/build.yaml
+curl -Ls https://storage.googleapis.com/knative-releases/build/previous/v0.7.0/build.yaml | apply_yaml
 
 echo "Installing riff Build"
-apply_yaml https://storage.googleapis.com/projectriff/riff-system/snapshots/riff-build-${slug}.yaml
-apply_yaml https://storage.googleapis.com/projectriff/riff-buildtemplate/riff-application-clusterbuildtemplate.yaml
-apply_yaml https://storage.googleapis.com/projectriff/riff-buildtemplate/riff-function-clusterbuildtemplate.yaml
+if [ $MODE = "push" ]; then
+  curl -Ls https://storage.googleapis.com/projectriff/riff-system/snapshots/riff-build-${slug}.yaml | apply_yaml
+elif [ $MODE = "pull_request" ]; then
+  ko resolve -f config/riff-build.yaml | apply_yaml
+fi
+curl -Ls https://storage.googleapis.com/projectriff/riff-buildtemplate/riff-application-clusterbuildtemplate.yaml | apply_yaml
+curl -Ls https://storage.googleapis.com/projectriff/riff-buildtemplate/riff-function-clusterbuildtemplate.yaml | apply_yaml
 
 if [ $RUNTIME = "core" ]; then
   echo "Installing riff Core Runtime"
-  apply_yaml https://storage.googleapis.com/projectriff/riff-system/snapshots/riff-core-${slug}.yaml
+  if [ $MODE = "push" ]; then
+    curl -Ls https://storage.googleapis.com/projectriff/riff-system/snapshots/riff-core-${slug}.yaml | apply_yaml
+  elif [ $MODE = "pull_request" ]; then
+    ko resolve -f config/riff-core.yaml | apply_yaml
+  fi
 elif [ $RUNTIME = "knative" ]; then
   echo "Installing Istio"
   helm install projectriff/istio --name istio --namespace istio-system --wait --set gateways.istio-ingressgateway.type=${K8S_SERVICE_TYPE}
@@ -68,10 +81,14 @@ elif [ $RUNTIME = "knative" ]; then
   wait_for_ingress_ready 'istio-ingressgateway' 'istio-system'
   
   echo "Installing Knative Serving"
-  apply_yaml https://storage.googleapis.com/knative-releases/serving/previous/v0.9.0/serving-post-1.14.yaml
+  curl -Ls https://storage.googleapis.com/knative-releases/serving/previous/v0.9.0/serving-post-1.14.yaml | apply_yaml
 
   echo "Installing riff Knative Runtime"
-  apply_yaml https://storage.googleapis.com/projectriff/riff-system/snapshots/riff-knative-${slug}.yaml
+  if [ $MODE = "push" ]; then
+    curl -Ls https://storage.googleapis.com/projectriff/riff-system/snapshots/riff-knative-${slug}.yaml | apply_yaml
+  elif [ $MODE = "pull_request" ]; then
+    ko resolve -f config/riff-knative.yaml | apply_yaml
+  fi
 elif [ $RUNTIME = "streaming" ]; then
   echo "Streaming runtime is not implemented yet"
   exit 1
