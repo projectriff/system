@@ -9,7 +9,7 @@ metadata:
     rbac.authorization.k8s.io/aggregate-to-edit: "true"
 rules:
 - apiGroups:
-  - core.knative.dev
+  - core.projectriff.io
   resources:
   - "*"
   verbs:
@@ -31,7 +31,7 @@ metadata:
     rbac.authorization.k8s.io/aggregate-to-view: "true"
 rules:
 - apiGroups:
-  - core.knative.dev
+  - core.projectriff.io
   resources:
   - "*"
   verbs:

@@ -627,7 +627,7 @@ metadata:
   name: riff-build-readonly-role
 rules:
 - apiGroups:
-  - build.knative.dev
+  - build.projectriff.io
   resources:
   - '*'
   verbs:
@@ -645,7 +645,7 @@ metadata:
   name: riff-build-role
 rules:
 - apiGroups:
-  - build.knative.dev
+  - build.projectriff.io
   resources:
   - '*'
   verbs:

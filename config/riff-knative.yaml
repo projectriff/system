@@ -4391,7 +4391,7 @@ metadata:
   name: riff-knative-readonly-role
 rules:
 - apiGroups:
-  - knative.knative.dev
+  - knative.projectriff.io
   resources:
   - '*'
   verbs:
@@ -4409,7 +4409,7 @@ metadata:
   name: riff-knative-role
 rules:
 - apiGroups:
-  - knative.knative.dev
+  - knative.projectriff.io
   resources:
   - '*'
   verbs:

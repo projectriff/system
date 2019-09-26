@@ -559,7 +559,7 @@ metadata:
   name: riff-streaming-readonly-role
 rules:
 - apiGroups:
-  - streaming.knative.dev
+  - streaming.projectriff.io
   resources:
   - '*'
   verbs:
@@ -577,7 +577,7 @@ metadata:
   name: riff-streaming-role
 rules:
 - apiGroups:
-  - streaming.knative.dev
+  - streaming.projectriff.io
   resources:
   - '*'
   verbs:
