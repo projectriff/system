@@ -14,38 +14,19 @@ readonly tiller_namespace=kube-system
 
 source ${FATS_DIR}/.configure.sh
 
-retry() {
-  local result=0
-  local count=1
-  while [ $count -le 3 ]; do
-    [ $result -ne 0 ] && {
-      echo -e "\n${ANSI_RED}The command \"$@\" failed. Retrying, $count of 3.${ANSI_RESET}\n" >&2
-    }
-    # ! { } ignores set -e, see https://stackoverflow.com/a/4073372
-    ! { "$@"; result=$?; }
-    [ $result -eq 0 ] && break
-    count=$(($count + 1))
-    sleep 1
-  done
-    [ $count -gt 3 ] && {
-      echo -e "\n${ANSI_RED}The command \"$@\" failed 3 times.${ANSI_RESET}\n" >&2
-    }
-  return $result
-}
-
-apply_yaml() {
-  local tmpfile=$(mktemp)
-  
-  if [ $CLUSTER = "minikube" ]; then
-    ytt --ignore-unknown-comments -f .github/overlays/ -f - > $tmpfile
-  else
-    cat > $tmpfile
-  fi
-  retry kubectl apply -f $tmpfile
-  rm $tmpfile
-}
-
 export KO_DOCKER_REPO=$(fats_image_repo '#' | cut -d '#' -f 1 | sed 's|/$||g')
+
+if [ $(kubectl get nodes -oname | wc -l) = "1" ]; then
+  echo "Elimiate pod resource requests"
+  kubectl create namespace cert-manager
+  kubectl label namespace cert-manager certmanager.k8s.io/disable-validation=true
+  # TODO remove --validate=false once on k8s 1.13+
+  kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.10.0/cert-manager.yaml --validate=false
+  wait_pod_selector_ready app.kubernetes.io/name=webhook cert-manager
+  wait_pod_selector_ready app.kubernetes.io/name=cainjector cert-manager
+  kubectl apply -f https://storage.googleapis.com/projectriff/no-resource-requests-webhook/no-resource-requests-webhook.yaml --validate=false
+  wait_pod_selector_ready app=webhook no-resource-requests
+fi
 
 echo "Initialize Helm"
 kubectl create serviceaccount ${tiller_service_account} -n ${tiller_namespace}
@@ -56,23 +37,23 @@ helm repo add projectriff https://projectriff.storage.googleapis.com/charts/rele
 helm repo update
 
 echo "Installing Knative Build"
-curl -Ls https://storage.googleapis.com/knative-releases/build/previous/v0.7.0/build.yaml | apply_yaml
+kubectl apply -f https://storage.googleapis.com/knative-releases/build/previous/v0.7.0/build.yaml
 
 echo "Installing riff Build"
 if [ $MODE = "push" ]; then
-  curl -Ls https://storage.googleapis.com/projectriff/riff-system/snapshots/riff-build-${slug}.yaml | apply_yaml
+  kubectl apply -f https://storage.googleapis.com/projectriff/riff-system/snapshots/riff-build-${slug}.yaml
 elif [ $MODE = "pull_request" ]; then
-  ko resolve -f config/riff-build.yaml | apply_yaml
+  ko apply -f config/riff-build.yaml
 fi
-curl -Ls https://storage.googleapis.com/projectriff/riff-buildtemplate/riff-application-clusterbuildtemplate.yaml | apply_yaml
-curl -Ls https://storage.googleapis.com/projectriff/riff-buildtemplate/riff-function-clusterbuildtemplate.yaml | apply_yaml
+kubectl apply -f https://storage.googleapis.com/projectriff/riff-buildtemplate/riff-application-clusterbuildtemplate.yaml
+kubectl apply -f https://storage.googleapis.com/projectriff/riff-buildtemplate/riff-function-clusterbuildtemplate.yaml
 
 if [ $RUNTIME = "core" ]; then
   echo "Installing riff Core Runtime"
   if [ $MODE = "push" ]; then
-    curl -Ls https://storage.googleapis.com/projectriff/riff-system/snapshots/riff-core-${slug}.yaml | apply_yaml
+    kubectl apply -f https://storage.googleapis.com/projectriff/riff-system/snapshots/riff-core-${slug}.yaml
   elif [ $MODE = "pull_request" ]; then
-    ko resolve -f config/riff-core.yaml | apply_yaml
+    ko apply -f config/riff-core.yaml
   fi
 elif [ $RUNTIME = "knative" ]; then
   echo "Installing Istio"
@@ -81,13 +62,13 @@ elif [ $RUNTIME = "knative" ]; then
   wait_for_ingress_ready 'istio-ingressgateway' 'istio-system'
   
   echo "Installing Knative Serving"
-  curl -Ls https://storage.googleapis.com/knative-releases/serving/previous/v0.9.0/serving-post-1.14.yaml | apply_yaml
+  kubectl apply -f https://storage.googleapis.com/knative-releases/serving/previous/v0.9.0/serving-post-1.14.yaml
 
   echo "Installing riff Knative Runtime"
   if [ $MODE = "push" ]; then
-    curl -Ls https://storage.googleapis.com/projectriff/riff-system/snapshots/riff-knative-${slug}.yaml | apply_yaml
+    kubectl apply -f https://storage.googleapis.com/projectriff/riff-system/snapshots/riff-knative-${slug}.yaml
   elif [ $MODE = "pull_request" ]; then
-    ko resolve -f config/riff-knative.yaml | apply_yaml
+    ko apply -f config/riff-knative.yaml
   fi
 elif [ $RUNTIME = "streaming" ]; then
   echo "Streaming runtime is not implemented yet"
