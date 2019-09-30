@@ -16,7 +16,7 @@ source ${FATS_DIR}/.configure.sh
 
 export KO_DOCKER_REPO=$(fats_image_repo '#' | cut -d '#' -f 1 | sed 's|/$||g')
 
-if [ $CLUSTER = "minikube" ]; then
+if [ $(kubectl get nodes -oname | wc -l) = "1" ]; then
   echo "Elimiate pod resource requests"
   kubectl create namespace cert-manager
   kubectl label namespace cert-manager certmanager.k8s.io/disable-validation=true
