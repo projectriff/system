@@ -20,11 +20,11 @@ if [ $(kubectl get nodes -oname | wc -l) = "1" ]; then
   echo "Elimiate pod resource requests"
   kubectl create namespace cert-manager
   kubectl label namespace cert-manager certmanager.k8s.io/disable-validation=true
-  # TODO remove --validate=false once on k8s 1.13+
-  kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.10.0/cert-manager.yaml --validate=false
-  wait_pod_selector_ready app.kubernetes.io/name=webhook cert-manager
+  kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.10.1/cert-manager.yaml
+  wait_pod_selector_ready app.kubernetes.io/name=cert-manager cert-manager
   wait_pod_selector_ready app.kubernetes.io/name=cainjector cert-manager
-  kubectl apply -f https://storage.googleapis.com/projectriff/no-resource-requests-webhook/no-resource-requests-webhook.yaml --validate=false
+  wait_pod_selector_ready app.kubernetes.io/name=webhook cert-manager
+  fats_retry kubectl apply -f https://storage.googleapis.com/projectriff/no-resource-requests-webhook/no-resource-requests-webhook.yaml
   wait_pod_selector_ready app=webhook no-resource-requests
 fi
 
@@ -37,7 +37,7 @@ helm repo add projectriff https://projectriff.storage.googleapis.com/charts/rele
 helm repo update
 
 echo "Installing kpack"
-kubectl apply -f https://storage.googleapis.com/projectriff/internal/kpack/kpack-pre.yaml
+kubectl apply -f https://storage.googleapis.com/projectriff/internal/kpack/kpack-0.0.5-snapshot-5a4e635d.yaml
 
 echo "Installing riff Build"
 if [ $MODE = "push" ]; then

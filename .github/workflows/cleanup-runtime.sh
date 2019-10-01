@@ -17,7 +17,7 @@ kubectl delete -f https://storage.googleapis.com/projectriff/riff-buildtemplate/
 kubectl delete -f https://storage.googleapis.com/projectriff/riff-buildtemplate/riff-function-clusterbuilder.yaml
 
 echo "Cleanup kpack"
-kubectl delete -f https://storage.googleapis.com/projectriff/riff-buildtemplate/riff-function-clusterbuilder.yaml
+kubectl delete -f https://storage.googleapis.com/projectriff/internal/kpack/kpack-0.0.5-snapshot-5a4e635d.yaml
 
 if [ $RUNTIME = "core" ]; then
   echo "Cleanup riff Core Runtime"
