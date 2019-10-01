@@ -13,11 +13,11 @@ readonly tiller_namespace=kube-system
 echo "Cleanup riff Build"
 kubectl delete riff -n $NAMESPACE --all
 kubectl delete -f https://storage.googleapis.com/projectriff/riff-system/snapshots/riff-build-${slug}.yaml
-kubectl delete -f https://storage.googleapis.com/projectriff/riff-buildtemplate/riff-application-clusterbuildtemplate.yaml
-kubectl delete -f https://storage.googleapis.com/projectriff/riff-buildtemplate/riff-function-clusterbuildtemplate.yaml
+kubectl delete -f https://storage.googleapis.com/projectriff/riff-buildtemplate/riff-application-clusterbuilder.yaml
+kubectl delete -f https://storage.googleapis.com/projectriff/riff-buildtemplate/riff-function-clusterbuilder.yaml
 
-echo "Cleanup Knative Build"
-kubectl delete -f https://storage.googleapis.com/knative-releases/build/previous/v0.7.0/build.yaml
+echo "Cleanup kpack"
+kubectl delete -f https://storage.googleapis.com/projectriff/internal/kpack/kpack-0.0.5-snapshot-5a4e635d.yaml
 
 if [ $RUNTIME = "core" ]; then
   echo "Cleanup riff Core Runtime"

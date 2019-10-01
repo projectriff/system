@@ -20,11 +20,11 @@ if [ $(kubectl get nodes -oname | wc -l) = "1" ]; then
   echo "Elimiate pod resource requests"
   kubectl create namespace cert-manager
   kubectl label namespace cert-manager certmanager.k8s.io/disable-validation=true
-  # TODO remove --validate=false once on k8s 1.13+
-  kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.10.0/cert-manager.yaml --validate=false
-  wait_pod_selector_ready app.kubernetes.io/name=webhook cert-manager
+  fats_retry kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.10.1/cert-manager.yaml
+  wait_pod_selector_ready app.kubernetes.io/name=cert-manager cert-manager
   wait_pod_selector_ready app.kubernetes.io/name=cainjector cert-manager
-  kubectl apply -f https://storage.googleapis.com/projectriff/no-resource-requests-webhook/no-resource-requests-webhook.yaml --validate=false
+  wait_pod_selector_ready app.kubernetes.io/name=webhook cert-manager
+  fats_retry kubectl apply -f https://storage.googleapis.com/projectriff/no-resource-requests-webhook/no-resource-requests-webhook.yaml
   wait_pod_selector_ready app=webhook no-resource-requests
 fi
 
@@ -36,22 +36,22 @@ helm init --wait --service-account ${tiller_service_account}
 helm repo add projectriff https://projectriff.storage.googleapis.com/charts/releases
 helm repo update
 
-echo "Installing Knative Build"
-kubectl apply -f https://storage.googleapis.com/knative-releases/build/previous/v0.7.0/build.yaml
+echo "Installing kpack"
+fats_retry kubectl apply -f https://storage.googleapis.com/projectriff/internal/kpack/kpack-0.0.5-snapshot-5a4e635d.yaml
 
 echo "Installing riff Build"
 if [ $MODE = "push" ]; then
-  kubectl apply -f https://storage.googleapis.com/projectriff/riff-system/snapshots/riff-build-${slug}.yaml
+  fats_retry kubectl apply -f https://storage.googleapis.com/projectriff/riff-system/snapshots/riff-build-${slug}.yaml
 elif [ $MODE = "pull_request" ]; then
   ko apply -f config/riff-build.yaml
 fi
-kubectl apply -f https://storage.googleapis.com/projectriff/riff-buildtemplate/riff-application-clusterbuildtemplate.yaml
-kubectl apply -f https://storage.googleapis.com/projectriff/riff-buildtemplate/riff-function-clusterbuildtemplate.yaml
+fats_retry kubectl apply -f https://storage.googleapis.com/projectriff/riff-buildtemplate/riff-application-clusterbuilder.yaml
+fats_retry kubectl apply -f https://storage.googleapis.com/projectriff/riff-buildtemplate/riff-function-clusterbuilder.yaml
 
 if [ $RUNTIME = "core" ]; then
   echo "Installing riff Core Runtime"
   if [ $MODE = "push" ]; then
-    kubectl apply -f https://storage.googleapis.com/projectriff/riff-system/snapshots/riff-core-${slug}.yaml
+    fats_retry kubectl apply -f https://storage.googleapis.com/projectriff/riff-system/snapshots/riff-core-${slug}.yaml
   elif [ $MODE = "pull_request" ]; then
     ko apply -f config/riff-core.yaml
   fi
@@ -62,11 +62,11 @@ elif [ $RUNTIME = "knative" ]; then
   wait_for_ingress_ready 'istio-ingressgateway' 'istio-system'
   
   echo "Installing Knative Serving"
-  kubectl apply -f https://storage.googleapis.com/knative-releases/serving/previous/v0.9.0/serving-post-1.14.yaml
+  fats_retry kubectl apply -f https://storage.googleapis.com/knative-releases/serving/previous/v0.9.0/serving-post-1.14.yaml
 
   echo "Installing riff Knative Runtime"
   if [ $MODE = "push" ]; then
-    kubectl apply -f https://storage.googleapis.com/projectriff/riff-system/snapshots/riff-knative-${slug}.yaml
+    fats_retry kubectl apply -f https://storage.googleapis.com/projectriff/riff-system/snapshots/riff-knative-${slug}.yaml
   elif [ $MODE = "pull_request" ]; then
     ko apply -f config/riff-knative.yaml
   fi

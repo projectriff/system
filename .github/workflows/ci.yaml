@@ -132,7 +132,7 @@ jobs:
           echo "##[set-env name=NAMESPACE]system-${job}-${{ matrix.runtime }}"
           echo "##[set-env name=FATS_DIR]fats"
           echo "##[set-env name=FATS_REPO]projectriff/fats"
-          echo "##[set-env name=FATS_REFSPEC]ae6a55cbf8397747a26e245b770e001a6d427813" # master as of 2019-10-01
+          echo "##[set-env name=FATS_REFSPEC]26b7e2251a78ed452d5cf99e02b41658e9aafa77" # master as of 2019-10-01
         env:
           GCLOUD_CLIENT_SECRET: ${{ secrets.GCLOUD_CLIENT_SECRET }}
       - name: 'Fetch FATS'
@@ -164,6 +164,10 @@ jobs:
           echo "RIFF:"
           echo ""
           kubectl get riff --all-namespaces || true
+          echo ""
+          echo "KPACK:"
+          echo ""
+          kubectl get clusterbuilders.build.pivotal.io,builders.build.pivotal.io,images.build.pivotal.io,sourceresolvers.build.pivotal.io,builds.build.pivotal.io --all-namespaces || true
           echo ""
           echo "KNATIVE:"
           echo ""
@@ -198,8 +202,8 @@ jobs:
       - name: 'Dump riff Streaming Runtime logs'
         run: kubectl logs -n riff-system -l component=streaming.projectriff.io,control-plane=controller-manager -c manager --tail 10000 || true
         if: failure()
-      - name: 'Dump Knative Build logs'
-        run: kubectl logs -n knative-build -l app=build-controller --tail 10000 || true
+      - name: 'Dump kpack logs'
+        run: kubectl logs -n kpack -l app=kpack-controller --tail 10000 || true
         if: failure()
       - name: 'Dump Knative Serving logs'
         run: kubectl logs -n knative-serving -l app=controller --tail 10000 || true

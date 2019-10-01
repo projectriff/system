@@ -1,6 +1,8 @@
 resources:
 - role.yaml
 - role_binding.yaml
+- public_builders_role.yaml
+- public_builders_role_binding.yaml
 - aggregated_roles.yaml
 - leader_election_role.yaml
 - leader_election_role_binding.yaml

@@ -7,9 +7,17 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
-  - build.knative.dev
+  - build.pivotal.io
   resources:
-  - builds
+  - clusterbuilders
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - build.pivotal.io
+  resources:
+  - images
   verbs:
   - create
   - delete
@@ -92,8 +100,12 @@ rules:
   resources:
   - configmaps
   verbs:
+  - create
+  - delete
   - get
   - list
+  - patch
+  - update
   - watch
 - apiGroups:
   - ""

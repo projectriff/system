@@ -55,36 +55,36 @@ func (r *ContainerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			// on deleted requests.
 			return ctrl.Result{}, nil
 		}
-		log.Error(err, "unable to fetch container")
+		log.Error(err, "unable to fetch Container")
 		return ctrl.Result{}, err
 	}
+	container := *(originalContainer.DeepCopy())
 
-	container := originalContainer.DeepCopy()
 	container.SetDefaults(ctx)
 	container.Status.InitializeConditions()
 
-	result, err := r.reconcile(ctx, log, container)
+	result, err := r.reconcile(ctx, log, &container)
 
 	// check if status has changed before updating, unless requeued
 	if !result.Requeue && !equality.Semantic.DeepEqual(container.Status, originalContainer.Status) {
 		// update status
-		log.Info("updating container status", "container", container.Name,
-			"status", container.Status)
-		if updateErr := r.Status().Update(ctx, container); updateErr != nil {
+		if updateErr := r.Status().Update(ctx, &container); updateErr != nil {
 			log.Error(updateErr, "unable to update Container status", "container", container)
 			return ctrl.Result{Requeue: true}, updateErr
 		}
 	}
+
+	// return original reconcile result
 	return result, err
 }
 
 func (r *ContainerReconciler) reconcile(ctx context.Context, log logr.Logger, container *buildv1alpha1.Container) (ctrl.Result, error) {
-	log.V(1).Info("reconciling container", "container", container.Name)
-	log.V(5).Info("reconciling container", "spec", container.Spec, "labels", container.Labels)
 	if container.GetDeletionTimestamp() != nil {
 		return ctrl.Result{}, nil
 	}
-	targetImage, err := r.resolveTargetImage(ctx, container)
+
+	// resolve target image
+	targetImage, err := r.resolveTargetImage(ctx, log, container)
 	if err != nil {
 		if err == errMissingDefaultPrefix {
 			container.Status.MarkImageDefaultPrefixMissing(err.Error())
@@ -93,18 +93,18 @@ func (r *ContainerReconciler) reconcile(ctx context.Context, log logr.Logger, co
 		}
 		return ctrl.Result{}, err
 	}
-	log.V(1).Info("resolved target image", "container", container.Name, "image", targetImage)
-	container.Status.TargetImage = targetImage
-	// TODO: resolve the digest for the latest image
-	container.Status.LatestImage = targetImage
-
 	container.Status.MarkImageResolved()
+	container.Status.TargetImage = targetImage
+
+	// TODO resolve to a digest
+	container.Status.LatestImage = container.Status.TargetImage
+
 	container.Status.ObservedGeneration = container.Generation
 
 	return ctrl.Result{}, nil
 }
 
-func (r *ContainerReconciler) resolveTargetImage(ctx context.Context, container *buildv1alpha1.Container) (string, error) {
+func (r *ContainerReconciler) resolveTargetImage(ctx context.Context, log logr.Logger, container *buildv1alpha1.Container) (string, error) {
 	if !strings.HasPrefix(container.Spec.Image, "_") {
 		return container.Spec.Image, nil
 	}

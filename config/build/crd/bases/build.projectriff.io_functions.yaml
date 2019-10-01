@@ -96,10 +96,6 @@ spec:
               description: BuildCacheName is the name of the PersistentVolumeClaim
                 used as a cache for intermediate build resources.
               type: string
-            buildName:
-              description: BuildName is the name of the Knative Build backing this
-                build.
-              type: string
             conditions:
               description: Conditions the latest available observations of a resource's
                 current state.
@@ -135,6 +131,10 @@ spec:
                 - type
                 type: object
               type: array
+            kpackImageName:
+              description: KpackImageName is the name of the kpack Image backing this
+                build.
+              type: string
             latestImage:
               description: LatestImage is the most recent image for this build.
               type: string

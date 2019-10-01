@@ -22,17 +22,17 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/projectriff/system/pkg/apis"
-	knbuildv1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/knative/build/v1alpha1"
+	kpackbuildv1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/kpack/build/v1alpha1"
 )
 
 const (
-	FunctionConditionReady                             = apis.ConditionReady
-	FunctionConditionBuildSucceeded apis.ConditionType = "BuildSucceeded"
-	FunctionConditionImageResolved  apis.ConditionType = "ImageResolved"
+	FunctionConditionReady                              = apis.ConditionReady
+	FunctionConditionKpackImageReady apis.ConditionType = "KpackImageReady"
+	FunctionConditionImageResolved   apis.ConditionType = "ImageResolved"
 )
 
 var functionCondSet = apis.NewLivingConditionSet(
-	FunctionConditionBuildSucceeded,
+	FunctionConditionKpackImageReady,
 	FunctionConditionImageResolved,
 )
 
@@ -56,14 +56,14 @@ func (fs *FunctionStatus) InitializeConditions() {
 	functionCondSet.Manage(fs).InitializeConditions()
 }
 
-func (fs *FunctionStatus) MarkBuildNotOwned() {
-	functionCondSet.Manage(fs).MarkFalse(FunctionConditionBuildSucceeded, "NotOwned",
-		fmt.Sprintf("There is an existing Build %q that we do not own.", fs.BuildName))
+func (fs *FunctionStatus) MarkKpackImageNotOwned() {
+	functionCondSet.Manage(fs).MarkFalse(FunctionConditionKpackImageReady, "NotOwned",
+		fmt.Sprintf("There is an existing kpack Image %q that we do not own.", fs.KpackImageName))
 }
 
 func (fs *FunctionStatus) MarkBuildNotUsed() {
-	fs.BuildName = ""
-	functionCondSet.Manage(fs).MarkTrue(FunctionConditionBuildSucceeded)
+	fs.KpackImageName = ""
+	functionCondSet.Manage(fs).MarkTrue(FunctionConditionKpackImageReady)
 }
 
 func (fs *FunctionStatus) MarkImageDefaultPrefixMissing(message string) {
@@ -78,17 +78,17 @@ func (fs *FunctionStatus) MarkImageResolved() {
 	functionCondSet.Manage(fs).MarkTrue(FunctionConditionImageResolved)
 }
 
-func (fs *FunctionStatus) PropagateBuildStatus(bs *knbuildv1alpha1.BuildStatus) {
-	sc := bs.GetCondition(knbuildv1alpha1.BuildSucceeded)
+func (fs *FunctionStatus) PropagateKpackImageStatus(is *kpackbuildv1alpha1.ImageStatus) {
+	sc := is.GetCondition(apis.ConditionReady)
 	if sc == nil {
 		return
 	}
 	switch {
 	case sc.Status == corev1.ConditionUnknown:
-		functionCondSet.Manage(fs).MarkUnknown(FunctionConditionBuildSucceeded, sc.Reason, sc.Message)
+		functionCondSet.Manage(fs).MarkUnknown(FunctionConditionKpackImageReady, sc.Reason, sc.Message)
 	case sc.Status == corev1.ConditionTrue:
-		functionCondSet.Manage(fs).MarkTrue(FunctionConditionBuildSucceeded)
+		functionCondSet.Manage(fs).MarkTrue(FunctionConditionKpackImageReady)
 	case sc.Status == corev1.ConditionFalse:
-		functionCondSet.Manage(fs).MarkFalse(FunctionConditionBuildSucceeded, sc.Reason, sc.Message)
+		functionCondSet.Manage(fs).MarkFalse(FunctionConditionKpackImageReady, sc.Reason, sc.Message)
 	}
 }

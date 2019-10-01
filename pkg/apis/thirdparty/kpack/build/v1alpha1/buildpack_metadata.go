@@ -1,5 +1,5 @@
 /*
-Copyright 2019 the original author or authors.
+Copyright 2019 The original author or authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,18 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package names
+package v1alpha1
 
-import (
-	"fmt"
+type BuildpackMetadataList []BuildpackMetadata
 
-	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
-)
-
-func FunctionBuild(f *buildv1alpha1.Function) string {
-	return fmt.Sprintf("%s-function", f.Name)
-}
-
-func ApplicationBuild(a *buildv1alpha1.Application) string {
-	return fmt.Sprintf("%s-application", a.Name)
+type BuildpackMetadata struct {
+	ID      string `json:"key"`
+	Version string `json:"version"`
 }
