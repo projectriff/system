@@ -123,7 +123,7 @@ jobs:
             echo "##[set-env name=CLUSTER]gke"
             echo "##[set-env name=REGISTRY]gcr"
           else
-            echo "##[set-env name=CLUSTER]minikube"
+            echo "##[set-env name=CLUSTER]kind"
             echo "##[set-env name=REGISTRY]docker-daemon"
           fi
           echo "##[set-env name=MODE]${{ github.event_name }}"
@@ -132,7 +132,7 @@ jobs:
           echo "##[set-env name=NAMESPACE]system-${job}-${{ matrix.runtime }}"
           echo "##[set-env name=FATS_DIR]fats"
           echo "##[set-env name=FATS_REPO]projectriff/fats"
-          echo "##[set-env name=FATS_REFSPEC]963813cd508045459d9f48e664a56b553a322a85" # master as of 2019-09-19
+          echo "##[set-env name=FATS_REFSPEC]ae6a55cbf8397747a26e245b770e001a6d427813" # master as of 2019-10-01
         env:
           GCLOUD_CLIENT_SECRET: ${{ secrets.GCLOUD_CLIENT_SECRET }}
       - name: 'Fetch FATS'
