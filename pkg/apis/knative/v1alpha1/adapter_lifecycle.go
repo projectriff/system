@@ -20,6 +20,10 @@ import (
 	apis "github.com/projectriff/system/pkg/apis"
 )
 
+var (
+	_ apis.Resource = (*Adapter)(nil)
+)
+
 const (
 	AdapterConditionReady                          = apis.ConditionReady
 	AdapterConditionBuildReady  apis.ConditionType = "BuildReady"
@@ -30,6 +34,10 @@ var adapterCondSet = apis.NewLivingConditionSet(
 	AdapterConditionBuildReady,
 	AdapterConditionTargetFound,
 )
+
+func (a *Adapter) GetStatus() apis.ResourceStatus {
+	return &a.Status
+}
 
 func (as *AdapterStatus) GetObservedGeneration() int64 {
 	return as.ObservedGeneration

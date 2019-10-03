@@ -20,6 +20,10 @@ import (
 	"github.com/projectriff/system/pkg/apis"
 )
 
+var (
+	_ apis.Resource = (*Container)(nil)
+)
+
 const (
 	ContainerConditionReady                            = apis.ConditionReady
 	ContainerConditionImageResolved apis.ConditionType = "ImageResolved"
@@ -28,6 +32,10 @@ const (
 var containerCondSet = apis.NewLivingConditionSet(
 	ContainerConditionImageResolved,
 )
+
+func (c *Container) GetStatus() apis.ResourceStatus {
+	return &c.Status
+}
 
 func (cs *ContainerStatus) GetObservedGeneration() int64 {
 	return cs.ObservedGeneration

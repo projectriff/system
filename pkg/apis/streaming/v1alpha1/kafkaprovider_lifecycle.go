@@ -23,6 +23,10 @@ import (
 	"github.com/projectriff/system/pkg/apis"
 )
 
+var (
+	_ apis.Resource = (*KafkaProvider)(nil)
+)
+
 const (
 	KafkaProviderConditionReady                                         = apis.ConditionReady
 	KafkaProviderConditionLiiklusDeploymentReady     apis.ConditionType = "LiiklusDeploymentReady"
@@ -37,6 +41,10 @@ var providerCondSet = apis.NewLivingConditionSet(
 	KafkaProviderConditionProvisionerDeploymentReady,
 	KafkaProviderConditionProvisionerServiceReady,
 )
+
+func (p *KafkaProvider) GetStatus() apis.ResourceStatus {
+	return &p.Status
+}
 
 func (ps *KafkaProviderStatus) GetObservedGeneration() int64 {
 	return ps.ObservedGeneration

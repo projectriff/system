@@ -23,6 +23,10 @@ import (
 	servingv1 "github.com/projectriff/system/pkg/apis/thirdparty/knative/serving/v1"
 )
 
+var (
+	_ apis.Resource = (*Deployer)(nil)
+)
+
 const (
 	DeployerConditionReady                                 = apis.ConditionReady
 	DeployerConditionConfigurationReady apis.ConditionType = "ConfigurationReady"
@@ -34,8 +38,12 @@ var deployerCondSet = apis.NewLivingConditionSet(
 	DeployerConditionRouteReady,
 )
 
-func (cs *DeployerStatus) GetObservedGeneration() int64 {
-	return cs.ObservedGeneration
+func (d *Deployer) GetStatus() apis.ResourceStatus {
+	return &d.Status
+}
+
+func (ds *DeployerStatus) GetObservedGeneration() int64 {
+	return ds.ObservedGeneration
 }
 
 func (ds *DeployerStatus) IsReady() bool {

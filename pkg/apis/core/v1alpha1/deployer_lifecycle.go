@@ -23,6 +23,10 @@ import (
 	apis "github.com/projectriff/system/pkg/apis"
 )
 
+var (
+	_ apis.Resource = (*Deployer)(nil)
+)
+
 const (
 	DeployerConditionReady                              = apis.ConditionReady
 	DeployerConditionDeploymentReady apis.ConditionType = "DeploymentReady"
@@ -33,6 +37,10 @@ var deployerCondSet = apis.NewLivingConditionSet(
 	DeployerConditionDeploymentReady,
 	DeployerConditionServiceReady,
 )
+
+func (d *Deployer) GetStatus() apis.ResourceStatus {
+	return &d.Status
+}
 
 func (ds *DeployerStatus) GetObservedGeneration() int64 {
 	return ds.ObservedGeneration
