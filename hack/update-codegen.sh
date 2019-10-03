@@ -20,3 +20,10 @@ bash "${CODEGEN_PKG}"/generate-groups.sh "client" \
   "build:v1alpha1 core:v1alpha1 knative:v1alpha1 streaming:v1alpha1" \
   --output-base "${TMP_DIR}/src" \
   --go-header-file "${SCRIPT_ROOT}"/hack/boilerplate.go.txt
+
+# patch generated files
+find='config.NegotiatedSerializer = scheme.Codecs.WithoutConversion()'
+replace='config.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: scheme.Codecs}'
+find pkg/client -type f -name "*.go" -print0 | xargs -0 sed -i '' -e "s|${find}|${replace}|g"
+
+make fmt
