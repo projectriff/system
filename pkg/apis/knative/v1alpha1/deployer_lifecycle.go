@@ -34,8 +34,8 @@ var deployerCondSet = apis.NewLivingConditionSet(
 	DeployerConditionRouteReady,
 )
 
-func (cs *DeployerStatus) GetObservedGeneration() int64 {
-	return cs.ObservedGeneration
+func (ds *DeployerStatus) GetObservedGeneration() int64 {
+	return ds.ObservedGeneration
 }
 
 func (ds *DeployerStatus) IsReady() bool {

@@ -24,7 +24,6 @@ import (
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 // +kubebuilder:object:root=true
-// +genclient:nonNamespaced
 
 // ClusterBuildTemplate is a template that can used to easily create Builds.
 type ClusterBuildTemplate struct {
@@ -35,7 +34,6 @@ type ClusterBuildTemplate struct {
 }
 
 // +kubebuilder:object:root=true
-// +genclient:nonNamespaced
 
 // ClusterBuildTemplateList contains a list of ClusterBuildTemplate
 type ClusterBuildTemplateList struct {

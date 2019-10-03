@@ -16,7 +16,6 @@ limitations under the License.
 
 // Package v1alpha1 contains API Schema definitions for the build v1alpha1 API group
 // +kubebuilder:object:generate=true
-// +groupName=build.projectriff.io
 package v1alpha1
 
 import (
@@ -34,3 +33,6 @@ var (
 	// AddToScheme adds the types in this group-version to the given scheme.
 	AddToScheme = SchemeBuilder.AddToScheme
 )
+
+// compatibility with k8s.io/code-generator
+var SchemeGroupVersion = GroupVersion

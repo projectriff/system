@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	apis "github.com/projectriff/system/pkg/apis"
 )
@@ -27,6 +28,10 @@ import (
 
 var (
 	AdapterLabelKey = GroupVersion.Group + "/adapter"
+)
+
+var (
+	_ apis.Resource = (*Adapter)(nil)
 )
 
 // AdapterSpec defines the desired state of Adapter
@@ -68,6 +73,7 @@ type AdapterStatus struct {
 // +kubebuilder:resource:categories="riff"
 // +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
 // +kubebuilder:printcolumn:name="Reason",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].reason`
+// +genclient
 
 // Adapter is the Schema for the adapters API
 type Adapter struct {
@@ -76,6 +82,14 @@ type Adapter struct {
 
 	Spec   AdapterSpec   `json:"spec,omitempty"`
 	Status AdapterStatus `json:"status,omitempty"`
+}
+
+func (*Adapter) GetGroupVersionKind() schema.GroupVersionKind {
+	return SchemeGroupVersion.WithKind("Adapter")
+}
+
+func (a *Adapter) GetStatus() apis.ResourceStatus {
+	return &a.Status
 }
 
 // +kubebuilder:object:root=true

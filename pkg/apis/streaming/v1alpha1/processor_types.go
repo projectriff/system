@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/projectriff/system/pkg/apis"
 )
@@ -27,6 +28,10 @@ import (
 
 var (
 	ProcessorLabelKey = GroupVersion.Group + "/processor"
+)
+
+var (
+	_ apis.Resource = (*Processor)(nil)
 )
 
 // ProcessorSpec defines the desired state of Processor
@@ -59,6 +64,7 @@ type ProcessorStatus struct {
 // +kubebuilder:resource:categories="riff"
 // +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
 // +kubebuilder:printcolumn:name="Reason",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].reason`
+// +genclient
 
 // Processor is the Schema for the processors API
 type Processor struct {
@@ -67,6 +73,14 @@ type Processor struct {
 
 	Spec   ProcessorSpec   `json:"spec,omitempty"`
 	Status ProcessorStatus `json:"status,omitempty"`
+}
+
+func (*Processor) GetGroupVersionKind() schema.GroupVersionKind {
+	return SchemeGroupVersion.WithKind("Processor")
+}
+
+func (p *Processor) GetStatus() apis.ResourceStatus {
+	return &p.Status
 }
 
 // +kubebuilder:object:root=true

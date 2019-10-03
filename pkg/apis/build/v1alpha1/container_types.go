@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	apis "github.com/projectriff/system/pkg/apis"
 )
@@ -27,6 +28,10 @@ import (
 
 var (
 	ContainerLabelKey = GroupVersion.Group + "/container"
+)
+
+var (
+	_ apis.Resource = (*Container)(nil)
 )
 
 // ContainerSpec defines the desired state of Container
@@ -54,6 +59,7 @@ type ContainerStatus struct {
 // +kubebuilder:resource:categories="riff"
 // +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
 // +kubebuilder:printcolumn:name="Reason",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].reason`
+// +genclient
 
 // Container is the Schema for the containers API
 type Container struct {
@@ -68,10 +74,15 @@ func (c *Container) GetImage() string {
 	return c.Spec.Image
 }
 
+func (*Container) GetGroupVersionKind() schema.GroupVersionKind {
+	return SchemeGroupVersion.WithKind("Container")
+}
+
+func (c *Container) GetStatus() apis.ResourceStatus {
+	return &c.Status
+}
+
 // +kubebuilder:object:root=true
-// +kubebuilder:subresource:status
-// +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
-// +kubebuilder:printcolumn:name="Reason",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].reason`
 
 // ContainerList contains a list of Container
 type ContainerList struct {

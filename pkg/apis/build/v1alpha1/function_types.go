@@ -19,6 +19,7 @@ package v1alpha1
 import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	apis "github.com/projectriff/system/pkg/apis"
 )
@@ -28,6 +29,10 @@ import (
 
 var (
 	FunctionLabelKey = GroupVersion.Group + "/function"
+)
+
+var (
+	_ apis.Resource = (*Function)(nil)
 )
 
 // FunctionSpec defines the desired state of Function
@@ -71,6 +76,7 @@ type FunctionStatus struct {
 // +kubebuilder:resource:categories="riff"
 // +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
 // +kubebuilder:printcolumn:name="Reason",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].reason`
+// +genclient
 
 // Function is the Schema for the functions API
 type Function struct {
@@ -83,6 +89,14 @@ type Function struct {
 
 func (f *Function) GetImage() string {
 	return f.Spec.Image
+}
+
+func (*Function) GetGroupVersionKind() schema.GroupVersionKind {
+	return SchemeGroupVersion.WithKind("Function")
+}
+
+func (f *Function) GetStatus() apis.ResourceStatus {
+	return &f.Status
 }
 
 // +kubebuilder:object:root=true
