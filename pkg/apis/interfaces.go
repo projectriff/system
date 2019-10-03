@@ -16,6 +16,8 @@
 
 package apis
 
+import "context"
+
 type Resource interface {
 	GetStatus() ResourceStatus
 }
@@ -25,4 +27,8 @@ type ResourceStatus interface {
 	GetCondition(t ConditionType) *Condition
 	GetReadyConditionType() ConditionType
 	GetObservedGeneration() int64
+}
+
+type Defaultable interface {
+	SetDefaults(context.Context)
 }
