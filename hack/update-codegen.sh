@@ -15,7 +15,7 @@ export GOPATH=${GOPATH:-${TMP_DIR}}
 TMP_REPO_PATH="${TMP_DIR}/src/github.com/projectriff/system"
 mkdir -p "$(dirname "${TMP_REPO_PATH}")" && ln -s "${SCRIPT_ROOT}" "${TMP_REPO_PATH}"
 
-bash "${CODEGEN_PKG}"/generate-groups.sh "client,informer,lister" \
+bash "${CODEGEN_PKG}"/generate-groups.sh "client" \
   github.com/projectriff/system/pkg/client github.com/projectriff/system/pkg/apis \
   "build:v1alpha1 core:v1alpha1 knative:v1alpha1 streaming:v1alpha1" \
   --output-base "${TMP_DIR}/src" \

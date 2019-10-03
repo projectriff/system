@@ -62,6 +62,7 @@ type ApplicationStatus struct {
 // +kubebuilder:resource:categories="riff"
 // +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
 // +kubebuilder:printcolumn:name="Reason",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].reason`
+// +genclient
 
 // Application is the Schema for the applications API
 type Application struct {

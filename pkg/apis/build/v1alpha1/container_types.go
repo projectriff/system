@@ -54,6 +54,7 @@ type ContainerStatus struct {
 // +kubebuilder:resource:categories="riff"
 // +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
 // +kubebuilder:printcolumn:name="Reason",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].reason`
+// +genclient
 
 // Container is the Schema for the containers API
 type Container struct {
@@ -69,9 +70,6 @@ func (c *Container) GetImage() string {
 }
 
 // +kubebuilder:object:root=true
-// +kubebuilder:subresource:status
-// +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
-// +kubebuilder:printcolumn:name="Reason",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].reason`
 
 // ContainerList contains a list of Container
 type ContainerList struct {

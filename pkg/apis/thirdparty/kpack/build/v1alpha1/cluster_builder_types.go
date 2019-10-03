@@ -24,7 +24,6 @@ import (
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 // +kubebuilder:object:root=true
-// +genclient:nonNamespaced
 
 type ClusterBuilder struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -35,7 +34,6 @@ type ClusterBuilder struct {
 }
 
 // +kubebuilder:object:root=true
-// +genclient:nonNamespaced
 
 // ClusterBuilderList contains a list of ClusterBuilder
 type ClusterBuilderList struct {

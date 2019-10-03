@@ -64,6 +64,7 @@ func (a StreamAddress) String() string {
 // +kubebuilder:resource:categories="riff"
 // +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
 // +kubebuilder:printcolumn:name="Reason",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].reason`
+// +genclient
 
 // Stream is the Schema for the streams API
 type Stream struct {

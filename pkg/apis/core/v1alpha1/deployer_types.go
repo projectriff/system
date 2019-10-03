@@ -70,6 +70,7 @@ type DeployerStatus struct {
 // +kubebuilder:resource:categories="riff"
 // +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
 // +kubebuilder:printcolumn:name="Reason",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].reason`
+// +genclient
 
 // Deployer is the Schema for the deployers API
 type Deployer struct {

@@ -34,3 +34,6 @@ var (
 	// AddToScheme adds the types in this group-version to the given scheme.
 	AddToScheme = SchemeBuilder.AddToScheme
 )
+
+// compatibility with k8s.io/code-generator
+var SchemeGroupVersion = GroupVersion
