@@ -34,9 +34,9 @@ type FakeDeployers struct {
 	ns   string
 }
 
-var deployersResource = schema.GroupVersionResource{Group: "knative", Version: "v1alpha1", Resource: "deployers"}
+var deployersResource = schema.GroupVersionResource{Group: "knative.projectriff.io", Version: "v1alpha1", Resource: "deployers"}
 
-var deployersKind = schema.GroupVersionKind{Group: "knative", Version: "v1alpha1", Kind: "Deployer"}
+var deployersKind = schema.GroupVersionKind{Group: "knative.projectriff.io", Version: "v1alpha1", Kind: "Deployer"}
 
 // Get takes name of the deployer, and returns the corresponding deployer object, and an error if there is any.
 func (c *FakeDeployers) Get(name string, options v1.GetOptions) (result *v1alpha1.Deployer, err error) {

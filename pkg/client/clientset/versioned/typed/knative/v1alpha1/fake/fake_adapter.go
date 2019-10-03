@@ -34,9 +34,9 @@ type FakeAdapters struct {
 	ns   string
 }
 
-var adaptersResource = schema.GroupVersionResource{Group: "knative", Version: "v1alpha1", Resource: "adapters"}
+var adaptersResource = schema.GroupVersionResource{Group: "knative.projectriff.io", Version: "v1alpha1", Resource: "adapters"}
 
-var adaptersKind = schema.GroupVersionKind{Group: "knative", Version: "v1alpha1", Kind: "Adapter"}
+var adaptersKind = schema.GroupVersionKind{Group: "knative.projectriff.io", Version: "v1alpha1", Kind: "Adapter"}
 
 // Get takes name of the adapter, and returns the corresponding adapter object, and an error if there is any.
 func (c *FakeAdapters) Get(name string, options v1.GetOptions) (result *v1alpha1.Adapter, err error) {

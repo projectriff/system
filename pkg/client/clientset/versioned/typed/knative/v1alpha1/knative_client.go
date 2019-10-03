@@ -31,7 +31,7 @@ type KnativeV1alpha1Interface interface {
 	DeployersGetter
 }
 
-// KnativeV1alpha1Client is used to interact with features provided by the knative group.
+// KnativeV1alpha1Client is used to interact with features provided by the knative.projectriff.io group.
 type KnativeV1alpha1Client struct {
 	restClient rest.Interface
 }

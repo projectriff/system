@@ -34,9 +34,9 @@ type FakeKafkaProviders struct {
 	ns   string
 }
 
-var kafkaprovidersResource = schema.GroupVersionResource{Group: "streaming", Version: "v1alpha1", Resource: "kafkaproviders"}
+var kafkaprovidersResource = schema.GroupVersionResource{Group: "streaming.projectriff.io", Version: "v1alpha1", Resource: "kafkaproviders"}
 
-var kafkaprovidersKind = schema.GroupVersionKind{Group: "streaming", Version: "v1alpha1", Kind: "KafkaProvider"}
+var kafkaprovidersKind = schema.GroupVersionKind{Group: "streaming.projectriff.io", Version: "v1alpha1", Kind: "KafkaProvider"}
 
 // Get takes name of the kafkaProvider, and returns the corresponding kafkaProvider object, and an error if there is any.
 func (c *FakeKafkaProviders) Get(name string, options v1.GetOptions) (result *v1alpha1.KafkaProvider, err error) {

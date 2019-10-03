@@ -34,9 +34,9 @@ type FakeProcessors struct {
 	ns   string
 }
 
-var processorsResource = schema.GroupVersionResource{Group: "streaming", Version: "v1alpha1", Resource: "processors"}
+var processorsResource = schema.GroupVersionResource{Group: "streaming.projectriff.io", Version: "v1alpha1", Resource: "processors"}
 
-var processorsKind = schema.GroupVersionKind{Group: "streaming", Version: "v1alpha1", Kind: "Processor"}
+var processorsKind = schema.GroupVersionKind{Group: "streaming.projectriff.io", Version: "v1alpha1", Kind: "Processor"}
 
 // Get takes name of the processor, and returns the corresponding processor object, and an error if there is any.
 func (c *FakeProcessors) Get(name string, options v1.GetOptions) (result *v1alpha1.Processor, err error) {

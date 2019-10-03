@@ -34,9 +34,9 @@ type FakeStreams struct {
 	ns   string
 }
 
-var streamsResource = schema.GroupVersionResource{Group: "streaming", Version: "v1alpha1", Resource: "streams"}
+var streamsResource = schema.GroupVersionResource{Group: "streaming.projectriff.io", Version: "v1alpha1", Resource: "streams"}
 
-var streamsKind = schema.GroupVersionKind{Group: "streaming", Version: "v1alpha1", Kind: "Stream"}
+var streamsKind = schema.GroupVersionKind{Group: "streaming.projectriff.io", Version: "v1alpha1", Kind: "Stream"}
 
 // Get takes name of the stream, and returns the corresponding stream object, and an error if there is any.
 func (c *FakeStreams) Get(name string, options v1.GetOptions) (result *v1alpha1.Stream, err error) {

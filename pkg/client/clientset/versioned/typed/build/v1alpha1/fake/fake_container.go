@@ -34,9 +34,9 @@ type FakeContainers struct {
 	ns   string
 }
 
-var containersResource = schema.GroupVersionResource{Group: "build", Version: "v1alpha1", Resource: "containers"}
+var containersResource = schema.GroupVersionResource{Group: "build.projectriff.io", Version: "v1alpha1", Resource: "containers"}
 
-var containersKind = schema.GroupVersionKind{Group: "build", Version: "v1alpha1", Kind: "Container"}
+var containersKind = schema.GroupVersionKind{Group: "build.projectriff.io", Version: "v1alpha1", Kind: "Container"}
 
 // Get takes name of the container, and returns the corresponding container object, and an error if there is any.
 func (c *FakeContainers) Get(name string, options v1.GetOptions) (result *v1alpha1.Container, err error) {

@@ -32,7 +32,7 @@ type BuildV1alpha1Interface interface {
 	FunctionsGetter
 }
 
-// BuildV1alpha1Client is used to interact with features provided by the build group.
+// BuildV1alpha1Client is used to interact with features provided by the build.projectriff.io group.
 type BuildV1alpha1Client struct {
 	restClient rest.Interface
 }

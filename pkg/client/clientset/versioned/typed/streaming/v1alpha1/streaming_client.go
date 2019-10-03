@@ -32,7 +32,7 @@ type StreamingV1alpha1Interface interface {
 	StreamsGetter
 }
 
-// StreamingV1alpha1Client is used to interact with features provided by the streaming group.
+// StreamingV1alpha1Client is used to interact with features provided by the streaming.projectriff.io group.
 type StreamingV1alpha1Client struct {
 	restClient rest.Interface
 }

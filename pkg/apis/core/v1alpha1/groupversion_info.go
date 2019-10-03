@@ -16,7 +16,6 @@ limitations under the License.
 
 // Package v1alpha1 contains API Schema definitions for the core v1alpha1 API group
 // +kubebuilder:object:generate=true
-// +groupName=core.projectriff.io
 package v1alpha1
 
 import (

@@ -34,9 +34,9 @@ type FakeFunctions struct {
 	ns   string
 }
 
-var functionsResource = schema.GroupVersionResource{Group: "build", Version: "v1alpha1", Resource: "functions"}
+var functionsResource = schema.GroupVersionResource{Group: "build.projectriff.io", Version: "v1alpha1", Resource: "functions"}
 
-var functionsKind = schema.GroupVersionKind{Group: "build", Version: "v1alpha1", Kind: "Function"}
+var functionsKind = schema.GroupVersionKind{Group: "build.projectriff.io", Version: "v1alpha1", Kind: "Function"}
 
 // Get takes name of the function, and returns the corresponding function object, and an error if there is any.
 func (c *FakeFunctions) Get(name string, options v1.GetOptions) (result *v1alpha1.Function, err error) {
