@@ -25,10 +25,6 @@ import (
 	kpackbuildv1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/kpack/build/v1alpha1"
 )
 
-var (
-	_ apis.Resource = (*Function)(nil)
-)
-
 const (
 	FunctionConditionReady                              = apis.ConditionReady
 	FunctionConditionKpackImageReady apis.ConditionType = "KpackImageReady"
@@ -39,10 +35,6 @@ var functionCondSet = apis.NewLivingConditionSet(
 	FunctionConditionKpackImageReady,
 	FunctionConditionImageResolved,
 )
-
-func (f *Function) GetStatus() apis.ResourceStatus {
-	return &f.Status
-}
 
 func (fs *FunctionStatus) GetObservedGeneration() int64 {
 	return fs.ObservedGeneration

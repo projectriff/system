@@ -20,18 +20,10 @@ import (
 	"github.com/projectriff/system/pkg/apis"
 )
 
-var (
-	_ apis.Resource = (*Stream)(nil)
-)
-
 const (
 	StreamConditionReady                                = apis.ConditionReady
 	StreamConditionResourceAvailable apis.ConditionType = "ResourceAvailable"
 )
-
-func (s *Stream) GetStatus() apis.ResourceStatus {
-	return &s.Status
-}
 
 var streamCondSet = apis.NewLivingConditionSet(
 	StreamConditionResourceAvailable,

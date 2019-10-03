@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	apis "github.com/projectriff/system/pkg/apis"
 )
@@ -27,6 +28,10 @@ import (
 
 var (
 	ContainerLabelKey = GroupVersion.Group + "/container"
+)
+
+var (
+	_ apis.Resource = (*Container)(nil)
 )
 
 // ContainerSpec defines the desired state of Container
@@ -67,6 +72,14 @@ type Container struct {
 
 func (c *Container) GetImage() string {
 	return c.Spec.Image
+}
+
+func (*Container) GetGroupVersionKind() schema.GroupVersionKind {
+	return SchemeGroupVersion.WithKind("Container")
+}
+
+func (c *Container) GetStatus() apis.ResourceStatus {
+	return &c.Status
 }
 
 // +kubebuilder:object:root=true

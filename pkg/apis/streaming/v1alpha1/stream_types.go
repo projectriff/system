@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	apis "github.com/projectriff/system/pkg/apis"
 )
@@ -29,6 +30,10 @@ import (
 
 var (
 	StreamLabelKey = GroupVersion.Group + "/stream"
+)
+
+var (
+	_ apis.Resource = (*Stream)(nil)
 )
 
 // StreamSpec defines the desired state of Stream
@@ -73,6 +78,14 @@ type Stream struct {
 
 	Spec   StreamSpec   `json:"spec,omitempty"`
 	Status StreamStatus `json:"status,omitempty"`
+}
+
+func (*Stream) GetGroupVersionKind() schema.GroupVersionKind {
+	return SchemeGroupVersion.WithKind("Stream")
+}
+
+func (s *Stream) GetStatus() apis.ResourceStatus {
+	return &s.Status
 }
 
 // +kubebuilder:object:root=true

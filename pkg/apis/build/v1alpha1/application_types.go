@@ -19,6 +19,7 @@ package v1alpha1
 import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	apis "github.com/projectriff/system/pkg/apis"
 )
@@ -28,6 +29,10 @@ import (
 
 var (
 	ApplicationLabelKey = GroupVersion.Group + "/application"
+)
+
+var (
+	_ apis.Resource = (*Application)(nil)
 )
 
 // ApplicationSpec defines the desired state of Application
@@ -75,6 +80,14 @@ type Application struct {
 
 func (a *Application) GetImage() string {
 	return a.Spec.Image
+}
+
+func (*Application) GetGroupVersionKind() schema.GroupVersionKind {
+	return SchemeGroupVersion.WithKind("Application")
+}
+
+func (a *Application) GetStatus() apis.ResourceStatus {
+	return &a.Status
 }
 
 // +kubebuilder:object:root=true

@@ -19,6 +19,7 @@ package v1alpha1
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	apis "github.com/projectriff/system/pkg/apis"
 )
@@ -28,6 +29,10 @@ import (
 
 var (
 	DeployerLabelKey = GroupVersion.Group + "/deployer"
+)
+
+var (
+	_ apis.Resource = (*Deployer)(nil)
 )
 
 // DeployerSpec defines the desired state of Deployer
@@ -79,6 +84,14 @@ type Deployer struct {
 
 	Spec   DeployerSpec   `json:"spec,omitempty"`
 	Status DeployerStatus `json:"status,omitempty"`
+}
+
+func (*Deployer) GetGroupVersionKind() schema.GroupVersionKind {
+	return SchemeGroupVersion.WithKind("Deployer")
+}
+
+func (d *Deployer) GetStatus() apis.ResourceStatus {
+	return &d.Status
 }
 
 // +kubebuilder:object:root=true

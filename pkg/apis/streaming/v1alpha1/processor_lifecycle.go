@@ -25,10 +25,6 @@ import (
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 )
 
-var (
-	_ apis.Resource = (*Processor)(nil)
-)
-
 const (
 	ProcessorConditionReady = apis.ConditionReady
 	// TODO add aggregated streams ready status
@@ -42,10 +38,6 @@ var processorCondSet = apis.NewLivingConditionSet(
 	ProcessorConditionDeploymentReady,
 	ProcessorConditionScaledObjectReady,
 )
-
-func (p *Processor) GetStatus() apis.ResourceStatus {
-	return &p.Status
-}
 
 func (ps *ProcessorStatus) GetObservedGeneration() int64 {
 	return ps.ObservedGeneration

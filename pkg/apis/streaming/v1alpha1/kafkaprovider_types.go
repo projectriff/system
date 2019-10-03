@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/projectriff/system/pkg/apis"
 )
@@ -29,6 +30,10 @@ var (
 	KafkaProviderLabelKey            = GroupVersion.Group + "/kafka-provider"             // Identifies all resources originating from a provider
 	KafkaProviderLiiklusLabelKey     = GroupVersion.Group + "/kafka-provider-liiklus"     // Used as a selector
 	KafkaProviderProvisionerLabelKey = GroupVersion.Group + "/kafka-provider-provisioner" // Used as a selector
+)
+
+var (
+	_ apis.Resource = (*KafkaProvider)(nil)
 )
 
 // KafkaProviderSpec defines the desired state of KafkaProvider
@@ -70,6 +75,14 @@ type KafkaProvider struct {
 
 	Spec   KafkaProviderSpec   `json:"spec,omitempty"`
 	Status KafkaProviderStatus `json:"status,omitempty"`
+}
+
+func (*KafkaProvider) GetGroupVersionKind() schema.GroupVersionKind {
+	return SchemeGroupVersion.WithKind("KafkaProvider")
+}
+
+func (p *KafkaProvider) GetStatus() apis.ResourceStatus {
+	return &p.Status
 }
 
 // +kubebuilder:object:root=true
