@@ -35,6 +35,7 @@ import (
 
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	kpackbuildv1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/kpack/build/v1alpha1"
+	"github.com/projectriff/system/pkg/printers"
 )
 
 // FunctionReconciler reconciles a Function object
@@ -74,7 +75,7 @@ func (r *FunctionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// check if status has changed before updating, unless requeued
 	if !result.Requeue && !equality.Semantic.DeepEqual(function.Status, originalFunction.Status) {
 		// update status
-		log.Info(fmt.Sprintf("Update container status diff (-current, +desired): %s", cmp.Diff(originalFunction.Status, function.Status)))
+		log.Info(fmt.Sprintf("Updating container status diff (-current, +desired): %s", cmp.Diff(originalFunction.Status, function.Status)))
 		if updateErr := r.Status().Update(ctx, &function); updateErr != nil {
 			log.Error(updateErr, "unable to update Function status", "function", function)
 			return ctrl.Result{Requeue: true}, updateErr
@@ -181,6 +182,7 @@ func (r *FunctionReconciler) reconcileChildImage(ctx context.Context, log logr.L
 
 	// create image if it doesn't exist
 	if function.Status.KpackImageName == "" {
+		log.Info(fmt.Sprintf("Creating kpack image spec: %s", printers.Pretty(desiredImage.Spec)))
 		if err := r.Create(ctx, desiredImage); err != nil {
 			log.Error(err, "unable to create kpack Image for Function", "image", desiredImage)
 			return nil, err

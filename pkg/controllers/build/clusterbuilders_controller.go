@@ -35,6 +35,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	kpackbuildv1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/kpack/build/v1alpha1"
+	"github.com/projectriff/system/pkg/printers"
 )
 
 const buildersConfigMap = "builders"
@@ -92,7 +93,7 @@ func (r *ClusterBuilderReconciler) reconcile(ctx context.Context, log logr.Logge
 	}
 
 	if configMap.Name == "" {
-		configMap, err := r.createConfigMap(ctx, builderImages)
+		configMap, err := r.createConfigMap(ctx, log, builderImages)
 		if err != nil {
 			log.Error(err, "Failed to create ConfigMap", "configmap", configMap)
 			return ctrl.Result{}, err
@@ -120,7 +121,7 @@ func (r *ClusterBuilderReconciler) reconcileConfigMap(ctx context.Context, log l
 	return configMap, r.Update(ctx, configMap)
 }
 
-func (r *ClusterBuilderReconciler) createConfigMap(ctx context.Context, builderImages map[string]string) (*corev1.ConfigMap, error) {
+func (r *ClusterBuilderReconciler) createConfigMap(ctx context.Context, log logr.Logger, builderImages map[string]string) (*corev1.ConfigMap, error) {
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      buildersConfigMap,
@@ -128,6 +129,7 @@ func (r *ClusterBuilderReconciler) createConfigMap(ctx context.Context, builderI
 		},
 		Data: builderImages,
 	}
+	log.Info(fmt.Sprintf("Creating builders configmap data: %s", printers.Pretty(configMap.Data)))
 	return configMap, r.Create(ctx, configMap)
 }
 

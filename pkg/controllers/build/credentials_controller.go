@@ -37,6 +37,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
+	"github.com/projectriff/system/pkg/printers"
 )
 
 const riffBuildServiceAccount = "riff-build"
@@ -94,7 +95,7 @@ func (r *CredentialReconciler) reconcile(ctx context.Context, log logr.Logger, s
 		if needed, err := r.isServiceAccountNeeded(ctx, secretNames, namespace); err != nil {
 			return ctrl.Result{}, err
 		} else if needed {
-			serviceAccount, err := r.createServiceAccount(ctx, secretNames, namespace)
+			serviceAccount, err := r.createServiceAccount(ctx, log, secretNames, namespace)
 			if err != nil {
 				log.Error(err, "Failed to create ServiceAccount", "serviceaccount", serviceAccount)
 				return ctrl.Result{}, err
@@ -162,7 +163,7 @@ func (r *CredentialReconciler) isServiceAccountNeeded(ctx context.Context, secre
 	return false, nil
 }
 
-func (r *CredentialReconciler) createServiceAccount(ctx context.Context, secretNames sets.String, namespace string) (*corev1.ServiceAccount, error) {
+func (r *CredentialReconciler) createServiceAccount(ctx context.Context, log logr.Logger, secretNames sets.String, namespace string) (*corev1.ServiceAccount, error) {
 	serviceAccount := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      riffBuildServiceAccount,
@@ -176,6 +177,7 @@ func (r *CredentialReconciler) createServiceAccount(ctx context.Context, secretN
 	for i, secretName := range secretNames.UnsortedList() {
 		serviceAccount.Secrets[i] = corev1.ObjectReference{Name: secretName}
 	}
+	log.Info(fmt.Sprintf("Creating serviceaccount secrets: %s", printers.Pretty(serviceAccount.Secrets)))
 	return serviceAccount, r.Create(ctx, serviceAccount)
 }
 

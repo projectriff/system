@@ -35,6 +35,7 @@ import (
 
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	kpackbuildv1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/kpack/build/v1alpha1"
+	"github.com/projectriff/system/pkg/printers"
 )
 
 // ApplicationReconciler reconciles a Application object
@@ -74,7 +75,7 @@ func (r *ApplicationReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 	// check if status has changed before updating, unless requeued
 	if !result.Requeue && !equality.Semantic.DeepEqual(application.Status, originalApplication.Status) {
 		// update status
-		log.Info(fmt.Sprintf("Update application status diff (-current, +desired): %s", cmp.Diff(originalApplication.Status, application.Status)))
+		log.Info(fmt.Sprintf("Updating application status diff (-current, +desired): %s", cmp.Diff(originalApplication.Status, application.Status)))
 		if updateErr := r.Status().Update(ctx, &application); updateErr != nil {
 			log.Error(updateErr, "unable to update Application status", "application", application)
 			return ctrl.Result{Requeue: true}, updateErr
@@ -181,6 +182,7 @@ func (r *ApplicationReconciler) reconcileChildImage(ctx context.Context, log log
 
 	// create image if it doesn't exist
 	if application.Status.KpackImageName == "" {
+		log.Info(fmt.Sprintf("Creating kpack image spec: %s", printers.Pretty(desiredImage.Spec)))
 		if err := r.Create(ctx, desiredImage); err != nil {
 			log.Error(err, "unable to create kpack Image for Application", "image", desiredImage)
 			return nil, err
