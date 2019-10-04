@@ -108,6 +108,8 @@ func (r *FunctionReconciler) reconcile(ctx context.Context, log logr.Logger, fun
 		return ctrl.Result{}, err
 	}
 	if childImage == nil {
+		// TODO resolve to a digest
+		function.Status.LatestImage = function.Status.TargetImage
 		function.Status.MarkBuildNotUsed()
 	} else {
 		function.Status.KpackImageName = childImage.Name

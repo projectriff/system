@@ -108,6 +108,8 @@ func (r *ApplicationReconciler) reconcile(ctx context.Context, log logr.Logger, 
 		return ctrl.Result{}, err
 	}
 	if childImage == nil {
+		// TODO resolve to a digest
+		application.Status.LatestImage = application.Status.TargetImage
 		application.Status.MarkBuildNotUsed()
 	} else {
 		application.Status.KpackImageName = childImage.Name
