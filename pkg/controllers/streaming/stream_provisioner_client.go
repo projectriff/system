@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 
 	"github.com/go-logr/logr"
@@ -60,7 +61,8 @@ func (s *streamProvisionerRestClient) ProvisionStream(stream *streamingv1alpha1.
 		}
 	}()
 	if res.StatusCode >= 400 {
-		return nil, fmt.Errorf("status: %d", res.StatusCode)
+		msg, _ := ioutil.ReadAll(res.Body)
+		return nil, fmt.Errorf("status: %d, body: %q", res.StatusCode, string(msg))
 	}
 	address := &streamingv1alpha1.StreamAddress{}
 	if err := json.NewDecoder(res.Body).Decode(address); err != nil {

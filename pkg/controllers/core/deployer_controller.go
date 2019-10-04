@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	"github.com/google/go-cmp/cmp"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -37,6 +38,7 @@ import (
 
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	corev1alpha1 "github.com/projectriff/system/pkg/apis/core/v1alpha1"
+	"github.com/projectriff/system/pkg/printers"
 	"github.com/projectriff/system/pkg/tracker"
 )
 
@@ -79,6 +81,7 @@ func (r *DeployerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// check if status has changed before updating, unless requeued
 	if !result.Requeue && !equality.Semantic.DeepEqual(deployer.Status, originalDeployer.Status) {
 		// update status
+		log.Info(fmt.Sprintf("Updating deployer status diff (-current, +desired): %s", cmp.Diff(originalDeployer.Status, deployer.Status)))
 		if updateErr := r.Status().Update(ctx, &deployer); updateErr != nil {
 			log.Error(updateErr, "unable to update Deployer status", "deployer", deployer)
 			return ctrl.Result{Requeue: true}, updateErr
@@ -131,6 +134,7 @@ func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, dep
 func (r *DeployerReconciler) reconcileBuildImage(ctx context.Context, log logr.Logger, deployer *corev1alpha1.Deployer) error {
 	build := deployer.Spec.Build
 	if build == nil {
+		deployer.Status.LatestImage = deployer.Spec.Template.Containers[0].Image
 		return nil
 	}
 
@@ -149,7 +153,7 @@ func (r *DeployerReconciler) reconcileBuildImage(ctx context.Context, log logr.L
 		if application.Status.LatestImage == "" {
 			return fmt.Errorf("application %q does not have a ready image", build.ApplicationRef)
 		}
-		deployer.Spec.Template.Containers[0].Image = application.Status.LatestImage
+		deployer.Status.LatestImage = application.Status.LatestImage
 		return nil
 
 	case build.ContainerRef != "":
@@ -166,7 +170,7 @@ func (r *DeployerReconciler) reconcileBuildImage(ctx context.Context, log logr.L
 		if container.Status.LatestImage == "" {
 			return fmt.Errorf("container %q does not have a ready image", build.ContainerRef)
 		}
-		deployer.Spec.Template.Containers[0].Image = container.Status.LatestImage
+		deployer.Status.LatestImage = container.Status.LatestImage
 		return nil
 
 	case build.FunctionRef != "":
@@ -183,7 +187,7 @@ func (r *DeployerReconciler) reconcileBuildImage(ctx context.Context, log logr.L
 		if function.Status.LatestImage == "" {
 			return fmt.Errorf("function %q does not have a ready image", build.FunctionRef)
 		}
-		deployer.Spec.Template.Containers[0].Image = function.Status.LatestImage
+		deployer.Status.LatestImage = function.Status.LatestImage
 		return nil
 
 	}
@@ -226,6 +230,7 @@ func (r *DeployerReconciler) reconcileChildDeployment(ctx context.Context, log l
 
 	// create deployment if it doesn't exist
 	if deployer.Status.DeploymentName == "" {
+		log.Info(fmt.Sprintf("Creating deployment spec: %s", printers.Pretty(desiredDeployment.Spec)))
 		if err := r.Create(ctx, desiredDeployment); err != nil {
 			log.Error(err, "unable to create Deployment for Deployer", "deployment", desiredDeployment)
 			return nil, err
@@ -245,6 +250,7 @@ func (r *DeployerReconciler) reconcileChildDeployment(ctx context.Context, log l
 	deployment := actualDeployment.DeepCopy()
 	deployment.ObjectMeta.Labels = desiredDeployment.ObjectMeta.Labels
 	deployment.Spec = desiredDeployment.Spec
+	log.Info(fmt.Sprintf("Reconciling deployment spec diff (-current, +desired): %s", cmp.Diff(actualDeployment.Spec, deployment.Spec)))
 	if err := r.Update(ctx, deployment); err != nil {
 		log.Error(err, "unable to update Deployment for Deployer", "deployment", deployment)
 		return nil, err
@@ -283,6 +289,9 @@ func (r *DeployerReconciler) constructDeploymentForDeployer(deployer *corev1alph
 				Spec: podSpec,
 			},
 		},
+	}
+	if deployment.Spec.Template.Spec.Containers[0].Image == "" {
+		deployment.Spec.Template.Spec.Containers[0].Image = deployer.Status.LatestImage
 	}
 	if err := ctrl.SetControllerReference(deployer, deployment, r.Scheme); err != nil {
 		return nil, err
@@ -351,6 +360,7 @@ func (r *DeployerReconciler) reconcileChildService(ctx context.Context, log logr
 
 	// create service if it doesn't exist
 	if deployer.Status.ServiceName == "" {
+		log.Info(fmt.Sprintf("Creating service spec: %s", printers.Pretty(desiredService.Spec)))
 		if err := r.Create(ctx, desiredService); err != nil {
 			log.Error(err, "unable to create Service for Deployer", "service", desiredService)
 			return nil, err
@@ -370,6 +380,7 @@ func (r *DeployerReconciler) reconcileChildService(ctx context.Context, log logr
 	service := actualService.DeepCopy()
 	service.ObjectMeta.Labels = desiredService.ObjectMeta.Labels
 	service.Spec = desiredService.Spec
+	log.Info(fmt.Sprintf("Reconciling service spec diff (-current, +desired): %s", cmp.Diff(actualService.Spec, service.Spec)))
 	if err := r.Update(ctx, service); err != nil {
 		log.Error(err, "unable to update Service for Deployer", "deployment", service)
 		return nil, err

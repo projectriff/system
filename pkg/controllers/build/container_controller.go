@@ -18,9 +18,11 @@ package build
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/go-logr/logr"
+	"github.com/google/go-cmp/cmp"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -68,6 +70,7 @@ func (r *ContainerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// check if status has changed before updating, unless requeued
 	if !result.Requeue && !equality.Semantic.DeepEqual(container.Status, originalContainer.Status) {
 		// update status
+		log.Info(fmt.Sprintf("Updating container status diff (-current, +desired): %s", cmp.Diff(originalContainer.Status, container.Status)))
 		if updateErr := r.Status().Update(ctx, &container); updateErr != nil {
 			log.Error(updateErr, "unable to update Container status", "container", container)
 			return ctrl.Result{Requeue: true}, updateErr

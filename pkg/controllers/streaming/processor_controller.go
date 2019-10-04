@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
+	"github.com/google/go-cmp/cmp"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
@@ -40,6 +41,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	kedav1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/keda/v1alpha1"
+	"github.com/projectriff/system/pkg/printers"
 
 	"github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	"github.com/projectriff/system/pkg/tracker"
@@ -85,6 +87,7 @@ func (r *ProcessorReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	// check if status has changed before updating, unless requeued
 	if !result.Requeue && !equality.Semantic.DeepEqual(original.Status, processor.Status) {
+		log.Info(fmt.Sprintf("Updating processor status diff (-current, +desired): %s", cmp.Diff(original.Status, processor.Status)))
 		if updateErr := r.Status().Update(ctx, processor); updateErr != nil {
 			log.Error(updateErr, "unable to update Processor status")
 			return ctrl.Result{Requeue: true}, updateErr
@@ -213,6 +216,7 @@ func (r *ProcessorReconciler) reconcileProcessorScaledObject(ctx context.Context
 
 	// create scaledObject if it doesn't exist
 	if processor.Status.ScaledObjectName == "" {
+		log.Info(fmt.Sprintf("Creating scaled object spec: %s", printers.Pretty(desiredScaledObject.Spec)))
 		if err := r.Create(ctx, desiredScaledObject); err != nil {
 			log.Error(err, "unable to create ScaledObject for Processor", "scaledObject", desiredScaledObject)
 			return nil, err
@@ -230,6 +234,7 @@ func (r *ProcessorReconciler) reconcileProcessorScaledObject(ctx context.Context
 	scaledObject := actualScaledObject.DeepCopy()
 	scaledObject.ObjectMeta.Labels = desiredScaledObject.ObjectMeta.Labels
 	scaledObject.Spec = desiredScaledObject.Spec
+	log.Info(fmt.Sprintf("Reconciling scaled object spec diff (-current, +desired): %s", cmp.Diff(actualScaledObject.Spec, scaledObject.Spec)))
 	if err := r.Update(ctx, scaledObject); err != nil {
 		log.Error(err, "unable to update ScaledObject for Processor", "scaledObject", scaledObject)
 		return nil, err
@@ -328,6 +333,7 @@ func (r *ProcessorReconciler) reconcileProcessorDeployment(ctx context.Context, 
 
 	// create deployment if it doesn't exist
 	if processor.Status.DeploymentName == "" {
+		log.Info(fmt.Sprintf("Creating processor deployment spec: %s", printers.Pretty(desiredDeployment.Spec)))
 		if err := r.Create(ctx, desiredDeployment); err != nil {
 			log.Error(err, "unable to create Deployment for Processor", "deployment", desiredDeployment)
 			return nil, err
@@ -348,6 +354,7 @@ func (r *ProcessorReconciler) reconcileProcessorDeployment(ctx context.Context, 
 	deployment := actualDeployment.DeepCopy()
 	deployment.ObjectMeta.Labels = desiredDeployment.ObjectMeta.Labels
 	deployment.Spec = desiredDeployment.Spec
+	log.Info(fmt.Sprintf("Reconciling processor deployment spec diff (-current, +desired): %s", cmp.Diff(actualDeployment.Spec, deployment.Spec)))
 	if err := r.Update(ctx, deployment); err != nil {
 		log.Error(err, "unable to update Deployment for Processor", "deployment", deployment)
 		return nil, err

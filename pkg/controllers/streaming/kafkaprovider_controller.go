@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	"github.com/google/go-cmp/cmp"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -37,6 +38,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	streamingv1alpha1 "github.com/projectriff/system/pkg/apis/streaming/v1alpha1"
+	"github.com/projectriff/system/pkg/printers"
 	"github.com/projectriff/system/pkg/tracker"
 )
 
@@ -78,6 +80,7 @@ func (r *KafkaProviderReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 	// check if status has changed before updating, unless requeued
 	if !result.Requeue && !equality.Semantic.DeepEqual(kafkaProvider.Status, originalKafkaProvider.Status) {
 		// update status
+		log.Info(fmt.Sprintf("Updating kafka provider status diff (-current, +desired): %s", cmp.Diff(originalKafkaProvider.Status, kafkaProvider.Status)))
 		if updateErr := r.Status().Update(ctx, &kafkaProvider); updateErr != nil {
 			log.Error(updateErr, "unable to update KafkaProvider status", "kafkaprovider", kafkaProvider)
 			return ctrl.Result{Requeue: true}, updateErr
@@ -182,6 +185,7 @@ func (r *KafkaProviderReconciler) reconcileLiiklusDeployment(ctx context.Context
 
 	// create deployment if it doesn't exist
 	if kafkaProvider.Status.LiiklusDeploymentName == "" {
+		log.Info(fmt.Sprintf("Creating liiklus deployment spec: %s", printers.Pretty(desiredDeployment.Spec)))
 		if err := r.Create(ctx, desiredDeployment); err != nil {
 			log.Error(err, "unable to create Deployment for KafkaProvider", "deployment", desiredDeployment)
 			return nil, err
@@ -202,6 +206,7 @@ func (r *KafkaProviderReconciler) reconcileLiiklusDeployment(ctx context.Context
 	deployment := actualDeployment.DeepCopy()
 	deployment.ObjectMeta.Labels = desiredDeployment.ObjectMeta.Labels
 	deployment.Spec = desiredDeployment.Spec
+	log.Info(fmt.Sprintf("Reconciling liiklus deployment spec diff (-current, +desired): %s", cmp.Diff(actualDeployment.Spec, deployment.Spec)))
 	if err := r.Update(ctx, deployment); err != nil {
 		log.Error(err, "unable to update Deployment for KafkaProvider", "deployment", deployment)
 		return nil, err
@@ -316,6 +321,7 @@ func (r *KafkaProviderReconciler) reconcileLiiklusService(ctx context.Context, l
 
 	// create service if it doesn't exist
 	if kafkaProvider.Status.LiiklusServiceName == "" {
+		log.Info(fmt.Sprintf("Creating liiklus service spec: %s", printers.Pretty(desiredService.Spec)))
 		if err := r.Create(ctx, desiredService); err != nil {
 			log.Error(err, "unable to create liiklus Service for KafkaProvider", "service", desiredService)
 			return nil, err
@@ -335,6 +341,7 @@ func (r *KafkaProviderReconciler) reconcileLiiklusService(ctx context.Context, l
 	service := actualService.DeepCopy()
 	service.ObjectMeta.Labels = desiredService.ObjectMeta.Labels
 	service.Spec = desiredService.Spec
+	log.Info(fmt.Sprintf("Reconciling liiklus service spec diff (-current, +desired): %s", cmp.Diff(actualService.Spec, service.Spec)))
 	if err := r.Update(ctx, service); err != nil {
 		log.Error(err, "unable to update liiklus Service for KafkaProvider", "service", service)
 		return nil, err
@@ -414,6 +421,7 @@ func (r *KafkaProviderReconciler) reconcileProvisionerDeployment(ctx context.Con
 
 	// create deployment if it doesn't exist
 	if kafkaProvider.Status.ProvisionerDeploymentName == "" {
+		log.Info(fmt.Sprintf("Creating provisioner deployment spec: %s", printers.Pretty(desiredDeployment.Spec)))
 		if err := r.Create(ctx, desiredDeployment); err != nil {
 			log.Error(err, "unable to create Deployment for KafkaProvider", "deployment", desiredDeployment)
 			return nil, err
@@ -434,6 +442,7 @@ func (r *KafkaProviderReconciler) reconcileProvisionerDeployment(ctx context.Con
 	deployment := actualDeployment.DeepCopy()
 	deployment.ObjectMeta.Labels = desiredDeployment.ObjectMeta.Labels
 	deployment.Spec = desiredDeployment.Spec
+	log.Info(fmt.Sprintf("Reconciling provisioner deployment spec diff (-current, +desired): %s", cmp.Diff(actualDeployment.Spec, deployment.Spec)))
 	if err := r.Update(ctx, deployment); err != nil {
 		log.Error(err, "unable to update Deployment for KafkaProvider", "deployment", deployment)
 		return nil, err
@@ -521,6 +530,7 @@ func (r *KafkaProviderReconciler) reconcileProvisionerService(ctx context.Contex
 
 	// create service if it doesn't exist
 	if kafkaProvider.Status.ProvisionerServiceName == "" {
+		log.Info(fmt.Sprintf("Creating provisioner service spec: %s", printers.Pretty(desiredService.Spec)))
 		if err := r.Create(ctx, desiredService); err != nil {
 			log.Error(err, "unable to create provisioner Service for KafkaProvider", "service", desiredService)
 			return nil, err
@@ -540,6 +550,7 @@ func (r *KafkaProviderReconciler) reconcileProvisionerService(ctx context.Contex
 	service := actualService.DeepCopy()
 	service.ObjectMeta.Labels = desiredService.ObjectMeta.Labels
 	service.Spec = desiredService.Spec
+	log.Info(fmt.Sprintf("Reconciling provisioner service spec diff (-current, +desired): %s", cmp.Diff(actualService.Spec, service.Spec)))
 	if err := r.Update(ctx, service); err != nil {
 		log.Error(err, "unable to update provisioner Service for KafkaProvider", "service", service)
 		return nil, err
