@@ -75,7 +75,7 @@ func (r *FunctionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// check if status has changed before updating, unless requeued
 	if !result.Requeue && !equality.Semantic.DeepEqual(function.Status, originalFunction.Status) {
 		// update status
-		log.Info(fmt.Sprintf("Updating container status diff (-current, +desired): %s", cmp.Diff(originalFunction.Status, function.Status)))
+		log.Info(fmt.Sprintf("Updating function status diff (-current, +desired): %s", cmp.Diff(originalFunction.Status, function.Status)))
 		if updateErr := r.Status().Update(ctx, &function); updateErr != nil {
 			log.Error(updateErr, "unable to update Function status", "function", function)
 			return ctrl.Result{Requeue: true}, updateErr

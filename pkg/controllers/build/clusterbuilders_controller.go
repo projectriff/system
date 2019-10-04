@@ -30,7 +30,9 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
@@ -55,7 +57,7 @@ func (r *ClusterBuilderReconciler) Reconcile(req ctrl.Request) (ctrl.Result, err
 	log := r.Log.WithValues("configmap", req.NamespacedName)
 
 	if req.Namespace != r.Namespace || req.Name != buildersConfigMap {
-		// ignore other configmaps
+		// ignore other configmaps, should never get here
 		return ctrl.Result{}, nil
 	}
 
@@ -160,6 +162,26 @@ func (r *ClusterBuilderReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1.ConfigMap{}).
+		WithEventFilter(predicate.Funcs{
+			CreateFunc: func(e event.CreateEvent) bool {
+				cm, ok := e.Object.(*corev1.ConfigMap)
+				if !ok {
+					// not a configmap, allow
+					return true
+				}
+				// filter configmap accounts to only be builders in the system namespace
+				return cm.Namespace == r.Namespace && cm.Name == buildersConfigMap
+			},
+			UpdateFunc: func(e event.UpdateEvent) bool {
+				cm, ok := e.ObjectNew.(*corev1.ConfigMap)
+				if !ok {
+					// not a configmap, allow
+					return true
+				}
+				// filter configmap accounts to only be builders in the system namespace
+				return cm.Namespace == r.Namespace && cm.Name == buildersConfigMap
+			},
+		}).
 		// watch for ClusterBuilder mutations to distil into ConfigMap
 		Watches(&source.Kind{Type: &kpackbuildv1alpha1.ClusterBuilder{}}, enqueueConfigMap).
 		Complete(r)
