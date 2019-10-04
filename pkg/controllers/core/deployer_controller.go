@@ -131,6 +131,7 @@ func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, dep
 func (r *DeployerReconciler) reconcileBuildImage(ctx context.Context, log logr.Logger, deployer *corev1alpha1.Deployer) error {
 	build := deployer.Spec.Build
 	if build == nil {
+		deployer.Status.LatestImage = deployer.Spec.Template.Containers[0].Image
 		return nil
 	}
 
