@@ -32,7 +32,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
@@ -57,7 +59,7 @@ func (r *CredentialReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 	log := r.Log.WithValues("serviceaccount", req.NamespacedName)
 
 	if req.Name != riffBuildServiceAccount {
-		// ignore other service accounts
+		// ignore other service accounts, should never get here
 		return ctrl.Result{}, nil
 	}
 
@@ -212,7 +214,7 @@ func (r *CredentialReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		}),
 	}
 
-	enqueueServiceAccount := &handler.EnqueueRequestsFromMapFunc{
+	enqueueServiceAccountForBuild := &handler.EnqueueRequestsFromMapFunc{
 		ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
 			return []reconcile.Request{
 				{
@@ -227,10 +229,30 @@ func (r *CredentialReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1.ServiceAccount{}).
+		WithEventFilter(predicate.Funcs{
+			CreateFunc: func(e event.CreateEvent) bool {
+				sa, ok := e.Object.(*corev1.ServiceAccount)
+				if !ok {
+					// not a serviceaccount, allow
+					return true
+				}
+				// filter services accounts to only be the riff-build sa
+				return sa.Name == riffBuildServiceAccount
+			},
+			UpdateFunc: func(e event.UpdateEvent) bool {
+				sa, ok := e.ObjectNew.(*corev1.ServiceAccount)
+				if !ok {
+					// not a serviceaccount, allow
+					return true
+				}
+				// filter services accounts to only be the riff-build sa
+				return sa.Name == riffBuildServiceAccount
+			},
+		}).
 		// watch for secret mutations to bind to service account
 		Watches(&source.Kind{Type: &corev1.Secret{}}, enqueueServiceAccountForCredential).
 		// watch for build mutations to create service account
-		Watches(&source.Kind{Type: &buildv1alpha1.Application{}}, enqueueServiceAccount).
-		Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, enqueueServiceAccount).
+		Watches(&source.Kind{Type: &buildv1alpha1.Application{}}, enqueueServiceAccountForBuild).
+		Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, enqueueServiceAccountForBuild).
 		Complete(r)
 }
