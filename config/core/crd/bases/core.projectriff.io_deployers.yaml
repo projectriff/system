@@ -4064,6 +4064,10 @@ spec:
               type: array
             deploymentName:
               type: string
+            latestImage:
+              description: LatestImage is the most recent image resolved from the
+                build
+              type: string
             observedGeneration:
               description: ObservedGeneration is the 'Generation' of the Service that
                 was last processed by the controller.

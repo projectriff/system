@@ -65,7 +65,11 @@ type DeployerStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	apis.Status    `json:",inline"`
+	apis.Status `json:",inline"`
+
+	// LatestImage is the most recent image resolved from the build
+	LatestImage string `json:"latestImage,omitempty"`
+
 	DeploymentName string `json:"deploymentName,omitempty"`
 	ServiceName    string `json:"serviceName,omitempty"`
 }
