@@ -18,9 +18,11 @@ package build
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/go-logr/logr"
+	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -51,7 +53,7 @@ type CredentialReconciler struct {
 
 func (r *CredentialReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
-	log := r.Log.WithValues("credential", req.NamespacedName)
+	log := r.Log.WithValues("serviceaccount", req.NamespacedName)
 
 	if req.Name != riffBuildServiceAccount {
 		// ignore other service accounts
@@ -99,7 +101,7 @@ func (r *CredentialReconciler) reconcile(ctx context.Context, log logr.Logger, s
 			}
 		}
 	} else {
-		serviceAccount, err := r.reconcileServiceAccount(ctx, serviceAccount, secretNames)
+		serviceAccount, err := r.reconcileServiceAccount(ctx, log, serviceAccount, secretNames)
 		if err != nil {
 			log.Error(err, "Failed to reconcile ServiceAccount", "serviceaccount", serviceAccount)
 			return ctrl.Result{}, err
@@ -109,7 +111,7 @@ func (r *CredentialReconciler) reconcile(ctx context.Context, log logr.Logger, s
 	return ctrl.Result{}, nil
 }
 
-func (r *CredentialReconciler) reconcileServiceAccount(ctx context.Context, existingServiceAccount *corev1.ServiceAccount, desiredBoundSecrets sets.String) (*corev1.ServiceAccount, error) {
+func (r *CredentialReconciler) reconcileServiceAccount(ctx context.Context, log logr.Logger, existingServiceAccount *corev1.ServiceAccount, desiredBoundSecrets sets.String) (*corev1.ServiceAccount, error) {
 	serviceAccount := existingServiceAccount.DeepCopy()
 	boundSecrets := sets.NewString(strings.Split(serviceAccount.Annotations[buildv1alpha1.CredentialsAnnotationKey], ",")...)
 	removeSecrets := boundSecrets.Difference(desiredBoundSecrets)
@@ -137,6 +139,7 @@ func (r *CredentialReconciler) reconcileServiceAccount(ctx context.Context, exis
 		return serviceAccount, nil
 	}
 
+	log.Info(fmt.Sprintf("Reconciling serviceaccount secrets (-current, +desired): %s", cmp.Diff(existingServiceAccount.Secrets, serviceAccount.Secrets)))
 	return serviceAccount, r.Update(ctx, serviceAccount)
 }
 

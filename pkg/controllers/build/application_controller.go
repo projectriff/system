@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
+	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -73,6 +74,7 @@ func (r *ApplicationReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 	// check if status has changed before updating, unless requeued
 	if !result.Requeue && !equality.Semantic.DeepEqual(application.Status, originalApplication.Status) {
 		// update status
+		log.Info(fmt.Sprintf("Update application status diff (-current, +desired): %s", cmp.Diff(originalApplication.Status, application.Status)))
 		if updateErr := r.Status().Update(ctx, &application); updateErr != nil {
 			log.Error(updateErr, "unable to update Application status", "application", application)
 			return ctrl.Result{Requeue: true}, updateErr
@@ -195,6 +197,7 @@ func (r *ApplicationReconciler) reconcileChildImage(ctx context.Context, log log
 	image := actualImage.DeepCopy()
 	image.ObjectMeta.Labels = desiredImage.ObjectMeta.Labels
 	image.Spec = desiredImage.Spec
+	log.Info(fmt.Sprintf("Reconciling kpack image spec diff (-current, +desired): %s", cmp.Diff(actualImage.Spec, image.Spec)))
 	if err := r.Update(ctx, image); err != nil {
 		log.Error(err, "unable to update kpack Image for Application", "image", image)
 		return nil, err

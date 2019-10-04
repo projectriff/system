@@ -18,9 +18,11 @@ package build
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/go-logr/logr"
+	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -96,7 +98,7 @@ func (r *ClusterBuilderReconciler) reconcile(ctx context.Context, log logr.Logge
 			return ctrl.Result{}, err
 		}
 	} else {
-		configMap, err := r.reconcileConfigMap(ctx, configMap, builderImages)
+		configMap, err := r.reconcileConfigMap(ctx, log, configMap, builderImages)
 		if err != nil {
 			log.Error(err, "Failed to reconcile ConfigMap", "configmap", configMap)
 			return ctrl.Result{}, err
@@ -106,7 +108,7 @@ func (r *ClusterBuilderReconciler) reconcile(ctx context.Context, log logr.Logge
 	return ctrl.Result{}, nil
 }
 
-func (r *ClusterBuilderReconciler) reconcileConfigMap(ctx context.Context, existingConfigMap *corev1.ConfigMap, builderImages map[string]string) (*corev1.ConfigMap, error) {
+func (r *ClusterBuilderReconciler) reconcileConfigMap(ctx context.Context, log logr.Logger, existingConfigMap *corev1.ConfigMap, builderImages map[string]string) (*corev1.ConfigMap, error) {
 	configMap := existingConfigMap.DeepCopy()
 	configMap.Data = builderImages
 
@@ -114,6 +116,7 @@ func (r *ClusterBuilderReconciler) reconcileConfigMap(ctx context.Context, exist
 		return existingConfigMap, nil
 	}
 
+	log.Info(fmt.Sprintf("Reconciling builders configmap data diff (-current, +desired): %s", cmp.Diff(existingConfigMap.Data, configMap.Data)))
 	return configMap, r.Update(ctx, configMap)
 }
 
