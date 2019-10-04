@@ -137,51 +137,55 @@ func (r *DeployerReconciler) reconcileBuildImage(ctx context.Context, log logr.L
 	switch {
 	case build.ApplicationRef != "":
 		var application buildv1alpha1.Application
-		if err := r.Get(ctx, types.NamespacedName{Namespace: deployer.Namespace, Name: build.ApplicationRef}, &application); err != nil {
+		key := types.NamespacedName{Namespace: deployer.Namespace, Name: build.ApplicationRef}
+		// track application for new images
+		r.Tracker.Track(
+			tracker.NewKey(application.GetGroupVersionKind(), key),
+			types.NamespacedName{Namespace: deployer.Namespace, Name: deployer.Name},
+		)
+		if err := r.Get(ctx, key, &application); err != nil {
 			return err
 		}
 		if application.Status.LatestImage == "" {
 			return fmt.Errorf("application %q does not have a ready image", build.ApplicationRef)
 		}
 		deployer.Spec.Template.Containers[0].Image = application.Status.LatestImage
-
-		// track application for new images
-		return r.Tracker.Track(&application, types.NamespacedName{
-			Namespace: deployer.GetNamespace(),
-			Name:      deployer.GetName(),
-		})
+		return nil
 
 	case build.ContainerRef != "":
 		var container buildv1alpha1.Container
-		if err := r.Get(ctx, types.NamespacedName{Namespace: deployer.Namespace, Name: build.ContainerRef}, &container); err != nil {
+		key := types.NamespacedName{Namespace: deployer.Namespace, Name: build.ContainerRef}
+		// track container for new images
+		r.Tracker.Track(
+			tracker.NewKey(container.GetGroupVersionKind(), key),
+			types.NamespacedName{Namespace: deployer.Namespace, Name: deployer.Name},
+		)
+		if err := r.Get(ctx, key, &container); err != nil {
 			return err
 		}
 		if container.Status.LatestImage == "" {
 			return fmt.Errorf("container %q does not have a ready image", build.ContainerRef)
 		}
 		deployer.Spec.Template.Containers[0].Image = container.Status.LatestImage
-
-		// track container for new images
-		return r.Tracker.Track(&container, types.NamespacedName{
-			Namespace: deployer.GetNamespace(),
-			Name:      deployer.GetName(),
-		})
+		return nil
 
 	case build.FunctionRef != "":
 		var function buildv1alpha1.Function
-		if err := r.Get(ctx, types.NamespacedName{Namespace: deployer.Namespace, Name: build.FunctionRef}, &function); err != nil {
+		key := types.NamespacedName{Namespace: deployer.Namespace, Name: build.FunctionRef}
+		// track function for new images
+		r.Tracker.Track(
+			tracker.NewKey(function.GetGroupVersionKind(), key),
+			types.NamespacedName{Namespace: deployer.Namespace, Name: deployer.Name},
+		)
+		if err := r.Get(ctx, key, &function); err != nil {
 			return err
 		}
 		if function.Status.LatestImage == "" {
 			return fmt.Errorf("function %q does not have a ready image", build.FunctionRef)
 		}
 		deployer.Spec.Template.Containers[0].Image = function.Status.LatestImage
+		return nil
 
-		// track function for new images
-		return r.Tracker.Track(&function, types.NamespacedName{
-			Namespace: deployer.GetNamespace(),
-			Name:      deployer.GetName(),
-		})
 	}
 
 	return fmt.Errorf("invalid deployer build")
@@ -422,7 +426,11 @@ func (r *DeployerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	enqueueTrackedResources := &handler.EnqueueRequestsFromMapFunc{
 		ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
 			requests := []reconcile.Request{}
-			for _, item := range r.Tracker.Lookup(a.Object.(metav1.ObjectMetaAccessor)) {
+			key := tracker.NewKey(
+				a.Object.GetObjectKind().GroupVersionKind(),
+				types.NamespacedName{Namespace: a.Meta.GetNamespace(), Name: a.Meta.GetName()},
+			)
+			for _, item := range r.Tracker.Lookup(key) {
 				requests = append(requests, reconcile.Request{NamespacedName: item})
 			}
 			return requests

@@ -31,6 +31,7 @@ import (
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -105,21 +106,27 @@ func (r *ProcessorReconciler) reconcile(ctx context.Context, logger logr.Logger,
 
 	processor.Status.InitializeConditions()
 
+	processorNSName := namespacedNamedFor(processor)
+
 	// Lookup and track configMap to know which images to use
 	cm := corev1.ConfigMap{}
-	if err := r.Get(ctx, types.NamespacedName{Namespace: r.Namespace, Name: processorImages}, &cm); err != nil {
+	cmKey := types.NamespacedName{Namespace: r.Namespace, Name: processorImages}
+	r.Tracker.Track(
+		tracker.NewKey(schema.GroupVersionKind{Version: "v1", Kind: "ConfigMap"}, cmKey),
+		processorNSName,
+	)
+	if err := r.Get(ctx, cmKey, &cm); err != nil {
 		logger.Error(err, "unable to lookup images configMap")
-		return ctrl.Result{}, err
-	}
-	// track config map for new images
-	if err := r.Tracker.Track(&cm, namespacedNamedFor(processor)); err != nil {
-		logger.Error(err, "unable to setup tracking of images configMap")
 		return ctrl.Result{}, err
 	}
 
 	// resolve function
 	functionNSName := types.NamespacedName{Namespace: processor.Namespace, Name: processor.Spec.FunctionRef}
 	var function v1alpha1.Function
+	r.Tracker.Track(
+		tracker.NewKey(function.GetGroupVersionKind(), functionNSName),
+		processorNSName,
+	)
 	if err := r.Client.Get(ctx, functionNSName, &function); err != nil {
 		if errors.IsNotFound(err) {
 			processor.Status.MarkFunctionNotFound(processor.Spec.FunctionRef)
@@ -127,11 +134,6 @@ func (r *ProcessorReconciler) reconcile(ctx context.Context, logger logr.Logger,
 		return ctrl.Result{Requeue: true}, err
 	}
 
-	// Track function
-	processorNSName := namespacedNamedFor(processor)
-	if err := r.Tracker.Track(&function, processorNSName); err != nil {
-		return ctrl.Result{Requeue: true}, err
-	}
 	processor.Status.PropagateFunctionStatus(&function.Status)
 	if processor.Status.FunctionImage == "" {
 		return ctrl.Result{}, fmt.Errorf("function %q does not have a latestImage", function.Name)
@@ -436,10 +438,12 @@ func (r *ProcessorReconciler) resolveStreams(ctx context.Context, processorCoord
 			Name:      streamName,
 		}
 		var stream streamingv1alpha1.Stream
+		// track stream for new cordinates
+		r.Tracker.Track(
+			tracker.NewKey(stream.GetGroupVersionKind(), streamNSName),
+			processorCoordinates,
+		)
 		if err := r.Client.Get(ctx, streamNSName, &stream); err != nil {
-			return nil, nil, err
-		}
-		if err := r.Tracker.Track(&stream, processorCoordinates); err != nil {
 			return nil, nil, err
 		}
 		addresses = append(addresses, stream.Status.Address.String())
@@ -510,7 +514,11 @@ func (r *ProcessorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	enqueueTrackedResources := &handler.EnqueueRequestsFromMapFunc{
 		ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
 			requests := []reconcile.Request{}
-			for _, item := range r.Tracker.Lookup(a.Object.(metav1.ObjectMetaAccessor)) {
+			key := tracker.NewKey(
+				a.Object.GetObjectKind().GroupVersionKind(),
+				types.NamespacedName{Namespace: a.Meta.GetNamespace(), Name: a.Meta.GetName()},
+			)
+			for _, item := range r.Tracker.Lookup(key) {
 				requests = append(requests, reconcile.Request{NamespacedName: item})
 			}
 			return requests

@@ -19,6 +19,7 @@ package v1
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	apis "github.com/projectriff/system/pkg/apis"
 )
@@ -102,6 +103,10 @@ type Revision struct {
 
 	Spec   RevisionSpec   `json:"spec,omitempty"`
 	Status RevisionStatus `json:"status,omitempty"`
+}
+
+func (*Revision) GetGroupVersionKind() schema.GroupVersionKind {
+	return GroupVersion.WithKind("Revision")
 }
 
 // +kubebuilder:object:root=true

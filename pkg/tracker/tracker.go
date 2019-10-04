@@ -22,7 +22,7 @@ import (
 	"sync"
 	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -31,10 +31,22 @@ import (
 type Tracker interface {
 	// Track tells us that "obj" is tracking changes to the
 	// referenced object.
-	Track(ref metav1.ObjectMetaAccessor, obj types.NamespacedName) error
+	Track(ref Key, obj types.NamespacedName)
 
 	// Lookup returns actively tracked objects for the reference.
-	Lookup(ref metav1.ObjectMetaAccessor) []types.NamespacedName
+	Lookup(ref Key) []types.NamespacedName
+}
+
+func NewKey(gvk schema.GroupVersionKind, namespacedName types.NamespacedName) Key {
+	return Key{
+		GroupKind:      gvk.GroupKind(),
+		NamespacedName: namespacedName,
+	}
+}
+
+type Key struct {
+	GroupKind      schema.GroupKind
+	NamespacedName types.NamespacedName
 }
 
 // New returns an implementation of Tracker that lets a Reconciler
@@ -51,7 +63,7 @@ type impl struct {
 	m sync.Mutex
 	// mapping maps from an object reference to the set of
 	// keys for objects watching it.
-	mapping map[types.UID]set
+	mapping map[Key]set
 
 	// The amount of time that an object may watch another
 	// before having to renew the lease.
@@ -65,22 +77,21 @@ var _ Tracker = (*impl)(nil)
 type set map[types.NamespacedName]time.Time
 
 // Track implements Tracker.
-func (i *impl) Track(ref metav1.ObjectMetaAccessor, obj types.NamespacedName) error {
+func (i *impl) Track(ref Key, obj types.NamespacedName) {
 	i.m.Lock()
 	defer i.m.Unlock()
 	if i.mapping == nil {
-		i.mapping = make(map[types.UID]set)
+		i.mapping = make(map[Key]set)
 	}
 
-	l, ok := i.mapping[ref.GetObjectMeta().GetUID()]
+	l, ok := i.mapping[ref]
 	if !ok {
 		l = set{}
 	}
 	// Overwrite the key with a new expiration.
 	l[obj] = time.Now().Add(i.leaseDuration)
 
-	i.mapping[ref.GetObjectMeta().GetUID()] = l
-	return nil
+	i.mapping[ref] = l
 }
 
 func isExpired(expiry time.Time) bool {
@@ -88,14 +99,14 @@ func isExpired(expiry time.Time) bool {
 }
 
 // Lookup implements Tracker.
-func (i *impl) Lookup(ref metav1.ObjectMetaAccessor) []types.NamespacedName {
+func (i *impl) Lookup(ref Key) []types.NamespacedName {
 	items := []types.NamespacedName{}
 
 	// TODO(mattmoor): Consider locking the mapping (global) for a
 	// smaller scope and leveraging a per-set lock to guard its access.
 	i.m.Lock()
 	defer i.m.Unlock()
-	s, ok := i.mapping[ref.GetObjectMeta().GetUID()]
+	s, ok := i.mapping[ref]
 	if !ok {
 		// TODO(mattmoor): We should consider logging here.
 		return items
@@ -111,7 +122,7 @@ func (i *impl) Lookup(ref metav1.ObjectMetaAccessor) []types.NamespacedName {
 	}
 
 	if len(s) == 0 {
-		delete(i.mapping, ref.GetObjectMeta().GetUID())
+		delete(i.mapping, ref)
 	}
 
 	return items

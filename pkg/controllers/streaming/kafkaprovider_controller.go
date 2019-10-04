@@ -27,6 +27,7 @@ import (
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -90,13 +91,14 @@ func (r *KafkaProviderReconciler) reconcile(ctx context.Context, log logr.Logger
 
 	// Lookup and track configMap to know which images to use
 	cm := corev1.ConfigMap{}
-	if err := r.Get(ctx, types.NamespacedName{Namespace: r.Namespace, Name: kafkaProviderImages}, &cm); err != nil {
-		log.Error(err, "unable to lookup images configMap")
-		return ctrl.Result{}, err
-	}
+	cmKey := types.NamespacedName{Namespace: r.Namespace, Name: kafkaProviderImages}
 	// track config map for new images
-	if err := r.Tracker.Track(&cm, types.NamespacedName{Namespace: kafkaProvider.GetNamespace(), Name: kafkaProvider.GetName()}); err != nil {
-		log.Error(err, "unable to setup tracking of images configMap")
+	r.Tracker.Track(
+		tracker.NewKey(schema.GroupVersionKind{Version: "v1", Kind: "ConfigMap"}, cmKey),
+		types.NamespacedName{Namespace: kafkaProvider.GetNamespace(), Name: kafkaProvider.GetName()},
+	)
+	if err := r.Get(ctx, cmKey, &cm); err != nil {
+		log.Error(err, "unable to lookup images configMap")
 		return ctrl.Result{}, err
 	}
 
@@ -590,7 +592,11 @@ func (r *KafkaProviderReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
 			requests := []reconcile.Request{}
 			if a.Meta.GetNamespace() == r.Namespace && a.Meta.GetName() == kafkaProviderImages {
-				for _, item := range r.Tracker.Lookup(a.Object.(metav1.ObjectMetaAccessor)) {
+				key := tracker.NewKey(
+					a.Object.GetObjectKind().GroupVersionKind(),
+					types.NamespacedName{Namespace: a.Meta.GetNamespace(), Name: a.Meta.GetName()},
+				)
+				for _, item := range r.Tracker.Lookup(key) {
 					requests = append(requests, reconcile.Request{NamespacedName: item})
 				}
 			}

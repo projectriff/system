@@ -24,7 +24,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -127,6 +126,12 @@ func (r *AdapterReconciler) reconcileBuildImage(ctx context.Context, log logr.Lo
 	switch {
 	case build.ApplicationRef != "":
 		var application buildv1alpha1.Application
+		key := types.NamespacedName{Namespace: adapter.Namespace, Name: build.ApplicationRef}
+		// track application for new images
+		r.Tracker.Track(
+			tracker.NewKey(application.GetGroupVersionKind(), key),
+			types.NamespacedName{Namespace: adapter.Namespace, Name: adapter.Name},
+		)
 		if err := r.Get(ctx, types.NamespacedName{Namespace: adapter.Namespace, Name: build.ApplicationRef}, &application); err != nil {
 			return err
 		}
@@ -135,16 +140,17 @@ func (r *AdapterReconciler) reconcileBuildImage(ctx context.Context, log logr.Lo
 		}
 		adapter.Status.LatestImage = application.Status.LatestImage
 		adapter.Status.MarkBuildReady()
-
-		// track application for new images
-		return r.Tracker.Track(&application, types.NamespacedName{
-			Namespace: adapter.GetNamespace(),
-			Name:      adapter.GetName(),
-		})
+		return nil
 
 	case build.ContainerRef != "":
 		var container buildv1alpha1.Container
-		if err := r.Get(ctx, types.NamespacedName{Namespace: adapter.Namespace, Name: build.ContainerRef}, &container); err != nil {
+		key := types.NamespacedName{Namespace: adapter.Namespace, Name: build.ContainerRef}
+		// track container for new images
+		r.Tracker.Track(
+			tracker.NewKey(container.GetGroupVersionKind(), key),
+			types.NamespacedName{Namespace: adapter.Namespace, Name: adapter.Name},
+		)
+		if err := r.Get(ctx, key, &container); err != nil {
 			return err
 		}
 		if container.Status.LatestImage == "" {
@@ -152,16 +158,17 @@ func (r *AdapterReconciler) reconcileBuildImage(ctx context.Context, log logr.Lo
 		}
 		adapter.Status.LatestImage = container.Status.LatestImage
 		adapter.Status.MarkBuildReady()
-
-		// track container for new images
-		return r.Tracker.Track(&container, types.NamespacedName{
-			Namespace: adapter.GetNamespace(),
-			Name:      adapter.GetName(),
-		})
+		return nil
 
 	case build.FunctionRef != "":
 		var function buildv1alpha1.Function
-		if err := r.Get(ctx, types.NamespacedName{Namespace: adapter.Namespace, Name: build.FunctionRef}, &function); err != nil {
+		key := types.NamespacedName{Namespace: adapter.Namespace, Name: build.FunctionRef}
+		// track function for new images
+		r.Tracker.Track(
+			tracker.NewKey(function.GetGroupVersionKind(), key),
+			types.NamespacedName{Namespace: adapter.Namespace, Name: adapter.Name},
+		)
+		if err := r.Get(ctx, key, &function); err != nil {
 			return err
 		}
 		if function.Status.LatestImage == "" {
@@ -169,12 +176,7 @@ func (r *AdapterReconciler) reconcileBuildImage(ctx context.Context, log logr.Lo
 		}
 		adapter.Status.LatestImage = function.Status.LatestImage
 		adapter.Status.MarkBuildReady()
-
-		// track function for new images
-		return r.Tracker.Track(&function, types.NamespacedName{
-			Namespace: adapter.GetNamespace(),
-			Name:      adapter.GetName(),
-		})
+		return nil
 	}
 
 	return fmt.Errorf("invalid adapter build")
@@ -186,6 +188,12 @@ func (r *AdapterReconciler) reconcileTarget(ctx context.Context, log logr.Logger
 	switch {
 	case target.ServiceRef != "":
 		var service servingv1.Service
+		key := types.NamespacedName{Namespace: adapter.Namespace, Name: target.ServiceRef}
+		// track service for changes
+		r.Tracker.Track(
+			tracker.NewKey(service.GetGroupVersionKind(), key),
+			types.NamespacedName{Namespace: adapter.Namespace, Name: adapter.Name},
+		)
 		if err := r.Get(ctx, types.NamespacedName{Namespace: adapter.Namespace, Name: target.ServiceRef}, &service); err != nil {
 			if errors.IsNotFound(err) {
 				adapter.Status.MarkTargetNotFound("service", target.ServiceRef)
@@ -203,19 +211,17 @@ func (r *AdapterReconciler) reconcileTarget(ctx context.Context, log logr.Logger
 		// update service
 		service = *(service.DeepCopy())
 		service.Spec.Template.Spec.Containers[0].Image = adapter.Status.LatestImage
-		if err := r.Update(ctx, &service); err != nil {
-			return err
-		}
-
-		// track service for changes
-		return r.Tracker.Track(&service, types.NamespacedName{
-			Namespace: adapter.GetNamespace(),
-			Name:      adapter.GetName(),
-		})
+		return r.Update(ctx, &service)
 
 	case target.ConfigurationRef != "":
 		var configuration servingv1.Configuration
-		if err := r.Get(ctx, types.NamespacedName{Namespace: adapter.Namespace, Name: target.ConfigurationRef}, &configuration); err != nil {
+		key := types.NamespacedName{Namespace: adapter.Namespace, Name: target.ConfigurationRef}
+		// track configuration for changes
+		r.Tracker.Track(
+			tracker.NewKey(configuration.GetGroupVersionKind(), key),
+			types.NamespacedName{Namespace: adapter.Namespace, Name: adapter.Name},
+		)
+		if err := r.Get(ctx, key, &configuration); err != nil {
 			if errors.IsNotFound(err) {
 				adapter.Status.MarkTargetNotFound("configuration", target.ConfigurationRef)
 				return nil
@@ -232,15 +238,8 @@ func (r *AdapterReconciler) reconcileTarget(ctx context.Context, log logr.Logger
 		// update configuration
 		configuration = *(configuration.DeepCopy())
 		configuration.Spec.Template.Spec.Containers[0].Image = adapter.Status.LatestImage
-		if err := r.Update(ctx, &configuration); err != nil {
-			return err
-		}
+		return r.Update(ctx, &configuration)
 
-		// track configuration for changes
-		return r.Tracker.Track(&configuration, types.NamespacedName{
-			Namespace: adapter.GetNamespace(),
-			Name:      adapter.GetName(),
-		})
 	}
 
 	return fmt.Errorf("invalid adapter target")
@@ -250,7 +249,11 @@ func (r *AdapterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	enqueueTrackedResources := &handler.EnqueueRequestsFromMapFunc{
 		ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
 			requests := []reconcile.Request{}
-			for _, item := range r.Tracker.Lookup(a.Object.(metav1.ObjectMetaAccessor)) {
+			key := tracker.NewKey(
+				a.Object.GetObjectKind().GroupVersionKind(),
+				types.NamespacedName{Namespace: a.Meta.GetNamespace(), Name: a.Meta.GetName()},
+			)
+			for _, item := range r.Tracker.Lookup(key) {
 				requests = append(requests, reconcile.Request{NamespacedName: item})
 			}
 			return requests

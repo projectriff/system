@@ -18,6 +18,7 @@ package v1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	apis "github.com/projectriff/system/pkg/apis"
 )
@@ -78,6 +79,10 @@ type Configuration struct {
 
 	Spec   ConfigurationSpec   `json:"spec,omitempty"`
 	Status ConfigurationStatus `json:"status,omitempty"`
+}
+
+func (*Configuration) GetGroupVersionKind() schema.GroupVersionKind {
+	return GroupVersion.WithKind("Configuration")
 }
 
 // +kubebuilder:object:root=true

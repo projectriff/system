@@ -18,6 +18,7 @@ package v1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	apis "github.com/projectriff/system/pkg/apis"
 )
@@ -133,6 +134,10 @@ type Route struct {
 
 	Spec   RouteSpec   `json:"spec,omitempty"`
 	Status RouteStatus `json:"status,omitempty"`
+}
+
+func (*Route) GetGroupVersionKind() schema.GroupVersionKind {
+	return GroupVersion.WithKind("Route")
 }
 
 // +kubebuilder:object:root=true

@@ -16,9 +16,16 @@
 
 package apis
 
-import "context"
+import (
+	"context"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+)
 
 type Resource interface {
+	GetGroupVersionKind() schema.GroupVersionKind
+	GetObjectMeta() metav1.Object
 	GetStatus() ResourceStatus
 }
 
