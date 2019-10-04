@@ -56,6 +56,9 @@ type DeployerStatus struct {
 
 	apis.Status `json:",inline"`
 
+	// LatestImage is the most recent image resolved from the build
+	LatestImage string `json:"latestImage,omitempty"`
+
 	// ConfigurationName is the name of the Knative Serving configuration
 	// backing this deployer.
 	ConfigurationName string `json:"configurationName,omitempty"`

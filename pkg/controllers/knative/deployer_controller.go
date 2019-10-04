@@ -277,6 +277,9 @@ func (r *DeployerReconciler) constructConfigurationForDeployer(deployer *knative
 			},
 		},
 	}
+	if configuration.Spec.Template.Spec.Containers[0].Image == "" {
+		configuration.Spec.Template.Spec.Containers[0].Image = deployer.Status.LatestImage
+	}
 	if err := ctrl.SetControllerReference(deployer, configuration, r.Scheme); err != nil {
 		return nil, err
 	}
