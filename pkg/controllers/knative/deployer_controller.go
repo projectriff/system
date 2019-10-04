@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -36,6 +37,7 @@ import (
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	knativev1alpha1 "github.com/projectriff/system/pkg/apis/knative/v1alpha1"
 	servingv1 "github.com/projectriff/system/pkg/apis/thirdparty/knative/serving/v1"
+	"github.com/projectriff/system/pkg/printers"
 	"github.com/projectriff/system/pkg/tracker"
 )
 
@@ -77,6 +79,7 @@ func (r *DeployerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// check if status has changed before updating, unless requeued
 	if !result.Requeue && !equality.Semantic.DeepEqual(deployer.Status, originalDeployer.Status) {
 		// update status
+		log.Info(fmt.Sprintf("Updating deployer status diff (-current, +desired): %s", cmp.Diff(originalDeployer.Status, deployer.Status)))
 		if updateErr := r.Status().Update(ctx, &deployer); updateErr != nil {
 			log.Error(updateErr, "unable to update Deployer status", "deployer", deployer)
 			return ctrl.Result{Requeue: true}, updateErr
@@ -224,6 +227,7 @@ func (r *DeployerReconciler) reconcileChildConfiguration(ctx context.Context, lo
 
 	// create configuration if it doesn't exist
 	if deployer.Status.ConfigurationName == "" {
+		log.Info(fmt.Sprintf("Creating configuration spec: %s", printers.Pretty(desiredConfiguration.Spec)))
 		if err := r.Create(ctx, desiredConfiguration); err != nil {
 			log.Error(err, "unable to create Configuration for Deployer", "configuration", desiredConfiguration)
 			return nil, err
@@ -240,6 +244,7 @@ func (r *DeployerReconciler) reconcileChildConfiguration(ctx context.Context, lo
 	configuration := actualConfiguration.DeepCopy()
 	configuration.ObjectMeta.Labels = desiredConfiguration.ObjectMeta.Labels
 	configuration.Spec = desiredConfiguration.Spec
+	log.Info(fmt.Sprintf("Reconciling configuration spec diff (-current, +desired): %s", cmp.Diff(actualConfiguration.Spec, configuration.Spec)))
 	if err := r.Update(ctx, configuration); err != nil {
 		log.Error(err, "unable to update Configuration for Deployer", "configuration", configuration)
 		return nil, err
@@ -319,6 +324,7 @@ func (r *DeployerReconciler) reconcileChildRoute(ctx context.Context, log logr.L
 
 	// create route if it doesn't exist
 	if deployer.Status.RouteName == "" {
+		log.Info(fmt.Sprintf("Creating route spec: %s", printers.Pretty(desiredRoute.Spec)))
 		if err := r.Create(ctx, desiredRoute); err != nil {
 			log.Error(err, "unable to create Route for Deployer", "route", desiredRoute)
 			return nil, err
@@ -335,6 +341,7 @@ func (r *DeployerReconciler) reconcileChildRoute(ctx context.Context, log logr.L
 	route := actualRoute.DeepCopy()
 	route.ObjectMeta.Labels = desiredRoute.ObjectMeta.Labels
 	route.Spec = desiredRoute.Spec
+	log.Info(fmt.Sprintf("Reconciling route spec diff (-current, +desired): %s", cmp.Diff(actualRoute.Spec, route.Spec)))
 	if err := r.Update(ctx, route); err != nil {
 		log.Error(err, "unable to update Route for Deployer", "configuration", route)
 		return nil, err

@@ -18,8 +18,10 @@ package streaming
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
+	"github.com/google/go-cmp/cmp"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -58,6 +60,7 @@ func (r *StreamReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// check if status has changed before updating, unless requeued
 	if !result.Requeue && !equality.Semantic.DeepEqual(stream.Status, original.Status) {
 		// update status
+		log.Info(fmt.Sprintf("Updating stream status diff (-current, +desired): %s", cmp.Diff(original.Status, stream.Status)))
 		if updateErr := r.Status().Update(ctx, stream); updateErr != nil {
 			log.Error(updateErr, "unable to update Stream status", "stream", stream)
 			return ctrl.Result{Requeue: true}, updateErr

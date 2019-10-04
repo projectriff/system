@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	"github.com/google/go-cmp/cmp"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -76,6 +77,7 @@ func (r *AdapterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// check if status has changed before updating, unless requeued
 	if !result.Requeue && !equality.Semantic.DeepEqual(adapter.Status, originalAdapter.Status) {
 		// update status
+		log.Info(fmt.Sprintf("Updating adapter status diff (-current, +desired): %s", cmp.Diff(originalAdapter.Status, adapter.Status)))
 		if updateErr := r.Status().Update(ctx, &adapter); updateErr != nil {
 			log.Error(updateErr, "unable to update Adapter status", "adapter", adapter)
 			return ctrl.Result{Requeue: true}, updateErr
@@ -187,14 +189,14 @@ func (r *AdapterReconciler) reconcileTarget(ctx context.Context, log logr.Logger
 
 	switch {
 	case target.ServiceRef != "":
-		var service servingv1.Service
+		var actualService servingv1.Service
 		key := types.NamespacedName{Namespace: adapter.Namespace, Name: target.ServiceRef}
 		// track service for changes
 		r.Tracker.Track(
-			tracker.NewKey(service.GetGroupVersionKind(), key),
+			tracker.NewKey(actualService.GetGroupVersionKind(), key),
 			types.NamespacedName{Namespace: adapter.Namespace, Name: adapter.Name},
 		)
-		if err := r.Get(ctx, types.NamespacedName{Namespace: adapter.Namespace, Name: target.ServiceRef}, &service); err != nil {
+		if err := r.Get(ctx, types.NamespacedName{Namespace: adapter.Namespace, Name: target.ServiceRef}, &actualService); err != nil {
 			if errors.IsNotFound(err) {
 				adapter.Status.MarkTargetNotFound("service", target.ServiceRef)
 				return nil
@@ -203,25 +205,26 @@ func (r *AdapterReconciler) reconcileTarget(ctx context.Context, log logr.Logger
 		}
 		adapter.Status.MarkTargetFound()
 
-		if service.Spec.Template.Spec.Containers[0].Image == adapter.Status.LatestImage {
+		if actualService.Spec.Template.Spec.Containers[0].Image == adapter.Status.LatestImage {
 			// already latest image
 			return nil
 		}
 
 		// update service
-		service = *(service.DeepCopy())
+		service := *(actualService.DeepCopy())
 		service.Spec.Template.Spec.Containers[0].Image = adapter.Status.LatestImage
+		log.Info(fmt.Sprintf("Reconciling service spec diff (-current, +desired): %s", cmp.Diff(actualService.Spec, service.Spec)))
 		return r.Update(ctx, &service)
 
 	case target.ConfigurationRef != "":
-		var configuration servingv1.Configuration
+		var actualConfiguration servingv1.Configuration
 		key := types.NamespacedName{Namespace: adapter.Namespace, Name: target.ConfigurationRef}
 		// track configuration for changes
 		r.Tracker.Track(
-			tracker.NewKey(configuration.GetGroupVersionKind(), key),
+			tracker.NewKey(actualConfiguration.GetGroupVersionKind(), key),
 			types.NamespacedName{Namespace: adapter.Namespace, Name: adapter.Name},
 		)
-		if err := r.Get(ctx, key, &configuration); err != nil {
+		if err := r.Get(ctx, key, &actualConfiguration); err != nil {
 			if errors.IsNotFound(err) {
 				adapter.Status.MarkTargetNotFound("configuration", target.ConfigurationRef)
 				return nil
@@ -230,14 +233,15 @@ func (r *AdapterReconciler) reconcileTarget(ctx context.Context, log logr.Logger
 		}
 		adapter.Status.MarkTargetFound()
 
-		if configuration.Spec.Template.Spec.Containers[0].Image == adapter.Status.LatestImage {
+		if actualConfiguration.Spec.Template.Spec.Containers[0].Image == adapter.Status.LatestImage {
 			// already latest image
 			return nil
 		}
 
 		// update configuration
-		configuration = *(configuration.DeepCopy())
+		configuration := *(actualConfiguration.DeepCopy())
 		configuration.Spec.Template.Spec.Containers[0].Image = adapter.Status.LatestImage
+		log.Info(fmt.Sprintf("Reconciling configuration spec diff (-current, +desired): %s", cmp.Diff(actualConfiguration.Spec, configuration.Spec)))
 		return r.Update(ctx, &configuration)
 
 	}

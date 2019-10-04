@@ -18,9 +18,11 @@ package build
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/go-logr/logr"
+	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -33,6 +35,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	kpackbuildv1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/kpack/build/v1alpha1"
+	"github.com/projectriff/system/pkg/printers"
 )
 
 const buildersConfigMap = "builders"
@@ -90,13 +93,13 @@ func (r *ClusterBuilderReconciler) reconcile(ctx context.Context, log logr.Logge
 	}
 
 	if configMap.Name == "" {
-		configMap, err := r.createConfigMap(ctx, builderImages)
+		configMap, err := r.createConfigMap(ctx, log, builderImages)
 		if err != nil {
 			log.Error(err, "Failed to create ConfigMap", "configmap", configMap)
 			return ctrl.Result{}, err
 		}
 	} else {
-		configMap, err := r.reconcileConfigMap(ctx, configMap, builderImages)
+		configMap, err := r.reconcileConfigMap(ctx, log, configMap, builderImages)
 		if err != nil {
 			log.Error(err, "Failed to reconcile ConfigMap", "configmap", configMap)
 			return ctrl.Result{}, err
@@ -106,7 +109,7 @@ func (r *ClusterBuilderReconciler) reconcile(ctx context.Context, log logr.Logge
 	return ctrl.Result{}, nil
 }
 
-func (r *ClusterBuilderReconciler) reconcileConfigMap(ctx context.Context, existingConfigMap *corev1.ConfigMap, builderImages map[string]string) (*corev1.ConfigMap, error) {
+func (r *ClusterBuilderReconciler) reconcileConfigMap(ctx context.Context, log logr.Logger, existingConfigMap *corev1.ConfigMap, builderImages map[string]string) (*corev1.ConfigMap, error) {
 	configMap := existingConfigMap.DeepCopy()
 	configMap.Data = builderImages
 
@@ -114,10 +117,11 @@ func (r *ClusterBuilderReconciler) reconcileConfigMap(ctx context.Context, exist
 		return existingConfigMap, nil
 	}
 
+	log.Info(fmt.Sprintf("Reconciling builders configmap data diff (-current, +desired): %s", cmp.Diff(existingConfigMap.Data, configMap.Data)))
 	return configMap, r.Update(ctx, configMap)
 }
 
-func (r *ClusterBuilderReconciler) createConfigMap(ctx context.Context, builderImages map[string]string) (*corev1.ConfigMap, error) {
+func (r *ClusterBuilderReconciler) createConfigMap(ctx context.Context, log logr.Logger, builderImages map[string]string) (*corev1.ConfigMap, error) {
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      buildersConfigMap,
@@ -125,6 +129,7 @@ func (r *ClusterBuilderReconciler) createConfigMap(ctx context.Context, builderI
 		},
 		Data: builderImages,
 	}
+	log.Info(fmt.Sprintf("Creating builders configmap data: %s", printers.Pretty(configMap.Data)))
 	return configMap, r.Create(ctx, configMap)
 }
 
