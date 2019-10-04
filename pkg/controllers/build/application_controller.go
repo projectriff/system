@@ -101,8 +101,8 @@ func (r *ApplicationReconciler) reconcile(ctx context.Context, log logr.Logger, 
 	application.Status.MarkImageResolved()
 	application.Status.TargetImage = targetImage
 
-	// reconcile child image
-	childImage, err := r.reconcileChildImage(ctx, log, application)
+	// reconcile child kpack image
+	childImage, err := r.reconcileChildKpackImage(ctx, log, application)
 	if err != nil {
 		log.Error(err, "unable to reconcile child Image", "application", application)
 		return ctrl.Result{}, err
@@ -144,7 +144,7 @@ func (r *ApplicationReconciler) resolveTargetImage(ctx context.Context, log logr
 	return image, nil
 }
 
-func (r *ApplicationReconciler) reconcileChildImage(ctx context.Context, log logr.Logger, application *buildv1alpha1.Application) (*kpackbuildv1alpha1.Image, error) {
+func (r *ApplicationReconciler) reconcileChildKpackImage(ctx context.Context, log logr.Logger, application *buildv1alpha1.Application) (*kpackbuildv1alpha1.Image, error) {
 	var actualImage kpackbuildv1alpha1.Image
 	if application.Status.KpackImageName != "" {
 		if err := r.Get(ctx, types.NamespacedName{Namespace: application.Namespace, Name: application.Status.KpackImageName}, &actualImage); err != nil {
@@ -168,11 +168,13 @@ func (r *ApplicationReconciler) reconcileChildImage(ctx context.Context, log log
 		return nil, err
 	}
 
-	// delete image if no longer needed
 	if desiredImage == nil {
-		if err := r.Delete(ctx, &actualImage); err != nil {
-			log.Error(err, "unable to delete kpack Image for Application", "image", actualImage)
-			return nil, err
+		// delete image if no longer needed
+		if actualImage.Name != "" {
+			if err := r.Delete(ctx, &actualImage); err != nil {
+				log.Error(err, "unable to delete kpack Image for Application", "image", actualImage)
+				return nil, err
+			}
 		}
 		return nil, nil
 	}
