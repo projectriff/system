@@ -19,6 +19,7 @@ limitations under the License.
 package tracker
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -49,6 +50,10 @@ type Key struct {
 	NamespacedName types.NamespacedName
 }
 
+func (k *Key) String() string {
+	return fmt.Sprintf("%s/%s", k.GroupKind, k.NamespacedName)
+}
+
 // New returns an implementation of Tracker that lets a Reconciler
 // register a particular resource as watching a resource for
 // a particular lease duration.  This watch must be refreshed
@@ -63,7 +68,7 @@ type impl struct {
 	m sync.Mutex
 	// mapping maps from an object reference to the set of
 	// keys for objects watching it.
-	mapping map[Key]set
+	mapping map[string]set
 
 	// The amount of time that an object may watch another
 	// before having to renew the lease.
@@ -81,17 +86,17 @@ func (i *impl) Track(ref Key, obj types.NamespacedName) {
 	i.m.Lock()
 	defer i.m.Unlock()
 	if i.mapping == nil {
-		i.mapping = make(map[Key]set)
+		i.mapping = make(map[string]set)
 	}
 
-	l, ok := i.mapping[ref]
+	l, ok := i.mapping[ref.String()]
 	if !ok {
 		l = set{}
 	}
 	// Overwrite the key with a new expiration.
 	l[obj] = time.Now().Add(i.leaseDuration)
 
-	i.mapping[ref] = l
+	i.mapping[ref.String()] = l
 }
 
 func isExpired(expiry time.Time) bool {
@@ -106,7 +111,7 @@ func (i *impl) Lookup(ref Key) []types.NamespacedName {
 	// smaller scope and leveraging a per-set lock to guard its access.
 	i.m.Lock()
 	defer i.m.Unlock()
-	s, ok := i.mapping[ref]
+	s, ok := i.mapping[ref.String()]
 	if !ok {
 		// TODO(mattmoor): We should consider logging here.
 		return items
@@ -122,7 +127,7 @@ func (i *impl) Lookup(ref Key) []types.NamespacedName {
 	}
 
 	if len(s) == 0 {
-		delete(i.mapping, ref)
+		delete(i.mapping, ref.String())
 	}
 
 	return items
