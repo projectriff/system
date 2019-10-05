@@ -69,12 +69,6 @@ func (r *StreamReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	return result, err
 }
 
-func (r *StreamReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&streamingv1alpha1.Stream{}).
-		Complete(r)
-}
-
 func (r *StreamReconciler) reconcile(ctx context.Context, logger logr.Logger, stream *streamingv1alpha1.Stream) (ctrl.Result, error) {
 	if stream.GetDeletionTimestamp() != nil {
 		return ctrl.Result{}, nil
@@ -100,4 +94,10 @@ func (r *StreamReconciler) reconcile(ctx context.Context, logger logr.Logger, st
 	stream.Status.ObservedGeneration = stream.Generation
 
 	return ctrl.Result{}, nil
+}
+
+func (r *StreamReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&streamingv1alpha1.Stream{}).
+		Complete(r)
 }

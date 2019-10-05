@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
+	"github.com/projectriff/system/pkg/apis"
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	knativev1alpha1 "github.com/projectriff/system/pkg/apis/knative/v1alpha1"
 	servingv1 "github.com/projectriff/system/pkg/apis/thirdparty/knative/serving/v1"
@@ -404,18 +405,20 @@ func (r *DeployerReconciler) constructLabelsForDeployer(deployer *knativev1alpha
 }
 
 func (r *DeployerReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	enqueueTrackedResources := &handler.EnqueueRequestsFromMapFunc{
-		ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
-			requests := []reconcile.Request{}
-			key := tracker.NewKey(
-				a.Object.GetObjectKind().GroupVersionKind(),
-				types.NamespacedName{Namespace: a.Meta.GetNamespace(), Name: a.Meta.GetName()},
-			)
-			for _, item := range r.Tracker.Lookup(key) {
-				requests = append(requests, reconcile.Request{NamespacedName: item})
-			}
-			return requests
-		}),
+	enqueueTrackedResources := func(t apis.Resource) handler.EventHandler {
+		return &handler.EnqueueRequestsFromMapFunc{
+			ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
+				requests := []reconcile.Request{}
+				key := tracker.NewKey(
+					t.GetGroupVersionKind(),
+					types.NamespacedName{Namespace: a.Meta.GetNamespace(), Name: a.Meta.GetName()},
+				)
+				for _, item := range r.Tracker.Lookup(key) {
+					requests = append(requests, reconcile.Request{NamespacedName: item})
+				}
+				return requests
+			}),
+		}
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).
@@ -423,8 +426,8 @@ func (r *DeployerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&servingv1.Configuration{}).
 		Owns(&servingv1.Route{}).
 		// watch for build mutations to update dependent deployers
-		Watches(&source.Kind{Type: &buildv1alpha1.Application{}}, enqueueTrackedResources).
-		Watches(&source.Kind{Type: &buildv1alpha1.Container{}}, enqueueTrackedResources).
-		Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, enqueueTrackedResources).
+		Watches(&source.Kind{Type: &buildv1alpha1.Application{}}, enqueueTrackedResources(&buildv1alpha1.Application{})).
+		Watches(&source.Kind{Type: &buildv1alpha1.Container{}}, enqueueTrackedResources(&buildv1alpha1.Container{})).
+		Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, enqueueTrackedResources(&buildv1alpha1.Function{})).
 		Complete(r)
 }

@@ -40,6 +40,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
+	"github.com/projectriff/system/pkg/apis"
 	kedav1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/keda/v1alpha1"
 	"github.com/projectriff/system/pkg/printers"
 
@@ -518,25 +519,27 @@ func (r *ProcessorReconciler) serializeContentTypes(outputContentTypes []string)
 }
 
 func (r *ProcessorReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	enqueueTrackedResources := &handler.EnqueueRequestsFromMapFunc{
-		ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
-			requests := []reconcile.Request{}
-			key := tracker.NewKey(
-				a.Object.GetObjectKind().GroupVersionKind(),
-				types.NamespacedName{Namespace: a.Meta.GetNamespace(), Name: a.Meta.GetName()},
-			)
-			for _, item := range r.Tracker.Lookup(key) {
-				requests = append(requests, reconcile.Request{NamespacedName: item})
-			}
-			return requests
-		}),
+	enqueueTrackedResources := func(t apis.Resource) handler.EventHandler {
+		return &handler.EnqueueRequestsFromMapFunc{
+			ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
+				requests := []reconcile.Request{}
+				key := tracker.NewKey(
+					t.GetGroupVersionKind(),
+					types.NamespacedName{Namespace: a.Meta.GetNamespace(), Name: a.Meta.GetName()},
+				)
+				for _, item := range r.Tracker.Lookup(key) {
+					requests = append(requests, reconcile.Request{NamespacedName: item})
+				}
+				return requests
+			}),
+		}
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&streamingv1alpha1.Processor{}).
 		Owns(&appsv1.Deployment{}).
 		Owns(&kedav1alpha1.ScaledObject{}).
-		Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, enqueueTrackedResources).
-		Watches(&source.Kind{Type: &streamingv1alpha1.Stream{}}, enqueueTrackedResources).
+		Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, enqueueTrackedResources(&buildv1alpha1.Function{})).
+		Watches(&source.Kind{Type: &streamingv1alpha1.Stream{}}, enqueueTrackedResources(&streamingv1alpha1.Stream{})).
 		Complete(r)
 }

@@ -23,6 +23,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -58,14 +59,17 @@ func (k *Key) String() string {
 // register a particular resource as watching a resource for
 // a particular lease duration.  This watch must be refreshed
 // periodically (e.g. by a controller resync) or it will expire.
-func New(lease time.Duration) Tracker {
+func New(lease time.Duration, log logr.Logger) Tracker {
 	return &impl{
+		log:           log,
 		leaseDuration: lease,
 	}
 }
 
 type impl struct {
-	m sync.Mutex
+	log logr.Logger
+	m   sync.Mutex
+
 	// mapping maps from an object reference to the set of
 	// keys for objects watching it.
 	mapping map[string]set
@@ -97,6 +101,8 @@ func (i *impl) Track(ref Key, obj types.NamespacedName) {
 	l[obj] = time.Now().Add(i.leaseDuration)
 
 	i.mapping[ref.String()] = l
+
+	i.log.Info("Tracking resource", "ref", ref.String(), "obj", obj.String(), "ttl", l[obj].UTC().Format(time.RFC3339))
 }
 
 func isExpired(expiry time.Time) bool {
@@ -113,7 +119,7 @@ func (i *impl) Lookup(ref Key) []types.NamespacedName {
 	defer i.m.Unlock()
 	s, ok := i.mapping[ref.String()]
 	if !ok {
-		// TODO(mattmoor): We should consider logging here.
+		i.log.V(1).Info("No tracked items found", "ref", ref.String())
 		return items
 	}
 
@@ -129,6 +135,8 @@ func (i *impl) Lookup(ref Key) []types.NamespacedName {
 	if len(s) == 0 {
 		delete(i.mapping, ref.String())
 	}
+
+	i.log.V(1).Info("Found tracked items", "ref", ref.String(), "items", items)
 
 	return items
 }
