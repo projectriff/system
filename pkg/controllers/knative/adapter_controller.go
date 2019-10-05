@@ -78,7 +78,7 @@ func (r *AdapterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// check if status has changed before updating, unless requeued
 	if !result.Requeue && !equality.Semantic.DeepEqual(adapter.Status, originalAdapter.Status) {
 		// update status
-		log.Info(fmt.Sprintf("Updating adapter status diff (-current, +desired): %s", cmp.Diff(originalAdapter.Status, adapter.Status)))
+		log.Info("updating adapter status", "diff", cmp.Diff(originalAdapter.Status, adapter.Status))
 		if updateErr := r.Status().Update(ctx, &adapter); updateErr != nil {
 			log.Error(updateErr, "unable to update Adapter status", "adapter", adapter)
 			return ctrl.Result{Requeue: true}, updateErr
@@ -214,7 +214,7 @@ func (r *AdapterReconciler) reconcileTarget(ctx context.Context, log logr.Logger
 		// update service
 		service := *(actualService.DeepCopy())
 		service.Spec.Template.Spec.Containers[0].Image = adapter.Status.LatestImage
-		log.Info(fmt.Sprintf("Reconciling service spec diff (-current, +desired): %s", cmp.Diff(actualService.Spec, service.Spec)))
+		log.Info("reconciling service", "diff", cmp.Diff(actualService.Spec, service.Spec))
 		return r.Update(ctx, &service)
 
 	case target.ConfigurationRef != "":
@@ -242,7 +242,7 @@ func (r *AdapterReconciler) reconcileTarget(ctx context.Context, log logr.Logger
 		// update configuration
 		configuration := *(actualConfiguration.DeepCopy())
 		configuration.Spec.Template.Spec.Containers[0].Image = adapter.Status.LatestImage
-		log.Info(fmt.Sprintf("Reconciling configuration spec diff (-current, +desired): %s", cmp.Diff(actualConfiguration.Spec, configuration.Spec)))
+		log.Info("reconciling configuration", "diff", cmp.Diff(actualConfiguration.Spec, configuration.Spec))
 		return r.Update(ctx, &configuration)
 
 	}

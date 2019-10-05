@@ -18,7 +18,6 @@ package build
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/go-logr/logr"
@@ -39,7 +38,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
-	"github.com/projectriff/system/pkg/printers"
 )
 
 const riffBuildServiceAccount = "riff-build"
@@ -142,7 +140,7 @@ func (r *CredentialReconciler) reconcileServiceAccount(ctx context.Context, log 
 		return serviceAccount, nil
 	}
 
-	log.Info(fmt.Sprintf("Reconciling serviceaccount secrets (-current, +desired): %s", cmp.Diff(existingServiceAccount.Secrets, serviceAccount.Secrets)))
+	log.Info("reconciling serviceaccount", "diff", cmp.Diff(existingServiceAccount.Secrets, serviceAccount.Secrets))
 	return serviceAccount, r.Update(ctx, serviceAccount)
 }
 
@@ -179,7 +177,7 @@ func (r *CredentialReconciler) createServiceAccount(ctx context.Context, log log
 	for i, secretName := range secretNames.UnsortedList() {
 		serviceAccount.Secrets[i] = corev1.ObjectReference{Name: secretName}
 	}
-	log.Info(fmt.Sprintf("Creating serviceaccount secrets: %s", printers.Pretty(serviceAccount.Secrets)))
+	log.Info("creating serviceaccount", "secrets", serviceAccount.Secrets)
 	return serviceAccount, r.Create(ctx, serviceAccount)
 }
 

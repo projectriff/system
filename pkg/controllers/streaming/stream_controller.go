@@ -18,7 +18,6 @@ package streaming
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"
@@ -60,7 +59,7 @@ func (r *StreamReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// check if status has changed before updating, unless requeued
 	if !result.Requeue && !equality.Semantic.DeepEqual(stream.Status, original.Status) {
 		// update status
-		log.Info(fmt.Sprintf("Updating stream status diff (-current, +desired): %s", cmp.Diff(original.Status, stream.Status)))
+		log.Info("updating stream status", "diff", cmp.Diff(original.Status, stream.Status))
 		if updateErr := r.Status().Update(ctx, stream); updateErr != nil {
 			log.Error(updateErr, "unable to update Stream status", "stream", stream)
 			return ctrl.Result{Requeue: true}, updateErr
@@ -83,7 +82,7 @@ func (r *StreamReconciler) reconcile(ctx context.Context, logger logr.Logger, st
 	stream.Status.InitializeConditions()
 
 	// delegate to the provider via its REST API
-	logger.Info("Calling provisioner for Stream", "provisioner", stream.Spec.Provider)
+	logger.Info("calling provisioner for Stream", "provisioner", stream.Spec.Provider)
 	address, err := r.StreamProvisionerClient.ProvisionStream(stream)
 	if err != nil {
 		stream.Status.MarkStreamProvisionFailed(err.Error())

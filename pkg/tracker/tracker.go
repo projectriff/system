@@ -102,7 +102,7 @@ func (i *impl) Track(ref Key, obj types.NamespacedName) {
 
 	i.mapping[ref.String()] = l
 
-	i.log.Info("Tracking resource", "ref", ref.String(), "obj", obj.String(), "ttl", l[obj].UTC().Format(time.RFC3339))
+	i.log.Info("tracking resource", "ref", ref.String(), "obj", obj.String(), "ttl", l[obj].UTC().Format(time.RFC3339))
 }
 
 func isExpired(expiry time.Time) bool {
@@ -119,7 +119,7 @@ func (i *impl) Lookup(ref Key) []types.NamespacedName {
 	defer i.m.Unlock()
 	s, ok := i.mapping[ref.String()]
 	if !ok {
-		i.log.V(1).Info("No tracked items found", "ref", ref.String())
+		i.log.V(1).Info("no tracked items found", "ref", ref.String())
 		return items
 	}
 
@@ -136,7 +136,7 @@ func (i *impl) Lookup(ref Key) []types.NamespacedName {
 		delete(i.mapping, ref.String())
 	}
 
-	i.log.V(1).Info("Found tracked items", "ref", ref.String(), "items", items)
+	i.log.V(1).Info("found tracked items", "ref", ref.String(), "items", items)
 
 	return items
 }
