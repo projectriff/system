@@ -455,7 +455,7 @@ func (r *KafkaProviderReconciler) constructProvisionerDeploymentForKafkaProvider
 	labels := r.constructProvisionerLabelsForKafkaProvider(kafkaProvider)
 
 	env := []corev1.EnvVar{
-		{Name: "GATEWAY", Value: kafkaProvider.Status.LiiklusServiceName + ":6565"}, // TODO get port numnber from svc lookup
+		{Name: "GATEWAY", Value: fmt.Sprintf("%s.%s:6565", kafkaProvider.Status.LiiklusServiceName, kafkaProvider.Namespace)}, // TODO get port number from svc lookup?
 		{Name: "BROKER", Value: kafkaProvider.Spec.BootstrapServers},
 	}
 	deployment := &appsv1.Deployment{
