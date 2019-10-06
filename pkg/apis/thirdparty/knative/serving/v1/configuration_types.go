@@ -26,6 +26,10 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+var (
+	_ apis.Resource = (*Configuration)(nil)
+)
+
 // ConfigurationSpec holds the desired state of the Configuration (from the client).
 type ConfigurationSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
@@ -66,6 +70,22 @@ type ConfigurationStatusFields struct {
 	LatestCreatedRevisionName string `json:"latestCreatedRevisionName,omitempty"`
 }
 
+func (cs *ConfigurationStatus) GetObservedGeneration() int64 {
+	return cs.ObservedGeneration
+}
+
+func (cs *ConfigurationStatus) IsReady() bool {
+	return cs.GetCondition(cs.GetReadyConditionType()).IsTrue()
+}
+
+func (*ConfigurationStatus) GetReadyConditionType() apis.ConditionType {
+	return ConfigurationConditionReady
+}
+
+func (cs *ConfigurationStatus) GetCondition(t apis.ConditionType) *apis.Condition {
+	return cs.Status.GetCondition(t)
+}
+
 // +kubebuilder:object:root=true
 
 // Configuration represents the "floating HEAD" of a linear history of Revisions.
@@ -83,6 +103,10 @@ type Configuration struct {
 
 func (*Configuration) GetGroupVersionKind() schema.GroupVersionKind {
 	return GroupVersion.WithKind("Configuration")
+}
+
+func (c *Configuration) GetStatus() apis.ResourceStatus {
+	return &c.Status
 }
 
 // +kubebuilder:object:root=true

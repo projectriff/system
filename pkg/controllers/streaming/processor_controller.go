@@ -40,8 +40,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
+	"github.com/projectriff/system/pkg/apis"
 	kedav1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/keda/v1alpha1"
-	"github.com/projectriff/system/pkg/printers"
 
 	"github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	"github.com/projectriff/system/pkg/tracker"
@@ -87,7 +87,7 @@ func (r *ProcessorReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	// check if status has changed before updating, unless requeued
 	if !result.Requeue && !equality.Semantic.DeepEqual(original.Status, processor.Status) {
-		log.Info(fmt.Sprintf("Updating processor status diff (-current, +desired): %s", cmp.Diff(original.Status, processor.Status)))
+		log.Info("updating processor status", "diff", cmp.Diff(original.Status, processor.Status))
 		if updateErr := r.Status().Update(ctx, processor); updateErr != nil {
 			log.Error(updateErr, "unable to update Processor status")
 			return ctrl.Result{Requeue: true}, updateErr
@@ -216,7 +216,7 @@ func (r *ProcessorReconciler) reconcileProcessorScaledObject(ctx context.Context
 
 	// create scaledObject if it doesn't exist
 	if processor.Status.ScaledObjectName == "" {
-		log.Info(fmt.Sprintf("Creating scaled object spec: %s", printers.Pretty(desiredScaledObject.Spec)))
+		log.Info("creating scaled object", "spec", desiredScaledObject.Spec)
 		if err := r.Create(ctx, desiredScaledObject); err != nil {
 			log.Error(err, "unable to create ScaledObject for Processor", "scaledObject", desiredScaledObject)
 			return nil, err
@@ -234,7 +234,7 @@ func (r *ProcessorReconciler) reconcileProcessorScaledObject(ctx context.Context
 	scaledObject := actualScaledObject.DeepCopy()
 	scaledObject.ObjectMeta.Labels = desiredScaledObject.ObjectMeta.Labels
 	scaledObject.Spec = desiredScaledObject.Spec
-	log.Info(fmt.Sprintf("Reconciling scaled object spec diff (-current, +desired): %s", cmp.Diff(actualScaledObject.Spec, scaledObject.Spec)))
+	log.Info("reconciling scaled object", "diff", cmp.Diff(actualScaledObject.Spec, scaledObject.Spec))
 	if err := r.Update(ctx, scaledObject); err != nil {
 		log.Error(err, "unable to update ScaledObject for Processor", "scaledObject", scaledObject)
 		return nil, err
@@ -333,7 +333,7 @@ func (r *ProcessorReconciler) reconcileProcessorDeployment(ctx context.Context, 
 
 	// create deployment if it doesn't exist
 	if processor.Status.DeploymentName == "" {
-		log.Info(fmt.Sprintf("Creating processor deployment spec: %s", printers.Pretty(desiredDeployment.Spec)))
+		log.Info("creating processor deployment", "spec", desiredDeployment.Spec)
 		if err := r.Create(ctx, desiredDeployment); err != nil {
 			log.Error(err, "unable to create Deployment for Processor", "deployment", desiredDeployment)
 			return nil, err
@@ -354,7 +354,7 @@ func (r *ProcessorReconciler) reconcileProcessorDeployment(ctx context.Context, 
 	deployment := actualDeployment.DeepCopy()
 	deployment.ObjectMeta.Labels = desiredDeployment.ObjectMeta.Labels
 	deployment.Spec = desiredDeployment.Spec
-	log.Info(fmt.Sprintf("Reconciling processor deployment spec diff (-current, +desired): %s", cmp.Diff(actualDeployment.Spec, deployment.Spec)))
+	log.Info("reconciling processor deployment", "diff", cmp.Diff(actualDeployment.Spec, deployment.Spec))
 	if err := r.Update(ctx, deployment); err != nil {
 		log.Error(err, "unable to update Deployment for Processor", "deployment", deployment)
 		return nil, err
@@ -518,25 +518,27 @@ func (r *ProcessorReconciler) serializeContentTypes(outputContentTypes []string)
 }
 
 func (r *ProcessorReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	enqueueTrackedResources := &handler.EnqueueRequestsFromMapFunc{
-		ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
-			requests := []reconcile.Request{}
-			key := tracker.NewKey(
-				a.Object.GetObjectKind().GroupVersionKind(),
-				types.NamespacedName{Namespace: a.Meta.GetNamespace(), Name: a.Meta.GetName()},
-			)
-			for _, item := range r.Tracker.Lookup(key) {
-				requests = append(requests, reconcile.Request{NamespacedName: item})
-			}
-			return requests
-		}),
+	enqueueTrackedResources := func(t apis.Resource) handler.EventHandler {
+		return &handler.EnqueueRequestsFromMapFunc{
+			ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
+				requests := []reconcile.Request{}
+				key := tracker.NewKey(
+					t.GetGroupVersionKind(),
+					types.NamespacedName{Namespace: a.Meta.GetNamespace(), Name: a.Meta.GetName()},
+				)
+				for _, item := range r.Tracker.Lookup(key) {
+					requests = append(requests, reconcile.Request{NamespacedName: item})
+				}
+				return requests
+			}),
+		}
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&streamingv1alpha1.Processor{}).
 		Owns(&appsv1.Deployment{}).
 		Owns(&kedav1alpha1.ScaledObject{}).
-		Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, enqueueTrackedResources).
-		Watches(&source.Kind{Type: &streamingv1alpha1.Stream{}}, enqueueTrackedResources).
+		Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, enqueueTrackedResources(&buildv1alpha1.Function{})).
+		Watches(&source.Kind{Type: &streamingv1alpha1.Stream{}}, enqueueTrackedResources(&streamingv1alpha1.Stream{})).
 		Complete(r)
 }

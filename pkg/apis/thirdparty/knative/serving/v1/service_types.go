@@ -26,6 +26,10 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+var (
+	_ apis.Resource = (*Service)(nil)
+)
+
 // ServiceSpec represents the configuration for the Service object.
 // A Service's specification is the union of the specifications for a Route
 // and Configuration.  The Service restricts what can be expressed in these
@@ -69,6 +73,22 @@ const (
 	ServiceConditionReady = apis.ConditionReady
 )
 
+func (ss *ServiceStatus) GetObservedGeneration() int64 {
+	return ss.ObservedGeneration
+}
+
+func (ss *ServiceStatus) IsReady() bool {
+	return ss.GetCondition(ss.GetReadyConditionType()).IsTrue()
+}
+
+func (*ServiceStatus) GetReadyConditionType() apis.ConditionType {
+	return ServiceConditionReady
+}
+
+func (ss *ServiceStatus) GetCondition(t apis.ConditionType) *apis.Condition {
+	return ss.Status.GetCondition(t)
+}
+
 // +kubebuilder:object:root=true
 
 // Service acts as a top-level container that manages a Route and Configuration
@@ -93,6 +113,10 @@ type Service struct {
 
 func (*Service) GetGroupVersionKind() schema.GroupVersionKind {
 	return GroupVersion.WithKind("Service")
+}
+
+func (s *Service) GetStatus() apis.ResourceStatus {
+	return &s.Status
 }
 
 // +kubebuilder:object:root=true

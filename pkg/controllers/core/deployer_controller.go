@@ -36,9 +36,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
+	"github.com/projectriff/system/pkg/apis"
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	corev1alpha1 "github.com/projectriff/system/pkg/apis/core/v1alpha1"
-	"github.com/projectriff/system/pkg/printers"
 	"github.com/projectriff/system/pkg/tracker"
 )
 
@@ -81,7 +81,7 @@ func (r *DeployerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// check if status has changed before updating, unless requeued
 	if !result.Requeue && !equality.Semantic.DeepEqual(deployer.Status, originalDeployer.Status) {
 		// update status
-		log.Info(fmt.Sprintf("Updating deployer status diff (-current, +desired): %s", cmp.Diff(originalDeployer.Status, deployer.Status)))
+		log.Info("updating deployer status", "diff", cmp.Diff(originalDeployer.Status, deployer.Status))
 		if updateErr := r.Status().Update(ctx, &deployer); updateErr != nil {
 			log.Error(updateErr, "unable to update Deployer status", "deployer", deployer)
 			return ctrl.Result{Requeue: true}, updateErr
@@ -230,7 +230,7 @@ func (r *DeployerReconciler) reconcileChildDeployment(ctx context.Context, log l
 
 	// create deployment if it doesn't exist
 	if deployer.Status.DeploymentName == "" {
-		log.Info(fmt.Sprintf("Creating deployment spec: %s", printers.Pretty(desiredDeployment.Spec)))
+		log.Info("creating deployment", "spec", desiredDeployment.Spec)
 		if err := r.Create(ctx, desiredDeployment); err != nil {
 			log.Error(err, "unable to create Deployment for Deployer", "deployment", desiredDeployment)
 			return nil, err
@@ -250,7 +250,7 @@ func (r *DeployerReconciler) reconcileChildDeployment(ctx context.Context, log l
 	deployment := actualDeployment.DeepCopy()
 	deployment.ObjectMeta.Labels = desiredDeployment.ObjectMeta.Labels
 	deployment.Spec = desiredDeployment.Spec
-	log.Info(fmt.Sprintf("Reconciling deployment spec diff (-current, +desired): %s", cmp.Diff(actualDeployment.Spec, deployment.Spec)))
+	log.Info("reconciling deployment", "diff", cmp.Diff(actualDeployment.Spec, deployment.Spec))
 	if err := r.Update(ctx, deployment); err != nil {
 		log.Error(err, "unable to update Deployment for Deployer", "deployment", deployment)
 		return nil, err
@@ -360,7 +360,7 @@ func (r *DeployerReconciler) reconcileChildService(ctx context.Context, log logr
 
 	// create service if it doesn't exist
 	if deployer.Status.ServiceName == "" {
-		log.Info(fmt.Sprintf("Creating service spec: %s", printers.Pretty(desiredService.Spec)))
+		log.Info("creating service", "spec", desiredService.Spec)
 		if err := r.Create(ctx, desiredService); err != nil {
 			log.Error(err, "unable to create Service for Deployer", "service", desiredService)
 			return nil, err
@@ -380,7 +380,7 @@ func (r *DeployerReconciler) reconcileChildService(ctx context.Context, log logr
 	service := actualService.DeepCopy()
 	service.ObjectMeta.Labels = desiredService.ObjectMeta.Labels
 	service.Spec = desiredService.Spec
-	log.Info(fmt.Sprintf("Reconciling service spec diff (-current, +desired): %s", cmp.Diff(actualService.Spec, service.Spec)))
+	log.Info("reconciling service", "diff", cmp.Diff(actualService.Spec, service.Spec))
 	if err := r.Update(ctx, service); err != nil {
 		log.Error(err, "unable to update Service for Deployer", "deployment", service)
 		return nil, err
@@ -434,18 +434,20 @@ func (r *DeployerReconciler) constructLabelsForDeployer(deployer *corev1alpha1.D
 }
 
 func (r *DeployerReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	enqueueTrackedResources := &handler.EnqueueRequestsFromMapFunc{
-		ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
-			requests := []reconcile.Request{}
-			key := tracker.NewKey(
-				a.Object.GetObjectKind().GroupVersionKind(),
-				types.NamespacedName{Namespace: a.Meta.GetNamespace(), Name: a.Meta.GetName()},
-			)
-			for _, item := range r.Tracker.Lookup(key) {
-				requests = append(requests, reconcile.Request{NamespacedName: item})
-			}
-			return requests
-		}),
+	enqueueTrackedResources := func(t apis.Resource) handler.EventHandler {
+		return &handler.EnqueueRequestsFromMapFunc{
+			ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
+				requests := []reconcile.Request{}
+				key := tracker.NewKey(
+					t.GetGroupVersionKind(),
+					types.NamespacedName{Namespace: a.Meta.GetNamespace(), Name: a.Meta.GetName()},
+				)
+				for _, item := range r.Tracker.Lookup(key) {
+					requests = append(requests, reconcile.Request{NamespacedName: item})
+				}
+				return requests
+			}),
+		}
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).
@@ -453,8 +455,8 @@ func (r *DeployerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&appsv1.Deployment{}).
 		Owns(&corev1.Service{}).
 		// watch for build mutations to update dependent deployers
-		Watches(&source.Kind{Type: &buildv1alpha1.Application{}}, enqueueTrackedResources).
-		Watches(&source.Kind{Type: &buildv1alpha1.Container{}}, enqueueTrackedResources).
-		Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, enqueueTrackedResources).
+		Watches(&source.Kind{Type: &buildv1alpha1.Application{}}, enqueueTrackedResources(&buildv1alpha1.Application{})).
+		Watches(&source.Kind{Type: &buildv1alpha1.Container{}}, enqueueTrackedResources(&buildv1alpha1.Container{})).
+		Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, enqueueTrackedResources(&buildv1alpha1.Function{})).
 		Complete(r)
 }

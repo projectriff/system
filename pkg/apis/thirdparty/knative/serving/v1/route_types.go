@@ -26,6 +26,10 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+var (
+	_ apis.Resource = (*Route)(nil)
+)
+
 // RouteSpec holds the desired state of the Route (from the client).
 type RouteSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
@@ -52,6 +56,22 @@ const (
 	// and has available backends ready to receive traffic.
 	RouteConditionReady = apis.ConditionReady
 )
+
+func (rs *RouteStatus) GetObservedGeneration() int64 {
+	return rs.ObservedGeneration
+}
+
+func (rs *RouteStatus) IsReady() bool {
+	return rs.GetCondition(rs.GetReadyConditionType()).IsTrue()
+}
+
+func (*RouteStatus) GetReadyConditionType() apis.ConditionType {
+	return RouteConditionReady
+}
+
+func (rs *RouteStatus) GetCondition(t apis.ConditionType) *apis.Condition {
+	return rs.Status.GetCondition(t)
+}
 
 // TrafficTarget holds a single entry of the routing table for a Route.
 type TrafficTarget struct {
@@ -138,6 +158,10 @@ type Route struct {
 
 func (*Route) GetGroupVersionKind() schema.GroupVersionKind {
 	return GroupVersion.WithKind("Route")
+}
+
+func (r *Route) GetStatus() apis.ResourceStatus {
+	return &r.Status
 }
 
 // +kubebuilder:object:root=true

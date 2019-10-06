@@ -35,7 +35,6 @@ import (
 
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	kpackbuildv1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/kpack/build/v1alpha1"
-	"github.com/projectriff/system/pkg/printers"
 )
 
 // ApplicationReconciler reconciles a Application object
@@ -75,7 +74,7 @@ func (r *ApplicationReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 	// check if status has changed before updating, unless requeued
 	if !result.Requeue && !equality.Semantic.DeepEqual(application.Status, originalApplication.Status) {
 		// update status
-		log.Info(fmt.Sprintf("Updating application status diff (-current, +desired): %s", cmp.Diff(originalApplication.Status, application.Status)))
+		log.Info("updating application status", "diff", cmp.Diff(originalApplication.Status, application.Status))
 		if updateErr := r.Status().Update(ctx, &application); updateErr != nil {
 			log.Error(updateErr, "unable to update Application status", "application", application)
 			return ctrl.Result{Requeue: true}, updateErr
@@ -104,13 +103,15 @@ func (r *ApplicationReconciler) reconcile(ctx context.Context, log logr.Logger, 
 	application.Status.MarkImageResolved()
 	application.Status.TargetImage = targetImage
 
-	// reconcile child image
-	childImage, err := r.reconcileChildImage(ctx, log, application)
+	// reconcile child kpack image
+	childImage, err := r.reconcileChildKpackImage(ctx, log, application)
 	if err != nil {
 		log.Error(err, "unable to reconcile child Image", "application", application)
 		return ctrl.Result{}, err
 	}
 	if childImage == nil {
+		// TODO resolve to a digest
+		application.Status.LatestImage = application.Status.TargetImage
 		application.Status.MarkBuildNotUsed()
 	} else {
 		application.Status.KpackImageName = childImage.Name
@@ -147,7 +148,7 @@ func (r *ApplicationReconciler) resolveTargetImage(ctx context.Context, log logr
 	return image, nil
 }
 
-func (r *ApplicationReconciler) reconcileChildImage(ctx context.Context, log logr.Logger, application *buildv1alpha1.Application) (*kpackbuildv1alpha1.Image, error) {
+func (r *ApplicationReconciler) reconcileChildKpackImage(ctx context.Context, log logr.Logger, application *buildv1alpha1.Application) (*kpackbuildv1alpha1.Image, error) {
 	var actualImage kpackbuildv1alpha1.Image
 	if application.Status.KpackImageName != "" {
 		if err := r.Get(ctx, types.NamespacedName{Namespace: application.Namespace, Name: application.Status.KpackImageName}, &actualImage); err != nil {
@@ -171,18 +172,20 @@ func (r *ApplicationReconciler) reconcileChildImage(ctx context.Context, log log
 		return nil, err
 	}
 
-	// delete image if no longer needed
 	if desiredImage == nil {
-		if err := r.Delete(ctx, &actualImage); err != nil {
-			log.Error(err, "unable to delete kpack Image for Application", "image", actualImage)
-			return nil, err
+		// delete image if no longer needed
+		if actualImage.Name != "" {
+			if err := r.Delete(ctx, &actualImage); err != nil {
+				log.Error(err, "unable to delete kpack Image for Application", "image", actualImage)
+				return nil, err
+			}
 		}
 		return nil, nil
 	}
 
 	// create image if it doesn't exist
 	if application.Status.KpackImageName == "" {
-		log.Info(fmt.Sprintf("Creating kpack image spec: %s", printers.Pretty(desiredImage.Spec)))
+		log.Info("creating kpack image", "spec", desiredImage.Spec)
 		if err := r.Create(ctx, desiredImage); err != nil {
 			log.Error(err, "unable to create kpack Image for Application", "image", desiredImage)
 			return nil, err
@@ -199,7 +202,7 @@ func (r *ApplicationReconciler) reconcileChildImage(ctx context.Context, log log
 	image := actualImage.DeepCopy()
 	image.ObjectMeta.Labels = desiredImage.ObjectMeta.Labels
 	image.Spec = desiredImage.Spec
-	log.Info(fmt.Sprintf("Reconciling kpack image spec diff (-current, +desired): %s", cmp.Diff(actualImage.Spec, image.Spec)))
+	log.Info("reconciling kpack image", "diff", cmp.Diff(actualImage.Spec, image.Spec))
 	if err := r.Update(ctx, image); err != nil {
 		log.Error(err, "unable to update kpack Image for Application", "image", image)
 		return nil, err

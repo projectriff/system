@@ -18,7 +18,6 @@ package build
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/go-logr/logr"
@@ -37,7 +36,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	kpackbuildv1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/kpack/build/v1alpha1"
-	"github.com/projectriff/system/pkg/printers"
 )
 
 const buildersConfigMap = "builders"
@@ -119,7 +117,7 @@ func (r *ClusterBuilderReconciler) reconcileConfigMap(ctx context.Context, log l
 		return existingConfigMap, nil
 	}
 
-	log.Info(fmt.Sprintf("Reconciling builders configmap data diff (-current, +desired): %s", cmp.Diff(existingConfigMap.Data, configMap.Data)))
+	log.Info("reconciling builders configmap", "diff", cmp.Diff(existingConfigMap.Data, configMap.Data))
 	return configMap, r.Update(ctx, configMap)
 }
 
@@ -131,7 +129,7 @@ func (r *ClusterBuilderReconciler) createConfigMap(ctx context.Context, log logr
 		},
 		Data: builderImages,
 	}
-	log.Info(fmt.Sprintf("Creating builders configmap data: %s", printers.Pretty(configMap.Data)))
+	log.Info("creating builders configmap", "data", configMap.Data)
 	return configMap, r.Create(ctx, configMap)
 }
 

@@ -34,10 +34,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
+	"github.com/projectriff/system/pkg/apis"
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	knativev1alpha1 "github.com/projectriff/system/pkg/apis/knative/v1alpha1"
 	servingv1 "github.com/projectriff/system/pkg/apis/thirdparty/knative/serving/v1"
-	"github.com/projectriff/system/pkg/printers"
 	"github.com/projectriff/system/pkg/tracker"
 )
 
@@ -79,7 +79,7 @@ func (r *DeployerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// check if status has changed before updating, unless requeued
 	if !result.Requeue && !equality.Semantic.DeepEqual(deployer.Status, originalDeployer.Status) {
 		// update status
-		log.Info(fmt.Sprintf("Updating deployer status diff (-current, +desired): %s", cmp.Diff(originalDeployer.Status, deployer.Status)))
+		log.Info("updating deployer status", "diff", cmp.Diff(originalDeployer.Status, deployer.Status))
 		if updateErr := r.Status().Update(ctx, &deployer); updateErr != nil {
 			log.Error(updateErr, "unable to update Deployer status", "deployer", deployer)
 			return ctrl.Result{Requeue: true}, updateErr
@@ -220,7 +220,7 @@ func (r *DeployerReconciler) reconcileChildConfiguration(ctx context.Context, lo
 	// delete configuration if no longer needed
 	if desiredConfiguration == nil {
 		if err := r.Delete(ctx, &actualConfiguration); err != nil {
-			log.Error(err, "unable to delete Configurakubtion for Deployer", "configuration", actualConfiguration)
+			log.Error(err, "unable to delete Configuration for Deployer", "configuration", actualConfiguration)
 			return nil, err
 		}
 		return nil, nil
@@ -228,7 +228,7 @@ func (r *DeployerReconciler) reconcileChildConfiguration(ctx context.Context, lo
 
 	// create configuration if it doesn't exist
 	if deployer.Status.ConfigurationName == "" {
-		log.Info(fmt.Sprintf("Creating configuration spec: %s", printers.Pretty(desiredConfiguration.Spec)))
+		log.Info("creating configuration", "spec", desiredConfiguration.Spec)
 		if err := r.Create(ctx, desiredConfiguration); err != nil {
 			log.Error(err, "unable to create Configuration for Deployer", "configuration", desiredConfiguration)
 			return nil, err
@@ -245,7 +245,7 @@ func (r *DeployerReconciler) reconcileChildConfiguration(ctx context.Context, lo
 	configuration := actualConfiguration.DeepCopy()
 	configuration.ObjectMeta.Labels = desiredConfiguration.ObjectMeta.Labels
 	configuration.Spec = desiredConfiguration.Spec
-	log.Info(fmt.Sprintf("Reconciling configuration spec diff (-current, +desired): %s", cmp.Diff(actualConfiguration.Spec, configuration.Spec)))
+	log.Info("reconciling configuration", "diff", cmp.Diff(actualConfiguration.Spec, configuration.Spec))
 	if err := r.Update(ctx, configuration); err != nil {
 		log.Error(err, "unable to update Configuration for Deployer", "configuration", configuration)
 		return nil, err
@@ -328,7 +328,7 @@ func (r *DeployerReconciler) reconcileChildRoute(ctx context.Context, log logr.L
 
 	// create route if it doesn't exist
 	if deployer.Status.RouteName == "" {
-		log.Info(fmt.Sprintf("Creating route spec: %s", printers.Pretty(desiredRoute.Spec)))
+		log.Info("creating route", "spec", desiredRoute.Spec)
 		if err := r.Create(ctx, desiredRoute); err != nil {
 			log.Error(err, "unable to create Route for Deployer", "route", desiredRoute)
 			return nil, err
@@ -345,7 +345,7 @@ func (r *DeployerReconciler) reconcileChildRoute(ctx context.Context, log logr.L
 	route := actualRoute.DeepCopy()
 	route.ObjectMeta.Labels = desiredRoute.ObjectMeta.Labels
 	route.Spec = desiredRoute.Spec
-	log.Info(fmt.Sprintf("Reconciling route spec diff (-current, +desired): %s", cmp.Diff(actualRoute.Spec, route.Spec)))
+	log.Info("reconciling route", "diff", cmp.Diff(actualRoute.Spec, route.Spec))
 	if err := r.Update(ctx, route); err != nil {
 		log.Error(err, "unable to update Route for Deployer", "configuration", route)
 		return nil, err
@@ -404,18 +404,20 @@ func (r *DeployerReconciler) constructLabelsForDeployer(deployer *knativev1alpha
 }
 
 func (r *DeployerReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	enqueueTrackedResources := &handler.EnqueueRequestsFromMapFunc{
-		ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
-			requests := []reconcile.Request{}
-			key := tracker.NewKey(
-				a.Object.GetObjectKind().GroupVersionKind(),
-				types.NamespacedName{Namespace: a.Meta.GetNamespace(), Name: a.Meta.GetName()},
-			)
-			for _, item := range r.Tracker.Lookup(key) {
-				requests = append(requests, reconcile.Request{NamespacedName: item})
-			}
-			return requests
-		}),
+	enqueueTrackedResources := func(t apis.Resource) handler.EventHandler {
+		return &handler.EnqueueRequestsFromMapFunc{
+			ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
+				requests := []reconcile.Request{}
+				key := tracker.NewKey(
+					t.GetGroupVersionKind(),
+					types.NamespacedName{Namespace: a.Meta.GetNamespace(), Name: a.Meta.GetName()},
+				)
+				for _, item := range r.Tracker.Lookup(key) {
+					requests = append(requests, reconcile.Request{NamespacedName: item})
+				}
+				return requests
+			}),
+		}
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).
@@ -423,8 +425,8 @@ func (r *DeployerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&servingv1.Configuration{}).
 		Owns(&servingv1.Route{}).
 		// watch for build mutations to update dependent deployers
-		Watches(&source.Kind{Type: &buildv1alpha1.Application{}}, enqueueTrackedResources).
-		Watches(&source.Kind{Type: &buildv1alpha1.Container{}}, enqueueTrackedResources).
-		Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, enqueueTrackedResources).
+		Watches(&source.Kind{Type: &buildv1alpha1.Application{}}, enqueueTrackedResources(&buildv1alpha1.Application{})).
+		Watches(&source.Kind{Type: &buildv1alpha1.Container{}}, enqueueTrackedResources(&buildv1alpha1.Container{})).
+		Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, enqueueTrackedResources(&buildv1alpha1.Function{})).
 		Complete(r)
 }

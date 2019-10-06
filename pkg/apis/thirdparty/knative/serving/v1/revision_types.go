@@ -27,6 +27,10 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+var (
+	_ apis.Resource = (*Revision)(nil)
+)
+
 // RevisionSpec holds the desired state of the Revision (from the client).
 type RevisionSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
@@ -80,6 +84,22 @@ const (
 	RevisionConditionReady = apis.ConditionReady
 )
 
+func (rs *RevisionStatus) GetObservedGeneration() int64 {
+	return rs.ObservedGeneration
+}
+
+func (rs *RevisionStatus) IsReady() bool {
+	return rs.GetCondition(rs.GetReadyConditionType()).IsTrue()
+}
+
+func (*RevisionStatus) GetReadyConditionType() apis.ConditionType {
+	return RevisionConditionReady
+}
+
+func (rs *RevisionStatus) GetCondition(t apis.ConditionType) *apis.Condition {
+	return rs.Status.GetCondition(t)
+}
+
 // RevisionTemplateSpec describes the data a revision should have when created from a template.
 // Based on: https://github.com/kubernetes/api/blob/e771f807/core/v1/types.go#L3179-L3190
 type RevisionTemplateSpec struct {
@@ -107,6 +127,10 @@ type Revision struct {
 
 func (*Revision) GetGroupVersionKind() schema.GroupVersionKind {
 	return GroupVersion.WithKind("Revision")
+}
+
+func (r *Revision) GetStatus() apis.ResourceStatus {
+	return &r.Status
 }
 
 // +kubebuilder:object:root=true

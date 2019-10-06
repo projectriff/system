@@ -80,7 +80,7 @@ func main() {
 		Client:    mgr.GetClient(),
 		Log:       ctrl.Log.WithName("controllers").WithName("KafkaProvider"),
 		Scheme:    mgr.GetScheme(),
-		Tracker:   tracker.New(syncPeriod),
+		Tracker:   tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("KafkaProvider").WithName("tracker")),
 		Namespace: namespace,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "KafkaProvider")
@@ -99,7 +99,7 @@ func main() {
 		Client:    mgr.GetClient(),
 		Log:       ctrl.Log.WithName("controllers").WithName("Processor"),
 		Scheme:    mgr.GetScheme(),
-		Tracker:   tracker.New(syncPeriod),
+		Tracker:   tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("Processor").WithName("tracker")),
 		Namespace: namespace,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Processor")
