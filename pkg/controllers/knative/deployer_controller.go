@@ -220,7 +220,7 @@ func (r *DeployerReconciler) reconcileChildConfiguration(ctx context.Context, lo
 	// delete configuration if no longer needed
 	if desiredConfiguration == nil {
 		if err := r.Delete(ctx, &actualConfiguration); err != nil {
-			log.Error(err, "unable to delete Configurakubtion for Deployer", "configuration", actualConfiguration)
+			log.Error(err, "unable to delete Configuration for Deployer", "configuration", actualConfiguration)
 			return nil, err
 		}
 		return nil, nil

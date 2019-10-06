@@ -86,7 +86,7 @@ func (*ServiceStatus) GetReadyConditionType() apis.ConditionType {
 }
 
 func (ss *ServiceStatus) GetCondition(t apis.ConditionType) *apis.Condition {
-	return ss.GetCondition(t)
+	return ss.Status.GetCondition(t)
 }
 
 // +kubebuilder:object:root=true

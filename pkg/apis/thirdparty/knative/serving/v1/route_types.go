@@ -70,7 +70,7 @@ func (*RouteStatus) GetReadyConditionType() apis.ConditionType {
 }
 
 func (rs *RouteStatus) GetCondition(t apis.ConditionType) *apis.Condition {
-	return rs.GetCondition(t)
+	return rs.Status.GetCondition(t)
 }
 
 // TrafficTarget holds a single entry of the routing table for a Route.

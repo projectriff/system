@@ -83,7 +83,7 @@ func (*ConfigurationStatus) GetReadyConditionType() apis.ConditionType {
 }
 
 func (cs *ConfigurationStatus) GetCondition(t apis.ConditionType) *apis.Condition {
-	return cs.GetCondition(t)
+	return cs.Status.GetCondition(t)
 }
 
 // +kubebuilder:object:root=true

@@ -97,7 +97,7 @@ func (*RevisionStatus) GetReadyConditionType() apis.ConditionType {
 }
 
 func (rs *RevisionStatus) GetCondition(t apis.ConditionType) *apis.Condition {
-	return rs.GetCondition(t)
+	return rs.Status.GetCondition(t)
 }
 
 // RevisionTemplateSpec describes the data a revision should have when created from a template.
