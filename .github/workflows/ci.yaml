@@ -132,11 +132,12 @@ jobs:
           echo "##[set-env name=NAMESPACE]system-${job}-${{ matrix.runtime }}"
           echo "##[set-env name=FATS_DIR]fats"
           echo "##[set-env name=FATS_REPO]projectriff/fats"
-          echo "##[set-env name=FATS_REFSPEC]26b7e2251a78ed452d5cf99e02b41658e9aafa77" # master as of 2019-10-01
+          echo "##[set-env name=FATS_REFSPEC]b1a0cf8b019528ede7e49322e33069e1356c7de5" # master as of 2019-10-07
         env:
           GCLOUD_CLIENT_SECRET: ${{ secrets.GCLOUD_CLIENT_SECRET }}
       - name: 'Fetch FATS'
         run: .github/workflows/fats-fetch.sh ${FATS_DIR} ${FATS_REFSPEC} ${FATS_REPO}
+        timeout-minutes: 1
       - name: 'Install tools'
         run: |
           ${FATS_DIR}/install.sh kubectl
@@ -149,71 +150,62 @@ jobs:
           echo "##[add-path]$(go env GOPATH)/bin"
         env:
           GCLOUD_CLIENT_SECRET: ${{ secrets.GCLOUD_CLIENT_SECRET }}
+        timeout-minutes: 5
       - name: 'Start FATS'
         run: ${FATS_DIR}/start.sh
+        timeout-minutes: 10
       - name: 'Install runtime'
         run: .github/workflows/install-runtime.sh
+        timeout-minutes: 5
       - name: 'Run tests'
         run: .github/workflows/run-tests.sh
         env:
           GCLOUD_CLIENT_SECRET: ${{ secrets.GCLOUD_CLIENT_SECRET }}
+        timeout-minutes: 30
       - name: 'Collect diagnostics'
-        run: |
-          kubectl get deployments,services,pods --all-namespaces || true
-          echo ""
-          echo "RIFF:"
-          echo ""
-          kubectl get riff --all-namespaces || true
-          echo ""
-          echo "KPACK:"
-          echo ""
-          kubectl get clusterbuilders.build.pivotal.io,builders.build.pivotal.io,images.build.pivotal.io,sourceresolvers.build.pivotal.io,builds.build.pivotal.io --all-namespaces || true
-          echo ""
-          echo "KNATIVE:"
-          echo ""
-          kubectl get knative --all-namespaces || true
-          echo ""
-          echo "FAILING PODS:"
-          echo ""
-          kubectl get pods --all-namespaces --field-selector=status.phase!=Running \
-            | tail -n +2 | awk '{print "-n", $1, $2}' | xargs -L 1 kubectl describe pod || true
-          echo ""
-          echo "NODE:"
-          echo ""
-          kubectl describe node || true
-          echo ""
-          echo "RIFF:"
-          echo ""
-          kubectl describe riff --all-namespaces || true
-          echo ""
-          echo "KNATIVE:"
-          echo ""
-          kubectl describe knative --all-namespaces || true
-        if: failure()
+        run: ${FATS_DIR}/diagnostics.sh
+        if: always()
+        continue-on-error: true
+        timeout-minutes: 1
       - name: 'Dump riff Build logs'
         run: kubectl logs -n riff-system -l component=build.projectriff.io,control-plane=controller-manager -c manager --tail 10000 || true
-        if: failure()
+        if: always()
+        continue-on-error: true
+        timeout-minutes: 1
       - name: 'Dump riff Core Runtime logs'
         run: kubectl logs -n riff-system -l component=core.projectriff.io,control-plane=controller-manager -c manager --tail 10000 || true
-        if: failure()
+        if: always()
+        continue-on-error: true
+        timeout-minutes: 1
       - name: 'Dump riff Knative Runtime logs'
         run: kubectl logs -n riff-system -l component=knative.projectriff.io,control-plane=controller-manager -c manager --tail 10000 || true
-        if: failure()
+        if: always()
+        continue-on-error: true
+        timeout-minutes: 1
       - name: 'Dump riff Streaming Runtime logs'
         run: kubectl logs -n riff-system -l component=streaming.projectriff.io,control-plane=controller-manager -c manager --tail 10000 || true
-        if: failure()
+        if: always()
+        continue-on-error: true
+        timeout-minutes: 1
       - name: 'Dump kpack logs'
         run: kubectl logs -n kpack -l app=kpack-controller --tail 10000 || true
-        if: failure()
+        if: always()
+        continue-on-error: true
+        timeout-minutes: 1
       - name: 'Dump Knative Serving logs'
         run: kubectl logs -n knative-serving -l app=controller --tail 10000 || true
-        if: failure()
+        if: always()
+        continue-on-error: true
+        timeout-minutes: 1
       - name: 'Uninstall runtime'
         run: .github/workflows/cleanup-runtime.sh
         if: always()
+        continue-on-error: true
+        timeout-minutes: 5
       - name: 'Cleanup FATS'
         run: ${FATS_DIR}/cleanup.sh
         if: always()
+        timeout-minutes: 10
 
   publish:
     needs: fats
