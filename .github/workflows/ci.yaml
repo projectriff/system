@@ -31,11 +31,7 @@ jobs:
     - name: Install kustomize
       run: |
         opsys=`go env GOOS`
-        curl -s https://api.github.com/repos/kubernetes-sigs/kustomize/releases/latest |\
-          grep browser_download |\
-          grep $opsys |\
-          cut -d '"' -f 4 |\
-          xargs curl -O -L
+        curl -O -L https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/v3.2.2/kustomize_kustomize.v3.2.2_${opsys}_amd64
         mv kustomize_*_${opsys}_amd64 kustomize
         chmod u+x kustomize
         sudo mv kustomize /usr/local/bin/
