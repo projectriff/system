@@ -35,7 +35,10 @@ import (
 
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	kpackbuildv1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/kpack/build/v1alpha1"
+	"github.com/projectriff/system/pkg/controllers"
 )
+
+const functionIndexField = ".metadata.functionController"
 
 // FunctionReconciler reconciles a Function object
 type FunctionReconciler struct {
@@ -150,20 +153,19 @@ func (r *FunctionReconciler) resolveTargetImage(ctx context.Context, log logr.Lo
 
 func (r *FunctionReconciler) reconcileChildKpackImage(ctx context.Context, log logr.Logger, function *buildv1alpha1.Function) (*kpackbuildv1alpha1.Image, error) {
 	var actualImage kpackbuildv1alpha1.Image
-	if function.Status.KpackImageName != "" {
-		if err := r.Get(ctx, types.NamespacedName{Namespace: function.Namespace, Name: function.Status.KpackImageName}, &actualImage); err != nil {
-			log.Error(err, "unable to fetch child kpack Image")
-			if !apierrs.IsNotFound(err) {
+	var childImages kpackbuildv1alpha1.ImageList
+	if err := r.List(ctx, &childImages, client.InNamespace(function.Namespace), client.MatchingField(functionIndexField, function.Name)); err != nil {
+		return nil, err
+	}
+	// TODO do we need to remove resources pending deletion?
+	if len(childImages.Items) == 1 {
+		actualImage = childImages.Items[0]
+	} else if len(childImages.Items) > 1 {
+		// this shouldn't happen, delete everything to a clean slate
+		for i := range childImages.Items {
+			if err := r.Delete(ctx, &childImages.Items[i]); err != nil {
 				return nil, err
 			}
-			// reset the KpackImageName since it no longer exists and needs to
-			// be recreated
-			function.Status.KpackImageName = ""
-		}
-		// check that the image is not controlled by another resource
-		if !metav1.IsControlledBy(&actualImage, function) {
-			function.Status.MarkKpackImageNotOwned()
-			return nil, fmt.Errorf("Function %q does not own kpack Image %q", function.Name, actualImage.Name)
 		}
 	}
 
@@ -184,7 +186,7 @@ func (r *FunctionReconciler) reconcileChildKpackImage(ctx context.Context, log l
 	}
 
 	// create image if it doesn't exist
-	if function.Status.KpackImageName == "" {
+	if actualImage.Name == "" {
 		log.Info("creating kpack image", "spec", desiredImage.Spec)
 		if err := r.Create(ctx, desiredImage); err != nil {
 			log.Error(err, "unable to create kpack Image for Function", "image", desiredImage)
@@ -223,11 +225,10 @@ func (r *FunctionReconciler) constructImageForFunction(function *buildv1alpha1.F
 
 	image := &kpackbuildv1alpha1.Image{
 		ObjectMeta: metav1.ObjectMeta{
-			Labels:      r.constructLabelsForFunction(function),
-			Annotations: make(map[string]string),
-			// GenerateName: fmt.Sprintf("%s-function-", function.Name),
-			Name:      fmt.Sprintf("%s-function", function.Name),
-			Namespace: function.Namespace,
+			Labels:       r.constructLabelsForFunction(function),
+			Annotations:  make(map[string]string),
+			GenerateName: fmt.Sprintf("%s-function-", function.Name),
+			Namespace:    function.Namespace,
 		},
 		Spec: kpackbuildv1alpha1.ImageSpec{
 			ServiceAccount: "riff-build",
@@ -277,6 +278,10 @@ func (r *FunctionReconciler) constructLabelsForFunction(function *buildv1alpha1.
 }
 
 func (r *FunctionReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	if err := controllers.IndexControllersOfType(mgr, functionIndexField, &buildv1alpha1.Function{}, &kpackbuildv1alpha1.Image{}); err != nil {
+		return err
+	}
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&buildv1alpha1.Function{}).
 		Owns(&kpackbuildv1alpha1.Image{}).

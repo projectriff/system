@@ -17,8 +17,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"fmt"
-
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/projectriff/system/pkg/apis"
@@ -54,11 +52,6 @@ func (fs *FunctionStatus) GetCondition(t apis.ConditionType) *apis.Condition {
 
 func (fs *FunctionStatus) InitializeConditions() {
 	functionCondSet.Manage(fs).InitializeConditions()
-}
-
-func (fs *FunctionStatus) MarkKpackImageNotOwned() {
-	functionCondSet.Manage(fs).MarkFalse(FunctionConditionKpackImageReady, "NotOwned",
-		fmt.Sprintf("There is an existing kpack Image %q that we do not own.", fs.KpackImageName))
 }
 
 func (fs *FunctionStatus) MarkBuildNotUsed() {

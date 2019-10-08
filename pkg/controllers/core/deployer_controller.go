@@ -39,7 +39,13 @@ import (
 	"github.com/projectriff/system/pkg/apis"
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	corev1alpha1 "github.com/projectriff/system/pkg/apis/core/v1alpha1"
+	"github.com/projectriff/system/pkg/controllers"
 	"github.com/projectriff/system/pkg/tracker"
+)
+
+const (
+	deploymentIndexField = ".metadata.deploymentController"
+	serviceIndexField    = ".metadata.serviceController"
 )
 
 // DeployerReconciler reconciles a Deployer object
@@ -197,20 +203,19 @@ func (r *DeployerReconciler) reconcileBuildImage(ctx context.Context, log logr.L
 
 func (r *DeployerReconciler) reconcileChildDeployment(ctx context.Context, log logr.Logger, deployer *corev1alpha1.Deployer) (*appsv1.Deployment, error) {
 	var actualDeployment appsv1.Deployment
-	if deployer.Status.DeploymentName != "" {
-		if err := r.Get(ctx, types.NamespacedName{Namespace: deployer.Namespace, Name: deployer.Status.DeploymentName}, &actualDeployment); err != nil {
-			log.Error(err, "unable to fetch child Deployment")
-			if !apierrs.IsNotFound(err) {
+	var childDeployments appsv1.DeploymentList
+	if err := r.List(ctx, &childDeployments, client.InNamespace(deployer.Namespace), client.MatchingField(deploymentIndexField, deployer.Name)); err != nil {
+		return nil, err
+	}
+	// TODO do we need to remove resources pending deletion?
+	if len(childDeployments.Items) == 1 {
+		actualDeployment = childDeployments.Items[0]
+	} else if len(childDeployments.Items) > 1 {
+		// this shouldn't happen, delete everything to a clean slate
+		for i := range childDeployments.Items {
+			if err := r.Delete(ctx, &childDeployments.Items[i]); err != nil {
 				return nil, err
 			}
-			// reset the DeploymentName since it no longer exists and needs to
-			// be recreated
-			deployer.Status.DeploymentName = ""
-		}
-		// check that the deployment is not controlled by another resource
-		if !metav1.IsControlledBy(&actualDeployment, deployer) {
-			deployer.Status.MarkDeploymentNotOwned()
-			return nil, fmt.Errorf("Deployer %q does not own Deployment %q", deployer.Name, actualDeployment.Name)
 		}
 	}
 
@@ -229,7 +234,7 @@ func (r *DeployerReconciler) reconcileChildDeployment(ctx context.Context, log l
 	}
 
 	// create deployment if it doesn't exist
-	if deployer.Status.DeploymentName == "" {
+	if actualDeployment.Name == "" {
 		log.Info("creating deployment", "spec", desiredDeployment.Spec)
 		if err := r.Create(ctx, desiredDeployment); err != nil {
 			log.Error(err, "unable to create Deployment for Deployer", "deployment", desiredDeployment)
@@ -270,11 +275,10 @@ func (r *DeployerReconciler) constructDeploymentForDeployer(deployer *corev1alph
 
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Labels:      labels,
-			Annotations: make(map[string]string),
-			// GenerateName: fmt.Sprintf("%s-deployer-", deployer.Name),
-			Name:      fmt.Sprintf("%s-deployer", deployer.Name),
-			Namespace: deployer.Namespace,
+			Labels:       labels,
+			Annotations:  make(map[string]string),
+			GenerateName: fmt.Sprintf("%s-deployer-", deployer.Name),
+			Namespace:    deployer.Namespace,
 		},
 		Spec: appsv1.DeploymentSpec{
 			Selector: &metav1.LabelSelector{
@@ -327,20 +331,19 @@ func (r *DeployerReconciler) constructPodSpecForDeployer(deployer *corev1alpha1.
 
 func (r *DeployerReconciler) reconcileChildService(ctx context.Context, log logr.Logger, deployer *corev1alpha1.Deployer) (*corev1.Service, error) {
 	var actualService corev1.Service
-	if deployer.Status.ServiceName != "" {
-		if err := r.Get(ctx, types.NamespacedName{Namespace: deployer.Namespace, Name: deployer.Status.ServiceName}, &actualService); err != nil {
-			log.Error(err, "unable to fetch child Service")
-			if !apierrs.IsNotFound(err) {
+	var childServices corev1.ServiceList
+	if err := r.List(ctx, &childServices, client.InNamespace(deployer.Namespace), client.MatchingField(serviceIndexField, deployer.Name)); err != nil {
+		return nil, err
+	}
+	// TODO do we need to remove resources pending deletion?
+	if len(childServices.Items) == 1 {
+		actualService = childServices.Items[0]
+	} else if len(childServices.Items) > 1 {
+		// this shouldn't happen, delete everything to a clean slate
+		for i := range childServices.Items {
+			if err := r.Delete(ctx, &childServices.Items[i]); err != nil {
 				return nil, err
 			}
-			// reset the ServiceName since it no longer exists and needs to
-			// be recreated
-			deployer.Status.ServiceName = ""
-		}
-		// check that the service is not controlled by another resource
-		if !metav1.IsControlledBy(&actualService, deployer) {
-			deployer.Status.MarkServiceNotOwned()
-			return nil, fmt.Errorf("Deployer %q does not own Service %q", deployer.Name, actualService.Name)
 		}
 	}
 
@@ -359,7 +362,7 @@ func (r *DeployerReconciler) reconcileChildService(ctx context.Context, log logr
 	}
 
 	// create service if it doesn't exist
-	if deployer.Status.ServiceName == "" {
+	if actualService.Name == "" {
 		log.Info("creating service", "spec", desiredService.Spec)
 		if err := r.Create(ctx, desiredService); err != nil {
 			log.Error(err, "unable to create Service for Deployer", "service", desiredService)
@@ -399,11 +402,10 @@ func (r *DeployerReconciler) constructServiceForDeployer(deployer *corev1alpha1.
 
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Labels:      labels,
-			Annotations: make(map[string]string),
-			// GenerateName: fmt.Sprintf("%s-deployer-", deployer.Name),
-			Name:      fmt.Sprintf("%s-deployer", deployer.Name),
-			Namespace: deployer.Namespace,
+			Labels:       labels,
+			Annotations:  make(map[string]string),
+			GenerateName: fmt.Sprintf("%s-deployer-", deployer.Name),
+			Namespace:    deployer.Namespace,
 		},
 		Spec: corev1.ServiceSpec{
 			Ports: []corev1.ServicePort{
@@ -448,6 +450,13 @@ func (r *DeployerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 				return requests
 			}),
 		}
+	}
+
+	if err := controllers.IndexControllersOfType(mgr, deploymentIndexField, &corev1alpha1.Deployer{}, &appsv1.Deployment{}); err != nil {
+		return err
+	}
+	if err := controllers.IndexControllersOfType(mgr, serviceIndexField, &corev1alpha1.Deployer{}, &corev1.Service{}); err != nil {
+		return err
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).

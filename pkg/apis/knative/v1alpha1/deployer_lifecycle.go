@@ -54,11 +54,6 @@ func (ds *DeployerStatus) InitializeConditions() {
 	deployerCondSet.Manage(ds).InitializeConditions()
 }
 
-func (ds *DeployerStatus) MarkConfigurationNotOwned() {
-	deployerCondSet.Manage(ds).MarkFalse(DeployerConditionConfigurationReady, "NotOwned",
-		"There is an existing Configuration %q that we do not own.", ds.ConfigurationName)
-}
-
 func (ds *DeployerStatus) PropagateConfigurationStatus(kcs *servingv1.ConfigurationStatus) {
 	sc := kcs.GetCondition(servingv1.ConfigurationConditionReady)
 	if sc == nil {
@@ -72,11 +67,6 @@ func (ds *DeployerStatus) PropagateConfigurationStatus(kcs *servingv1.Configurat
 	case sc.Status == corev1.ConditionFalse:
 		deployerCondSet.Manage(ds).MarkFalse(DeployerConditionConfigurationReady, sc.Reason, sc.Message)
 	}
-}
-
-func (ds *DeployerStatus) MarkRouteNotOwned() {
-	deployerCondSet.Manage(ds).MarkFalse(DeployerConditionRouteReady, "NotOwned",
-		"There is an existing Route %q that we do not own.", ds.RouteName)
 }
 
 func (ds *DeployerStatus) PropagateRouteStatus(rs *servingv1.RouteStatus) {

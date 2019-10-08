@@ -35,7 +35,10 @@ import (
 
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	kpackbuildv1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/kpack/build/v1alpha1"
+	"github.com/projectriff/system/pkg/controllers"
 )
+
+const applicationIndexField = ".metadata.applicationController"
 
 // ApplicationReconciler reconciles a Application object
 type ApplicationReconciler struct {
@@ -150,20 +153,19 @@ func (r *ApplicationReconciler) resolveTargetImage(ctx context.Context, log logr
 
 func (r *ApplicationReconciler) reconcileChildKpackImage(ctx context.Context, log logr.Logger, application *buildv1alpha1.Application) (*kpackbuildv1alpha1.Image, error) {
 	var actualImage kpackbuildv1alpha1.Image
-	if application.Status.KpackImageName != "" {
-		if err := r.Get(ctx, types.NamespacedName{Namespace: application.Namespace, Name: application.Status.KpackImageName}, &actualImage); err != nil {
-			log.Error(err, "unable to fetch child kpack Image")
-			if !apierrs.IsNotFound(err) {
+	var childImages kpackbuildv1alpha1.ImageList
+	if err := r.List(ctx, &childImages, client.InNamespace(application.Namespace), client.MatchingField(applicationIndexField, application.Name)); err != nil {
+		return nil, err
+	}
+	// TODO do we need to remove resources pending deletion?
+	if len(childImages.Items) == 1 {
+		actualImage = childImages.Items[0]
+	} else if len(childImages.Items) > 1 {
+		// this shouldn't happen, delete everything to a clean slate
+		for i := range childImages.Items {
+			if err := r.Delete(ctx, &childImages.Items[i]); err != nil {
 				return nil, err
 			}
-			// reset the KpackImageName since it no longer exists and needs to
-			// be recreated
-			application.Status.KpackImageName = ""
-		}
-		// check that the image is not controlled by another resource
-		if !metav1.IsControlledBy(&actualImage, application) {
-			application.Status.MarkKpackImageNotOwned()
-			return nil, fmt.Errorf("Application %q does not own kpack Image %q", application.Name, actualImage.Name)
 		}
 	}
 
@@ -184,7 +186,7 @@ func (r *ApplicationReconciler) reconcileChildKpackImage(ctx context.Context, lo
 	}
 
 	// create image if it doesn't exist
-	if application.Status.KpackImageName == "" {
+	if actualImage.Name == "" {
 		log.Info("creating kpack image", "spec", desiredImage.Spec)
 		if err := r.Create(ctx, desiredImage); err != nil {
 			log.Error(err, "unable to create kpack Image for Application", "image", desiredImage)
@@ -223,11 +225,10 @@ func (r *ApplicationReconciler) constructImageForApplication(application *buildv
 
 	image := &kpackbuildv1alpha1.Image{
 		ObjectMeta: metav1.ObjectMeta{
-			Labels:      r.constructLabelsForApplication(application),
-			Annotations: make(map[string]string),
-			// GenerateName: fmt.Sprintf("%s-application-", application.Name),
-			Name:      fmt.Sprintf("%s-application", application.Name),
-			Namespace: application.Namespace,
+			Labels:       r.constructLabelsForApplication(application),
+			Annotations:  make(map[string]string),
+			GenerateName: fmt.Sprintf("%s-application-", application.Name),
+			Namespace:    application.Namespace,
 		},
 		Spec: kpackbuildv1alpha1.ImageSpec{
 			ServiceAccount: "riff-build",
@@ -272,6 +273,10 @@ func (r *ApplicationReconciler) constructLabelsForApplication(application *build
 }
 
 func (r *ApplicationReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	if err := controllers.IndexControllersOfType(mgr, applicationIndexField, &buildv1alpha1.Application{}, &kpackbuildv1alpha1.Image{}); err != nil {
+		return err
+	}
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&buildv1alpha1.Application{}).
 		Owns(&kpackbuildv1alpha1.Image{}).
