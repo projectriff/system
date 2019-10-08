@@ -38,7 +38,13 @@ import (
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	knativev1alpha1 "github.com/projectriff/system/pkg/apis/knative/v1alpha1"
 	servingv1 "github.com/projectriff/system/pkg/apis/thirdparty/knative/serving/v1"
+	"github.com/projectriff/system/pkg/controllers"
 	"github.com/projectriff/system/pkg/tracker"
+)
+
+const (
+	configurationIndexField = ".metadata.configurationController"
+	routeIndexField         = ".metadata.routeController"
 )
 
 // DeployerReconciler reconciles a Deployer object
@@ -195,20 +201,19 @@ func (r *DeployerReconciler) reconcileBuildImage(ctx context.Context, log logr.L
 
 func (r *DeployerReconciler) reconcileChildConfiguration(ctx context.Context, log logr.Logger, deployer *knativev1alpha1.Deployer) (*servingv1.Configuration, error) {
 	var actualConfiguration servingv1.Configuration
-	if deployer.Status.ConfigurationName != "" {
-		if err := r.Get(ctx, types.NamespacedName{Namespace: deployer.Namespace, Name: deployer.Status.ConfigurationName}, &actualConfiguration); err != nil {
-			log.Error(err, "unable to fetch child Configuration")
-			if !apierrs.IsNotFound(err) {
+	var childConfigurations servingv1.ConfigurationList
+	if err := r.List(ctx, &childConfigurations, client.InNamespace(deployer.Namespace), client.MatchingField(configurationIndexField, deployer.Name)); err != nil {
+		return nil, err
+	}
+	// TODO do we need to remove resources pending deletion?
+	if len(childConfigurations.Items) == 1 {
+		actualConfiguration = childConfigurations.Items[0]
+	} else if len(childConfigurations.Items) > 1 {
+		// this shouldn't happen, delete everything to a clean slate
+		for i := range childConfigurations.Items {
+			if err := r.Delete(ctx, &childConfigurations.Items[i]); err != nil {
 				return nil, err
 			}
-			// reset the ConfigurationName since it no longer exists and needs to
-			// be recreated
-			deployer.Status.ConfigurationName = ""
-		}
-		// check that the configuration is not controlled by another resource
-		if !metav1.IsControlledBy(&actualConfiguration, deployer) {
-			deployer.Status.MarkConfigurationNotOwned()
-			return nil, fmt.Errorf("Deployer %q does not own Configuration %q", deployer.Name, actualConfiguration.Name)
 		}
 	}
 
@@ -227,7 +232,7 @@ func (r *DeployerReconciler) reconcileChildConfiguration(ctx context.Context, lo
 	}
 
 	// create configuration if it doesn't exist
-	if deployer.Status.ConfigurationName == "" {
+	if actualConfiguration.Name == "" {
 		log.Info("creating configuration", "spec", desiredConfiguration.Spec)
 		if err := r.Create(ctx, desiredConfiguration); err != nil {
 			log.Error(err, "unable to create Configuration for Deployer", "configuration", desiredConfiguration)
@@ -264,9 +269,9 @@ func (r *DeployerReconciler) constructConfigurationForDeployer(deployer *knative
 
 	configuration := &servingv1.Configuration{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-deployer", deployer.Name),
-			Namespace: deployer.Namespace,
-			Labels:    labels,
+			GenerateName: fmt.Sprintf("%s-deployer-", deployer.Name),
+			Namespace:    deployer.Namespace,
+			Labels:       labels,
 		},
 		Spec: servingv1.ConfigurationSpec{
 			Template: servingv1.RevisionTemplateSpec{
@@ -295,20 +300,19 @@ func (r *DeployerReconciler) constructConfigurationForDeployer(deployer *knative
 
 func (r *DeployerReconciler) reconcileChildRoute(ctx context.Context, log logr.Logger, deployer *knativev1alpha1.Deployer) (*servingv1.Route, error) {
 	var actualRoute servingv1.Route
-	if deployer.Status.RouteName != "" {
-		if err := r.Get(ctx, types.NamespacedName{Namespace: deployer.Namespace, Name: deployer.Status.RouteName}, &actualRoute); err != nil {
-			log.Error(err, "unable to fetch child Route")
-			if !apierrs.IsNotFound(err) {
+	var childRoutes servingv1.RouteList
+	if err := r.List(ctx, &childRoutes, client.InNamespace(deployer.Namespace), client.MatchingField(routeIndexField, deployer.Name)); err != nil {
+		return nil, err
+	}
+	// TODO do we need to remove resources pending deletion?
+	if len(childRoutes.Items) == 1 {
+		actualRoute = childRoutes.Items[0]
+	} else if len(childRoutes.Items) > 1 {
+		// this shouldn't happen, delete everything to a clean slate
+		for i := range childRoutes.Items {
+			if err := r.Delete(ctx, &childRoutes.Items[i]); err != nil {
 				return nil, err
 			}
-			// reset the RouteName since it no longer exists and needs to
-			// be recreated
-			deployer.Status.RouteName = ""
-		}
-		// check that the route is not controlled by another resource
-		if !metav1.IsControlledBy(&actualRoute, deployer) {
-			deployer.Status.MarkRouteNotOwned()
-			return nil, fmt.Errorf("Deployer %q does not own Route %q", deployer.Name, actualRoute.Name)
 		}
 	}
 
@@ -327,7 +331,7 @@ func (r *DeployerReconciler) reconcileChildRoute(ctx context.Context, log logr.L
 	}
 
 	// create route if it doesn't exist
-	if deployer.Status.RouteName == "" {
+	if actualRoute.Name == "" {
 		log.Info("creating route", "spec", desiredRoute.Spec)
 		if err := r.Create(ctx, desiredRoute); err != nil {
 			log.Error(err, "unable to create Route for Deployer", "route", desiredRoute)
@@ -369,11 +373,10 @@ func (r *DeployerReconciler) constructRouteForDeployer(deployer *knativev1alpha1
 
 	route := &servingv1.Route{
 		ObjectMeta: metav1.ObjectMeta{
-			Labels:      labels,
-			Annotations: make(map[string]string),
-			// GenerateName: fmt.Sprintf("%s-deployer-", deployer.Name),
-			Name:      fmt.Sprintf("%s-deployer", deployer.Name),
-			Namespace: deployer.Namespace,
+			Labels:       labels,
+			Annotations:  make(map[string]string),
+			GenerateName: fmt.Sprintf("%s-deployer-", deployer.Name),
+			Namespace:    deployer.Namespace,
 		},
 		Spec: servingv1.RouteSpec{
 			Traffic: []servingv1.TrafficTarget{
@@ -418,6 +421,13 @@ func (r *DeployerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 				return requests
 			}),
 		}
+	}
+
+	if err := controllers.IndexControllersOfType(mgr, configurationIndexField, &knativev1alpha1.Deployer{}, &servingv1.Configuration{}); err != nil {
+		return err
+	}
+	if err := controllers.IndexControllersOfType(mgr, routeIndexField, &knativev1alpha1.Deployer{}, &servingv1.Route{}); err != nil {
+		return err
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).
