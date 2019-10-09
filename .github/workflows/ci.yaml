@@ -3,7 +3,8 @@ name: CI
 on:
   push:
     branches:
-    - '!dependabot/*'
+    - '**'
+    - '!dependabot/**'
   pull_request: {}
 
 jobs:
