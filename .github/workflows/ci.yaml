@@ -120,7 +120,7 @@ jobs:
         run: |
           job=$(date +%s) # TODO can use something that is assigned by CI to guarantee uniqueness
           echo "JOB_ID=${job}"
-          if [ ! -z "$GCLOUD_CLIENT_SECRET" ]; then
+          if [ ! -z "$GCLOUD_CLIENT_SECRET" ] && [ '${{ github.event_name }}' = 'push' ] ; then
             echo "##[set-env name=CLUSTER]gke"
             echo "##[set-env name=REGISTRY]gcr"
           else
