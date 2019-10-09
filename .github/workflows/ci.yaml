@@ -157,7 +157,7 @@ jobs:
         timeout-minutes: 10
       - name: 'Install runtime'
         run: .github/workflows/install-runtime.sh
-        timeout-minutes: 5
+        timeout-minutes: 10
       - name: 'Run tests'
         run: .github/workflows/run-tests.sh
         env:
