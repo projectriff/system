@@ -246,6 +246,7 @@ func (r *ProcessorReconciler) reconcileProcessorScaledObject(ctx context.Context
 func (r *ProcessorReconciler) constructScaledObjectForProcessor(processor *streamingv1alpha1.Processor, deployment *appsv1.Deployment) (*kedav1alpha1.ScaledObject, error) {
 	labels := r.constructLabelsForProcessor(processor)
 
+	zero := int32(0)
 	one := int32(1)
 	thirty := int32(30)
 
@@ -264,6 +265,8 @@ func (r *ProcessorReconciler) constructScaledObjectForProcessor(processor *strea
 			PollingInterval: &one,
 			CooldownPeriod:  &thirty,
 			Triggers:        triggers(processor),
+			MinReplicaCount: &zero,
+			MaxReplicaCount: &thirty,
 		},
 	}
 
