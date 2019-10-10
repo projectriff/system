@@ -37,4 +37,4 @@ elif [ $RUNTIME = "knative" ]; then
 fi
 
 echo "Remove Helm"
-source $FATS_DIR/macros/helm-cleanup.sh
+source $FATS_DIR/macros/helm-reset.sh
