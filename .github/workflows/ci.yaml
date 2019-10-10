@@ -133,7 +133,7 @@ jobs:
           echo "##[set-env name=NAMESPACE]system-${job}-${{ matrix.runtime }}"
           echo "##[set-env name=FATS_DIR]fats"
           echo "##[set-env name=FATS_REPO]projectriff/fats"
-          echo "##[set-env name=FATS_REFSPEC]56e38b715b8b98fe0cf22d5802a838b0dd83e5a8" # master as of 2019-10-08
+          echo "##[set-env name=FATS_REFSPEC]d26fa5dfd47f5cb74ca44a4fa41db11ec0942f14" # master as of 2019-10-10
         env:
           GCLOUD_CLIENT_SECRET: ${{ secrets.GCLOUD_CLIENT_SECRET }}
       - name: 'Fetch FATS'

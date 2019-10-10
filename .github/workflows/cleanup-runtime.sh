@@ -7,11 +7,9 @@ readonly git_sha=$(git rev-parse HEAD)
 readonly git_timestamp=$(TZ=UTC git show --quiet --date='format-local:%Y%m%d%H%M%S' --format="%cd")
 readonly slug=${version}-${git_timestamp}-${git_sha:0:16}
 
-readonly tiller_service_account=tiller
-readonly tiller_namespace=kube-system
+source $FATS_DIR/macros/cleanup-user-resources.sh
 
 echo "Cleanup riff Build"
-kubectl delete riff -n $NAMESPACE --all
 kubectl delete -f https://storage.googleapis.com/projectriff/riff-system/snapshots/riff-build-${slug}.yaml
 kubectl delete -f https://storage.googleapis.com/projectriff/riff-buildtemplate/riff-application-clusterbuilder.yaml
 kubectl delete -f https://storage.googleapis.com/projectriff/riff-buildtemplate/riff-function-clusterbuilder.yaml
@@ -39,7 +37,4 @@ elif [ $RUNTIME = "knative" ]; then
 fi
 
 echo "Remove Helm"
-helm reset
-
-kubectl delete serviceaccount ${tiller_service_account} -n ${tiller_namespace}
-kubectl delete clusterrolebinding "${tiller_service_account}-cluster-admin"
+source $FATS_DIR/macros/helm-reset.sh
