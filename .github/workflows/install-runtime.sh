@@ -16,23 +16,10 @@ source ${FATS_DIR}/.configure.sh
 
 export KO_DOCKER_REPO=$(fats_image_repo '#' | cut -d '#' -f 1 | sed 's|/$||g')
 
-if [ $(kubectl get nodes -oname | wc -l) = "1" ]; then
-  echo "Elimiate pod resource requests"
-  kubectl create namespace cert-manager
-  kubectl label namespace cert-manager certmanager.k8s.io/disable-validation=true
-  fats_retry kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.10.1/cert-manager.yaml
-  wait_pod_selector_ready app.kubernetes.io/name=cert-manager cert-manager
-  wait_pod_selector_ready app.kubernetes.io/name=cainjector cert-manager
-  wait_pod_selector_ready app.kubernetes.io/name=webhook cert-manager
-  fats_retry kubectl apply -f https://storage.googleapis.com/projectriff/no-resource-requests-webhook/no-resource-requests-webhook.yaml
-  wait_pod_selector_ready app=webhook no-resource-requests
-fi
+source $FATS_DIR/macros/no-resource-requests.sh
 
 echo "Initialize Helm"
-kubectl create serviceaccount ${tiller_service_account} -n ${tiller_namespace}
-kubectl create clusterrolebinding "${tiller_service_account}-cluster-admin" --clusterrole cluster-admin --serviceaccount "${tiller_namespace}:${tiller_service_account}"
-helm init --wait --service-account ${tiller_service_account}
-
+source $FATS_DIR/macros/helm-init.sh
 helm repo add projectriff https://projectriff.storage.googleapis.com/charts/releases
 helm repo update
 
