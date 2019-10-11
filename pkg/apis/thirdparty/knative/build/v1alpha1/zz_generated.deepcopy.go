@@ -72,7 +72,7 @@ func (in *Build) DeepCopyObject() runtime.Object {
 func (in *BuildList) DeepCopyInto(out *BuildList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Build, len(*in))
@@ -239,7 +239,7 @@ func (in *BuildTemplate) DeepCopyObject() runtime.Object {
 func (in *BuildTemplateList) DeepCopyInto(out *BuildTemplateList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]BuildTemplate, len(*in))
@@ -333,7 +333,7 @@ func (in *ClusterBuildTemplate) DeepCopyObject() runtime.Object {
 func (in *ClusterBuildTemplateList) DeepCopyInto(out *ClusterBuildTemplateList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]ClusterBuildTemplate, len(*in))

@@ -71,7 +71,7 @@ func (in *Build) DeepCopyObject() runtime.Object {
 func (in *BuildList) DeepCopyInto(out *BuildList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Build, len(*in))
@@ -213,7 +213,7 @@ func (in *BuilderImage) DeepCopy() *BuilderImage {
 func (in *BuilderList) DeepCopyInto(out *BuilderList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Builder, len(*in))
@@ -342,7 +342,7 @@ func (in *ClusterBuilder) DeepCopyObject() runtime.Object {
 func (in *ClusterBuilderList) DeepCopyInto(out *ClusterBuilderList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]ClusterBuilder, len(*in))
@@ -455,7 +455,7 @@ func (in *ImageBuilder) DeepCopy() *ImageBuilder {
 func (in *ImageList) DeepCopyInto(out *ImageList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Image, len(*in))
@@ -693,7 +693,7 @@ func (in *SourceResolver) DeepCopyObject() runtime.Object {
 func (in *SourceResolverList) DeepCopyInto(out *SourceResolverList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]SourceResolver, len(*in))
