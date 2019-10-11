@@ -25,7 +25,9 @@ spec:
     categories:
     - riff
     kind: Application
+    listKind: ApplicationList
     plural: applications
+    singular: application
   scope: Namespaced
   subresources:
     status: {}
@@ -178,7 +180,9 @@ spec:
     categories:
     - riff
     kind: Container
+    listKind: ContainerList
     plural: containers
+    singular: container
   scope: Namespaced
   subresources:
     status: {}
@@ -302,7 +306,9 @@ spec:
     categories:
     - riff
     kind: Function
+    listKind: FunctionList
     plural: functions
+    singular: function
   scope: Namespaced
   subresources:
     status: {}

@@ -18,7 +18,9 @@ spec:
     categories:
     - riff
     kind: Stream
+    listKind: StreamList
     plural: streams
+    singular: stream
   scope: Namespaced
   subresources:
     status: {}

@@ -18,7 +18,9 @@ spec:
     categories:
     - riff
     kind: Function
+    listKind: FunctionList
     plural: functions
+    singular: function
   scope: Namespaced
   subresources:
     status: {}

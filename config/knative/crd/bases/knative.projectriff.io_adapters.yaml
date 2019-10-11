@@ -18,7 +18,9 @@ spec:
     categories:
     - riff
     kind: Adapter
+    listKind: AdapterList
     plural: adapters
+    singular: adapter
   scope: Namespaced
   subresources:
     status: {}

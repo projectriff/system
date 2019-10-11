@@ -25,7 +25,9 @@ spec:
     categories:
     - riff
     kind: Deployer
+    listKind: DeployerList
     plural: deployers
+    singular: deployer
   scope: Namespaced
   subresources:
     status: {}
