@@ -18,7 +18,9 @@ spec:
     categories:
     - riff
     kind: Application
+    listKind: ApplicationList
     plural: applications
+    singular: application
   scope: Namespaced
   subresources:
     status: {}

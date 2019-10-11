@@ -25,7 +25,9 @@ spec:
     categories:
     - riff
     kind: KafkaProvider
+    listKind: KafkaProviderList
     plural: kafkaproviders
+    singular: kafkaprovider
   scope: Namespaced
   subresources:
     status: {}
@@ -147,7 +149,9 @@ spec:
     categories:
     - riff
     kind: Processor
+    listKind: ProcessorList
     plural: processors
+    singular: processor
   scope: Namespaced
   subresources:
     status: {}
@@ -280,7 +284,9 @@ spec:
     categories:
     - riff
     kind: Stream
+    listKind: StreamList
     plural: streams
+    singular: stream
   scope: Namespaced
   subresources:
     status: {}
