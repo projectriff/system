@@ -55,7 +55,7 @@ func (in *KafkaProvider) DeepCopyObject() runtime.Object {
 func (in *KafkaProviderList) DeepCopyInto(out *KafkaProviderList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]KafkaProvider, len(*in))
@@ -145,7 +145,7 @@ func (in *Processor) DeepCopyObject() runtime.Object {
 func (in *ProcessorList) DeepCopyInto(out *ProcessorList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Processor, len(*in))
@@ -275,7 +275,7 @@ func (in *StreamAddress) DeepCopy() *StreamAddress {
 func (in *StreamList) DeepCopyInto(out *StreamList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Stream, len(*in))

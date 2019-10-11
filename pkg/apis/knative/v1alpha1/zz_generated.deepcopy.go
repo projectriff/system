@@ -58,7 +58,7 @@ func (in *Adapter) DeepCopyObject() runtime.Object {
 func (in *AdapterList) DeepCopyInto(out *AdapterList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Adapter, len(*in))
@@ -180,7 +180,7 @@ func (in *Deployer) DeepCopyObject() runtime.Object {
 func (in *DeployerList) DeepCopyInto(out *DeployerList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Deployer, len(*in))
