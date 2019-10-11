@@ -79,7 +79,7 @@ generate-internal: controller-gen
 controller-gen:
 ifeq (, $(shell which controller-gen))
 	# avoid go.* mutations from go get
-	( cd .. && go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.0 )
+	( cd .. && GO111MODULE=on go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.0 )
 CONTROLLER_GEN=$(GOBIN)/controller-gen
 else
 CONTROLLER_GEN=$(shell which controller-gen)
@@ -89,7 +89,7 @@ endif
 goimports:
 ifeq (, $(shell which goimports))
 	# avoid go.* mutations from go get
-	( cd .. && go get golang.org/x/tools/cmd/goimports@release-branch.go1.13 )
+	( cd .. && GO111MODULE=on go get golang.org/x/tools/cmd/goimports@release-branch.go1.13 )
 GOIMPORTS=$(GOBIN)/goimports
 else
 GOIMPORTS=$(shell which goimports)
