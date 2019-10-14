@@ -47,7 +47,7 @@ jobs:
 
   stage:
     needs: test
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && startsWith(github.repository, 'projectriff/')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
@@ -120,14 +120,18 @@ jobs:
         run: |
           job=$(date +%s) # TODO can use something that is assigned by CI to guarantee uniqueness
           echo "JOB_ID=${job}"
-          if [ ! -z "$GCLOUD_CLIENT_SECRET" ] && [ '${{ github.event_name }}' = 'push' ] ; then
+          if [ '${{ github.event_name }}' = 'push' ] && [ '${{ github.repository }}' = projectriff/* ]; then
+            echo "##[set-env name=MODE]push"
+          else 
+            echo "##[set-env name=MODE]pull_request"
+          fi
+          if [ ! -z "$GCLOUD_CLIENT_SECRET" ] && [ "${MODE}" = 'push' ] ; then
             echo "##[set-env name=CLUSTER]gke"
             echo "##[set-env name=REGISTRY]gcr"
           else
             echo "##[set-env name=CLUSTER]kind"
             echo "##[set-env name=REGISTRY]docker-daemon"
           fi
-          echo "##[set-env name=MODE]${{ github.event_name }}"
           echo "##[set-env name=RUNTIME]${{ matrix.runtime }}"
           echo "##[set-env name=CLUSTER_NAME]system-${job}-${{ matrix.runtime }}"
           echo "##[set-env name=NAMESPACE]system-${job}-${{ matrix.runtime }}"
@@ -181,7 +185,7 @@ jobs:
   publish:
     needs: fats
     if: |
-      github.event_name == 'push' && (
+      github.event_name == 'push' && startsWith(github.repository, 'projectriff/') && (
         github.ref == 'refs/heads/master' || (
           startsWith(github.ref, 'refs/heads/v') && endsWith(github.ref, 'x')
         )
