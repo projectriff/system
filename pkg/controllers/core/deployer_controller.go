@@ -212,8 +212,9 @@ func (r *DeployerReconciler) reconcileChildDeployment(ctx context.Context, log l
 		actualDeployment = childDeployments.Items[0]
 	} else if len(childDeployments.Items) > 1 {
 		// this shouldn't happen, delete everything to a clean slate
-		for i := range childDeployments.Items {
-			if err := r.Delete(ctx, &childDeployments.Items[i]); err != nil {
+		for _, extraDeployment := range childDeployments.Items {
+			log.Info("deleting extra deployment", "deployment", extraDeployment)
+			if err := r.Delete(ctx, &extraDeployment); err != nil {
 				return nil, err
 			}
 		}
@@ -226,6 +227,7 @@ func (r *DeployerReconciler) reconcileChildDeployment(ctx context.Context, log l
 
 	// delete deployment if no longer needed
 	if desiredDeployment == nil {
+		log.Info("deleting deployment", "deployment", actualDeployment)
 		if err := r.Delete(ctx, &actualDeployment); err != nil {
 			log.Error(err, "unable to delete Deployment for Deployer", "deployment", actualDeployment)
 			return nil, err
@@ -340,8 +342,9 @@ func (r *DeployerReconciler) reconcileChildService(ctx context.Context, log logr
 		actualService = childServices.Items[0]
 	} else if len(childServices.Items) > 1 {
 		// this shouldn't happen, delete everything to a clean slate
-		for i := range childServices.Items {
-			if err := r.Delete(ctx, &childServices.Items[i]); err != nil {
+		for _, extraService := range childServices.Items {
+			log.Info("deleting extra service", "service", extraService)
+			if err := r.Delete(ctx, &extraService); err != nil {
 				return nil, err
 			}
 		}
@@ -354,6 +357,7 @@ func (r *DeployerReconciler) reconcileChildService(ctx context.Context, log logr
 
 	// delete service if no longer needed
 	if desiredService == nil {
+		log.Info("deleting service", "service", actualService)
 		if err := r.Delete(ctx, &actualService); err != nil {
 			log.Error(err, "unable to delete Service for Deployer", "service", actualService)
 			return nil, err

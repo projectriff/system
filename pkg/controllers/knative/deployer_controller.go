@@ -210,8 +210,9 @@ func (r *DeployerReconciler) reconcileChildConfiguration(ctx context.Context, lo
 		actualConfiguration = childConfigurations.Items[0]
 	} else if len(childConfigurations.Items) > 1 {
 		// this shouldn't happen, delete everything to a clean slate
-		for i := range childConfigurations.Items {
-			if err := r.Delete(ctx, &childConfigurations.Items[i]); err != nil {
+		for _, extraConfiguration := range childConfigurations.Items {
+			log.Info("deleting extra configuration", "configuration", extraConfiguration)
+			if err := r.Delete(ctx, &extraConfiguration); err != nil {
 				return nil, err
 			}
 		}
@@ -224,6 +225,7 @@ func (r *DeployerReconciler) reconcileChildConfiguration(ctx context.Context, lo
 
 	// delete configuration if no longer needed
 	if desiredConfiguration == nil {
+		log.Info("deleting configuration", "configuration", actualConfiguration)
 		if err := r.Delete(ctx, &actualConfiguration); err != nil {
 			log.Error(err, "unable to delete Configuration for Deployer", "configuration", actualConfiguration)
 			return nil, err
@@ -309,8 +311,9 @@ func (r *DeployerReconciler) reconcileChildRoute(ctx context.Context, log logr.L
 		actualRoute = childRoutes.Items[0]
 	} else if len(childRoutes.Items) > 1 {
 		// this shouldn't happen, delete everything to a clean slate
-		for i := range childRoutes.Items {
-			if err := r.Delete(ctx, &childRoutes.Items[i]); err != nil {
+		for _, extraRoute := range childRoutes.Items {
+			log.Info("deleting extra route", "route", extraRoute)
+			if err := r.Delete(ctx, &extraRoute); err != nil {
 				return nil, err
 			}
 		}
@@ -323,6 +326,7 @@ func (r *DeployerReconciler) reconcileChildRoute(ctx context.Context, log logr.L
 
 	// delete route if no longer needed
 	if desiredRoute == nil {
+		log.Info("deleting route", "route", actualRoute)
 		if err := r.Delete(ctx, &actualRoute); err != nil {
 			log.Error(err, "unable to delete Route for Deployer", "route", actualRoute)
 			return nil, err

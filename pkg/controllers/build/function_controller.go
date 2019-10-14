@@ -162,8 +162,9 @@ func (r *FunctionReconciler) reconcileChildKpackImage(ctx context.Context, log l
 		actualImage = childImages.Items[0]
 	} else if len(childImages.Items) > 1 {
 		// this shouldn't happen, delete everything to a clean slate
-		for i := range childImages.Items {
-			if err := r.Delete(ctx, &childImages.Items[i]); err != nil {
+		for _, extraImage := range childImages.Items {
+			log.Info("deleting extra kpack image", "image", extraImage)
+			if err := r.Delete(ctx, &extraImage); err != nil {
 				return nil, err
 			}
 		}
@@ -177,6 +178,7 @@ func (r *FunctionReconciler) reconcileChildKpackImage(ctx context.Context, log l
 	if desiredImage == nil {
 		// delete image if no longer needed
 		if actualImage.Name != "" {
+			log.Info("deleting kpack image", "image", actualImage)
 			if err := r.Delete(ctx, &actualImage); err != nil {
 				log.Error(err, "unable to delete kpack Image for Function", "image", actualImage)
 				return nil, err
