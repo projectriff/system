@@ -643,8 +643,8 @@ subjects:
 ---
 apiVersion: v1
 data:
-  liiklus: bsideup/liiklus:0.9.0
-  provisioner: gcr.io/projectriff/kafka-provisioner/provisioner-97dd22e72aed3201586a126a023b55db@sha256:fca4914e7e86a54c7093bd778df013a69a700123f65a831f7331158f9478dfda
+  liiklusImage: bsideup/liiklus:0.9.0
+  provisionerImage: gcr.io/projectriff/kafka-provisioner/provisioner-97dd22e72aed3201586a126a023b55db@sha256:fca4914e7e86a54c7093bd778df013a69a700123f65a831f7331158f9478dfda
 kind: ConfigMap
 metadata:
   labels:
@@ -654,7 +654,7 @@ metadata:
 ---
 apiVersion: v1
 data:
-  processor: projectriff/streaming-processor
+  processorImage: projectriff/streaming-processor
 kind: ConfigMap
 metadata:
   labels:

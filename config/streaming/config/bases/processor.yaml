@@ -3,4 +3,4 @@ kind: ConfigMap
 metadata:
   name: processor
 data:
-  processor: projectriff/streaming-processor
+  processorImage: projectriff/streaming-processor
