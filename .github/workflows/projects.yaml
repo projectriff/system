@@ -8,28 +8,28 @@ jobs:
   Move_Labeled_Issue_On_Project_Board:
     runs-on: ubuntu-latest
     steps:
-    - uses: projectriff/actions-move-labeled-issue-repo@master
+    - uses: projectriff/actions-move-labeled-issue@master
       with:
         action-token: "${{ secrets.GITHUB_PROJECT_TOKEN }}"
         label-name: "build"
         project-url: "https://github.com/orgs/projectriff/projects/10" # "invokers" project
         column-name: "To do"
         columns-to-ignore: "To do,In progress,Review in progress,Reviewer approved,Done"
-    - uses: projectriff/actions-move-labeled-issue-repo@master
+    - uses: projectriff/actions-move-labeled-issue@master
       with:
         action-token: "${{ secrets.GITHUB_PROJECT_TOKEN }}"
         label-name: "core-runtime"
         project-url: "https://github.com/orgs/projectriff/projects/8" # "core runtime" project
         column-name: "To do"
         columns-to-ignore: "To do,In progress,Review in progress,Reviewer approved,Done"
-    - uses: projectriff/actions-move-labeled-issue-repo@master
+    - uses: projectriff/actions-move-labeled-issue@master
       with:
         action-token: "${{ secrets.GITHUB_PROJECT_TOKEN }}"
         label-name: "knative-runtime"
         project-url: "https://github.com/orgs/projectriff/projects/7" # "knative runtime" project
         column-name: "To do"
         columns-to-ignore: "To do,In progress,Review in progress,Reviewer approved,Done"
-    - uses: projectriff/actions-move-labeled-issue-repo@master
+    - uses: projectriff/actions-move-labeled-issue@master
       with:
         action-token: "${{ secrets.GITHUB_PROJECT_TOKEN }}"
         label-name: "streaming-runtime"
