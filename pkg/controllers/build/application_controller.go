@@ -23,7 +23,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"
-	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -233,26 +232,20 @@ func (r *ApplicationReconciler) constructImageForApplication(application *buildv
 			Namespace:    application.Namespace,
 		},
 		Spec: kpackbuildv1alpha1.ImageSpec{
-			ServiceAccount: "riff-build",
+			Tag: application.Status.TargetImage,
 			Builder: kpackbuildv1alpha1.ImageBuilder{
 				TypeMeta: metav1.TypeMeta{
 					Kind: "ClusterBuilder",
 				},
 				Name: "riff-application",
 			},
-			Tag:       application.Status.TargetImage,
-			CacheSize: application.Spec.CacheSize,
-			Source: kpackbuildv1alpha1.SourceConfig{
-				// TODO add support for other types of source
-				Git: &kpackbuildv1alpha1.Git{
-					URL:      application.Spec.Source.Git.URL,
-					Revision: application.Spec.Source.Git.Revision,
-				},
-				SubPath: application.Spec.Source.SubPath,
-			},
-			Build: kpackbuildv1alpha1.ImageBuild{
-				Env: []corev1.EnvVar{},
-			},
+			ServiceAccount:           "riff-build",
+			Source:                   *application.Spec.Source,
+			CacheSize:                application.Spec.CacheSize,
+			FailedBuildHistoryLimit:  application.Spec.FailedBuildHistoryLimit,
+			SuccessBuildHistoryLimit: application.Spec.SuccessBuildHistoryLimit,
+			ImageTaggingStrategy:     application.Spec.ImageTaggingStrategy,
+			Build:                    application.Spec.Build,
 		},
 	}
 	if err := ctrl.SetControllerReference(application, image, r.Scheme); err != nil {

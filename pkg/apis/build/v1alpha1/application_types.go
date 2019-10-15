@@ -51,6 +51,15 @@ type ApplicationSpec struct {
 
 	// Source location. Required for on cluster builds.
 	Source *Source `json:"source,omitempty"`
+
+	// +optional
+	FailedBuildHistoryLimit *int64 `json:"failedBuildHistoryLimit"`
+	// +optional
+	SuccessBuildHistoryLimit *int64 `json:"successBuildHistoryLimit"`
+	// +optional
+	ImageTaggingStrategy ImageTaggingStrategy `json:"imageTaggingStrategy"`
+	// +optional
+	Build ImageBuild `json:"build"`
 }
 
 // ApplicationStatus defines the observed state of Application

@@ -29,24 +29,6 @@ var (
 	CredentialsAnnotationKey = GroupVersion.Group + "/credentials"
 )
 
-type Source struct {
-	// Git source location to clone and checkout for the build.
-	Git *GitSource `json:"git"`
-
-	// SubPath within the source to mount. Files outside of the sub path will
-	// not be available to tbe build.
-	SubPath string `json:"subPath,omitempty"`
-}
-
-type GitSource struct {
-	// Revision in the git repository to checkout. May be any valid refspec
-	// including commit sha, tags or branches.
-	Revision string `json:"revision"`
-
-	// URL to a cloneable git repository.
-	URL string `json:"url"`
-}
-
 type BuildStatus struct {
 	// BuildCacheName is the name of the PersistentVolumeClaim used as a cache
 	// for intermediate build resources.

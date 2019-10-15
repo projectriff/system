@@ -233,33 +233,28 @@ func (r *FunctionReconciler) constructImageForFunction(function *buildv1alpha1.F
 			Namespace:    function.Namespace,
 		},
 		Spec: kpackbuildv1alpha1.ImageSpec{
-			ServiceAccount: "riff-build",
+			Tag: function.Status.TargetImage,
 			Builder: kpackbuildv1alpha1.ImageBuilder{
 				TypeMeta: metav1.TypeMeta{
 					Kind: "ClusterBuilder",
 				},
 				Name: "riff-function",
 			},
-			Tag:       function.Status.TargetImage,
-			CacheSize: function.Spec.CacheSize,
-			Source: kpackbuildv1alpha1.SourceConfig{
-				// TODO add support for other types of source
-				Git: &kpackbuildv1alpha1.Git{
-					URL:      function.Spec.Source.Git.URL,
-					Revision: function.Spec.Source.Git.Revision,
-				},
-				SubPath: function.Spec.Source.SubPath,
-			},
-			Build: kpackbuildv1alpha1.ImageBuild{
-				Env: []corev1.EnvVar{
-					{Name: "RIFF", Value: "true"},
-					{Name: "RIFF_ARTIFACT", Value: function.Spec.Artifact},
-					{Name: "RIFF_HANDLER", Value: function.Spec.Handler},
-					{Name: "RIFF_OVERRIDE", Value: function.Spec.Invoker},
-				},
-			},
+			ServiceAccount:           "riff-build",
+			Source:                   *function.Spec.Source,
+			CacheSize:                function.Spec.CacheSize,
+			FailedBuildHistoryLimit:  function.Spec.FailedBuildHistoryLimit,
+			SuccessBuildHistoryLimit: function.Spec.SuccessBuildHistoryLimit,
+			ImageTaggingStrategy:     function.Spec.ImageTaggingStrategy,
+			Build:                    function.Spec.Build,
 		},
 	}
+	image.Spec.Build.Env = append(image.Spec.Build.Env,
+		corev1.EnvVar{Name: "RIFF", Value: "true"},
+		corev1.EnvVar{Name: "RIFF_ARTIFACT", Value: function.Spec.Artifact},
+		corev1.EnvVar{Name: "RIFF_HANDLER", Value: function.Spec.Handler},
+		corev1.EnvVar{Name: "RIFF_OVERRIDE", Value: function.Spec.Invoker},
+	)
 	if err := ctrl.SetControllerReference(function, image, r.Scheme); err != nil {
 		return nil, err
 	}
