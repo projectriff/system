@@ -13,6 +13,13 @@ jobs:
     - uses: projectriff/actions-move-labeled-issue@master
       with:
         action-token: "${{ secrets.GITHUB_PROJECT_TOKEN }}"
+        milestone-name: "v0.5.0"
+        project-url: "https://github.com/orgs/projectriff/projects/6" # "v0.5.0" project
+        column-name: "To do"
+        columns-to-ignore: "To do,In progress,Review in progress,Reviewer approved,Done"
+    - uses: projectriff/actions-move-labeled-issue@master
+      with:
+        action-token: "${{ secrets.GITHUB_PROJECT_TOKEN }}"
         label-name: "build"
         project-url: "https://github.com/orgs/projectriff/projects/10" # "invokers" project
         column-name: "To do"
