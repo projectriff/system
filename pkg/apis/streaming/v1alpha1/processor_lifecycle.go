@@ -75,16 +75,6 @@ func (ps *ProcessorStatus) PropagateFunctionStatus(fs *buildv1alpha1.FunctionSta
 	}
 }
 
-func (ps *ProcessorStatus) MarkDeploymentNotOwned() {
-	processorCondSet.Manage(ps).MarkFalse(ProcessorConditionDeploymentReady, "NotOwned",
-		"There is an existing Deployment %q that we do not own.", ps.DeploymentName)
-}
-
-func (ps *ProcessorStatus) MarkScaledObjectNotOwned() {
-	processorCondSet.Manage(ps).MarkFalse(ProcessorConditionScaledObjectReady, "NotOwned",
-		"There is an existing ScaledObject %q that we do not own.", ps.ScaledObjectName)
-}
-
 func (ps *ProcessorStatus) PropagateDeploymentStatus(ds *appsv1.DeploymentStatus) {
 	var available, progressing *appsv1.DeploymentCondition
 	for i := range ds.Conditions {

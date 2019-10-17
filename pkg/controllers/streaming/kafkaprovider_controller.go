@@ -25,7 +25,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
-	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -38,7 +37,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	streamingv1alpha1 "github.com/projectriff/system/pkg/apis/streaming/v1alpha1"
+	"github.com/projectriff/system/pkg/controllers"
 	"github.com/projectriff/system/pkg/tracker"
+)
+
+const (
+	kafkaProviderDeploymentIndexField = ".metadata.kafkaProviderDeploymentController"
+	kafkaProviderServiceIndexField    = ".metadata.kafkaProviderServiceController"
 )
 
 // KafkaProviderReconciler reconciles a KafkaProvider object
@@ -146,20 +151,23 @@ func (r *KafkaProviderReconciler) reconcile(ctx context.Context, log logr.Logger
 
 func (r *KafkaProviderReconciler) reconcileLiiklusDeployment(ctx context.Context, log logr.Logger, kafkaProvider *streamingv1alpha1.KafkaProvider, cm *corev1.ConfigMap) (*appsv1.Deployment, error) {
 	var actualDeployment appsv1.Deployment
-	if kafkaProvider.Status.LiiklusDeploymentName != "" {
-		if err := r.Get(ctx, types.NamespacedName{Namespace: kafkaProvider.Namespace, Name: kafkaProvider.Status.LiiklusDeploymentName}, &actualDeployment); err != nil {
-			log.Error(err, "unable to fetch liiklus Deployment")
-			if !apierrs.IsNotFound(err) {
+	var childDeployments appsv1.DeploymentList
+	if err := r.List(ctx, &childDeployments,
+		client.InNamespace(kafkaProvider.Namespace),
+		client.MatchingLabels(map[string]string{streamingv1alpha1.KafkaProviderLiiklusLabelKey: kafkaProvider.Name}),
+		client.MatchingField(kafkaProviderDeploymentIndexField, kafkaProvider.Name)); err != nil {
+		return nil, err
+	}
+	// TODO do we need to remove resources pending deletion?
+	if len(childDeployments.Items) == 1 {
+		actualDeployment = childDeployments.Items[0]
+	} else if len(childDeployments.Items) > 1 {
+		// this shouldn't happen, delete everything to a clean slate
+		for _, extraDeployment := range childDeployments.Items {
+			log.Info("deleting extra liiklus deployment", "deployment", extraDeployment)
+			if err := r.Delete(ctx, &extraDeployment); err != nil {
 				return nil, err
 			}
-			// reset the DeploymentName since it no longer exists and needs to
-			// be recreated
-			kafkaProvider.Status.LiiklusDeploymentName = ""
-		}
-		// check that the deployment is not controlled by another resource
-		if !metav1.IsControlledBy(&actualDeployment, kafkaProvider) {
-			kafkaProvider.Status.MarkLiiklusDeploymentNotOwned()
-			return nil, fmt.Errorf("kafkaprovider %q does not own Deployment %q", kafkaProvider.Name, actualDeployment.Name)
 		}
 	}
 
@@ -224,10 +232,10 @@ func (r *KafkaProviderReconciler) constructLiiklusDeploymentForKafkaProvider(kaf
 
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Labels:      labels,
-			Annotations: make(map[string]string),
-			Name:        fmt.Sprintf("%s-kafka-liiklus", kafkaProvider.Name),
-			Namespace:   kafkaProvider.Namespace,
+			Labels:       labels,
+			Annotations:  make(map[string]string),
+			GenerateName: fmt.Sprintf("%s-kafka-liiklus-", kafkaProvider.Name),
+			Namespace:    kafkaProvider.Namespace,
 		},
 		Spec: appsv1.DeploymentSpec{
 			Selector: &metav1.LabelSelector{
@@ -287,20 +295,23 @@ func (r *KafkaProviderReconciler) deploymentSemanticEquals(desiredDeployment, de
 
 func (r *KafkaProviderReconciler) reconcileLiiklusService(ctx context.Context, log logr.Logger, kafkaProvider *streamingv1alpha1.KafkaProvider) (*corev1.Service, error) {
 	var actualService corev1.Service
-	if kafkaProvider.Status.LiiklusServiceName != "" {
-		if err := r.Get(ctx, types.NamespacedName{Namespace: kafkaProvider.Namespace, Name: kafkaProvider.Status.LiiklusServiceName}, &actualService); err != nil {
-			log.Error(err, "unable to fetch liiklus Service")
-			if !apierrs.IsNotFound(err) {
+	var childServices corev1.ServiceList
+	if err := r.List(ctx, &childServices,
+		client.InNamespace(kafkaProvider.Namespace),
+		client.MatchingLabels(map[string]string{streamingv1alpha1.KafkaProviderLiiklusLabelKey: kafkaProvider.Name}),
+		client.MatchingField(kafkaProviderServiceIndexField, kafkaProvider.Name)); err != nil {
+		return nil, err
+	}
+	// TODO do we need to remove resources pending deletion?
+	if len(childServices.Items) == 1 {
+		actualService = childServices.Items[0]
+	} else if len(childServices.Items) > 1 {
+		// this shouldn't happen, delete everything to a clean slate
+		for _, extraService := range childServices.Items {
+			log.Info("deleting extra liiklus service", "service", extraService)
+			if err := r.Delete(ctx, &extraService); err != nil {
 				return nil, err
 			}
-			// reset the ServiceName since it no longer exists and needs to
-			// be recreated
-			kafkaProvider.Status.LiiklusServiceName = ""
-		}
-		// check that the service is not controlled by another resource
-		if !metav1.IsControlledBy(&actualService, kafkaProvider) {
-			kafkaProvider.Status.MarkLiiklusServiceNotOwned()
-			return nil, fmt.Errorf("KafkaProvider %q does not own Service %q", kafkaProvider.Name, actualService.Name)
 		}
 	}
 
@@ -359,10 +370,10 @@ func (r *KafkaProviderReconciler) constructLiiklusServiceForKafkaProvider(kafkaP
 
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Labels:      labels,
-			Annotations: make(map[string]string),
-			Name:        fmt.Sprintf("%s-kafka-liiklus", kafkaProvider.Name),
-			Namespace:   kafkaProvider.Namespace,
+			Labels:       labels,
+			Annotations:  make(map[string]string),
+			GenerateName: fmt.Sprintf("%s-kafka-liiklus-", kafkaProvider.Name),
+			Namespace:    kafkaProvider.Namespace,
 		},
 		Spec: corev1.ServiceSpec{
 			Ports: []corev1.ServicePort{
@@ -382,20 +393,23 @@ func (r *KafkaProviderReconciler) constructLiiklusServiceForKafkaProvider(kafkaP
 
 func (r *KafkaProviderReconciler) reconcileProvisionerDeployment(ctx context.Context, log logr.Logger, kafkaProvider *streamingv1alpha1.KafkaProvider, cm *corev1.ConfigMap) (*appsv1.Deployment, error) {
 	var actualDeployment appsv1.Deployment
-	if kafkaProvider.Status.ProvisionerDeploymentName != "" {
-		if err := r.Get(ctx, types.NamespacedName{Namespace: kafkaProvider.Namespace, Name: kafkaProvider.Status.ProvisionerDeploymentName}, &actualDeployment); err != nil {
-			log.Error(err, "unable to fetch provisioner Deployment")
-			if !apierrs.IsNotFound(err) {
+	var childDeployments appsv1.DeploymentList
+	if err := r.List(ctx, &childDeployments,
+		client.InNamespace(kafkaProvider.Namespace),
+		client.MatchingLabels(map[string]string{streamingv1alpha1.KafkaProviderProvisionerLabelKey: kafkaProvider.Name}),
+		client.MatchingField(kafkaProviderDeploymentIndexField, kafkaProvider.Name)); err != nil {
+		return nil, err
+	}
+	// TODO do we need to remove resources pending deletion?
+	if len(childDeployments.Items) == 1 {
+		actualDeployment = childDeployments.Items[0]
+	} else if len(childDeployments.Items) > 1 {
+		// this shouldn't happen, delete everything to a clean slate
+		for _, extraDeployment := range childDeployments.Items {
+			log.Info("deleting extra provisioner deployment", "deployment", extraDeployment)
+			if err := r.Delete(ctx, &extraDeployment); err != nil {
 				return nil, err
 			}
-			// reset the DeploymentName since it no longer exists and needs to
-			// be recreated
-			kafkaProvider.Status.ProvisionerDeploymentName = ""
-		}
-		// check that the deployment is not controlled by another resource
-		if !metav1.IsControlledBy(&actualDeployment, kafkaProvider) {
-			kafkaProvider.Status.MarkProvisionerDeploymentNotOwned()
-			return nil, fmt.Errorf("kafkaprovider %q does not own Deployment %q", kafkaProvider.Name, actualDeployment.Name)
 		}
 	}
 
@@ -459,10 +473,10 @@ func (r *KafkaProviderReconciler) constructProvisionerDeploymentForKafkaProvider
 	}
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Labels:      labels,
-			Annotations: make(map[string]string),
-			Name:        fmt.Sprintf("%s-kafka-provisioner", kafkaProvider.Name),
-			Namespace:   kafkaProvider.Namespace,
+			Labels:       labels,
+			Annotations:  make(map[string]string),
+			GenerateName: fmt.Sprintf("%s-kafka-provisioner-", kafkaProvider.Name),
+			Namespace:    kafkaProvider.Namespace,
 		},
 		Spec: appsv1.DeploymentSpec{
 			Selector: &metav1.LabelSelector{
@@ -496,20 +510,23 @@ func (r *KafkaProviderReconciler) constructProvisionerDeploymentForKafkaProvider
 
 func (r *KafkaProviderReconciler) reconcileProvisionerService(ctx context.Context, log logr.Logger, kafkaProvider *streamingv1alpha1.KafkaProvider) (*corev1.Service, error) {
 	var actualService corev1.Service
-	if kafkaProvider.Status.ProvisionerServiceName != "" {
-		if err := r.Get(ctx, types.NamespacedName{Namespace: kafkaProvider.Namespace, Name: kafkaProvider.Status.ProvisionerServiceName}, &actualService); err != nil {
-			log.Error(err, "unable to fetch provisioner Service")
-			if !apierrs.IsNotFound(err) {
+	var childServices corev1.ServiceList
+	if err := r.List(ctx, &childServices,
+		client.InNamespace(kafkaProvider.Namespace),
+		client.MatchingLabels(map[string]string{streamingv1alpha1.KafkaProviderProvisionerLabelKey: kafkaProvider.Name}),
+		client.MatchingField(kafkaProviderServiceIndexField, kafkaProvider.Name)); err != nil {
+		return nil, err
+	}
+	// TODO do we need to remove resources pending deletion?
+	if len(childServices.Items) == 1 {
+		actualService = childServices.Items[0]
+	} else if len(childServices.Items) > 1 {
+		// this shouldn't happen, delete everything to a clean slate
+		for _, extraService := range childServices.Items {
+			log.Info("deleting extra provisioner service", "service", extraService)
+			if err := r.Delete(ctx, &extraService); err != nil {
 				return nil, err
 			}
-			// reset the ServiceName since it no longer exists and needs to
-			// be recreated
-			kafkaProvider.Status.ProvisionerServiceName = ""
-		}
-		// check that the service is not controlled by another resource
-		if !metav1.IsControlledBy(&actualService, kafkaProvider) {
-			kafkaProvider.Status.MarkProvisionerServiceNotOwned()
-			return nil, fmt.Errorf("KafkaProvider %q does not own Service %q", kafkaProvider.Name, actualService.Name)
 		}
 	}
 
@@ -612,6 +629,13 @@ func (r *KafkaProviderReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			}
 			return requests
 		}),
+	}
+
+	if err := controllers.IndexControllersOfType(mgr, kafkaProviderDeploymentIndexField, &streamingv1alpha1.KafkaProvider{}, &appsv1.Deployment{}); err != nil {
+		return err
+	}
+	if err := controllers.IndexControllersOfType(mgr, kafkaProviderServiceIndexField, &streamingv1alpha1.KafkaProvider{}, &corev1.Service{}); err != nil {
+		return err
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).

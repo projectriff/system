@@ -58,11 +58,6 @@ func (ps *KafkaProviderStatus) InitializeConditions() {
 	providerCondSet.Manage(ps).InitializeConditions()
 }
 
-func (ps *KafkaProviderStatus) MarkLiiklusDeploymentNotOwned() {
-	providerCondSet.Manage(ps).MarkFalse(KafkaProviderConditionLiiklusDeploymentReady, "NotOwned",
-		"There is an existing Deployment %q that we do not own.", ps.LiiklusDeploymentName)
-}
-
 func (ps *KafkaProviderStatus) PropagateLiiklusDeploymentStatus(cds *appsv1.DeploymentStatus) {
 	var available, progressing *appsv1.DeploymentCondition
 	for i := range cds.Conditions {
@@ -91,19 +86,9 @@ func (ps *KafkaProviderStatus) PropagateLiiklusDeploymentStatus(cds *appsv1.Depl
 	}
 }
 
-func (ps *KafkaProviderStatus) MarkLiiklusServiceNotOwned() {
-	providerCondSet.Manage(ps).MarkFalse(KafkaProviderConditionLiiklusServiceReady, "NotOwned",
-		"There is an existing Service %q that we do not own.", ps.LiiklusServiceName)
-}
-
 func (ps *KafkaProviderStatus) PropagateLiiklusServiceStatus(ss *corev1.ServiceStatus) {
 	// services don't have meaningful status
 	providerCondSet.Manage(ps).MarkTrue(KafkaProviderConditionLiiklusServiceReady)
-}
-
-func (ps *KafkaProviderStatus) MarkProvisionerDeploymentNotOwned() {
-	providerCondSet.Manage(ps).MarkFalse(KafkaProviderConditionProvisionerDeploymentReady, "NotOwned",
-		"There is an existing Deployment %q that we do not own.", ps.ProvisionerDeploymentName)
 }
 
 func (ps *KafkaProviderStatus) PropagateProvisionerDeploymentStatus(cds *appsv1.DeploymentStatus) {
@@ -132,11 +117,6 @@ func (ps *KafkaProviderStatus) PropagateProvisionerDeploymentStatus(cds *appsv1.
 	case available.Status == corev1.ConditionFalse:
 		providerCondSet.Manage(ps).MarkFalse(KafkaProviderConditionProvisionerDeploymentReady, available.Reason, available.Message)
 	}
-}
-
-func (ps *KafkaProviderStatus) MarkProvisionerServiceNotOwned() {
-	providerCondSet.Manage(ps).MarkFalse(KafkaProviderConditionProvisionerServiceReady, "NotOwned",
-		"There is an existing Service %q that we do not own.", ps.ProvisionerServiceName)
 }
 
 func (ps *KafkaProviderStatus) PropagateProvisionerServiceStatus(ss *corev1.ServiceStatus) {

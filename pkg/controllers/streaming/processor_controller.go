@@ -29,7 +29,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
-	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -42,12 +41,18 @@ import (
 
 	"github.com/projectriff/system/pkg/apis"
 	kedav1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/keda/v1alpha1"
+	"github.com/projectriff/system/pkg/controllers"
 
 	"github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	"github.com/projectriff/system/pkg/tracker"
 
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	streamingv1alpha1 "github.com/projectriff/system/pkg/apis/streaming/v1alpha1"
+)
+
+const (
+	processorDeploymentIndexField   = ".metadata.processorDeploymentController"
+	processorScaledObjectIndexField = ".metadata.processorScaledObjectController"
 )
 
 // ProcessorReconciler reconciles a Processor object
@@ -182,21 +187,20 @@ func (r *ProcessorReconciler) reconcile(ctx context.Context, logger logr.Logger,
 
 func (r *ProcessorReconciler) reconcileProcessorScaledObject(ctx context.Context, log logr.Logger, processor *streamingv1alpha1.Processor, deployment *appsv1.Deployment) (*kedav1alpha1.ScaledObject, error) {
 	var actualScaledObject kedav1alpha1.ScaledObject
-	if processor.Status.ScaledObjectName != "" {
-		namespacedName := types.NamespacedName{Namespace: processor.Namespace, Name: processor.Status.ScaledObjectName}
-		if err := r.Get(ctx, namespacedName, &actualScaledObject); err != nil {
-			log.Error(err, "unable to fetch ScaledObject")
-			if !apierrs.IsNotFound(err) {
+	var childScaledObjects kedav1alpha1.ScaledObjectList
+	if err := r.List(ctx, &childScaledObjects, client.InNamespace(processor.Namespace), client.MatchingField(processorScaledObjectIndexField, processor.Name)); err != nil {
+		return nil, err
+	}
+	// TODO do we need to remove resources pending deletion?
+	if len(childScaledObjects.Items) == 1 {
+		actualScaledObject = childScaledObjects.Items[0]
+	} else if len(childScaledObjects.Items) > 1 {
+		// this shouldn't happen, delete everything to a clean slate
+		for _, extraScaledObject := range childScaledObjects.Items {
+			log.Info("deleting extra scaled object", "scaledObject", extraScaledObject)
+			if err := r.Delete(ctx, &extraScaledObject); err != nil {
 				return nil, err
 			}
-			// reset the ScaledObjectName since it no longer exists and needs to
-			// be recreated
-			processor.Status.ScaledObjectName = ""
-		}
-		// check that the scaledObject is not controlled by another resource
-		if !metav1.IsControlledBy(&actualScaledObject, processor) {
-			processor.Status.MarkScaledObjectNotOwned()
-			return nil, fmt.Errorf("processor %q does not own ScaledObject %q", processor.Name, actualScaledObject.Name)
 		}
 	}
 
@@ -254,9 +258,9 @@ func (r *ProcessorReconciler) constructScaledObjectForProcessor(processor *strea
 
 	scaledObject := &kedav1alpha1.ScaledObject{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      scaledObjectName(processor),
-			Namespace: processor.Namespace,
-			Labels:    labels,
+			GenerateName: fmt.Sprintf("%s-processor-", processor.Name),
+			Namespace:    processor.Namespace,
+			Labels:       labels,
 		},
 		Spec: kedav1alpha1.ScaledObjectSpec{
 			ScaleTargetRef: kedav1alpha1.ObjectReference{
@@ -297,21 +301,20 @@ func (r *ProcessorReconciler) scaledObjectSemanticEquals(desiredDeployment, depl
 
 func (r *ProcessorReconciler) reconcileProcessorDeployment(ctx context.Context, log logr.Logger, processor *streamingv1alpha1.Processor, cm *corev1.ConfigMap) (*appsv1.Deployment, error) {
 	var actualDeployment appsv1.Deployment
-	if processor.Status.DeploymentName != "" {
-		namespacedName := types.NamespacedName{Namespace: processor.Namespace, Name: processor.Status.DeploymentName}
-		if err := r.Get(ctx, namespacedName, &actualDeployment); err != nil {
-			log.Error(err, "unable to fetch Deployment")
-			if !apierrs.IsNotFound(err) {
+	var childDeployments appsv1.DeploymentList
+	if err := r.List(ctx, &childDeployments, client.InNamespace(processor.Namespace), client.MatchingField(processorDeploymentIndexField, processor.Name)); err != nil {
+		return nil, err
+	}
+	// TODO do we need to remove resources pending deletion?
+	if len(childDeployments.Items) == 1 {
+		actualDeployment = childDeployments.Items[0]
+	} else if len(childDeployments.Items) > 1 {
+		// this shouldn't happen, delete everything to a clean slate
+		for _, extraDeployment := range childDeployments.Items {
+			log.Info("deleting extra deployment", "deployment", extraDeployment)
+			if err := r.Delete(ctx, &extraDeployment); err != nil {
 				return nil, err
 			}
-			// reset the DeploymentName since it no longer exists and needs to
-			// be recreated
-			processor.Status.DeploymentName = ""
-		}
-		// check that the deployment is not controlled by another resource
-		if !metav1.IsControlledBy(&actualDeployment, processor) {
-			processor.Status.MarkDeploymentNotOwned()
-			return nil, fmt.Errorf("processor %q does not own Deployment %q", processor.Name, actualDeployment.Name)
 		}
 	}
 
@@ -377,9 +380,9 @@ func (r *ProcessorReconciler) constructDeploymentForProcessor(processor *streami
 
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      deploymentName(processor),
-			Namespace: processor.Namespace,
-			Labels:    labels,
+			GenerateName: fmt.Sprintf("%s-processor-", processor.Name),
+			Namespace:    processor.Namespace,
+			Labels:       labels,
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &one,
@@ -448,7 +451,7 @@ func (r *ProcessorReconciler) resolveStreams(ctx context.Context, processorCoord
 			Name:      streamName,
 		}
 		var stream streamingv1alpha1.Stream
-		// track stream for new cordinates
+		// track stream for new coordinates
 		r.Tracker.Track(
 			tracker.NewKey(stream.GetGroupVersionKind(), streamNSName),
 			processorCoordinates,
@@ -491,14 +494,6 @@ func (r *ProcessorReconciler) computeEnvironmentVariables(processor *streamingv1
 	}, nil
 }
 
-func deploymentName(p *streamingv1alpha1.Processor) string {
-	return fmt.Sprintf("%s-processor", p.Name)
-}
-
-func scaledObjectName(p *streamingv1alpha1.Processor) string {
-	return fmt.Sprintf("%s-processor", p.Name)
-}
-
 type outputContentType struct {
 	OutputIndex int    `json:"outputIndex"`
 	ContentType string `json:"contentType"`
@@ -535,6 +530,13 @@ func (r *ProcessorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 				return requests
 			}),
 		}
+	}
+
+	if err := controllers.IndexControllersOfType(mgr, processorDeploymentIndexField, &streamingv1alpha1.Processor{}, &appsv1.Deployment{}); err != nil {
+		return err
+	}
+	if err := controllers.IndexControllersOfType(mgr, processorScaledObjectIndexField, &streamingv1alpha1.Processor{}, &kedav1alpha1.ScaledObject{}); err != nil {
+		return err
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).
