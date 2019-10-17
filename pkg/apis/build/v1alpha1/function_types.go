@@ -52,13 +52,15 @@ type FunctionSpec struct {
 	Source *Source `json:"source,omitempty"`
 
 	// +optional
-	FailedBuildHistoryLimit *int64 `json:"failedBuildHistoryLimit"`
+	// +nullable
+	FailedBuildHistoryLimit *int64 `json:"failedBuildHistoryLimit,omitempty"`
 	// +optional
-	SuccessBuildHistoryLimit *int64 `json:"successBuildHistoryLimit"`
+	// +nullable
+	SuccessBuildHistoryLimit *int64 `json:"successBuildHistoryLimit,omitempty"`
 	// +optional
-	ImageTaggingStrategy ImageTaggingStrategy `json:"imageTaggingStrategy"`
+	ImageTaggingStrategy ImageTaggingStrategy `json:"imageTaggingStrategy,omitempty"`
 	// +optional
-	Build ImageBuild `json:"build"`
+	Build ImageBuild `json:"build,omitempty"`
 
 	// Artifact file containing the function within the build workspace.
 	Artifact string `json:"artifact,omitempty"`

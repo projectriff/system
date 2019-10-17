@@ -165,9 +165,6 @@ spec:
                         to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
                       type: object
                   type: object
-              required:
-              - env
-              - resources
               type: object
             cacheSize:
               description: CacheSize for an optional PersistentVolumeClaim used to
@@ -176,6 +173,7 @@ spec:
               type: string
             failedBuildHistoryLimit:
               format: int64
+              nullable: true
               type: integer
             image:
               description: Image repository to push built images. May contain a leading
@@ -229,6 +227,7 @@ spec:
               type: object
             successBuildHistoryLimit:
               format: int64
+              nullable: true
               type: integer
           required:
           - image

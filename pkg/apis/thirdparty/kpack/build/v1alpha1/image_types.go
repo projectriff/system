@@ -68,8 +68,8 @@ const (
 )
 
 type ImageBuild struct {
-	Env       []corev1.EnvVar             `json:"env"`
-	Resources corev1.ResourceRequirements `json:"resources"`
+	Env       []corev1.EnvVar             `json:"env,omitempty"`
+	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
 }
 
 // +kubebuilder:object:root=true
