@@ -138,6 +138,8 @@ func (r *ProcessorReconciler) reconcile(ctx context.Context, logger logr.Logger,
 	if err := r.Client.Get(ctx, functionNSName, &function); err != nil {
 		if errors.IsNotFound(err) {
 			processor.Status.MarkFunctionNotFound(processor.Spec.FunctionRef)
+			// we'll ignore not-found errors, since the reference build resource may not exist yet.
+			return ctrl.Result{}, nil
 		}
 		return ctrl.Result{Requeue: true}, err
 	}
