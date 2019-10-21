@@ -644,7 +644,7 @@ subjects:
 apiVersion: v1
 data:
   liiklusImage: bsideup/liiklus:0.9.0
-  provisionerImage: gcr.io/projectriff/kafka-provisioner/provisioner-97dd22e72aed3201586a126a023b55db@sha256:fca4914e7e86a54c7093bd778df013a69a700123f65a831f7331158f9478dfda
+  provisionerImage: gcr.io/projectriff/kafka-provisioner/provisioner-97dd22e72aed3201586a126a023b55db@sha256:5c21bf354fe3804b4acbc8326f7a7820e4a0cbd427af9832fd87d264a611a8de
 kind: ConfigMap
 metadata:
   labels:
