@@ -30,6 +30,7 @@ var (
 	KafkaProviderLabelKey            = GroupVersion.Group + "/kafka-provider"             // Identifies all resources originating from a provider
 	KafkaProviderLiiklusLabelKey     = GroupVersion.Group + "/kafka-provider-liiklus"     // Used as a selector
 	KafkaProviderProvisionerLabelKey = GroupVersion.Group + "/kafka-provider-provisioner" // Used as a selector
+	KafkaProvisioner                 = "kafka-provisioner"
 )
 
 var (

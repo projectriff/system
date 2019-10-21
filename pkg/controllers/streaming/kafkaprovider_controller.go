@@ -610,6 +610,7 @@ func (r *KafkaProviderReconciler) constructProvisionerLabelsForKafkaProvider(kaf
 
 	labels[streamingv1alpha1.KafkaProviderLabelKey] = kafkaProvider.Name
 	labels[streamingv1alpha1.KafkaProviderProvisionerLabelKey] = kafkaProvider.Name
+	labels[streamingv1alpha1.ProvisionerLabelKey] = streamingv1alpha1.KafkaProvisioner
 
 	return labels
 }
