@@ -621,7 +621,7 @@ func (r *KafkaProviderReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			requests := []reconcile.Request{}
 			if a.Meta.GetNamespace() == r.Namespace && a.Meta.GetName() == kafkaProviderImages {
 				key := tracker.NewKey(
-					a.Object.GetObjectKind().GroupVersionKind(),
+					schema.GroupVersionKind{Version: "v1", Kind: "ConfigMap"},
 					types.NamespacedName{Namespace: a.Meta.GetNamespace(), Name: a.Meta.GetName()},
 				)
 				for _, item := range r.Tracker.Lookup(key) {
