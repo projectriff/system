@@ -86,6 +86,10 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "KafkaProvider")
 		os.Exit(1)
 	}
+	if err = (&streamingv1alpha1.KafkaProvider{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "KafkaProvider")
+		os.Exit(1)
+	}
 	if err = (&controllers.StreamReconciler{
 		Client:                  mgr.GetClient(),
 		Log:                     streamControllerLogger,
@@ -93,6 +97,10 @@ func main() {
 		StreamProvisionerClient: controllers.NewStreamProvisionerClient(http.DefaultClient, streamControllerLogger),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Stream")
+		os.Exit(1)
+	}
+	if err = (&streamingv1alpha1.Stream{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "Stream")
 		os.Exit(1)
 	}
 	if err = (&controllers.ProcessorReconciler{
@@ -103,6 +111,10 @@ func main() {
 		Namespace: namespace,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Processor")
+		os.Exit(1)
+	}
+	if err = (&streamingv1alpha1.Processor{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "Processor")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder

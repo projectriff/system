@@ -79,6 +79,10 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Deployer")
 		os.Exit(1)
 	}
+	if err = (&corev1alpha1.Deployer{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "Deployer")
+		os.Exit(1)
+	}
 	// +kubebuilder:scaffold:builder
 
 	setupLog.Info("starting manager")

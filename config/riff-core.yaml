@@ -4159,6 +4159,35 @@ status:
   conditions: []
   storedVersions: []
 ---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingWebhookConfiguration
+metadata:
+  annotations:
+    certmanager.k8s.io/inject-ca-from: riff-system/riff-core-serving-cert
+  creationTimestamp: null
+  labels:
+    component: core.projectriff.io
+  name: riff-core-mutating-webhook-configuration
+webhooks:
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: riff-core-webhook-service
+      namespace: riff-system
+      path: /mutate-core-projectriff-io-v1alpha1-deployer
+  failurePolicy: Fail
+  name: deployers.build.projectriff.io
+  rules:
+  - apiGroups:
+    - core.projectriff.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - deployers
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -4383,6 +4412,21 @@ spec:
     component: core.projectriff.io
     control-plane: controller-manager
 ---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    component: core.projectriff.io
+  name: riff-core-webhook-service
+  namespace: riff-system
+spec:
+  ports:
+  - port: 443
+    targetPort: 443
+  selector:
+    component: core.projectriff.io
+    control-plane: controller-manager
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -4419,6 +4463,10 @@ spec:
         - --enable-leader-election
         image: github.com/projectriff/system/cmd/managers/core
         name: manager
+        ports:
+        - containerPort: 443
+          name: webhook-server
+          protocol: TCP
         resources:
           limits:
             cpu: 100m
@@ -4426,4 +4474,68 @@ spec:
           requests:
             cpu: 100m
             memory: 20Mi
+        volumeMounts:
+        - mountPath: /tmp/k8s-webhook-server/serving-certs
+          name: cert
+          readOnly: true
       terminationGracePeriodSeconds: 10
+      volumes:
+      - name: cert
+        secret:
+          defaultMode: 420
+          secretName: riff-core-webhook-server-cert
+---
+apiVersion: certmanager.k8s.io/v1alpha1
+kind: Certificate
+metadata:
+  labels:
+    component: core.projectriff.io
+  name: riff-core-serving-cert
+  namespace: riff-system
+spec:
+  commonName: riff-core-webhook-service.riff-system.svc
+  dnsNames:
+  - riff-core-webhook-service.riff-system.svc.cluster.local
+  issuerRef:
+    kind: Issuer
+    name: riff-core-selfsigned-issuer
+  secretName: riff-core-webhook-server-cert
+---
+apiVersion: certmanager.k8s.io/v1alpha1
+kind: Issuer
+metadata:
+  labels:
+    component: core.projectriff.io
+  name: riff-core-selfsigned-issuer
+  namespace: riff-system
+spec:
+  selfSigned: {}
+---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: ValidatingWebhookConfiguration
+metadata:
+  annotations:
+    certmanager.k8s.io/inject-ca-from: riff-system/riff-core-serving-cert
+  creationTimestamp: null
+  labels:
+    component: core.projectriff.io
+  name: riff-core-validating-webhook-configuration
+webhooks:
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: riff-core-webhook-service
+      namespace: riff-system
+      path: /validate-core-projectriff-io-v1alpha1-deployer
+  failurePolicy: Fail
+  name: deployers.build.projectriff.io
+  rules:
+  - apiGroups:
+    - core.projectriff.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - deployers

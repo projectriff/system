@@ -74,6 +74,10 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Application")
 		os.Exit(1)
 	}
+	if err = (&buildv1alpha1.Application{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "Application")
+		os.Exit(1)
+	}
 	if err = (&controllers.ContainerReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("Container"),
@@ -82,12 +86,20 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Container")
 		os.Exit(1)
 	}
+	if err = (&buildv1alpha1.Container{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "Container")
+		os.Exit(1)
+	}
 	if err = (&controllers.FunctionReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("Function"),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Function")
+		os.Exit(1)
+	}
+	if err = (&buildv1alpha1.Function{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "Function")
 		os.Exit(1)
 	}
 	if err = (&controllers.CredentialReconciler{

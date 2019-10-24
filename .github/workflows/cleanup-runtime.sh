@@ -36,5 +36,9 @@ elif [ $RUNTIME = "knative" ]; then
 
 fi
 
+echo "Cleanup Cert Manager"
+helm delete --purge cert-manager
+kubectl delete customresourcedefinitions.apiextensions.k8s.io -l app.kubernetes.io/managed-by=Tiller,app.kubernetes.io/instance=cert-manager 
+
 echo "Remove Helm"
 source $FATS_DIR/macros/helm-reset.sh

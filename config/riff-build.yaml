@@ -753,6 +753,71 @@ status:
   conditions: []
   storedVersions: []
 ---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingWebhookConfiguration
+metadata:
+  annotations:
+    certmanager.k8s.io/inject-ca-from: riff-system/riff-build-serving-cert
+  creationTimestamp: null
+  labels:
+    component: build.projectriff.io
+  name: riff-build-mutating-webhook-configuration
+webhooks:
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: riff-build-webhook-service
+      namespace: riff-system
+      path: /mutate-build-projectriff-io-v1alpha1-application
+  failurePolicy: Fail
+  name: applications.build.projectriff.io
+  rules:
+  - apiGroups:
+    - build.projectriff.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - applications
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: riff-build-webhook-service
+      namespace: riff-system
+      path: /mutate-build-projectriff-io-v1alpha1-container
+  failurePolicy: Fail
+  name: containers.build.projectriff.io
+  rules:
+  - apiGroups:
+    - build.projectriff.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - containers
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: riff-build-webhook-service
+      namespace: riff-system
+      path: /mutate-build-projectriff-io-v1alpha1-function
+  failurePolicy: Fail
+  name: functions.build.projectriff.io
+  rules:
+  - apiGroups:
+    - build.projectriff.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - functions
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -1077,6 +1142,21 @@ spec:
     component: build.projectriff.io
     control-plane: controller-manager
 ---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    component: build.projectriff.io
+  name: riff-build-webhook-service
+  namespace: riff-system
+spec:
+  ports:
+  - port: 443
+    targetPort: 443
+  selector:
+    component: build.projectriff.io
+    control-plane: controller-manager
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -1118,6 +1198,10 @@ spec:
               fieldPath: metadata.namespace
         image: github.com/projectriff/system/cmd/managers/build
         name: manager
+        ports:
+        - containerPort: 443
+          name: webhook-server
+          protocol: TCP
         resources:
           limits:
             cpu: 100m
@@ -1125,4 +1209,104 @@ spec:
           requests:
             cpu: 100m
             memory: 20Mi
+        volumeMounts:
+        - mountPath: /tmp/k8s-webhook-server/serving-certs
+          name: cert
+          readOnly: true
       terminationGracePeriodSeconds: 10
+      volumes:
+      - name: cert
+        secret:
+          defaultMode: 420
+          secretName: riff-build-webhook-server-cert
+---
+apiVersion: certmanager.k8s.io/v1alpha1
+kind: Certificate
+metadata:
+  labels:
+    component: build.projectriff.io
+  name: riff-build-serving-cert
+  namespace: riff-system
+spec:
+  commonName: riff-build-webhook-service.riff-system.svc
+  dnsNames:
+  - riff-build-webhook-service.riff-system.svc.cluster.local
+  issuerRef:
+    kind: Issuer
+    name: riff-build-selfsigned-issuer
+  secretName: riff-build-webhook-server-cert
+---
+apiVersion: certmanager.k8s.io/v1alpha1
+kind: Issuer
+metadata:
+  labels:
+    component: build.projectriff.io
+  name: riff-build-selfsigned-issuer
+  namespace: riff-system
+spec:
+  selfSigned: {}
+---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: ValidatingWebhookConfiguration
+metadata:
+  annotations:
+    certmanager.k8s.io/inject-ca-from: riff-system/riff-build-serving-cert
+  creationTimestamp: null
+  labels:
+    component: build.projectriff.io
+  name: riff-build-validating-webhook-configuration
+webhooks:
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: riff-build-webhook-service
+      namespace: riff-system
+      path: /validate-build-projectriff-io-v1alpha1-application
+  failurePolicy: Fail
+  name: applications.build.projectriff.io
+  rules:
+  - apiGroups:
+    - build.projectriff.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - applications
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: riff-build-webhook-service
+      namespace: riff-system
+      path: /validate-build-projectriff-io-v1alpha1-container
+  failurePolicy: Fail
+  name: containers.build.projectriff.io
+  rules:
+  - apiGroups:
+    - build.projectriff.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - containers
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: riff-build-webhook-service
+      namespace: riff-system
+      path: /validate-build-projectriff-io-v1alpha1-function
+  failurePolicy: Fail
+  name: functions.build.projectriff.io
+  rules:
+  - apiGroups:
+    - build.projectriff.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - functions

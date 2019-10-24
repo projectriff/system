@@ -381,6 +381,71 @@ status:
   conditions: []
   storedVersions: []
 ---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingWebhookConfiguration
+metadata:
+  annotations:
+    certmanager.k8s.io/inject-ca-from: riff-system/riff-streaming-serving-cert
+  creationTimestamp: null
+  labels:
+    component: streaming.projectriff.io
+  name: riff-streaming-mutating-webhook-configuration
+webhooks:
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: riff-streaming-webhook-service
+      namespace: riff-system
+      path: /mutate-streaming-projectriff-io-v1alpha1-kafkaprovider
+  failurePolicy: Fail
+  name: kafkaproviders.build.projectriff.io
+  rules:
+  - apiGroups:
+    - streaming.projectriff.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - kafkaproviders
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: riff-streaming-webhook-service
+      namespace: riff-system
+      path: /mutate-streaming-projectriff-io-v1alpha1-processor
+  failurePolicy: Fail
+  name: processors.build.projectriff.io
+  rules:
+  - apiGroups:
+    - streaming.projectriff.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - processors
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: riff-streaming-webhook-service
+      namespace: riff-system
+      path: /mutate-streaming-projectriff-io-v1alpha1-stream
+  failurePolicy: Fail
+  name: streams.build.projectriff.io
+  rules:
+  - apiGroups:
+    - streaming.projectriff.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - streams
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -683,6 +748,21 @@ spec:
     component: streaming.projectriff.io
     control-plane: controller-manager
 ---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    component: streaming.projectriff.io
+  name: riff-streaming-webhook-service
+  namespace: riff-system
+spec:
+  ports:
+  - port: 443
+    targetPort: 443
+  selector:
+    component: streaming.projectriff.io
+    control-plane: controller-manager
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -724,6 +804,10 @@ spec:
               fieldPath: metadata.namespace
         image: github.com/projectriff/system/cmd/managers/streaming
         name: manager
+        ports:
+        - containerPort: 443
+          name: webhook-server
+          protocol: TCP
         resources:
           limits:
             cpu: 100m
@@ -731,4 +815,104 @@ spec:
           requests:
             cpu: 100m
             memory: 20Mi
+        volumeMounts:
+        - mountPath: /tmp/k8s-webhook-server/serving-certs
+          name: cert
+          readOnly: true
       terminationGracePeriodSeconds: 10
+      volumes:
+      - name: cert
+        secret:
+          defaultMode: 420
+          secretName: riff-streaming-webhook-server-cert
+---
+apiVersion: certmanager.k8s.io/v1alpha1
+kind: Certificate
+metadata:
+  labels:
+    component: streaming.projectriff.io
+  name: riff-streaming-serving-cert
+  namespace: riff-system
+spec:
+  commonName: riff-streaming-webhook-service.riff-system.svc
+  dnsNames:
+  - riff-streaming-webhook-service.riff-system.svc.cluster.local
+  issuerRef:
+    kind: Issuer
+    name: riff-streaming-selfsigned-issuer
+  secretName: riff-streaming-webhook-server-cert
+---
+apiVersion: certmanager.k8s.io/v1alpha1
+kind: Issuer
+metadata:
+  labels:
+    component: streaming.projectriff.io
+  name: riff-streaming-selfsigned-issuer
+  namespace: riff-system
+spec:
+  selfSigned: {}
+---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: ValidatingWebhookConfiguration
+metadata:
+  annotations:
+    certmanager.k8s.io/inject-ca-from: riff-system/riff-streaming-serving-cert
+  creationTimestamp: null
+  labels:
+    component: streaming.projectriff.io
+  name: riff-streaming-validating-webhook-configuration
+webhooks:
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: riff-streaming-webhook-service
+      namespace: riff-system
+      path: /validate-streaming-projectriff-io-v1alpha1-kafkaprovider
+  failurePolicy: Fail
+  name: kafkaproviders.build.projectriff.io
+  rules:
+  - apiGroups:
+    - streaming.projectriff.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - kafkaproviders
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: riff-streaming-webhook-service
+      namespace: riff-system
+      path: /validate-streaming-projectriff-io-v1alpha1-processor
+  failurePolicy: Fail
+  name: processors.build.projectriff.io
+  rules:
+  - apiGroups:
+    - streaming.projectriff.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - processors
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: riff-streaming-webhook-service
+      namespace: riff-system
+      path: /validate-streaming-stream
+  failurePolicy: Fail
+  name: streams.build.projectriff.io
+  rules:
+  - apiGroups:
+    - streaming.projectriff.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - streams
