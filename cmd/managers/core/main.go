@@ -39,6 +39,7 @@ var (
 	scheme     = runtime.NewScheme()
 	setupLog   = ctrl.Log.WithName("setup")
 	syncPeriod = 10 * time.Hour
+	namespace  = os.Getenv("SYSTEM_NAMESPACE")
 )
 
 func init() {
@@ -75,10 +76,11 @@ func main() {
 	}
 
 	if err = (&controllers.DeployerReconciler{
-		Client:  mgr.GetClient(),
-		Log:     ctrl.Log.WithName("controllers").WithName("Deployer"),
-		Scheme:  mgr.GetScheme(),
-		Tracker: tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("Deployer").WithName("tracker")),
+		Client:    mgr.GetClient(),
+		Log:       ctrl.Log.WithName("controllers").WithName("Deployer"),
+		Scheme:    mgr.GetScheme(),
+		Tracker:   tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("Deployer").WithName("tracker")),
+		Namespace: namespace,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Deployer")
 		os.Exit(1)

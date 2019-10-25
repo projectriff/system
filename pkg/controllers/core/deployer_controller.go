@@ -29,6 +29,7 @@ import (
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -49,15 +50,20 @@ const (
 	serviceIndexField    = ".metadata.serviceController"
 	ingressIndexField    = ".metadata.ingressController"
 
-	domain = "example.com"
+	kustomizePrefix = "riff-streaming" // kustomize adds this prefix to all our resource names
+
+	coreDeployerConfigMapName = kustomizePrefix + "-core-deployer"
+	defaultDomainKey          = "defaultDomain"
+	defaultDomain             = "example.com"
 )
 
 // DeployerReconciler reconciles a Deployer object
 type DeployerReconciler struct {
 	client.Client
-	Log     logr.Logger
-	Scheme  *runtime.Scheme
-	Tracker tracker.Tracker
+	Log       logr.Logger
+	Scheme    *runtime.Scheme
+	Tracker   tracker.Tracker
+	Namespace string
 }
 
 // +kubebuilder:rbac:groups=core.projectriff.io,resources=deployers,verbs=get;list;watch;create;update;patch;delete
@@ -103,9 +109,31 @@ func (r *DeployerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	return result, err
 }
 
+func (r *DeployerReconciler) getAndTrackConfigMap(ctx context.Context, log logr.Logger, deployer *corev1alpha1.Deployer) (corev1.ConfigMap, error) {
+	cm := corev1.ConfigMap{}
+	cmKey := types.NamespacedName{Namespace: deployer.Namespace, Name: coreDeployerConfigMapName}
+
+	// track config map for updated domain name
+	r.Tracker.Track(
+		tracker.NewKey(schema.GroupVersionKind{Version: "v1", Kind: "ConfigMap"}, cmKey),
+		types.NamespacedName{Namespace: deployer.Namespace, Name: deployer.Name},
+	)
+	if err := r.Get(ctx, cmKey, &cm); err != nil {
+		log.Error(err, "unable to lookup images configMap")
+		return cm, err
+	}
+
+	return cm, nil
+}
+
 func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, deployer *corev1alpha1.Deployer) (ctrl.Result, error) {
 	if deployer.GetDeletionTimestamp() != nil {
 		return ctrl.Result{}, nil
+	}
+
+	cm, err := r.getAndTrackConfigMap(ctx, log, deployer)
+	if err != nil {
+		return ctrl.Result{}, err
 	}
 
 	// resolve build image
@@ -139,7 +167,7 @@ func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, dep
 	deployer.Status.PropagateServiceStatus(&childService.Status)
 
 	// reconcile ingress
-	childIngress, err := r.reconcileIngress(ctx, log, deployer, childService.Name)
+	childIngress, err := r.reconcileIngress(ctx, log, deployer, childService.Name, cm)
 	if err != nil {
 		log.Error(err, "unable to reconcile Ingress", "deployer", deployer)
 		return ctrl.Result{}, err
@@ -357,7 +385,7 @@ func (r *DeployerReconciler) constructPodSpecForDeployer(deployer *corev1alpha1.
 	return podSpec
 }
 
-func (r *DeployerReconciler) reconcileIngress(ctx context.Context, log logr.Logger, deployer *corev1alpha1.Deployer, serviceName string) (*networkingv1beta1.Ingress, error) {
+func (r *DeployerReconciler) reconcileIngress(ctx context.Context, log logr.Logger, deployer *corev1alpha1.Deployer, serviceName string, cm corev1.ConfigMap) (*networkingv1beta1.Ingress, error) {
 	var actualIngress networkingv1beta1.Ingress
 	var childIngresses networkingv1beta1.IngressList
 
@@ -377,7 +405,7 @@ func (r *DeployerReconciler) reconcileIngress(ctx context.Context, log logr.Logg
 		}
 	}
 
-	desiredIngress, err := r.constructIngressForDeployer(deployer)
+	desiredIngress, err := r.constructIngressForDeployer(deployer, cm)
 	if err != nil {
 		return nil, err
 	}
@@ -425,12 +453,13 @@ func (r *DeployerReconciler) ingressSemanticEquals(desiredIngress, ingress *netw
 		equality.Semantic.DeepEqual(desiredIngress.ObjectMeta.Labels, ingress.ObjectMeta.Labels)
 }
 
-func (r *DeployerReconciler) constructIngressForDeployer(deployer *corev1alpha1.Deployer) (*networkingv1beta1.Ingress, error) {
+func (r *DeployerReconciler) constructIngressForDeployer(deployer *corev1alpha1.Deployer, cm corev1.ConfigMap) (*networkingv1beta1.Ingress, error) {
 	if deployer.Status.ServiceName == "" || deployer.Spec.IngressPolicy == corev1alpha1.IngressPolicyClusterLocal {
 		// skip ingress
 		return nil, nil
 	}
 	labels := r.constructLabelsForDeployer(deployer)
+	host := r.constructHostForDeployer(deployer, cm)
 
 	ingress := &networkingv1beta1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
@@ -441,7 +470,7 @@ func (r *DeployerReconciler) constructIngressForDeployer(deployer *corev1alpha1.
 		},
 		Spec: networkingv1beta1.IngressSpec{
 			Rules: []networkingv1beta1.IngressRule{{
-				Host: fmt.Sprintf("%s.%s.%s", deployer.Status.ServiceName, deployer.Namespace, domain),
+				Host: host,
 				IngressRuleValue: networkingv1beta1.IngressRuleValue{
 					HTTP: &networkingv1beta1.HTTPIngressRuleValue{
 						Paths: []networkingv1beta1.HTTPIngressPath{{
@@ -613,8 +642,37 @@ func (r *DeployerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&corev1.Service{}).
 		Owns(&networkingv1beta1.Ingress{}).
 		// watch for build mutations to update dependent deployers
+		Watches(&source.Kind{Type: &corev1.ConfigMap{}}, r.enqueueTrackedConfigMapResource()).
 		Watches(&source.Kind{Type: &buildv1alpha1.Application{}}, enqueueTrackedResources(&buildv1alpha1.Application{})).
 		Watches(&source.Kind{Type: &buildv1alpha1.Container{}}, enqueueTrackedResources(&buildv1alpha1.Container{})).
 		Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, enqueueTrackedResources(&buildv1alpha1.Function{})).
 		Complete(r)
+}
+
+func (r *DeployerReconciler) constructHostForDeployer(deployer *corev1alpha1.Deployer, cm corev1.ConfigMap) string {
+	domain := defaultDomain
+	if d, ok := cm.Data[defaultDomainKey]; ok {
+		domain = d
+	}
+
+	return fmt.Sprintf("%s.%s", deployer.Name, domain)
+}
+
+func (r *DeployerReconciler) enqueueTrackedConfigMapResource() handler.EventHandler {
+	return &handler.EnqueueRequestsFromMapFunc{
+		ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
+			requests := []reconcile.Request{}
+
+			if a.Meta.GetNamespace() == r.Namespace && a.Meta.GetName() == coreDeployerConfigMapName {
+				key := tracker.NewKey(
+					schema.GroupVersionKind{Version: "v1", Kind: "ConfigMap"},
+					types.NamespacedName{Namespace: a.Meta.GetNamespace(), Name: a.Meta.GetName()},
+				)
+				for _, item := range r.Tracker.Lookup(key) {
+					requests = append(requests, reconcile.Request{NamespacedName: item})
+				}
+			}
+			return requests
+		}),
+	}
 }
