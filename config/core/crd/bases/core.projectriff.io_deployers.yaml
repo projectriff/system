@@ -4129,6 +4129,8 @@ spec:
               type: array
             deploymentName:
               type: string
+            ingressName:
+              type: string
             latestImage:
               description: LatestImage is the most recent image resolved from the
                 build
