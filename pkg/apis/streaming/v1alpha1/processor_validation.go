@@ -17,35 +17,71 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"k8s.io/apimachinery/pkg/api/equality"
 	runtime "k8s.io/apimachinery/pkg/runtime"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
-)
 
-func (r *Processor) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(r).
-		Complete()
-}
+	"github.com/projectriff/system/pkg/validation"
+)
 
 // +kubebuilder:webhook:path=/validate-streaming-projectriff-io-v1alpha1-processor,mutating=false,failurePolicy=fail,groups=streaming.projectriff.io,resources=processors,verbs=create;update,versions=v1alpha1,name=processors.build.projectriff.io
 
-var _ webhook.Validator = &Processor{}
+var (
+	_ webhook.Validator         = &Processor{}
+	_ validation.FieldValidator = &Processor{}
+)
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 func (r *Processor) ValidateCreate() error {
-	// TODO implement
-	return nil
+	return r.Validate().ToAggregate()
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
 func (r *Processor) ValidateUpdate(old runtime.Object) error {
-	// TODO implement
-	return nil
+	// TODO check for immutable fields
+	return r.Validate().ToAggregate()
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
 func (r *Processor) ValidateDelete() error {
-	// TODO implement
 	return nil
+}
+
+func (r *Processor) Validate() validation.FieldErrors {
+	errs := validation.FieldErrors{}
+
+	errs = errs.Also(r.Spec.Validate().ViaField("spec"))
+
+	return errs
+}
+
+func (s *ProcessorSpec) Validate() validation.FieldErrors {
+	if equality.Semantic.DeepEqual(s, &ProcessorSpec{}) {
+		return validation.ErrMissingField(validation.CurrentField)
+	}
+
+	errs := validation.FieldErrors{}
+
+	if s.FunctionRef == "" {
+		errs = errs.Also(validation.ErrMissingField("functionRef"))
+	}
+
+	// at least one input is required
+	if len(s.Inputs) == 0 {
+		errs = errs.Also(validation.ErrMissingField("inputs"))
+	}
+	for i, input := range s.Inputs {
+		if input == "" {
+			errs = errs.Also(validation.ErrInvalidArrayValue(input, "inputs", i))
+		}
+	}
+
+	// outputs are optional
+	for i, output := range s.Outputs {
+		if output == "" {
+			errs = errs.Also(validation.ErrInvalidArrayValue(output, "outputs", i))
+		}
+	}
+
+	return errs
 }

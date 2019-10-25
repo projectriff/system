@@ -74,7 +74,7 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Application")
 		os.Exit(1)
 	}
-	if err = (&buildv1alpha1.Application{}).SetupWebhookWithManager(mgr); err != nil {
+	if err = ctrl.NewWebhookManagedBy(mgr).For(&buildv1alpha1.Application{}).Complete(); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Application")
 		os.Exit(1)
 	}
@@ -86,7 +86,7 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Container")
 		os.Exit(1)
 	}
-	if err = (&buildv1alpha1.Container{}).SetupWebhookWithManager(mgr); err != nil {
+	if err = ctrl.NewWebhookManagedBy(mgr).For(&buildv1alpha1.Container{}).Complete(); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Container")
 		os.Exit(1)
 	}
@@ -98,7 +98,7 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Function")
 		os.Exit(1)
 	}
-	if err = (&buildv1alpha1.Function{}).SetupWebhookWithManager(mgr); err != nil {
+	if err = ctrl.NewWebhookManagedBy(mgr).For(&buildv1alpha1.Function{}).Complete(); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Function")
 		os.Exit(1)
 	}

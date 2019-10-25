@@ -17,35 +17,58 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"k8s.io/apimachinery/pkg/api/equality"
 	runtime "k8s.io/apimachinery/pkg/runtime"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
-)
 
-func (r *Function) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(r).
-		Complete()
-}
+	"github.com/projectriff/system/pkg/validation"
+)
 
 // +kubebuilder:webhook:path=/validate-build-projectriff-io-v1alpha1-function,mutating=false,failurePolicy=fail,groups=build.projectriff.io,resources=functions,verbs=create;update,versions=v1alpha1,name=functions.build.projectriff.io
 
-var _ webhook.Validator = &Function{}
+var (
+	_ webhook.Validator         = &Function{}
+	_ validation.FieldValidator = &Function{}
+)
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 func (r *Function) ValidateCreate() error {
-	// TODO implement
-	return nil
+	return r.Validate().ToAggregate()
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
 func (r *Function) ValidateUpdate(old runtime.Object) error {
-	// TODO implement
-	return nil
+	// TODO check for immutable fields
+	return r.Validate().ToAggregate()
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
 func (r *Function) ValidateDelete() error {
-	// TODO implement
 	return nil
+}
+
+func (r *Function) Validate() validation.FieldErrors {
+	errs := validation.FieldErrors{}
+
+	errs = errs.Also(r.Spec.Validate().ViaField("spec"))
+
+	return errs
+}
+
+func (s *FunctionSpec) Validate() validation.FieldErrors {
+	if equality.Semantic.DeepEqual(s, &FunctionSpec{}) {
+		return validation.ErrMissingField(validation.CurrentField)
+	}
+
+	errs := validation.FieldErrors{}
+
+	if s.Image == "" {
+		errs = errs.Also(validation.ErrMissingField("image"))
+	}
+
+	if s.Source != nil {
+		errs = errs.Also(s.Source.Validate().ViaField("source"))
+	}
+
+	return errs
 }

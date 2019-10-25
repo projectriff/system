@@ -86,7 +86,7 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "KafkaProvider")
 		os.Exit(1)
 	}
-	if err = (&streamingv1alpha1.KafkaProvider{}).SetupWebhookWithManager(mgr); err != nil {
+	if err = ctrl.NewWebhookManagedBy(mgr).For(&streamingv1alpha1.KafkaProvider{}).Complete(); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "KafkaProvider")
 		os.Exit(1)
 	}
@@ -99,7 +99,7 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Stream")
 		os.Exit(1)
 	}
-	if err = (&streamingv1alpha1.Stream{}).SetupWebhookWithManager(mgr); err != nil {
+	if err = ctrl.NewWebhookManagedBy(mgr).For(&streamingv1alpha1.Stream{}).Complete(); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Stream")
 		os.Exit(1)
 	}
@@ -113,7 +113,7 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Processor")
 		os.Exit(1)
 	}
-	if err = (&streamingv1alpha1.Processor{}).SetupWebhookWithManager(mgr); err != nil {
+	if err = ctrl.NewWebhookManagedBy(mgr).For(&streamingv1alpha1.Processor{}).Complete(); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Processor")
 		os.Exit(1)
 	}

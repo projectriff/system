@@ -81,7 +81,7 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Adapter")
 		os.Exit(1)
 	}
-	if err = (&knativev1alpha1.Adapter{}).SetupWebhookWithManager(mgr); err != nil {
+	if err = ctrl.NewWebhookManagedBy(mgr).For(&knativev1alpha1.Adapter{}).Complete(); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Adapter")
 		os.Exit(1)
 	}
@@ -94,7 +94,7 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Deployer")
 		os.Exit(1)
 	}
-	if err = (&knativev1alpha1.Deployer{}).SetupWebhookWithManager(mgr); err != nil {
+	if err = ctrl.NewWebhookManagedBy(mgr).For(&knativev1alpha1.Deployer{}).Complete(); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Deployer")
 		os.Exit(1)
 	}
