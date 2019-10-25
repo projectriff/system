@@ -76,7 +76,7 @@ func (r *KafkaProviderReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 	}
 
 	originalKafkaProvider := kafkaProvider.DeepCopy()
-	kafkaProvider.SetDefaults(ctx)
+	kafkaProvider.Default()
 	kafkaProvider.Status.InitializeConditions()
 
 	result, err := r.reconcile(ctx, log, &kafkaProvider)

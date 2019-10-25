@@ -17,20 +17,24 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"context"
-
 	corev1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
-func (c *Deployer) SetDefaults(ctx context.Context) {
-	c.Spec.SetDefaults(ctx)
+// +kubebuilder:webhook:path=/mutate-knative-projectriff-io-v1alpha1-deployer,mutating=true,failurePolicy=fail,groups=knative.projectriff.io,resources=deployers,verbs=create;update,versions=v1alpha1,name=deployers.build.projectriff.io
+
+var _ webhook.Defaulter = &Deployer{}
+
+// Default implements webhook.Defaulter so a webhook will be registered for the type
+func (r *Deployer) Default() {
+	r.Spec.Default()
 }
 
-func (cs *DeployerSpec) SetDefaults(ctx context.Context) {
-	if cs.Template == nil {
-		cs.Template = &corev1.PodSpec{}
+func (s *DeployerSpec) Default() {
+	if s.Template == nil {
+		s.Template = &corev1.PodSpec{}
 	}
-	if len(cs.Template.Containers) == 0 {
-		cs.Template.Containers = append(cs.Template.Containers, corev1.Container{})
+	if len(s.Template.Containers) == 0 {
+		s.Template.Containers = append(s.Template.Containers, corev1.Container{})
 	}
 }

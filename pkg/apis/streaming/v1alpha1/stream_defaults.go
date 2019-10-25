@@ -16,14 +16,21 @@ limitations under the License.
 
 package v1alpha1
 
-import "context"
+import (
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
+)
 
-func (s *Stream) SetDefaults(ctx context.Context) {
-	s.Spec.SetDefaults(ctx)
+// +kubebuilder:webhook:path=/mutate-streaming-projectriff-io-v1alpha1-stream,mutating=true,failurePolicy=fail,groups=streaming.projectriff.io,resources=streams,verbs=create;update,versions=v1alpha1,name=streams.build.projectriff.io
+
+var _ webhook.Defaulter = &Stream{}
+
+// Default implements webhook.Defaulter so a webhook will be registered for the type
+func (r *Stream) Default() {
+	r.Spec.Default()
 }
 
-func (ss *StreamSpec) SetDefaults(ctx context.Context) {
-	if ss.ContentType == "" {
-		ss.ContentType = "application/octet-stream"
+func (s *StreamSpec) Default() {
+	if s.ContentType == "" {
+		s.ContentType = "application/octet-stream"
 	}
 }

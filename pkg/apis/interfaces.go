@@ -17,8 +17,6 @@
 package apis
 
 import (
-	"context"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -34,8 +32,4 @@ type ResourceStatus interface {
 	GetCondition(t ConditionType) *Condition
 	GetReadyConditionType() ConditionType
 	GetObservedGeneration() int64
-}
-
-type Defaultable interface {
-	SetDefaults(context.Context)
 }

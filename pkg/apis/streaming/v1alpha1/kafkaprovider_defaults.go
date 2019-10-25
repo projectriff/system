@@ -15,13 +15,16 @@ limitations under the License.
 */
 package v1alpha1
 
-import (
-	"context"
-)
+import "sigs.k8s.io/controller-runtime/pkg/webhook"
 
-func (p *KafkaProvider) SetDefaults(ctx context.Context) {
-	p.Spec.SetDefaults(ctx)
+// +kubebuilder:webhook:path=/mutate-streaming-projectriff-io-v1alpha1-kafkaprovider,mutating=true,failurePolicy=fail,groups=streaming.projectriff.io,resources=kafkaproviders,verbs=create;update,versions=v1alpha1,name=kafkaproviders.build.projectriff.io
+
+var _ webhook.Defaulter = &KafkaProvider{}
+
+// Default implements webhook.Defaulter so a webhook will be registered for the type
+func (r *KafkaProvider) Default() {
+	r.Spec.Default()
 }
 
-func (ps *KafkaProviderSpec) SetDefaults(ctx context.Context) {
+func (s *KafkaProviderSpec) Default() {
 }

@@ -16,14 +16,17 @@ limitations under the License.
 
 package v1alpha1
 
-import (
-	"context"
-)
+import "sigs.k8s.io/controller-runtime/pkg/webhook"
 
-func (a *Adapter) SetDefaults(ctx context.Context) {
-	a.Spec.SetDefaults(ctx)
+// +kubebuilder:webhook:path=/mutate-knative-projectriff-io-v1alpha1-adapter,mutating=true,failurePolicy=fail,groups=knative.projectriff.io,resources=adapters,verbs=create;update,versions=v1alpha1,name=adapters.build.projectriff.io
+
+var _ webhook.Defaulter = &Adapter{}
+
+// Default implements webhook.Defaulter so a webhook will be registered for the type
+func (r *Adapter) Default() {
+	r.Spec.Default()
 }
 
-func (as *AdapterSpec) SetDefaults(ctx context.Context) {
+func (s *AdapterSpec) Default() {
 	// nothing to do
 }

@@ -28,15 +28,6 @@ func (r *Container) SetupWebhookWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
-// +kubebuilder:webhook:path=/mutate-build-projectriff-io-v1alpha1-container,mutating=true,failurePolicy=fail,groups=build.projectriff.io,resources=containers,verbs=create;update,versions=v1alpha1,name=containers.build.projectriff.io
-
-var _ webhook.Defaulter = &Container{}
-
-// Default implements webhook.Defaulter so a webhook will be registered for the type
-func (r *Container) Default() {
-	// TODO implement
-}
-
 // +kubebuilder:webhook:path=/validate-build-projectriff-io-v1alpha1-container,mutating=false,failurePolicy=fail,groups=build.projectriff.io,resources=containers,verbs=create;update,versions=v1alpha1,name=containers.build.projectriff.io
 
 var _ webhook.Validator = &Container{}

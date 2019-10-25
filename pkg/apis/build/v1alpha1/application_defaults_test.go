@@ -17,13 +17,12 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"context"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestApplicationDefaulting(t *testing.T) {
+func TestApplicationDefault(t *testing.T) {
 	tests := []struct {
 		name string
 		in   *Application
@@ -41,9 +40,9 @@ func TestApplicationDefaulting(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			got := test.in
-			got.SetDefaults(context.Background())
+			got.Default()
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("SetDefaults (-want, +got) = %v", diff)
+				t.Errorf("Default (-want, +got) = %v", diff)
 			}
 		})
 	}

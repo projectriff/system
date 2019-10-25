@@ -16,14 +16,19 @@ limitations under the License.
 
 package v1alpha1
 
-import "context"
+import "sigs.k8s.io/controller-runtime/pkg/webhook"
 
-func (f *Function) SetDefaults(ctx context.Context) {
-	f.Spec.SetDefaults(ctx)
+// +kubebuilder:webhook:path=/mutate-build-projectriff-io-v1alpha1-function,mutating=true,failurePolicy=fail,groups=build.projectriff.io,resources=functions,verbs=create;update,versions=v1alpha1,name=functions.build.projectriff.io
+
+var _ webhook.Defaulter = &Function{}
+
+// Default implements webhook.Defaulter so a webhook will be registered for the type
+func (r *Function) Default() {
+	r.Spec.Default()
 }
 
-func (fs *FunctionSpec) SetDefaults(ctx context.Context) {
-	if fs.Image == "" {
-		fs.Image = "_"
+func (s *FunctionSpec) Default() {
+	if s.Image == "" {
+		s.Image = "_"
 	}
 }

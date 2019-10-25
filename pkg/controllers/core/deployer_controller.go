@@ -79,7 +79,7 @@ func (r *DeployerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 	deployer := *(originalDeployer.DeepCopy())
 
-	deployer.SetDefaults(ctx)
+	deployer.Default()
 	deployer.Status.InitializeConditions()
 
 	result, err := r.reconcile(ctx, log, &deployer)

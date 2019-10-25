@@ -28,15 +28,6 @@ func (r *Stream) SetupWebhookWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
-// +kubebuilder:webhook:path=/mutate-streaming-projectriff-io-v1alpha1-stream,mutating=true,failurePolicy=fail,groups=streaming.projectriff.io,resources=streams,verbs=create;update,versions=v1alpha1,name=streams.build.projectriff.io
-
-var _ webhook.Defaulter = &Stream{}
-
-// Default implements webhook.Defaulter so a webhook will be registered for the type
-func (r *Stream) Default() {
-	// TODO implement
-}
-
 // +kubebuilder:webhook:path=/validate-streaming-stream,mutating=false,failurePolicy=fail,groups=streaming.projectriff.io,resources=streams,verbs=create;update,versions=v1alpha1,name=streams.build.projectriff.io
 
 var _ webhook.Validator = &Stream{}

@@ -69,7 +69,7 @@ func (r *FunctionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 	function := *(originalFunction.DeepCopy())
 
-	function.SetDefaults(ctx)
+	function.Default()
 	function.Status.InitializeConditions()
 
 	result, err := r.reconcile(ctx, log, &function)

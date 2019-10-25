@@ -17,23 +17,27 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"context"
-
 	corev1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
-func (d *Deployer) SetDefaults(ctx context.Context) {
-	d.Spec.SetDefaults(ctx)
+// +kubebuilder:webhook:path=/mutate-core-projectriff-io-v1alpha1-deployer,mutating=true,failurePolicy=fail,groups=core.projectriff.io,resources=deployers,verbs=create;update,versions=v1alpha1,name=deployers.build.projectriff.io
+
+var _ webhook.Defaulter = &Deployer{}
+
+// Default implements webhook.Defaulter so a webhook will be registered for the type
+func (r *Deployer) Default() {
+	r.Spec.Default()
 }
 
-func (ds *DeployerSpec) SetDefaults(ctx context.Context) {
-	if ds.Template == nil {
-		ds.Template = &corev1.PodSpec{}
+func (s *DeployerSpec) Default() {
+	if s.Template == nil {
+		s.Template = &corev1.PodSpec{}
 	}
-	if len(ds.Template.Containers) == 0 {
-		ds.Template.Containers = append(ds.Template.Containers, corev1.Container{})
+	if len(s.Template.Containers) == 0 {
+		s.Template.Containers = append(s.Template.Containers, corev1.Container{})
 	}
-	if ds.Template.Containers[0].Name == "" {
-		ds.Template.Containers[0].Name = "handler"
+	if s.Template.Containers[0].Name == "" {
+		s.Template.Containers[0].Name = "handler"
 	}
 }

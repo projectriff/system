@@ -68,7 +68,7 @@ func (r *ApplicationReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 	}
 	application := *(originalApplication.DeepCopy())
 
-	application.SetDefaults(ctx)
+	application.Default()
 	application.Status.InitializeConditions()
 
 	result, err := r.reconcile(ctx, log, &application)

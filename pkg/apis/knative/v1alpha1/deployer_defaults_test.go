@@ -17,14 +17,13 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"context"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 )
 
-func TestDeployerDefaulting(t *testing.T) {
+func TestDeployerDefault(t *testing.T) {
 	tests := []struct {
 		name string
 		in   *Deployer
@@ -46,15 +45,15 @@ func TestDeployerDefaulting(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			got := test.in
-			got.SetDefaults(context.Background())
+			got.Default()
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("SetDefaults (-want, +got) = %v", diff)
+				t.Errorf("Default (-want, +got) = %v", diff)
 			}
 		})
 	}
 }
 
-func TestDeployerSpecDefaulting(t *testing.T) {
+func TestDeployerSpecDefault(t *testing.T) {
 	tests := []struct {
 		name string
 		in   *DeployerSpec
@@ -74,9 +73,9 @@ func TestDeployerSpecDefaulting(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			got := test.in
-			got.SetDefaults(context.Background())
+			got.Default()
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("SetDefaults (-want, +got) = %v", diff)
+				t.Errorf("Default (-want, +got) = %v", diff)
 			}
 		})
 	}

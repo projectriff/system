@@ -28,15 +28,6 @@ func (r *KafkaProvider) SetupWebhookWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
-// +kubebuilder:webhook:path=/mutate-streaming-projectriff-io-v1alpha1-kafkaprovider,mutating=true,failurePolicy=fail,groups=streaming.projectriff.io,resources=kafkaproviders,verbs=create;update,versions=v1alpha1,name=kafkaproviders.build.projectriff.io
-
-var _ webhook.Defaulter = &KafkaProvider{}
-
-// Default implements webhook.Defaulter so a webhook will be registered for the type
-func (r *KafkaProvider) Default() {
-	// TODO implement
-}
-
 // +kubebuilder:webhook:path=/validate-streaming-projectriff-io-v1alpha1-kafkaprovider,mutating=false,failurePolicy=fail,groups=streaming.projectriff.io,resources=kafkaproviders,verbs=create;update,versions=v1alpha1,name=kafkaproviders.build.projectriff.io
 
 var _ webhook.Validator = &KafkaProvider{}

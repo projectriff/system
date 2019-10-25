@@ -28,15 +28,6 @@ func (r *Processor) SetupWebhookWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
-// +kubebuilder:webhook:path=/mutate-streaming-projectriff-io-v1alpha1-processor,mutating=true,failurePolicy=fail,groups=streaming.projectriff.io,resources=processors,verbs=create;update,versions=v1alpha1,name=processors.build.projectriff.io
-
-var _ webhook.Defaulter = &Processor{}
-
-// Default implements webhook.Defaulter so a webhook will be registered for the type
-func (r *Processor) Default() {
-	// TODO implement
-}
-
 // +kubebuilder:webhook:path=/validate-streaming-projectriff-io-v1alpha1-processor,mutating=false,failurePolicy=fail,groups=streaming.projectriff.io,resources=processors,verbs=create;update,versions=v1alpha1,name=processors.build.projectriff.io
 
 var _ webhook.Validator = &Processor{}

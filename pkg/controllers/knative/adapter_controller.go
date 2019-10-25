@@ -70,7 +70,7 @@ func (r *AdapterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 	adapter := *(originalAdapter.DeepCopy())
 
-	adapter.SetDefaults(ctx)
+	adapter.Default()
 	adapter.Status.InitializeConditions()
 
 	result, err := r.reconcile(ctx, log, &adapter)

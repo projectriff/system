@@ -61,7 +61,7 @@ func (r *ContainerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 	container := *(originalContainer.DeepCopy())
 
-	container.SetDefaults(ctx)
+	container.Default()
 	container.Status.InitializeConditions()
 
 	result, err := r.reconcile(ctx, log, &container)

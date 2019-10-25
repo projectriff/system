@@ -16,32 +16,66 @@ limitations under the License.
 
 package v1alpha1
 
-import "testing"
+import (
+	"testing"
 
-func TestStreamDefaults(t *testing.T) {
-	expectedContentType := "application/octet-stream"
-	stream := Stream{}
+	"github.com/google/go-cmp/cmp"
+)
 
-	stream.SetDefaults(nil)
+func TestStreamDefault(t *testing.T) {
+	tests := []struct {
+		name string
+		in   *Stream
+		want *Stream
+	}{{
+		name: "empty",
+		in:   &Stream{},
+		want: &Stream{
+			Spec: StreamSpec{
+				ContentType: "application/octet-stream",
+			},
+		},
+	}}
 
-	actualContentType := stream.Spec.ContentType
-	if actualContentType != expectedContentType {
-		t.Errorf("expected default stream content-type to be %s, got %s", expectedContentType, actualContentType)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.in
+			got.Default()
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("Default (-want, +got) = %v", diff)
+			}
+		})
 	}
 }
 
-func TestStreamDefaultsDoNotOverride(t *testing.T) {
-	expectedContentType := "application/x-doom"
-	stream := Stream{
-		Spec: StreamSpec{
-			ContentType: expectedContentType,
+func TestStreamSpecDefault(t *testing.T) {
+	tests := []struct {
+		name string
+		in   *StreamSpec
+		want *StreamSpec
+	}{{
+		name: "content type is defaulted",
+		in:   &StreamSpec{},
+		want: &StreamSpec{
+			ContentType: "application/octet-stream",
 		},
-	}
+	}, {
+		name: "content type is not overwritten",
+		in: &StreamSpec{
+			ContentType: "application/x-doom",
+		},
+		want: &StreamSpec{
+			ContentType: "application/x-doom",
+		},
+	}}
 
-	stream.SetDefaults(nil)
-
-	actualContentType := stream.Spec.ContentType
-	if actualContentType != expectedContentType {
-		t.Errorf("expected stream content-type to be %s, got %s", expectedContentType, actualContentType)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.in
+			got.Default()
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("Default (-want, +got) = %v", diff)
+			}
+		})
 	}
 }

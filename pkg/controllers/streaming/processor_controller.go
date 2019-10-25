@@ -110,7 +110,7 @@ func (r *ProcessorReconciler) reconcile(ctx context.Context, logger logr.Logger,
 	// and may not have had all of the assumed defaults specified.  This won't result
 	// in this getting written back to the API Server, but lets downstream logic make
 	// assumptions about defaulting.
-	processor.SetDefaults(ctx)
+	processor.Default()
 
 	processor.Status.InitializeConditions()
 
