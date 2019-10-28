@@ -13,7 +13,7 @@ webhooks:
       namespace: system
       path: /mutate-core-projectriff-io-v1alpha1-deployer
   failurePolicy: Fail
-  name: deployers.build.projectriff.io
+  name: deployers.core.projectriff.io
   rules:
   - apiGroups:
     - core.projectriff.io
@@ -39,7 +39,7 @@ webhooks:
       namespace: system
       path: /validate-core-projectriff-io-v1alpha1-deployer
   failurePolicy: Fail
-  name: deployers.build.projectriff.io
+  name: deployers.core.projectriff.io
   rules:
   - apiGroups:
     - core.projectriff.io

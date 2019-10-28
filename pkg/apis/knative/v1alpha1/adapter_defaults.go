@@ -18,7 +18,7 @@ package v1alpha1
 
 import "sigs.k8s.io/controller-runtime/pkg/webhook"
 
-// +kubebuilder:webhook:path=/mutate-knative-projectriff-io-v1alpha1-adapter,mutating=true,failurePolicy=fail,groups=knative.projectriff.io,resources=adapters,verbs=create;update,versions=v1alpha1,name=adapters.build.projectriff.io
+// +kubebuilder:webhook:path=/mutate-knative-projectriff-io-v1alpha1-adapter,mutating=true,failurePolicy=fail,groups=knative.projectriff.io,resources=adapters,verbs=create;update,versions=v1alpha1,name=adapters.knative.projectriff.io
 
 var _ webhook.Defaulter = &Adapter{}
 

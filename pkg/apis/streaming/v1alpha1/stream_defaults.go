@@ -20,7 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
-// +kubebuilder:webhook:path=/mutate-streaming-projectriff-io-v1alpha1-stream,mutating=true,failurePolicy=fail,groups=streaming.projectriff.io,resources=streams,verbs=create;update,versions=v1alpha1,name=streams.build.projectriff.io
+// +kubebuilder:webhook:path=/mutate-streaming-projectriff-io-v1alpha1-stream,mutating=true,failurePolicy=fail,groups=streaming.projectriff.io,resources=streams,verbs=create;update,versions=v1alpha1,name=streams.streaming.projectriff.io
 
 var _ webhook.Defaulter = &Stream{}
 

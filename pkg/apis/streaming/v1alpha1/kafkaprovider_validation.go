@@ -24,7 +24,7 @@ import (
 	"github.com/projectriff/system/pkg/validation"
 )
 
-// +kubebuilder:webhook:path=/validate-streaming-projectriff-io-v1alpha1-kafkaprovider,mutating=false,failurePolicy=fail,groups=streaming.projectriff.io,resources=kafkaproviders,verbs=create;update,versions=v1alpha1,name=kafkaproviders.build.projectriff.io
+// +kubebuilder:webhook:path=/validate-streaming-projectriff-io-v1alpha1-kafkaprovider,mutating=false,failurePolicy=fail,groups=streaming.projectriff.io,resources=kafkaproviders,verbs=create;update,versions=v1alpha1,name=kafkaproviders.streaming.projectriff.io
 
 var (
 	_ webhook.Validator         = &KafkaProvider{}

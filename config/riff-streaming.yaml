@@ -398,7 +398,7 @@ webhooks:
       namespace: riff-system
       path: /mutate-streaming-projectriff-io-v1alpha1-kafkaprovider
   failurePolicy: Fail
-  name: kafkaproviders.build.projectriff.io
+  name: kafkaproviders.streaming.projectriff.io
   rules:
   - apiGroups:
     - streaming.projectriff.io
@@ -416,7 +416,7 @@ webhooks:
       namespace: riff-system
       path: /mutate-streaming-projectriff-io-v1alpha1-processor
   failurePolicy: Fail
-  name: processors.build.projectriff.io
+  name: processors.streaming.projectriff.io
   rules:
   - apiGroups:
     - streaming.projectriff.io
@@ -434,7 +434,7 @@ webhooks:
       namespace: riff-system
       path: /mutate-streaming-projectriff-io-v1alpha1-stream
   failurePolicy: Fail
-  name: streams.build.projectriff.io
+  name: streams.streaming.projectriff.io
   rules:
   - apiGroups:
     - streaming.projectriff.io
@@ -872,7 +872,7 @@ webhooks:
       namespace: riff-system
       path: /validate-streaming-projectriff-io-v1alpha1-kafkaprovider
   failurePolicy: Fail
-  name: kafkaproviders.build.projectriff.io
+  name: kafkaproviders.streaming.projectriff.io
   rules:
   - apiGroups:
     - streaming.projectriff.io
@@ -890,7 +890,7 @@ webhooks:
       namespace: riff-system
       path: /validate-streaming-projectriff-io-v1alpha1-processor
   failurePolicy: Fail
-  name: processors.build.projectriff.io
+  name: processors.streaming.projectriff.io
   rules:
   - apiGroups:
     - streaming.projectriff.io
@@ -906,9 +906,9 @@ webhooks:
     service:
       name: riff-streaming-webhook-service
       namespace: riff-system
-      path: /validate-streaming-stream
+      path: /validate-streaming-projectriff-io-v1alpha1-stream
   failurePolicy: Fail
-  name: streams.build.projectriff.io
+  name: streams.streaming.projectriff.io
   rules:
   - apiGroups:
     - streaming.projectriff.io

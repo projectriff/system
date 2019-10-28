@@ -13,7 +13,7 @@ webhooks:
       namespace: system
       path: /mutate-knative-projectriff-io-v1alpha1-adapter
   failurePolicy: Fail
-  name: adapters.build.projectriff.io
+  name: adapters.knative.projectriff.io
   rules:
   - apiGroups:
     - knative.projectriff.io
@@ -31,7 +31,7 @@ webhooks:
       namespace: system
       path: /mutate-knative-projectriff-io-v1alpha1-deployer
   failurePolicy: Fail
-  name: deployers.build.projectriff.io
+  name: deployers.knative.projectriff.io
   rules:
   - apiGroups:
     - knative.projectriff.io
@@ -57,7 +57,7 @@ webhooks:
       namespace: system
       path: /validate-knative-projectriff-io-v1alpha1-adapter
   failurePolicy: Fail
-  name: adapters.build.projectriff.io
+  name: adapters.knative.projectriff.io
   rules:
   - apiGroups:
     - knative.projectriff.io
@@ -75,7 +75,7 @@ webhooks:
       namespace: system
       path: /validate-knative-projectriff-io-v1alpha1-deployer
   failurePolicy: Fail
-  name: deployers.build.projectriff.io
+  name: deployers.knative.projectriff.io
   rules:
   - apiGroups:
     - knative.projectriff.io

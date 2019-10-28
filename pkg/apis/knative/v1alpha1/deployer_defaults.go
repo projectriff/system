@@ -21,7 +21,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
-// +kubebuilder:webhook:path=/mutate-knative-projectriff-io-v1alpha1-deployer,mutating=true,failurePolicy=fail,groups=knative.projectriff.io,resources=deployers,verbs=create;update,versions=v1alpha1,name=deployers.build.projectriff.io
+// +kubebuilder:webhook:path=/mutate-knative-projectriff-io-v1alpha1-deployer,mutating=true,failurePolicy=fail,groups=knative.projectriff.io,resources=deployers,verbs=create;update,versions=v1alpha1,name=deployers.knative.projectriff.io
 
 var _ webhook.Defaulter = &Deployer{}
 

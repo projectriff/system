@@ -4176,7 +4176,7 @@ webhooks:
       namespace: riff-system
       path: /mutate-core-projectriff-io-v1alpha1-deployer
   failurePolicy: Fail
-  name: deployers.build.projectriff.io
+  name: deployers.core.projectriff.io
   rules:
   - apiGroups:
     - core.projectriff.io
@@ -4531,7 +4531,7 @@ webhooks:
       namespace: riff-system
       path: /validate-core-projectriff-io-v1alpha1-deployer
   failurePolicy: Fail
-  name: deployers.build.projectriff.io
+  name: deployers.core.projectriff.io
   rules:
   - apiGroups:
     - core.projectriff.io

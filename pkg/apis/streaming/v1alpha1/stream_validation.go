@@ -24,7 +24,7 @@ import (
 	"github.com/projectriff/system/pkg/validation"
 )
 
-// +kubebuilder:webhook:path=/validate-streaming-stream,mutating=false,failurePolicy=fail,groups=streaming.projectriff.io,resources=streams,verbs=create;update,versions=v1alpha1,name=streams.build.projectriff.io
+// +kubebuilder:webhook:path=/validate-streaming-projectriff-io-v1alpha1-stream,mutating=false,failurePolicy=fail,groups=streaming.projectriff.io,resources=streams,verbs=create;update,versions=v1alpha1,name=streams.streaming.projectriff.io
 
 var (
 	_ webhook.Validator         = &Stream{}
