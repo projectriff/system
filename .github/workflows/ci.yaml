@@ -33,14 +33,13 @@ jobs:
       run: |
         opsys=`go env GOOS`
         curl -s https://api.github.com/repos/kubernetes-sigs/kustomize/releases |\
-          grep kustomize_ |\
           grep browser_download |\
           grep $opsys |\
-          head -n1 |\
           cut -d '"' -f 4 |\
+          grep /kustomize/v |\
+          sort | tail -n 1 |\
           xargs curl -O -L
-        mv kustomize_*_${opsys}_amd64 kustomize
-        chmod u+x kustomize
+        tar xzf ./kustomize_v*_${opsys}_amd64.tar.gz
         sudo mv kustomize /usr/local/bin/
     - name: Build & Test
       run: make compile test
@@ -77,14 +76,13 @@ jobs:
         run: |
           opsys=`go env GOOS`
           curl -s https://api.github.com/repos/kubernetes-sigs/kustomize/releases |\
-            grep kustomize_ |\
             grep browser_download |\
             grep $opsys |\
-            head -n1 |\
             cut -d '"' -f 4 |\
+            grep /kustomize/v |\
+            sort | tail -n 1 |\
             xargs curl -O -L
-          mv kustomize_*_${opsys}_amd64 kustomize
-          chmod u+x kustomize
+          tar xzf ./kustomize_v*_${opsys}_amd64.tar.gz
           sudo mv kustomize /usr/local/bin/
       - name: Install ko
         run: |
