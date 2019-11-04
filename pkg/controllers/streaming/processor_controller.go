@@ -468,7 +468,7 @@ func (r *ProcessorReconciler) resolveStreams(ctx context.Context, processorCoord
 }
 
 func (r *ProcessorReconciler) computeEnvironmentVariables(processor *streamingv1alpha1.Processor) ([]v1.EnvVar, error) {
-	contentTypesJson, err := r.serializeContentTypes(processor.Status.OutputContentTypes)
+	contentTypesJson, err := json.Marshal(processor.Status.OutputContentTypes)
 	if err != nil {
 		return nil, err
 	}
@@ -491,26 +491,13 @@ func (r *ProcessorReconciler) computeEnvironmentVariables(processor *streamingv1
 		},
 		{
 			Name:  "OUTPUT_CONTENT_TYPES",
-			Value: contentTypesJson,
+			Value: string(contentTypesJson),
 		},
 	}, nil
 }
 
-type outputContentType struct {
-	OutputIndex int    `json:"outputIndex"`
-	ContentType string `json:"contentType"`
-}
-
-func (r *ProcessorReconciler) serializeContentTypes(outputContentTypes []string) (string, error) {
-	outputCount := len(outputContentTypes)
-	result := make([]outputContentType, outputCount)
-	for i := 0; i < outputCount; i++ {
-		result[i] = outputContentType{
-			OutputIndex: i,
-			ContentType: outputContentTypes[i],
-		}
-	}
-	bytes, err := json.Marshal(result)
+func (r *ProcessorReconciler) serializeSlice(data []string) (string, error) {
+	bytes, err := json.Marshal(data)
 	if err != nil {
 		return "", err
 	}

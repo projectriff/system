@@ -3,4 +3,4 @@ kind: ConfigMap
 metadata:
   name: processor
 data:
-  processorImage: projectriff/streaming-processor:1.0.0-SNAPSHOT-20191022094511-044d7e61ffe54e76
+  processorImage: projectriff/streaming-processor:1.0.0-SNAPSHOT-20191104135401-334c4efa72a0d4c7
