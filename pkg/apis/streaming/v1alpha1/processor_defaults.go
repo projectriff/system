@@ -27,5 +27,21 @@ func (r *Processor) Default() {
 }
 
 func (s *ProcessorSpec) Default() {
-	// TODO
+	// Thanks to validation, Input/OutputNames is either nil or has the correct size.
+	if s.InputNames == nil {
+		s.InputNames = make([]string, len(s.Inputs))
+	}
+	for i, n := range s.InputNames {
+		if n == "" {
+			s.InputNames[i] = s.Inputs[i]
+		}
+	}
+	if s.OutputNames == nil {
+		s.OutputNames = make([]string, len(s.Outputs))
+	}
+	for i, n := range s.OutputNames {
+		if n == "" {
+			s.OutputNames[i] = s.Outputs[i]
+		}
+	}
 }

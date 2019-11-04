@@ -44,18 +44,37 @@ spec:
           description: ProcessorSpec defines the desired state of Processor
           properties:
             functionRef:
+              description: FunctionRef references a function in this namespace.
               type: string
+            inputNames:
+              description: InputNames is a list of argument names, to be used by languages
+                that support that concept.
+              items:
+                type: string
+              type: array
             inputs:
+              description: Inputs references an ordered list of stream names from
+                this namespace.
+              items:
+                type: string
+              type: array
+            outputNames:
+              description: OutputNames is a list of result names, to be used by languages
+                that support that concept.
               items:
                 type: string
               type: array
             outputs:
+              description: Outputs references an ordered list of stream names from
+                this namespace.
               items:
                 type: string
               type: array
           required:
           - functionRef
+          - inputNames
           - inputs
+          - outputNames
           - outputs
           type: object
         status:

@@ -39,9 +39,16 @@ type ProcessorSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	FunctionRef string   `json:"functionRef"`
-	Inputs      []string `json:"inputs"`
-	Outputs     []string `json:"outputs"`
+	// FunctionRef references a function in this namespace.
+	FunctionRef string `json:"functionRef"`
+	// Inputs references an ordered list of stream names from this namespace.
+	Inputs []string `json:"inputs"`
+	// Outputs references an ordered list of stream names from this namespace.
+	Outputs []string `json:"outputs"`
+	// InputNames is a list of argument names, to be used by languages that support that concept.
+	InputNames []string `json:"inputNames"`
+	// OutputNames is a list of result names, to be used by languages that support that concept.
+	OutputNames []string `json:"outputNames"`
 }
 
 // ProcessorStatus defines the observed state of Processor
