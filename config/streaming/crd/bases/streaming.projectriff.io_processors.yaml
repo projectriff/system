@@ -47,8 +47,8 @@ spec:
               description: FunctionRef references a function in this namespace.
               type: string
             inputNames:
-              description: InputNames is a list of argument names, to be used by languages
-                that support that concept.
+              description: InputNames is an ordered list of argument names, to be
+                used by languages that support that concept.
               items:
                 type: string
               type: array
@@ -59,8 +59,8 @@ spec:
                 type: string
               type: array
             outputNames:
-              description: OutputNames is a list of result names, to be used by languages
-                that support that concept.
+              description: OutputNames is an ordered list of result names, to be used
+                by languages that support that concept.
               items:
                 type: string
               type: array
