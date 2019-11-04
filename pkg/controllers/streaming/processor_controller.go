@@ -482,6 +482,14 @@ func (r *ProcessorReconciler) computeEnvironmentVariables(processor *streamingv1
 			Value: strings.Join(processor.Status.OutputAddresses, ","),
 		},
 		{
+			Name:  "INPUT_NAMES",
+			Value: strings.Join(processor.Spec.InputNames, ","),
+		},
+		{
+			Name:  "OUTPUT_NAMES",
+			Value: strings.Join(processor.Spec.OutputNames, ","),
+		},
+		{
 			Name:  "GROUP",
 			Value: processor.Name,
 		},
@@ -494,14 +502,6 @@ func (r *ProcessorReconciler) computeEnvironmentVariables(processor *streamingv1
 			Value: string(contentTypesJson),
 		},
 	}, nil
-}
-
-func (r *ProcessorReconciler) serializeSlice(data []string) (string, error) {
-	bytes, err := json.Marshal(data)
-	if err != nil {
-		return "", err
-	}
-	return string(bytes), nil
 }
 
 func (r *ProcessorReconciler) SetupWithManager(mgr ctrl.Manager) error {
