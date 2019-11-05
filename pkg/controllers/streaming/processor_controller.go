@@ -340,7 +340,7 @@ func (r *ProcessorReconciler) reconcileProcessorDeployment(ctx context.Context, 
 	}
 
 	// create deployment if it doesn't exist
-	if processor.Status.DeploymentName == "" {
+	if actualDeployment.Name == "" {
 		log.Info("creating processor deployment", "spec", desiredDeployment.Spec)
 		if err := r.Create(ctx, desiredDeployment); err != nil {
 			log.Error(err, "unable to create Deployment for Processor", "deployment", desiredDeployment)
