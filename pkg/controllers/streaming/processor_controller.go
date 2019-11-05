@@ -444,13 +444,13 @@ func (r *ProcessorReconciler) deploymentSemanticEquals(desiredDeployment, deploy
 		equality.Semantic.DeepEqual(desiredDeployment.ObjectMeta.Labels, deployment.ObjectMeta.Labels)
 }
 
-func (r *ProcessorReconciler) resolveStreams(ctx context.Context, processorCoordinates types.NamespacedName, streamNames []string) ([]string, []string, error) {
+func (r *ProcessorReconciler) resolveStreams(ctx context.Context, processorCoordinates types.NamespacedName, bindings []streamingv1alpha1.StreamBinding) ([]string, []string, error) {
 	var addresses []string
 	var contentTypes []string
-	for _, streamName := range streamNames {
+	for _, binding := range bindings {
 		streamNSName := types.NamespacedName{
 			Namespace: processorCoordinates.Namespace,
-			Name:      streamName,
+			Name:      binding.Stream,
 		}
 		var stream streamingv1alpha1.Stream
 		// track stream for new coordinates
@@ -472,6 +472,8 @@ func (r *ProcessorReconciler) computeEnvironmentVariables(processor *streamingv1
 	if err != nil {
 		return nil, err
 	}
+	inputsNames := r.collectAliases(processor.Spec.Inputs)
+	outputsNames := r.collectAliases(processor.Spec.Outputs)
 	return []v1.EnvVar{
 		{
 			Name:  "INPUTS",
@@ -483,11 +485,11 @@ func (r *ProcessorReconciler) computeEnvironmentVariables(processor *streamingv1
 		},
 		{
 			Name:  "INPUT_NAMES",
-			Value: strings.Join(processor.Spec.InputNames, ","),
+			Value: strings.Join(inputsNames, ","),
 		},
 		{
 			Name:  "OUTPUT_NAMES",
-			Value: strings.Join(processor.Spec.OutputNames, ","),
+			Value: strings.Join(outputsNames, ","),
 		},
 		{
 			Name:  "GROUP",
@@ -502,6 +504,14 @@ func (r *ProcessorReconciler) computeEnvironmentVariables(processor *streamingv1
 			Value: string(contentTypesJson),
 		},
 	}, nil
+}
+
+func (*ProcessorReconciler) collectAliases(bindings []streamingv1alpha1.StreamBinding) []string {
+	names := make([]string, len(bindings))
+	for i := range bindings {
+		names[i] = bindings[i].Alias
+	}
+	return names
 }
 
 func (r *ProcessorReconciler) SetupWithManager(mgr ctrl.Manager) error {

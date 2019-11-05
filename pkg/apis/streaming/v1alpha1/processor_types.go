@@ -41,14 +41,20 @@ type ProcessorSpec struct {
 
 	// FunctionRef references a function in this namespace.
 	FunctionRef string `json:"functionRef"`
-	// Inputs references an ordered list of stream names from this namespace.
-	Inputs []string `json:"inputs"`
-	// Outputs references an ordered list of stream names from this namespace.
-	Outputs []string `json:"outputs"`
-	// InputNames is an ordered list of argument names, to be used by languages that support that concept.
-	InputNames []string `json:"inputNames"`
-	// OutputNames is an ordered list of result names, to be used by languages that support that concept.
-	OutputNames []string `json:"outputNames"`
+
+	// Inputs references an ordered list of streams to bind as inputs
+	Inputs []StreamBinding `json:"inputs"`
+	// Outputs references an ordered list of streams to bind as outputs
+	Outputs []StreamBinding `json:"outputs"`
+}
+
+type StreamBinding struct {
+	// Stream name, from this namespace, to be bound to the processor
+	Stream string `json:"stream"`
+
+	// Alias exposes the stream under another name within the processor
+	// +optional
+	Alias string `json:"alias,omitempty"`
 }
 
 // ProcessorStatus defines the observed state of Processor

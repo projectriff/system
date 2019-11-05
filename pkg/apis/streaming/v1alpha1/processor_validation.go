@@ -19,7 +19,6 @@ package v1alpha1
 import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	runtime "k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	"github.com/projectriff/system/pkg/validation"
@@ -72,29 +71,21 @@ func (s *ProcessorSpec) Validate() validation.FieldErrors {
 		errs = errs.Also(validation.ErrMissingField("inputs"))
 	}
 	for i, input := range s.Inputs {
-		if input == "" {
-			errs = errs.Also(validation.ErrInvalidArrayValue(input, "inputs", i))
+		if input.Stream == "" {
+			errs = errs.Also(validation.ErrMissingField("stream").ViaFieldIndex("inputs", i))
 		}
-	}
-
-	// If present, inputNames must have the same length as inputs
-	if len(s.InputNames) != 0 && len(s.InputNames) != len(s.Inputs) {
-		errs = errs.Also(validation.FieldErrors{
-			field.Invalid(field.NewPath("inputNames"), s.InputNames, "when set, inputNames must have the same length as inputs"),
-		})
-	}
-
-	// If present, outputNames must have the same length as outputs
-	if len(s.OutputNames) != 0 && len(s.OutputNames) != len(s.Outputs) {
-		errs = errs.Also(validation.FieldErrors{
-			field.Invalid(field.NewPath("outputNames"), s.OutputNames, "when set, outputNames must have the same length as outputs"),
-		})
+		if input.Alias == "" {
+			errs = errs.Also(validation.ErrMissingField("alias").ViaFieldIndex("inputs", i))
+		}
 	}
 
 	// outputs are optional
 	for i, output := range s.Outputs {
-		if output == "" {
-			errs = errs.Also(validation.ErrInvalidArrayValue(output, "outputs", i))
+		if output.Stream == "" {
+			errs = errs.Also(validation.ErrMissingField("stream").ViaFieldIndex("outputs", i))
+		}
+		if output.Alias == "" {
+			errs = errs.Also(validation.ErrMissingField("alias").ViaFieldIndex("outputs", i))
 		}
 	}
 

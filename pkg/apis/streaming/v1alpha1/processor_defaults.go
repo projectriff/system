@@ -27,21 +27,21 @@ func (r *Processor) Default() {
 }
 
 func (s *ProcessorSpec) Default() {
-	// Thanks to validation, Input/OutputNames is either empty or has the correct size.
-	if len(s.InputNames) == 0 {
-		s.InputNames = make([]string, len(s.Inputs))
+	if s.Inputs == nil {
+		s.Inputs = []StreamBinding{}
 	}
-	for i, n := range s.InputNames {
-		if n == "" {
-			s.InputNames[i] = s.Inputs[i]
+	for i := range s.Inputs {
+		if s.Inputs[i].Alias == "" {
+			s.Inputs[i].Alias = s.Inputs[i].Stream
 		}
 	}
-	if len(s.OutputNames) == 0 {
-		s.OutputNames = make([]string, len(s.Outputs))
+
+	if s.Outputs == nil {
+		s.Outputs = []StreamBinding{}
 	}
-	for i, n := range s.OutputNames {
-		if n == "" {
-			s.OutputNames[i] = s.Outputs[i]
+	for i := range s.Outputs {
+		if s.Outputs[i].Alias == "" {
+			s.Outputs[i].Alias = s.Outputs[i].Stream
 		}
 	}
 }

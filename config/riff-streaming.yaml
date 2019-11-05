@@ -177,35 +177,43 @@ spec:
             functionRef:
               description: FunctionRef references a function in this namespace.
               type: string
-            inputNames:
-              description: InputNames is an ordered list of argument names, to be
-                used by languages that support that concept.
-              items:
-                type: string
-              type: array
             inputs:
-              description: Inputs references an ordered list of stream names from
-                this namespace.
+              description: Inputs references an ordered list of streams to bind as
+                inputs
               items:
-                type: string
-              type: array
-            outputNames:
-              description: OutputNames is an ordered list of result names, to be used
-                by languages that support that concept.
-              items:
-                type: string
+                properties:
+                  alias:
+                    description: Alias exposes the stream under another name within
+                      the processor
+                    type: string
+                  stream:
+                    description: Stream name, from this namespace, to be bound to
+                      the processor
+                    type: string
+                required:
+                - stream
+                type: object
               type: array
             outputs:
-              description: Outputs references an ordered list of stream names from
-                this namespace.
+              description: Outputs references an ordered list of streams to bind as
+                outputs
               items:
-                type: string
+                properties:
+                  alias:
+                    description: Alias exposes the stream under another name within
+                      the processor
+                    type: string
+                  stream:
+                    description: Stream name, from this namespace, to be bound to
+                      the processor
+                    type: string
+                required:
+                - stream
+                type: object
               type: array
           required:
           - functionRef
-          - inputNames
           - inputs
-          - outputNames
           - outputs
           type: object
         status:
