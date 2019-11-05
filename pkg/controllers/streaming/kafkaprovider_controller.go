@@ -191,7 +191,7 @@ func (r *KafkaProviderReconciler) reconcileLiiklusDeployment(ctx context.Context
 	}
 
 	// create deployment if it doesn't exist
-	if kafkaProvider.Status.LiiklusDeploymentName == "" {
+	if actualDeployment.Name == "" {
 		log.Info("creating liiklus deployment", "spec", desiredDeployment.Spec)
 		if err := r.Create(ctx, desiredDeployment); err != nil {
 			log.Error(err, "unable to create Deployment for KafkaProvider", "deployment", desiredDeployment)
@@ -330,7 +330,7 @@ func (r *KafkaProviderReconciler) reconcileLiiklusService(ctx context.Context, l
 	}
 
 	// create service if it doesn't exist
-	if kafkaProvider.Status.LiiklusServiceName == "" {
+	if actualService.Name == "" {
 		log.Info("creating liiklus service", "spec", desiredService.Spec)
 		if err := r.Create(ctx, desiredService); err != nil {
 			log.Error(err, "unable to create liiklus Service for KafkaProvider", "service", desiredService)
@@ -433,7 +433,7 @@ func (r *KafkaProviderReconciler) reconcileProvisionerDeployment(ctx context.Con
 	}
 
 	// create deployment if it doesn't exist
-	if kafkaProvider.Status.ProvisionerDeploymentName == "" {
+	if actualDeployment.Name == "" {
 		log.Info("creating provisioner deployment", "spec", desiredDeployment.Spec)
 		if err := r.Create(ctx, desiredDeployment); err != nil {
 			log.Error(err, "unable to create Deployment for KafkaProvider", "deployment", desiredDeployment)
@@ -545,7 +545,7 @@ func (r *KafkaProviderReconciler) reconcileProvisionerService(ctx context.Contex
 	}
 
 	// create service if it doesn't exist
-	if kafkaProvider.Status.ProvisionerServiceName == "" {
+	if actualService.Name == "" {
 		log.Info("creating provisioner service", "spec", desiredService.Spec)
 		if err := r.Create(ctx, desiredService); err != nil {
 			log.Error(err, "unable to create provisioner Service for KafkaProvider", "service", desiredService)

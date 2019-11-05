@@ -221,7 +221,7 @@ func (r *ProcessorReconciler) reconcileProcessorScaledObject(ctx context.Context
 	}
 
 	// create scaledObject if it doesn't exist
-	if processor.Status.ScaledObjectName == "" {
+	if actualScaledObject.Name == "" {
 		log.Info("creating scaled object", "spec", desiredScaledObject.Spec)
 		if err := r.Create(ctx, desiredScaledObject); err != nil {
 			log.Error(err, "unable to create ScaledObject for Processor", "scaledObject", desiredScaledObject)
