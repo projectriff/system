@@ -1,3 +1,5 @@
+https://github.com/projectriff/system/workflows/CI/badge.svg
+
 # riff System
 
 Controllers for riff CRDs
