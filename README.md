@@ -1,4 +1,4 @@
-https://github.com/projectriff/system/workflows/CI/badge.svg
+![](https://github.com/projectriff/system/workflows/CI/badge.svg)
 
 # riff System
 
