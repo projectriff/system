@@ -41,14 +41,17 @@ type ProcessorSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// FunctionRef references a function in this namespace.
+	// +optional
 	FunctionRef string `json:"functionRef"`
 
 	// Inputs references an ordered list of streams to bind as inputs
 	Inputs []StreamBinding `json:"inputs"`
 	// Outputs references an ordered list of streams to bind as outputs
+	// +optional
 	Outputs []StreamBinding `json:"outputs"`
 
 	// Template pod
+	// +optional
 	Template *corev1.PodSpec `json:"template,omitempty"`
 }
 

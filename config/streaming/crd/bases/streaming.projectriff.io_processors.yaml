@@ -4109,9 +4109,7 @@ spec:
               - containers
               type: object
           required:
-          - functionRef
           - inputs
-          - outputs
           type: object
         status:
           description: ProcessorStatus defines the observed state of Processor
