@@ -20,24 +20,22 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/go-logr/logr"
+	"github.com/google/go-cmp/cmp"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/api/networking/v1beta1"
+	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
-
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
-
-	"github.com/go-logr/logr"
-	"github.com/google/go-cmp/cmp"
 
 	"github.com/projectriff/system/pkg/apis"
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
@@ -138,13 +136,13 @@ func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, dep
 	deployer.Status.ServiceName = childService.Name
 	deployer.Status.PropagateServiceStatus(&childService.Status)
 
-	ingress, err := r.reconcileIngress(ctx, log, deployer, childService.Name)
+	// reconcile ingress
+	childIngress, err := r.reconcileIngress(ctx, log, deployer, childService.Name)
 	if err != nil {
 		log.Error(err, "unable to reconcile Ingress", "deployer", deployer)
 		return ctrl.Result{}, err
 	}
-
-	deployer.Status.IngressName = ingress.Name
+	deployer.Status.PropagateIngressStatus(childIngress.Status)
 
 	deployer.Status.ObservedGeneration = deployer.Generation
 
@@ -345,9 +343,9 @@ func (r *DeployerReconciler) constructPodSpecForDeployer(deployer *corev1alpha1.
 	return podSpec
 }
 
-func (r *DeployerReconciler) reconcileIngress(ctx context.Context, log logr.Logger, deployer *corev1alpha1.Deployer, serviceName string) (*v1beta1.Ingress, error) {
-	var actualIngress v1beta1.Ingress
-	var childIngresses v1beta1.IngressList
+func (r *DeployerReconciler) reconcileIngress(ctx context.Context, log logr.Logger, deployer *corev1alpha1.Deployer, serviceName string) (*networkingv1beta1.Ingress, error) {
+	var actualIngress networkingv1beta1.Ingress
+	var childIngresses networkingv1beta1.IngressList
 
 	if err := r.List(ctx, &childIngresses, client.InNamespace(deployer.Namespace), client.MatchingField(ingressIndexField, deployer.Name)); err != nil {
 		return nil, err
@@ -364,7 +362,10 @@ func (r *DeployerReconciler) reconcileIngress(ctx context.Context, log logr.Logg
 			}
 		}
 	}
-
+	// construct ingress is service is already present
+	if deployer.Status.ServiceName == "" {
+		return nil, nil
+	}
 	desiredIngress, err := r.constructIngressForDeployer(deployer)
 	if err != nil {
 		return nil, err
@@ -402,6 +403,46 @@ func (r *DeployerReconciler) reconcileIngress(ctx context.Context, log logr.Logg
 	log.Info("reconciling ingress", "diff", cmp.Diff(actualIngress.Spec, ingress.Spec))
 	if err := r.Update(ctx, ingress); err != nil {
 		log.Error(err, "unable to update Ingress for Deployer", "deployment", ingress)
+		return nil, err
+	}
+
+	return ingress, nil
+}
+
+func (r *DeployerReconciler) ingressSemanticEquals(desiredIngress, ingress *networkingv1beta1.Ingress) bool {
+	return equality.Semantic.DeepEqual(desiredIngress.Spec, ingress.Spec) &&
+		equality.Semantic.DeepEqual(desiredIngress.ObjectMeta.Labels, ingress.ObjectMeta.Labels)
+}
+
+func (r *DeployerReconciler) constructIngressForDeployer(deployer *corev1alpha1.Deployer) (*networkingv1beta1.Ingress, error) {
+	labels := r.constructLabelsForDeployer(deployer)
+
+	ingress := &networkingv1beta1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{
+			Labels:       labels,
+			Annotations:  make(map[string]string),
+			GenerateName: fmt.Sprintf("%s-deployer-", deployer.Name),
+			Namespace:    deployer.Namespace,
+		},
+		Spec: networkingv1beta1.IngressSpec{
+			Rules: []networkingv1beta1.IngressRule{{
+				Host: fmt.Sprintf("%s.%s.%s", deployer.Name, deployer.Namespace, domain),
+				IngressRuleValue: networkingv1beta1.IngressRuleValue{
+					HTTP: &networkingv1beta1.HTTPIngressRuleValue{
+						Paths: []networkingv1beta1.HTTPIngressPath{{
+							Path: "/",
+							Backend: networkingv1beta1.IngressBackend{
+								ServiceName: deployer.Status.ServiceName,
+								ServicePort: intstr.FromInt(80),
+							},
+						}},
+					},
+				},
+			}},
+		},
+	}
+
+	if err := ctrl.SetControllerReference(deployer, ingress, r.Scheme); err != nil {
 		return nil, err
 	}
 
@@ -473,53 +514,9 @@ func (r *DeployerReconciler) reconcileChildService(ctx context.Context, log logr
 	return service, nil
 }
 
-func (r *DeployerReconciler) ingressSemanticEquals(desiredIngress, ingress *v1beta1.Ingress) bool {
-	return equality.Semantic.DeepEqual(desiredIngress.Spec, ingress.Spec) &&
-		equality.Semantic.DeepEqual(desiredIngress.ObjectMeta.Labels, ingress.ObjectMeta.Labels)
-}
-
 func (r *DeployerReconciler) serviceSemanticEquals(desiredService, service *corev1.Service) bool {
 	return equality.Semantic.DeepEqual(desiredService.Spec, service.Spec) &&
 		equality.Semantic.DeepEqual(desiredService.ObjectMeta.Labels, service.ObjectMeta.Labels)
-}
-
-func (r *DeployerReconciler) constructIngressForDeployer(deployer *corev1alpha1.Deployer) (*v1beta1.Ingress, error) {
-	labels := r.constructLabelsForDeployer(deployer)
-
-	ingress := &v1beta1.Ingress{
-		ObjectMeta: metav1.ObjectMeta{
-			Labels:       labels,
-			Annotations:  make(map[string]string),
-			GenerateName: fmt.Sprintf("%s-deployer-", deployer.Name),
-			Namespace:    deployer.Namespace,
-		},
-		Spec: v1beta1.IngressSpec{
-			Rules: []v1beta1.IngressRule{
-				{
-					Host: fmt.Sprintf("%s.%s", deployer.Name, domain),
-					IngressRuleValue: v1beta1.IngressRuleValue{
-						HTTP: &v1beta1.HTTPIngressRuleValue{
-							Paths: []v1beta1.HTTPIngressPath{
-								{
-									Path: "/",
-									Backend: v1beta1.IngressBackend{
-										ServiceName: deployer.Status.ServiceName,
-										ServicePort: intstr.FromInt(80),
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	if err := ctrl.SetControllerReference(deployer, ingress, r.Scheme); err != nil {
-		return nil, err
-	}
-
-	return ingress, nil
 }
 
 func (r *DeployerReconciler) constructServiceForDeployer(deployer *corev1alpha1.Deployer) (*corev1.Service, error) {
@@ -583,7 +580,7 @@ func (r *DeployerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	if err := controllers.IndexControllersOfType(mgr, serviceIndexField, &corev1alpha1.Deployer{}, &corev1.Service{}); err != nil {
 		return err
 	}
-	if err := controllers.IndexControllersOfType(mgr, ingressIndexField, &corev1alpha1.Deployer{}, &v1beta1.Ingress{}); err != nil {
+	if err := controllers.IndexControllersOfType(mgr, ingressIndexField, &corev1alpha1.Deployer{}, &networkingv1beta1.Ingress{}); err != nil {
 		return err
 	}
 
