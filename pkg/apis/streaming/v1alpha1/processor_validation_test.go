@@ -191,6 +191,23 @@ func TestValidateProcessorSpec(t *testing.T) {
 			},
 		},
 		expected: validation.FieldErrors{},
+	}, {
+		name: "invalid container name",
+		target: &ProcessorSpec{
+			FunctionRef: "my-func",
+			Inputs: []StreamBinding{
+				{Stream: "my-stream", Alias: "my-alias"},
+			},
+			Outputs: []StreamBinding{
+				{Stream: "my-stream", Alias: "my-alias"},
+			},
+			Template: &corev1.PodSpec{
+				Containers: []corev1.Container{
+					{Name: "processor"},
+				},
+			},
+		},
+		expected: validation.ErrInvalidValue("processor", "template.containers[0].name"),
 	}} {
 		t.Run(c.name, func(t *testing.T) {
 			actual := c.target.Validate()

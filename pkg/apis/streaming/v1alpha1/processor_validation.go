@@ -76,6 +76,9 @@ func (s *ProcessorSpec) Validate() validation.FieldErrors {
 	}, s.Template); diff != "" {
 		errs = errs.Also(validation.ErrDisallowedFields("template", fmt.Sprintf("limited Template fields may be set (-want, +got) = %v", diff)))
 	}
+	if s.Template.Containers[0].Name != "function" {
+		errs = errs.Also(validation.ErrInvalidValue(s.Template.Containers[0].Name, "template.containers[0].name"))
+	}
 
 	if s.FunctionRef == "" && s.Template.Containers[0].Image == "" {
 		errs = errs.Also(validation.ErrMissingOneOf("functionRef", "template.containers[0].image"))
