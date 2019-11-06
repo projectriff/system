@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -40,12 +41,18 @@ type ProcessorSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// FunctionRef references a function in this namespace.
+	// +optional
 	FunctionRef string `json:"functionRef"`
 
 	// Inputs references an ordered list of streams to bind as inputs
 	Inputs []StreamBinding `json:"inputs"`
 	// Outputs references an ordered list of streams to bind as outputs
+	// +optional
 	Outputs []StreamBinding `json:"outputs"`
+
+	// Template pod
+	// +optional
+	Template *corev1.PodSpec `json:"template,omitempty"`
 }
 
 type StreamBinding struct {
@@ -69,7 +76,7 @@ type ProcessorStatus struct {
 	OutputContentTypes []string `json:"outputContentTypes,omitempty"`
 	DeploymentName     string   `json:"deploymentName,omitempty"`
 	ScaledObjectName   string   `json:"scaledObjectName,omitempty"`
-	FunctionImage      string   `json:"functionImage,omitempty"`
+	LatestImage        string   `json:"latestImage,omitempty"`
 }
 
 // +kubebuilder:object:root=true

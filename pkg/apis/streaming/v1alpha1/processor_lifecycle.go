@@ -22,7 +22,6 @@ import (
 	kedav1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/keda/v1alpha1"
 
 	"github.com/projectriff/system/pkg/apis"
-	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 )
 
 const (
@@ -34,7 +33,6 @@ const (
 )
 
 var processorCondSet = apis.NewLivingConditionSet(
-	ProcessorConditionFunctionReady,
 	ProcessorConditionDeploymentReady,
 	ProcessorConditionScaledObjectReady,
 )
@@ -57,22 +55,6 @@ func (ps *ProcessorStatus) GetCondition(t apis.ConditionType) *apis.Condition {
 
 func (ps *ProcessorStatus) InitializeConditions() {
 	processorCondSet.Manage(ps).InitializeConditions()
-}
-
-func (ps *ProcessorStatus) MarkFunctionNotFound(name string) {
-	processorCondSet.Manage(ps).MarkFalse(ProcessorConditionFunctionReady, "NotFound",
-		"Unable to find function %q.", name)
-}
-
-func (ps *ProcessorStatus) PropagateFunctionStatus(fs *buildv1alpha1.FunctionStatus) {
-	ps.FunctionImage = fs.LatestImage
-
-	if ps.FunctionImage == "" {
-		processorCondSet.Manage(ps).MarkFalse(ProcessorConditionFunctionReady, "NoImage",
-			"Function has no latestImage")
-	} else {
-		processorCondSet.Manage(ps).MarkTrue(ProcessorConditionFunctionReady)
-	}
 }
 
 func (ps *ProcessorStatus) PropagateDeploymentStatus(ds *appsv1.DeploymentStatus) {

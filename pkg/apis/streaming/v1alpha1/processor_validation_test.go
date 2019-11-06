@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/projectriff/system/pkg/validation"
 )
@@ -40,6 +41,11 @@ func TestValidateProcessor(t *testing.T) {
 				FunctionRef: "my-func",
 				Inputs: []StreamBinding{
 					{Stream: "my-stream", Alias: "in"},
+				},
+				Template: &corev1.PodSpec{
+					Containers: []corev1.Container{
+						{Name: "function"},
+					},
 				},
 			},
 		},
@@ -70,21 +76,51 @@ func TestValidateProcessorSpec(t *testing.T) {
 			Inputs: []StreamBinding{
 				{Stream: "my-stream", Alias: "in"},
 			},
+			Template: &corev1.PodSpec{
+				Containers: []corev1.Container{
+					{Name: "function"},
+				},
+			},
 		},
 		expected: validation.FieldErrors{},
 	}, {
-		name: "requires function ref",
+		name: "requires function ref or container image",
 		target: &ProcessorSpec{
 			FunctionRef: "",
 			Inputs: []StreamBinding{
 				{Stream: "my-stream", Alias: "in"},
 			},
+			Template: &corev1.PodSpec{
+				Containers: []corev1.Container{
+					{Name: "function", Image: ""},
+				},
+			},
 		},
-		expected: validation.ErrMissingField("functionRef"),
+		expected: validation.ErrMissingOneOf("functionRef", "template.containers[0].image"),
+	}, {
+		name: "forbids both function ref and container image",
+		target: &ProcessorSpec{
+			FunctionRef: "my-function",
+			Inputs: []StreamBinding{
+				{Stream: "my-stream", Alias: "in"},
+			},
+			Template: &corev1.PodSpec{
+				Containers: []corev1.Container{
+					{Name: "function", Image: "my-image"},
+				},
+			},
+		},
+		expected: validation.ErrMultipleOneOf("functionRef", "template.containers[0].image"),
 	}, {
 		name: "requires inputs",
 		target: &ProcessorSpec{
 			FunctionRef: "my-func",
+			Inputs:      nil,
+			Template: &corev1.PodSpec{
+				Containers: []corev1.Container{
+					{Name: "function"},
+				},
+			},
 		},
 		expected: validation.ErrMissingField("inputs"),
 	}, {
@@ -93,6 +129,11 @@ func TestValidateProcessorSpec(t *testing.T) {
 			FunctionRef: "my-func",
 			Inputs: []StreamBinding{
 				{},
+			},
+			Template: &corev1.PodSpec{
+				Containers: []corev1.Container{
+					{Name: "function"},
+				},
 			},
 		},
 		expected: validation.FieldErrors{}.Also(
@@ -106,6 +147,11 @@ func TestValidateProcessorSpec(t *testing.T) {
 			Inputs: []StreamBinding{
 				{Stream: "my-stream", Alias: "in"},
 			},
+			Template: &corev1.PodSpec{
+				Containers: []corev1.Container{
+					{Name: "function"},
+				},
+			},
 		},
 		expected: validation.FieldErrors{},
 	}, {
@@ -117,6 +163,11 @@ func TestValidateProcessorSpec(t *testing.T) {
 			},
 			Outputs: []StreamBinding{
 				{},
+			},
+			Template: &corev1.PodSpec{
+				Containers: []corev1.Container{
+					{Name: "function"},
+				},
 			},
 		},
 		expected: validation.FieldErrors{}.Also(
@@ -133,8 +184,30 @@ func TestValidateProcessorSpec(t *testing.T) {
 			Outputs: []StreamBinding{
 				{Stream: "my-stream", Alias: "my-alias"},
 			},
+			Template: &corev1.PodSpec{
+				Containers: []corev1.Container{
+					{Name: "function"},
+				},
+			},
 		},
 		expected: validation.FieldErrors{},
+	}, {
+		name: "invalid container name",
+		target: &ProcessorSpec{
+			FunctionRef: "my-func",
+			Inputs: []StreamBinding{
+				{Stream: "my-stream", Alias: "my-alias"},
+			},
+			Outputs: []StreamBinding{
+				{Stream: "my-stream", Alias: "my-alias"},
+			},
+			Template: &corev1.PodSpec{
+				Containers: []corev1.Container{
+					{Name: "processor"},
+				},
+			},
+		},
+		expected: validation.ErrInvalidValue("processor", "template.containers[0].name"),
 	}} {
 		t.Run(c.name, func(t *testing.T) {
 			actual := c.target.Validate()

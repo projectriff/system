@@ -21,6 +21,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -185,6 +186,11 @@ func (in *ProcessorSpec) DeepCopyInto(out *ProcessorSpec) {
 		in, out := &in.Outputs, &out.Outputs
 		*out = make([]StreamBinding, len(*in))
 		copy(*out, *in)
+	}
+	if in.Template != nil {
+		in, out := &in.Template, &out.Template
+		*out = new(v1.PodSpec)
+		(*in).DeepCopyInto(*out)
 	}
 }
 

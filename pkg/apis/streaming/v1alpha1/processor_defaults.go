@@ -15,7 +15,10 @@ limitations under the License.
 */
 package v1alpha1
 
-import "sigs.k8s.io/controller-runtime/pkg/webhook"
+import (
+	corev1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
+)
 
 // +kubebuilder:webhook:path=/mutate-streaming-projectriff-io-v1alpha1-processor,mutating=true,failurePolicy=fail,groups=streaming.projectriff.io,resources=processors,verbs=create;update,versions=v1alpha1,name=processors.streaming.projectriff.io
 
@@ -43,5 +46,15 @@ func (s *ProcessorSpec) Default() {
 		if s.Outputs[i].Alias == "" {
 			s.Outputs[i].Alias = s.Outputs[i].Stream
 		}
+	}
+
+	if s.Template == nil {
+		s.Template = &corev1.PodSpec{}
+	}
+	if len(s.Template.Containers) == 0 {
+		s.Template.Containers = append(s.Template.Containers, corev1.Container{})
+	}
+	if s.Template.Containers[0].Name == "" {
+		s.Template.Containers[0].Name = "function"
 	}
 }

@@ -17,9 +17,14 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"fmt"
+
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+
+	"github.com/google/go-cmp/cmp"
 
 	"github.com/projectriff/system/pkg/validation"
 )
@@ -62,8 +67,23 @@ func (s *ProcessorSpec) Validate() validation.FieldErrors {
 
 	errs := validation.FieldErrors{}
 
-	if s.FunctionRef == "" {
-		errs = errs.Also(validation.ErrMissingField("functionRef"))
+	if diff := cmp.Diff(&corev1.PodSpec{
+		// add supported PodSpec fields here, otherwise their usage will be rejected
+		ServiceAccountName: s.Template.ServiceAccountName,
+		// the defaulter guarantees at least one container
+		Containers: filterInvalidContainers(s.Template.Containers[:1]),
+		Volumes:    filterInvalidVolumes(s.Template.Volumes),
+	}, s.Template); diff != "" {
+		errs = errs.Also(validation.ErrDisallowedFields("template", fmt.Sprintf("limited Template fields may be set (-want, +got) = %v", diff)))
+	}
+	if s.Template.Containers[0].Name != "function" {
+		errs = errs.Also(validation.ErrInvalidValue(s.Template.Containers[0].Name, "template.containers[0].name"))
+	}
+
+	if s.FunctionRef == "" && s.Template.Containers[0].Image == "" {
+		errs = errs.Also(validation.ErrMissingOneOf("functionRef", "template.containers[0].image"))
+	} else if s.FunctionRef != "" && s.Template.Containers[0].Image != "" {
+		errs = errs.Also(validation.ErrMultipleOneOf("functionRef", "template.containers[0].image"))
 	}
 
 	// at least one input is required
@@ -90,4 +110,14 @@ func (s *ProcessorSpec) Validate() validation.FieldErrors {
 	}
 
 	return errs
+}
+
+func filterInvalidContainers(containers []corev1.Container) []corev1.Container {
+	// TODO remove unsupported fields
+	return containers
+}
+
+func filterInvalidVolumes(volumes []corev1.Volume) []corev1.Volume {
+	// TODO remove unsupported fields
+	return volumes
 }
