@@ -18,7 +18,6 @@ package v1alpha1
 
 import (
 	corev1 "k8s.io/api/core/v1"
-	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -30,8 +29,6 @@ import (
 
 var (
 	DeployerLabelKey = GroupVersion.Group + "/deployer"
-	// DeployerIngressReady conditionType reflects the status of Ingress resource
-	DeployerIngressReady apis.ConditionType = "IngressReady"
 )
 
 var (
@@ -99,37 +96,6 @@ func (*Deployer) GetGroupVersionKind() schema.GroupVersionKind {
 
 func (d *Deployer) GetStatus() apis.ResourceStatus {
 	return &d.Status
-}
-
-// PropagateIngressStatus update DeployerConditionIngressReady condition
-// in DeployerStatus according to IngressStatus.
-func (d *DeployerStatus) PropagateIngressStatus(cs networkingv1beta1.IngressStatus) {
-	if len(cs.LoadBalancer.Ingress) == 0 {
-		d.MarkIngressNotConfigured()
-		return
-	}
-	d.MarkIngresConfigured()
-	return
-}
-
-// MarkIngressNotConfigured changes the IngressReady condition to be unknown to reflect
-// that the Ingress does not yet have any IPs assigned
-func (d *DeployerStatus) MarkIngressNotConfigured() {
-	d.Status.SetConditions([]apis.Condition{{
-		Type:    DeployerIngressReady,
-		Reason:  "IngressNotConfigured",
-		Status:  corev1.ConditionUnknown,
-		Message: "Ingress has not yet been reconciled.",
-	}})
-}
-
-// MarkIngresConfigured changes the IngressReady condition to be true to reflect
-// that the Ingress is ready
-func (d *DeployerStatus) MarkIngresConfigured() {
-	d.Status.SetConditions([]apis.Condition{{
-		Type:   DeployerIngressReady,
-		Status: corev1.ConditionTrue,
-	}})
 }
 
 // +kubebuilder:object:root=true

@@ -17,16 +17,17 @@ limitations under the License.
 package v1alpha1
 
 import (
+	apis "github.com/projectriff/system/pkg/apis"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-
-	apis "github.com/projectriff/system/pkg/apis"
+	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 )
 
 const (
 	DeployerConditionReady                              = apis.ConditionReady
 	DeployerConditionDeploymentReady apis.ConditionType = "DeploymentReady"
 	DeployerConditionServiceReady    apis.ConditionType = "ServiceReady"
+	DeployerConditionIngressReady    apis.ConditionType = "IngressReady"
 )
 
 var deployerCondSet = apis.NewLivingConditionSet(
@@ -85,4 +86,15 @@ func (ds *DeployerStatus) PropagateDeploymentStatus(cds *appsv1.DeploymentStatus
 func (ds *DeployerStatus) PropagateServiceStatus(ss *corev1.ServiceStatus) {
 	// services don't have meaningful status
 	deployerCondSet.Manage(ds).MarkTrue(DeployerConditionServiceReady)
+}
+
+// PropagateIngressStatus update DeployerConditionIngressReady condition
+// in DeployerStatus according to IngressStatus.
+func (ds *DeployerStatus) PropagateIngressStatus(cs networkingv1beta1.IngressStatus) {
+	if len(cs.LoadBalancer.Ingress) == 0 {
+		deployerCondSet.Manage(ds).MarkUnknown(DeployerConditionIngressReady, "IngressNotConfigured", "Ingress has not yet been reconciled.")
+		return
+	}
+	deployerCondSet.Manage(ds).MarkTrue(DeployerConditionIngressReady)
+	return
 }

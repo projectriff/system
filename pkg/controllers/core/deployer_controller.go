@@ -65,6 +65,7 @@ type DeployerReconciler struct {
 // +kubebuilder:rbac:groups=build.projectriff.io,resources=applications;containers;functions,verbs=get;list;watch
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=services,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses,verbs=get;list;watch;create;update;patch;delete
 
 func (r *DeployerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
@@ -142,10 +143,12 @@ func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, dep
 		log.Error(err, "unable to reconcile Ingress", "deployer", deployer)
 		return ctrl.Result{}, err
 	}
-	deployer.Status.PropagateIngressStatus(childIngress.Status)
+	if childIngress != nil {
+		deployer.Status.PropagateIngressStatus(childIngress.Status)
+		deployer.Status.IngressName = childIngress.GetName()
+	}
 
 	deployer.Status.ObservedGeneration = deployer.Generation
-
 	return ctrl.Result{}, nil
 }
 
@@ -362,7 +365,7 @@ func (r *DeployerReconciler) reconcileIngress(ctx context.Context, log logr.Logg
 			}
 		}
 	}
-	// construct ingress is service is already present
+	// construct ingress if service is present
 	if deployer.Status.ServiceName == "" {
 		return nil, nil
 	}
@@ -588,6 +591,7 @@ func (r *DeployerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&corev1alpha1.Deployer{}).
 		Owns(&appsv1.Deployment{}).
 		Owns(&corev1.Service{}).
+		Owns(&networkingv1beta1.Ingress{}).
 		// watch for build mutations to update dependent deployers
 		Watches(&source.Kind{Type: &buildv1alpha1.Application{}}, enqueueTrackedResources(&buildv1alpha1.Application{})).
 		Watches(&source.Kind{Type: &buildv1alpha1.Container{}}, enqueueTrackedResources(&buildv1alpha1.Container{})).
