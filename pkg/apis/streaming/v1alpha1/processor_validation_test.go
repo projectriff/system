@@ -38,7 +38,9 @@ func TestValidateProcessor(t *testing.T) {
 		name: "valid",
 		target: &Processor{
 			Spec: ProcessorSpec{
-				FunctionRef: "my-func",
+				Build: &Build{
+					FunctionRef: "my-func",
+				},
 				Inputs: []StreamBinding{
 					{Stream: "my-stream", Alias: "in"},
 				},
@@ -72,7 +74,9 @@ func TestValidateProcessorSpec(t *testing.T) {
 	}, {
 		name: "valid",
 		target: &ProcessorSpec{
-			FunctionRef: "my-func",
+			Build: &Build{
+				FunctionRef: "my-func",
+			},
 			Inputs: []StreamBinding{
 				{Stream: "my-stream", Alias: "in"},
 			},
@@ -86,7 +90,6 @@ func TestValidateProcessorSpec(t *testing.T) {
 	}, {
 		name: "requires function ref or container image",
 		target: &ProcessorSpec{
-			FunctionRef: "",
 			Inputs: []StreamBinding{
 				{Stream: "my-stream", Alias: "in"},
 			},
@@ -96,11 +99,13 @@ func TestValidateProcessorSpec(t *testing.T) {
 				},
 			},
 		},
-		expected: validation.ErrMissingOneOf("functionRef", "template.containers[0].image"),
+		expected: validation.ErrMissingOneOf("build", "template.containers[0].image"),
 	}, {
 		name: "forbids both function ref and container image",
 		target: &ProcessorSpec{
-			FunctionRef: "my-function",
+			Build: &Build{
+				FunctionRef: "my-func",
+			},
 			Inputs: []StreamBinding{
 				{Stream: "my-stream", Alias: "in"},
 			},
@@ -110,12 +115,14 @@ func TestValidateProcessorSpec(t *testing.T) {
 				},
 			},
 		},
-		expected: validation.ErrMultipleOneOf("functionRef", "template.containers[0].image"),
+		expected: validation.ErrMultipleOneOf("build", "template.containers[0].image"),
 	}, {
 		name: "requires inputs",
 		target: &ProcessorSpec{
-			FunctionRef: "my-func",
-			Inputs:      nil,
+			Build: &Build{
+				FunctionRef: "my-func",
+			},
+			Inputs: nil,
 			Template: &corev1.PodSpec{
 				Containers: []corev1.Container{
 					{Name: "function"},
@@ -126,7 +133,9 @@ func TestValidateProcessorSpec(t *testing.T) {
 	}, {
 		name: "empty input",
 		target: &ProcessorSpec{
-			FunctionRef: "my-func",
+			Build: &Build{
+				FunctionRef: "my-func",
+			},
 			Inputs: []StreamBinding{
 				{},
 			},
@@ -143,7 +152,9 @@ func TestValidateProcessorSpec(t *testing.T) {
 	}, {
 		name: "valid input",
 		target: &ProcessorSpec{
-			FunctionRef: "my-func",
+			Build: &Build{
+				FunctionRef: "my-func",
+			},
 			Inputs: []StreamBinding{
 				{Stream: "my-stream", Alias: "in"},
 			},
@@ -157,7 +168,9 @@ func TestValidateProcessorSpec(t *testing.T) {
 	}, {
 		name: "empty output",
 		target: &ProcessorSpec{
-			FunctionRef: "my-func",
+			Build: &Build{
+				FunctionRef: "my-func",
+			},
 			Inputs: []StreamBinding{
 				{Stream: "my-stream", Alias: "in"},
 			},
@@ -177,7 +190,9 @@ func TestValidateProcessorSpec(t *testing.T) {
 	}, {
 		name: "valid output",
 		target: &ProcessorSpec{
-			FunctionRef: "my-func",
+			Build: &Build{
+				FunctionRef: "my-func",
+			},
 			Inputs: []StreamBinding{
 				{Stream: "my-stream", Alias: "my-alias"},
 			},
@@ -194,7 +209,9 @@ func TestValidateProcessorSpec(t *testing.T) {
 	}, {
 		name: "invalid container name",
 		target: &ProcessorSpec{
-			FunctionRef: "my-func",
+			Build: &Build{
+				FunctionRef: "my-func",
+			},
 			Inputs: []StreamBinding{
 				{Stream: "my-stream", Alias: "my-alias"},
 			},
@@ -213,6 +230,44 @@ func TestValidateProcessorSpec(t *testing.T) {
 			actual := c.target.Validate()
 			if diff := cmp.Diff(c.expected, actual); diff != "" {
 				t.Errorf("validateProcessorSpec(%s) (-expected, +actual) = %v", c.name, diff)
+			}
+		})
+	}
+}
+
+func TestValidateBuild(t *testing.T) {
+	for _, c := range []struct {
+		name     string
+		target   *Build
+		expected validation.FieldErrors
+	}{{
+		name:     "empty",
+		target:   &Build{},
+		expected: validation.ErrMissingField(validation.CurrentField),
+	}, {
+		name: "valid function",
+		target: &Build{
+			FunctionRef: "my-func",
+		},
+		expected: validation.FieldErrors{},
+	}, {
+		name: "valid container",
+		target: &Build{
+			ContainerRef: "my-container",
+		},
+		expected: validation.FieldErrors{},
+	}, {
+		name: "too many options",
+		target: &Build{
+			FunctionRef:  "my-func",
+			ContainerRef: "my-container",
+		},
+		expected: validation.ErrMultipleOneOf("containerRef", "functionRef"),
+	}} {
+		t.Run(c.name, func(t *testing.T) {
+			actual := c.target.Validate()
+			if diff := cmp.Diff(c.expected, actual); diff != "" {
+				t.Errorf("validateProcessor(%s) (-expected, +actual) = %v", c.name, diff)
 			}
 		})
 	}
