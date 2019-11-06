@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	corev1 "k8s.io/api/core/v1"
 )
 
 func TestProcessorDefault(t *testing.T) {
@@ -34,6 +35,11 @@ func TestProcessorDefault(t *testing.T) {
 			Spec: ProcessorSpec{
 				Inputs:  []StreamBinding{},
 				Outputs: []StreamBinding{},
+				Template: &corev1.PodSpec{
+					Containers: []corev1.Container{
+						{Name: "function"},
+					},
+				},
 			},
 		},
 	}}
@@ -60,6 +66,11 @@ func TestProcessorSpecDefault(t *testing.T) {
 		want: &ProcessorSpec{
 			Inputs:  []StreamBinding{},
 			Outputs: []StreamBinding{},
+			Template: &corev1.PodSpec{
+				Containers: []corev1.Container{
+					{Name: "function"},
+				},
+			},
 		},
 	}, {
 		name: "add alias",
@@ -77,6 +88,11 @@ func TestProcessorSpecDefault(t *testing.T) {
 			Outputs: []StreamBinding{
 				{Stream: "my-output", Alias: "my-output"},
 			},
+			Template: &corev1.PodSpec{
+				Containers: []corev1.Container{
+					{Name: "function"},
+				},
+			},
 		},
 	}, {
 		name: "preserves alias",
@@ -93,6 +109,57 @@ func TestProcessorSpecDefault(t *testing.T) {
 			},
 			Outputs: []StreamBinding{
 				{Stream: "my-output", Alias: "out"},
+			},
+			Template: &corev1.PodSpec{
+				Containers: []corev1.Container{
+					{Name: "function"},
+				},
+			},
+		},
+	}, {
+		name: "add container name",
+		in: &ProcessorSpec{
+			Template: &corev1.PodSpec{
+				Containers: []corev1.Container{
+					{},
+				},
+			},
+		},
+		want: &ProcessorSpec{
+			Inputs:  []StreamBinding{},
+			Outputs: []StreamBinding{},
+			Template: &corev1.PodSpec{
+				Containers: []corev1.Container{
+					{Name: "function"},
+				},
+			},
+		},
+	}, {
+		name: "preserves container",
+		in: &ProcessorSpec{
+			Template: &corev1.PodSpec{
+				Containers: []corev1.Container{
+					{
+						Name: "function",
+						Env: []corev1.EnvVar{
+							{Name: "MY_VAR", Value: "my-value"},
+						},
+					},
+				},
+			},
+		},
+		want: &ProcessorSpec{
+			Inputs:  []StreamBinding{},
+			Outputs: []StreamBinding{},
+			Template: &corev1.PodSpec{
+				Containers: []corev1.Container{
+					{
+						Name: "function",
+						Env: []corev1.EnvVar{
+							{Name: "MY_VAR", Value: "my-value"},
+						},
+					},
+				},
 			},
 		},
 	}}

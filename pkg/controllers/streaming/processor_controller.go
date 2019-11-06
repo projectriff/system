@@ -128,25 +128,30 @@ func (r *ProcessorReconciler) reconcile(ctx context.Context, logger logr.Logger,
 		return ctrl.Result{}, err
 	}
 
-	// resolve function
-	functionNSName := types.NamespacedName{Namespace: processor.Namespace, Name: processor.Spec.FunctionRef}
-	var function v1alpha1.Function
-	r.Tracker.Track(
-		tracker.NewKey(function.GetGroupVersionKind(), functionNSName),
-		processorNSName,
-	)
-	if err := r.Client.Get(ctx, functionNSName, &function); err != nil {
-		if errors.IsNotFound(err) {
-			processor.Status.MarkFunctionNotFound(processor.Spec.FunctionRef)
-			// we'll ignore not-found errors, since the reference build resource may not exist yet.
-			return ctrl.Result{}, nil
+	// resolve image
+	if processor.Spec.FunctionRef != "" {
+		functionNSName := types.NamespacedName{Namespace: processor.Namespace, Name: processor.Spec.FunctionRef}
+		var function v1alpha1.Function
+		r.Tracker.Track(
+			tracker.NewKey(function.GetGroupVersionKind(), functionNSName),
+			processorNSName,
+		)
+		if err := r.Client.Get(ctx, functionNSName, &function); err != nil {
+			if errors.IsNotFound(err) {
+				// we'll ignore not-found errors, since the reference build resource may not exist yet.
+				return ctrl.Result{}, nil
+			}
+			return ctrl.Result{Requeue: true}, err
 		}
-		return ctrl.Result{Requeue: true}, err
+
+		processor.Status.LatestImage = function.Status.LatestImage
+	} else {
+		// defaulter guarantees a container
+		processor.Status.LatestImage = processor.Spec.Template.Containers[0].Image
 	}
 
-	processor.Status.PropagateFunctionStatus(&function.Status)
-	if processor.Status.FunctionImage == "" {
-		return ctrl.Result{}, fmt.Errorf("function %q does not have a latestImage", function.Name)
+	if processor.Status.LatestImage == "" {
+		return ctrl.Result{}, fmt.Errorf("could not resolve an image")
 	}
 
 	// Resolve input addresses
@@ -380,6 +385,21 @@ func (r *ProcessorReconciler) constructDeploymentForProcessor(processor *streami
 		return nil, err
 	}
 
+	// merge provided template with controlled values
+	podSpec := processor.Spec.Template.DeepCopy()
+	podSpec.Containers[0].Image = processor.Status.LatestImage
+	podSpec.Containers[0].Ports = []v1.ContainerPort{
+		{
+			ContainerPort: 8081,
+		},
+	}
+	podSpec.Containers = append(podSpec.Containers, v1.Container{
+		Name:            "processor",
+		Image:           processorImg,
+		ImagePullPolicy: v1.PullAlways,
+		Env:             environmentVariables,
+	})
+
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: fmt.Sprintf("%s-processor-", processor.Name),
@@ -399,25 +419,7 @@ func (r *ProcessorReconciler) constructDeploymentForProcessor(processor *streami
 						streamingv1alpha1.ProcessorLabelKey: processor.Name,
 					},
 				},
-				Spec: v1.PodSpec{
-					Containers: []v1.Container{
-						{
-							Name:            "processor",
-							Image:           processorImg,
-							ImagePullPolicy: v1.PullAlways,
-							Env:             environmentVariables,
-						},
-						{
-							Name:  "function",
-							Image: processor.Status.FunctionImage,
-							Ports: []v1.ContainerPort{
-								{
-									ContainerPort: 8081,
-								},
-							},
-						},
-					},
-				},
+				Spec: *podSpec,
 			},
 		},
 	}
