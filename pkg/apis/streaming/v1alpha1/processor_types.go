@@ -40,9 +40,11 @@ type ProcessorSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// FunctionRef references a function in this namespace.
+	// Build resolves the image from a build resource. As the target build
+	// produces new images, they will be automatically rolled out to the
+	// processor.
 	// +optional
-	FunctionRef string `json:"functionRef"`
+	Build *Build `json:"build"`
 
 	// Inputs references an ordered list of streams to bind as inputs
 	Inputs []StreamBinding `json:"inputs"`
@@ -53,6 +55,14 @@ type ProcessorSpec struct {
 	// Template pod
 	// +optional
 	Template *corev1.PodSpec `json:"template,omitempty"`
+}
+
+type Build struct {
+	// ContainerRef references a container in this namespace.
+	ContainerRef string `json:"containerRef,omitempty"`
+
+	// FunctionRef references an application in this namespace.
+	FunctionRef string `json:"functionRef,omitempty"`
 }
 
 type StreamBinding struct {

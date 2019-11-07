@@ -178,9 +178,18 @@ spec:
         spec:
           description: ProcessorSpec defines the desired state of Processor
           properties:
-            functionRef:
-              description: FunctionRef references a function in this namespace.
-              type: string
+            build:
+              description: Build resolves the image from a build resource. As the
+                target build produces new images, they will be automatically rolled
+                out to the processor.
+              properties:
+                containerRef:
+                  description: ContainerRef references a container in this namespace.
+                  type: string
+                functionRef:
+                  description: FunctionRef references an application in this namespace.
+                  type: string
+              type: object
             inputs:
               description: Inputs references an ordered list of streams to bind as
                 inputs
@@ -4563,6 +4572,7 @@ rules:
 - apiGroups:
   - build.projectriff.io
   resources:
+  - containers
   - functions
   verbs:
   - get

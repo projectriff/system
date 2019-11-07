@@ -72,7 +72,7 @@ type ProcessorReconciler struct {
 // +kubebuilder:rbac:groups=keda.k8s.io,resources=scaledobjects,verbs=get;list;watch;create;update;patch;delete
 // Watches
 // +kubebuilder:rbac:groups=streaming.projectriff.io,resources=streams,verbs=get;watch
-// +kubebuilder:rbac:groups=build.projectriff.io,resources=functions,verbs=get;watch
+// +kubebuilder:rbac:groups=build.projectriff.io,resources=containers;functions,verbs=get;watch
 
 func (r *ProcessorReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
@@ -129,22 +129,41 @@ func (r *ProcessorReconciler) reconcile(ctx context.Context, logger logr.Logger,
 	}
 
 	// resolve image
-	if processor.Spec.FunctionRef != "" {
-		functionNSName := types.NamespacedName{Namespace: processor.Namespace, Name: processor.Spec.FunctionRef}
-		var function v1alpha1.Function
-		r.Tracker.Track(
-			tracker.NewKey(function.GetGroupVersionKind(), functionNSName),
-			processorNSName,
-		)
-		if err := r.Client.Get(ctx, functionNSName, &function); err != nil {
-			if errors.IsNotFound(err) {
-				// we'll ignore not-found errors, since the reference build resource may not exist yet.
-				return ctrl.Result{}, nil
+	if processor.Spec.Build != nil {
+		if processor.Spec.Build.FunctionRef != "" {
+			functionNSName := types.NamespacedName{Namespace: processor.Namespace, Name: processor.Spec.Build.FunctionRef}
+			var function v1alpha1.Function
+			r.Tracker.Track(
+				tracker.NewKey(function.GetGroupVersionKind(), functionNSName),
+				processorNSName,
+			)
+			if err := r.Client.Get(ctx, functionNSName, &function); err != nil {
+				if errors.IsNotFound(err) {
+					// we'll ignore not-found errors, since the reference build resource may not exist yet.
+					return ctrl.Result{}, nil
+				}
+				return ctrl.Result{Requeue: true}, err
 			}
-			return ctrl.Result{Requeue: true}, err
-		}
 
-		processor.Status.LatestImage = function.Status.LatestImage
+			processor.Status.LatestImage = function.Status.LatestImage
+
+		} else if processor.Spec.Build.ContainerRef != "" {
+			containerNSName := types.NamespacedName{Namespace: processor.Namespace, Name: processor.Spec.Build.ContainerRef}
+			var container v1alpha1.Container
+			r.Tracker.Track(
+				tracker.NewKey(container.GetGroupVersionKind(), containerNSName),
+				processorNSName,
+			)
+			if err := r.Client.Get(ctx, containerNSName, &container); err != nil {
+				if errors.IsNotFound(err) {
+					// we'll ignore not-found errors, since the reference build resource may not exist yet.
+					return ctrl.Result{}, nil
+				}
+				return ctrl.Result{Requeue: true}, err
+			}
+
+			processor.Status.LatestImage = container.Status.LatestImage
+		}
 	} else {
 		// defaulter guarantees a container
 		processor.Status.LatestImage = processor.Spec.Template.Containers[0].Image
@@ -544,6 +563,7 @@ func (r *ProcessorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&streamingv1alpha1.Processor{}).
 		Owns(&appsv1.Deployment{}).
 		Owns(&kedav1alpha1.ScaledObject{}).
+		Watches(&source.Kind{Type: &buildv1alpha1.Container{}}, enqueueTrackedResources(&buildv1alpha1.Container{})).
 		Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, enqueueTrackedResources(&buildv1alpha1.Function{})).
 		Watches(&source.Kind{Type: &streamingv1alpha1.Stream{}}, enqueueTrackedResources(&streamingv1alpha1.Stream{})).
 		Complete(r)

@@ -21,6 +21,7 @@ rules:
 - apiGroups:
   - build.projectriff.io
   resources:
+  - containers
   - functions
   verbs:
   - get

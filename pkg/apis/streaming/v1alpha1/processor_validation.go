@@ -80,10 +80,12 @@ func (s *ProcessorSpec) Validate() validation.FieldErrors {
 		errs = errs.Also(validation.ErrInvalidValue(s.Template.Containers[0].Name, "template.containers[0].name"))
 	}
 
-	if s.FunctionRef == "" && s.Template.Containers[0].Image == "" {
-		errs = errs.Also(validation.ErrMissingOneOf("functionRef", "template.containers[0].image"))
-	} else if s.FunctionRef != "" && s.Template.Containers[0].Image != "" {
-		errs = errs.Also(validation.ErrMultipleOneOf("functionRef", "template.containers[0].image"))
+	if s.Build == nil && s.Template.Containers[0].Image == "" {
+		errs = errs.Also(validation.ErrMissingOneOf("build", "template.containers[0].image"))
+	} else if s.Build != nil && s.Template.Containers[0].Image != "" {
+		errs = errs.Also(validation.ErrMultipleOneOf("build", "template.containers[0].image"))
+	} else if s.Build != nil {
+		errs = errs.Also(s.Build.Validate().ViaField("build"))
 	}
 
 	// at least one input is required
@@ -107,6 +109,36 @@ func (s *ProcessorSpec) Validate() validation.FieldErrors {
 		if output.Alias == "" {
 			errs = errs.Also(validation.ErrMissingField("alias").ViaFieldIndex("outputs", i))
 		}
+	}
+
+	return errs
+}
+
+func (b *Build) Validate() validation.FieldErrors {
+	if equality.Semantic.DeepEqual(b, &Build{}) {
+		return validation.ErrMissingField(validation.CurrentField)
+	}
+
+	errs := validation.FieldErrors{}
+	used := []string{}
+	unused := []string{}
+
+	if b.ContainerRef != "" {
+		used = append(used, "containerRef")
+	} else {
+		unused = append(unused, "containerRef")
+	}
+
+	if b.FunctionRef != "" {
+		used = append(used, "functionRef")
+	} else {
+		unused = append(unused, "functionRef")
+	}
+
+	if len(used) == 0 {
+		errs = errs.Also(validation.ErrMissingOneOf(unused...))
+	} else if len(used) > 1 {
+		errs = errs.Also(validation.ErrMultipleOneOf(used...))
 	}
 
 	return errs
