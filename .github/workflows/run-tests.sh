@@ -14,18 +14,30 @@ fats_create_push_credentials ${NAMESPACE}
 
 for location in cluster local; do
   for test in function application; do
-    path="${test}s/uppercase/node"
     name=system-${RUNTIME}-${location}-uppercase-node-${test}
     image=$(fats_image_repo ${name})
-    if [ $location = 'cluster' ] ; then
-      create_args="--git-repo https://github.com/${FATS_REPO}.git --git-revision ${FATS_REFSPEC} --sub-path ${path}"
-    else
-      create_args="--local-path ."
-    fi
-    input_data=system
-    expected_data=SYSTEM
-    runtime=$RUNTIME
 
-    run_${test} ${FATS_DIR}/$path $name $image "$create_args" $input_data $expected_data $runtime
+    echo "##[group]Run function $name"
+
+    if [ $location = 'cluster' ] ; then
+      riff $test create $name --image $image --namespace $NAMESPACE --tail \
+        --git-repo https://github.com/${FATS_REPO}.git --git-revision ${FATS_REFSPEC} --sub-path ${test}s/uppercase/node &
+    else
+      riff $test create $name --image $image --namespace $NAMESPACE --tail \
+        --local-path $fats_dir/functions/uppercase/node
+    fi
+
+    riff $RUNTIME deployer create $name --function-ref $name --namespace $NAMESPACE --tail
+    if [ $test = 'function' ] ; then
+      source $fats_dir/macros/invoke_$RUNTIME_deployer.sh $name "-H Content-Type:text/plain -H Accept:text/plain -d system" SYSTEM
+    else
+      source $fats_dir/macros/invoke_$RUNTIME_deployer.sh $name "--get --data-urlencode input=system" SYSTEM
+    fi
+    riff $RUNTIME deployer delete $name --namespace $NAMESPACE
+
+    riff $test delete $name --namespace $NAMESPACE
+    fats_delete_image $image
+
+    echo "##[endgroup]"
   done
 done
