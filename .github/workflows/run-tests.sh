@@ -22,7 +22,7 @@ for location in cluster local; do
         --git-repo https://github.com/${FATS_REPO}.git --git-revision ${FATS_REFSPEC} --sub-path ${test}s/uppercase/node &
     else
       riff $test create $name --image $image --namespace $NAMESPACE --tail \
-        --local-path ${FATS_DIR}/functions/uppercase/node
+        --local-path ${FATS_DIR}/${test}s/uppercase/node
     fi
 
     riff $RUNTIME deployer create $name --${test}-ref $name --namespace $NAMESPACE --tail
