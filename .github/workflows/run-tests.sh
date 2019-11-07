@@ -25,7 +25,7 @@ for location in cluster local; do
         --local-path ${FATS_DIR}/functions/uppercase/node
     fi
 
-    riff $RUNTIME deployer create $name --function-ref $name --namespace $NAMESPACE --tail
+    riff $RUNTIME deployer create $name --${test}-ref $name --namespace $NAMESPACE --tail
     if [ $test = 'function' ] ; then
       source ${FATS_DIR}/macros/invoke_${RUNTIME}_deployer.sh $name "-H Content-Type:text/plain -H Accept:text/plain -d system" SYSTEM
     else
