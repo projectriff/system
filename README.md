@@ -69,15 +69,26 @@ or install a single component:
 ko apply -f config/riff-${component}.yaml
 ```
 
-Additional dependencies must be installed independently into the cluster including:
-
-- [Istio](https://istio.io) (knative runtime)
-- [keda](https://github.com/kedacore/keda) (streaming runtime)
-- [kpack](https://github.com/pivotal/kpack) (build)
-- [Knative Serving](https://github.com/knative/serving) (knative runtime)
-- [riff builders](https://github.com/projectriff/builder) (build)
+### Dependencies
 
 A common practice is to start with a [standard riff install](https://github.com/projectriff/charts) and then incrementally update riff System from source.
+
+Build:
+
+- [kpack](https://github.com/pivotal/kpack)
+- [riff builders](https://github.com/projectriff/builder)
+
+Core Runtime:
+
+*none*
+
+Knative Runtime:
+
+- [Istio](https://istio.io)
+- [Knative Serving](https://github.com/knative/serving)
+
+Streaming Runtime:
+- [keda](https://github.com/kedacore/keda)
 
 ### Releases
 
