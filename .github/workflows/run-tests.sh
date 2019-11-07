@@ -24,14 +24,14 @@ for location in cluster local; do
         --git-repo https://github.com/${FATS_REPO}.git --git-revision ${FATS_REFSPEC} --sub-path ${test}s/uppercase/node &
     else
       riff $test create $name --image $image --namespace $NAMESPACE --tail \
-        --local-path $fats_dir/functions/uppercase/node
+        --local-path $FATS_DIR/functions/uppercase/node
     fi
 
     riff $RUNTIME deployer create $name --function-ref $name --namespace $NAMESPACE --tail
     if [ $test = 'function' ] ; then
-      source $fats_dir/macros/invoke_$RUNTIME_deployer.sh $name "-H Content-Type:text/plain -H Accept:text/plain -d system" SYSTEM
+      source $FATS_DIR/macros/invoke_$RUNTIME_deployer.sh $name "-H Content-Type:text/plain -H Accept:text/plain -d system" SYSTEM
     else
-      source $fats_dir/macros/invoke_$RUNTIME_deployer.sh $name "--get --data-urlencode input=system" SYSTEM
+      source $FATS_DIR/macros/invoke_$RUNTIME_deployer.sh $name "--get --data-urlencode input=system" SYSTEM
     fi
     riff $RUNTIME deployer delete $name --namespace $NAMESPACE
 
