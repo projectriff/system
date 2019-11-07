@@ -28,7 +28,7 @@ import (
 
 var (
 	KafkaProviderLabelKey            = GroupVersion.Group + "/kafka-provider"             // Identifies all resources originating from a provider
-	KafkaProviderLiiklusLabelKey     = GroupVersion.Group + "/kafka-provider-liiklus"     // Used as a selector
+	KafkaProviderGatewayLabelKey     = GroupVersion.Group + "/kafka-provider-gateway"     // Used as a selector
 	KafkaProviderProvisionerLabelKey = GroupVersion.Group + "/kafka-provider-provisioner" // Used as a selector
 	KafkaProvisioner                 = "kafka-provisioner"
 )
@@ -56,10 +56,10 @@ type KafkaProviderStatus struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	apis.Status               `json:",inline"`
-	LiiklusDeploymentName     string `json:"liiklusDeploymentName"`
-	LiiklusServiceName        string `json:"liiklusServiceName"`
-	ProvisionerDeploymentName string `json:"provisionerDeploymentName"`
-	ProvisionerServiceName    string `json:"provisionerServiceName"`
+	GatewayDeploymentName     string `json:"gatewayDeploymentName,omitempty"`
+	GatewayServiceName        string `json:"gatewayServiceName,omitempty"`
+	ProvisionerDeploymentName string `json:"provisionerDeploymentName,omitempty"`
+	ProvisionerServiceName    string `json:"provisionerServiceName,omitempty"`
 }
 
 // +kubebuilder:object:root=true

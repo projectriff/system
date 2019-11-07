@@ -99,9 +99,9 @@ spec:
                 - type
                 type: object
               type: array
-            liiklusDeploymentName:
+            gatewayDeploymentName:
               type: string
-            liiklusServiceName:
+            gatewayServiceName:
               type: string
             observedGeneration:
               description: ObservedGeneration is the 'Generation' of the Service that
@@ -112,11 +112,6 @@ spec:
               type: string
             provisionerServiceName:
               type: string
-          required:
-          - liiklusDeploymentName
-          - liiklusServiceName
-          - provisionerDeploymentName
-          - provisionerServiceName
           type: object
       type: object
   version: v1alpha1
@@ -4777,7 +4772,7 @@ subjects:
 ---
 apiVersion: v1
 data:
-  liiklusImage: bsideup/liiklus:0.9.0
+  gatewayImage: bsideup/liiklus:0.9.0
   provisionerImage: gcr.io/projectriff/kafka-provisioner/provisioner-97dd22e72aed3201586a126a023b55db@sha256:5c21bf354fe3804b4acbc8326f7a7820e4a0cbd427af9832fd87d264a611a8de
 kind: ConfigMap
 metadata:

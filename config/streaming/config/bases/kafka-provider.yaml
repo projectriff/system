@@ -3,6 +3,6 @@ kind: ConfigMap
 metadata:
   name: kafka-provider
 data:
-  liiklusImage: bsideup/liiklus:0.9.0
+  gatewayImage: bsideup/liiklus:0.9.0
   provisionerImage: gcr.io/projectriff/kafka-provisioner/provisioner-97dd22e72aed3201586a126a023b55db@sha256:5c21bf354fe3804b4acbc8326f7a7820e4a0cbd427af9832fd87d264a611a8de
 

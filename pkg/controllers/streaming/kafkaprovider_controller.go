@@ -109,23 +109,23 @@ func (r *KafkaProviderReconciler) reconcile(ctx context.Context, log logr.Logger
 		return ctrl.Result{}, err
 	}
 
-	// Reconcile deployment for liiklus
-	liiklusDeployment, err := r.reconcileLiiklusDeployment(ctx, log, kafkaProvider, &cm)
+	// Reconcile deployment for gateway
+	gatewayDeployment, err := r.reconcileGatewayDeployment(ctx, log, kafkaProvider, &cm)
 	if err != nil {
-		log.Error(err, "unable to reconcile liiklus Deployment", "kafkaprovider", kafkaProvider)
+		log.Error(err, "unable to reconcile gateway Deployment", "kafkaprovider", kafkaProvider)
 		return ctrl.Result{}, err
 	}
-	kafkaProvider.Status.LiiklusDeploymentName = liiklusDeployment.Name
-	kafkaProvider.Status.PropagateLiiklusDeploymentStatus(&liiklusDeployment.Status)
+	kafkaProvider.Status.GatewayDeploymentName = gatewayDeployment.Name
+	kafkaProvider.Status.PropagateGatewayDeploymentStatus(&gatewayDeployment.Status)
 
-	// Reconcile service for liiklus
-	liiklusService, err := r.reconcileLiiklusService(ctx, log, kafkaProvider)
+	// Reconcile service for gateway
+	gatewayService, err := r.reconcileGatewayService(ctx, log, kafkaProvider)
 	if err != nil {
-		log.Error(err, "unable to reconcile liiklus Service", "kafkaprovider", kafkaProvider)
+		log.Error(err, "unable to reconcile gateway Service", "kafkaprovider", kafkaProvider)
 		return ctrl.Result{}, err
 	}
-	kafkaProvider.Status.LiiklusServiceName = liiklusService.Name
-	kafkaProvider.Status.PropagateLiiklusServiceStatus(&liiklusService.Status)
+	kafkaProvider.Status.GatewayServiceName = gatewayService.Name
+	kafkaProvider.Status.PropagateGatewayServiceStatus(&gatewayService.Status)
 
 	// Reconcile deployment for provisioner
 	provisionerDeployment, err := r.reconcileProvisionerDeployment(ctx, log, kafkaProvider, &cm)
@@ -149,12 +149,12 @@ func (r *KafkaProviderReconciler) reconcile(ctx context.Context, log logr.Logger
 
 }
 
-func (r *KafkaProviderReconciler) reconcileLiiklusDeployment(ctx context.Context, log logr.Logger, kafkaProvider *streamingv1alpha1.KafkaProvider, cm *corev1.ConfigMap) (*appsv1.Deployment, error) {
+func (r *KafkaProviderReconciler) reconcileGatewayDeployment(ctx context.Context, log logr.Logger, kafkaProvider *streamingv1alpha1.KafkaProvider, cm *corev1.ConfigMap) (*appsv1.Deployment, error) {
 	var actualDeployment appsv1.Deployment
 	var childDeployments appsv1.DeploymentList
 	if err := r.List(ctx, &childDeployments,
 		client.InNamespace(kafkaProvider.Namespace),
-		client.MatchingLabels(map[string]string{streamingv1alpha1.KafkaProviderLiiklusLabelKey: kafkaProvider.Name}),
+		client.MatchingLabels(map[string]string{streamingv1alpha1.KafkaProviderGatewayLabelKey: kafkaProvider.Name}),
 		client.MatchingField(kafkaProviderDeploymentIndexField, kafkaProvider.Name)); err != nil {
 		return nil, err
 	}
@@ -164,19 +164,19 @@ func (r *KafkaProviderReconciler) reconcileLiiklusDeployment(ctx context.Context
 	} else if len(childDeployments.Items) > 1 {
 		// this shouldn't happen, delete everything to a clean slate
 		for _, extraDeployment := range childDeployments.Items {
-			log.Info("deleting extra liiklus deployment", "deployment", extraDeployment)
+			log.Info("deleting extra gateway deployment", "deployment", extraDeployment)
 			if err := r.Delete(ctx, &extraDeployment); err != nil {
 				return nil, err
 			}
 		}
 	}
 
-	liiklusImg := cm.Data[liiklusImageKey]
-	if liiklusImg == "" {
-		return nil, fmt.Errorf("missing liiklus image configuration")
+	gatewayImg := cm.Data[gatewayImageKey]
+	if gatewayImg == "" {
+		return nil, fmt.Errorf("missing gateway image configuration")
 	}
 
-	desiredDeployment, err := r.constructLiiklusDeploymentForKafkaProvider(kafkaProvider, liiklusImg)
+	desiredDeployment, err := r.constructGatewayDeploymentForKafkaProvider(kafkaProvider, gatewayImg)
 	if err != nil {
 		return nil, err
 	}
@@ -192,7 +192,7 @@ func (r *KafkaProviderReconciler) reconcileLiiklusDeployment(ctx context.Context
 
 	// create deployment if it doesn't exist
 	if actualDeployment.Name == "" {
-		log.Info("creating liiklus deployment", "spec", desiredDeployment.Spec)
+		log.Info("creating gateway deployment", "spec", desiredDeployment.Spec)
 		if err := r.Create(ctx, desiredDeployment); err != nil {
 			log.Error(err, "unable to create Deployment for KafkaProvider", "deployment", desiredDeployment)
 			return nil, err
@@ -213,7 +213,7 @@ func (r *KafkaProviderReconciler) reconcileLiiklusDeployment(ctx context.Context
 	deployment := actualDeployment.DeepCopy()
 	deployment.ObjectMeta.Labels = desiredDeployment.ObjectMeta.Labels
 	deployment.Spec = desiredDeployment.Spec
-	log.Info("reconciling liiklus deployment", "diff", cmp.Diff(actualDeployment.Spec, deployment.Spec))
+	log.Info("reconciling gateway deployment", "diff", cmp.Diff(actualDeployment.Spec, deployment.Spec))
 	if err := r.Update(ctx, deployment); err != nil {
 		log.Error(err, "unable to update Deployment for KafkaProvider", "deployment", deployment)
 		return nil, err
@@ -222,10 +222,10 @@ func (r *KafkaProviderReconciler) reconcileLiiklusDeployment(ctx context.Context
 	return deployment, nil
 }
 
-func (r *KafkaProviderReconciler) constructLiiklusDeploymentForKafkaProvider(kafkaProvider *streamingv1alpha1.KafkaProvider, liiklusImg string) (*appsv1.Deployment, error) {
-	labels := r.constructLiiklusLabelsForKafkaProvider(kafkaProvider)
+func (r *KafkaProviderReconciler) constructGatewayDeploymentForKafkaProvider(kafkaProvider *streamingv1alpha1.KafkaProvider, gatewayImg string) (*appsv1.Deployment, error) {
+	labels := r.constructGatewayLabelsForKafkaProvider(kafkaProvider)
 
-	env, err := r.liiklusEnvironmentForKafkaProvider(kafkaProvider)
+	env, err := r.gatewayEnvironmentForKafkaProvider(kafkaProvider)
 	if err != nil {
 		return nil, err
 	}
@@ -234,13 +234,13 @@ func (r *KafkaProviderReconciler) constructLiiklusDeploymentForKafkaProvider(kaf
 		ObjectMeta: metav1.ObjectMeta{
 			Labels:       labels,
 			Annotations:  make(map[string]string),
-			GenerateName: fmt.Sprintf("%s-kafka-liiklus-", kafkaProvider.Name),
+			GenerateName: fmt.Sprintf("%s-kafka-gateway-", kafkaProvider.Name),
 			Namespace:    kafkaProvider.Namespace,
 		},
 		Spec: appsv1.DeploymentSpec{
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					streamingv1alpha1.KafkaProviderLiiklusLabelKey: kafkaProvider.Name,
+					streamingv1alpha1.KafkaProviderGatewayLabelKey: kafkaProvider.Name,
 				},
 			},
 			Template: corev1.PodTemplateSpec{
@@ -250,8 +250,8 @@ func (r *KafkaProviderReconciler) constructLiiklusDeploymentForKafkaProvider(kaf
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
 						{
-							Name:            "liiklus",
-							Image:           liiklusImg,
+							Name:            "gateway",
+							Image:           gatewayImg,
 							ImagePullPolicy: corev1.PullAlways,
 							Env:             env,
 						},
@@ -267,7 +267,7 @@ func (r *KafkaProviderReconciler) constructLiiklusDeploymentForKafkaProvider(kaf
 	return deployment, nil
 }
 
-func (r *KafkaProviderReconciler) liiklusEnvironmentForKafkaProvider(kafkaProvider *streamingv1alpha1.KafkaProvider) ([]corev1.EnvVar, error) {
+func (r *KafkaProviderReconciler) gatewayEnvironmentForKafkaProvider(kafkaProvider *streamingv1alpha1.KafkaProvider) ([]corev1.EnvVar, error) {
 	return []corev1.EnvVar{
 		{Name: "kafka_bootstrapServers", Value: kafkaProvider.Spec.BootstrapServers},
 		{Name: "storage_positions_type", Value: "MEMORY"},
@@ -275,7 +275,7 @@ func (r *KafkaProviderReconciler) liiklusEnvironmentForKafkaProvider(kafkaProvid
 	}, nil
 }
 
-func (r *KafkaProviderReconciler) constructLiiklusLabelsForKafkaProvider(kafkaProvider *streamingv1alpha1.KafkaProvider) map[string]string {
+func (r *KafkaProviderReconciler) constructGatewayLabelsForKafkaProvider(kafkaProvider *streamingv1alpha1.KafkaProvider) map[string]string {
 	labels := make(map[string]string, len(kafkaProvider.ObjectMeta.Labels)+1)
 	// pass through existing labels
 	for k, v := range kafkaProvider.ObjectMeta.Labels {
@@ -283,7 +283,7 @@ func (r *KafkaProviderReconciler) constructLiiklusLabelsForKafkaProvider(kafkaPr
 	}
 
 	labels[streamingv1alpha1.KafkaProviderLabelKey] = kafkaProvider.Name
-	labels[streamingv1alpha1.KafkaProviderLiiklusLabelKey] = kafkaProvider.Name
+	labels[streamingv1alpha1.KafkaProviderGatewayLabelKey] = kafkaProvider.Name
 
 	return labels
 }
@@ -293,12 +293,12 @@ func (r *KafkaProviderReconciler) deploymentSemanticEquals(desiredDeployment, de
 		equality.Semantic.DeepEqual(desiredDeployment.ObjectMeta.Labels, deployment.ObjectMeta.Labels)
 }
 
-func (r *KafkaProviderReconciler) reconcileLiiklusService(ctx context.Context, log logr.Logger, kafkaProvider *streamingv1alpha1.KafkaProvider) (*corev1.Service, error) {
+func (r *KafkaProviderReconciler) reconcileGatewayService(ctx context.Context, log logr.Logger, kafkaProvider *streamingv1alpha1.KafkaProvider) (*corev1.Service, error) {
 	var actualService corev1.Service
 	var childServices corev1.ServiceList
 	if err := r.List(ctx, &childServices,
 		client.InNamespace(kafkaProvider.Namespace),
-		client.MatchingLabels(map[string]string{streamingv1alpha1.KafkaProviderLiiklusLabelKey: kafkaProvider.Name}),
+		client.MatchingLabels(map[string]string{streamingv1alpha1.KafkaProviderGatewayLabelKey: kafkaProvider.Name}),
 		client.MatchingField(kafkaProviderServiceIndexField, kafkaProvider.Name)); err != nil {
 		return nil, err
 	}
@@ -308,14 +308,14 @@ func (r *KafkaProviderReconciler) reconcileLiiklusService(ctx context.Context, l
 	} else if len(childServices.Items) > 1 {
 		// this shouldn't happen, delete everything to a clean slate
 		for _, extraService := range childServices.Items {
-			log.Info("deleting extra liiklus service", "service", extraService)
+			log.Info("deleting extra gateway service", "service", extraService)
 			if err := r.Delete(ctx, &extraService); err != nil {
 				return nil, err
 			}
 		}
 	}
 
-	desiredService, err := r.constructLiiklusServiceForKafkaProvider(kafkaProvider)
+	desiredService, err := r.constructGatewayServiceForKafkaProvider(kafkaProvider)
 	if err != nil {
 		return nil, err
 	}
@@ -323,7 +323,7 @@ func (r *KafkaProviderReconciler) reconcileLiiklusService(ctx context.Context, l
 	// delete service if no longer needed
 	if desiredService == nil {
 		if err := r.Delete(ctx, &actualService); err != nil {
-			log.Error(err, "unable to delete liiklus Service for KafkaProvider", "service", actualService)
+			log.Error(err, "unable to delete gateway Service for KafkaProvider", "service", actualService)
 			return nil, err
 		}
 		return nil, nil
@@ -331,9 +331,9 @@ func (r *KafkaProviderReconciler) reconcileLiiklusService(ctx context.Context, l
 
 	// create service if it doesn't exist
 	if actualService.Name == "" {
-		log.Info("creating liiklus service", "spec", desiredService.Spec)
+		log.Info("creating gateway service", "spec", desiredService.Spec)
 		if err := r.Create(ctx, desiredService); err != nil {
-			log.Error(err, "unable to create liiklus Service for KafkaProvider", "service", desiredService)
+			log.Error(err, "unable to create gateway Service for KafkaProvider", "service", desiredService)
 			return nil, err
 		}
 		return desiredService, nil
@@ -351,9 +351,9 @@ func (r *KafkaProviderReconciler) reconcileLiiklusService(ctx context.Context, l
 	service := actualService.DeepCopy()
 	service.ObjectMeta.Labels = desiredService.ObjectMeta.Labels
 	service.Spec = desiredService.Spec
-	log.Info("reconciling liiklus service", "diff", cmp.Diff(actualService.Spec, service.Spec))
+	log.Info("reconciling gateway service", "diff", cmp.Diff(actualService.Spec, service.Spec))
 	if err := r.Update(ctx, service); err != nil {
-		log.Error(err, "unable to update liiklus Service for KafkaProvider", "service", service)
+		log.Error(err, "unable to update gateway Service for KafkaProvider", "service", service)
 		return nil, err
 	}
 
@@ -365,22 +365,22 @@ func (r *KafkaProviderReconciler) serviceSemanticEquals(desiredService, service 
 		equality.Semantic.DeepEqual(desiredService.ObjectMeta.Labels, service.ObjectMeta.Labels)
 }
 
-func (r *KafkaProviderReconciler) constructLiiklusServiceForKafkaProvider(kafkaProvider *streamingv1alpha1.KafkaProvider) (*corev1.Service, error) {
-	labels := r.constructLiiklusLabelsForKafkaProvider(kafkaProvider)
+func (r *KafkaProviderReconciler) constructGatewayServiceForKafkaProvider(kafkaProvider *streamingv1alpha1.KafkaProvider) (*corev1.Service, error) {
+	labels := r.constructGatewayLabelsForKafkaProvider(kafkaProvider)
 
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels:       labels,
 			Annotations:  make(map[string]string),
-			GenerateName: fmt.Sprintf("%s-kafka-liiklus-", kafkaProvider.Name),
+			GenerateName: fmt.Sprintf("%s-kafka-gateway-", kafkaProvider.Name),
 			Namespace:    kafkaProvider.Namespace,
 		},
 		Spec: corev1.ServiceSpec{
 			Ports: []corev1.ServicePort{
-				{Name: "liiklus", Port: 6565},
+				{Name: "gateway", Port: 6565},
 			},
 			Selector: map[string]string{
-				streamingv1alpha1.KafkaProviderLiiklusLabelKey: kafkaProvider.Name,
+				streamingv1alpha1.KafkaProviderGatewayLabelKey: kafkaProvider.Name,
 			},
 		},
 	}
@@ -468,7 +468,7 @@ func (r *KafkaProviderReconciler) constructProvisionerDeploymentForKafkaProvider
 	labels := r.constructProvisionerLabelsForKafkaProvider(kafkaProvider)
 
 	env := []corev1.EnvVar{
-		{Name: "GATEWAY", Value: fmt.Sprintf("%s.%s:6565", kafkaProvider.Status.LiiklusServiceName, kafkaProvider.Namespace)}, // TODO get port number from svc lookup?
+		{Name: "GATEWAY", Value: fmt.Sprintf("%s.%s:6565", kafkaProvider.Status.GatewayServiceName, kafkaProvider.Namespace)}, // TODO get port number from svc lookup?
 		{Name: "BROKER", Value: kafkaProvider.Spec.BootstrapServers},
 	}
 	deployment := &appsv1.Deployment{
