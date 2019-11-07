@@ -5,8 +5,6 @@ set -o nounset
 set -o pipefail
 
 source ${FATS_DIR}/.configure.sh
-source ${FATS_DIR}/applications/helpers.sh
-source ${FATS_DIR}/functions/helpers.sh
 
 # setup namespace
 kubectl create namespace ${NAMESPACE}
