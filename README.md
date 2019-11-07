@@ -41,7 +41,7 @@ See the Kuberneties [Using RBAC Authorization](https://kubernetes.io/docs/refere
 
 ## Install
 
-riff System is typical not installed directly by end users. See the [Getting Started](https://projectriff.io/docs/getting-started/) docs to learn how to install riff.
+riff System is typically not installed directly by end users. See the [Getting Started](https://projectriff.io/docs/getting-started/) docs to learn how to install riff.
 
 ## Development
 
