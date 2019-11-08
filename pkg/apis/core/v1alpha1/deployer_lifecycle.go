@@ -91,11 +91,13 @@ func (ds *DeployerStatus) PropagateServiceStatus(ss *corev1.ServiceStatus) {
 
 // PropagateIngressStatus update DeployerConditionIngressReady condition
 // in DeployerStatus according to IngressStatus.
-func (ds *DeployerStatus) PropagateIngressStatus(cs networkingv1beta1.IngressStatus) {
-	if len(cs.LoadBalancer.Ingress) == 0 {
+func (ds *DeployerStatus) PropagateIngressStatus(cs *networkingv1beta1.Ingress) {
+	switch {
+	case cs == nil:
+		deployerCondSet.Manage(ds).MarkFalse(DeployerConditionIngressReady, "IngressNotRequired", "Ingress resource is not required.")
+	case cs != nil && len(cs.Status.LoadBalancer.Ingress) == 0:
 		deployerCondSet.Manage(ds).MarkUnknown(DeployerConditionIngressReady, "IngressNotConfigured", "Ingress has not yet been reconciled.")
-		return
+	default:
+		deployerCondSet.Manage(ds).MarkTrue(DeployerConditionIngressReady)
 	}
-	deployerCondSet.Manage(ds).MarkTrue(DeployerConditionIngressReady)
-	return
 }

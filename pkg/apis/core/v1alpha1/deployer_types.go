@@ -66,6 +66,7 @@ type DeployerStatus struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	apis.Status `json:",inline"`
+
 	// LatestImage is the most recent image resolved from the build
 	LatestImage string `json:"latestImage,omitempty"`
 

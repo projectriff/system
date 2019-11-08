@@ -144,9 +144,9 @@ func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, dep
 		return ctrl.Result{}, err
 	}
 	if childIngress != nil {
-		deployer.Status.PropagateIngressStatus(childIngress.Status)
-		deployer.Status.IngressName = childIngress.GetName()
+		deployer.Status.IngressName = childIngress.Name
 	}
+	deployer.Status.PropagateIngressStatus(childIngress)
 
 	deployer.Status.ObservedGeneration = deployer.Generation
 	return ctrl.Result{}, nil
@@ -365,10 +365,7 @@ func (r *DeployerReconciler) reconcileIngress(ctx context.Context, log logr.Logg
 			}
 		}
 	}
-	// construct ingress if service is present
-	if deployer.Status.ServiceName == "" {
-		return nil, nil
-	}
+
 	desiredIngress, err := r.constructIngressForDeployer(deployer)
 	if err != nil {
 		return nil, err
@@ -418,6 +415,10 @@ func (r *DeployerReconciler) ingressSemanticEquals(desiredIngress, ingress *netw
 }
 
 func (r *DeployerReconciler) constructIngressForDeployer(deployer *corev1alpha1.Deployer) (*networkingv1beta1.Ingress, error) {
+	// construct ingress if service is present
+	if deployer.Status.ServiceName == "" {
+		return nil, nil
+	}
 	labels := r.constructLabelsForDeployer(deployer)
 
 	ingress := &networkingv1beta1.Ingress{
