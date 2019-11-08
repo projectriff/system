@@ -17,10 +17,11 @@ limitations under the License.
 package v1alpha1
 
 import (
-	apis "github.com/projectriff/system/pkg/apis"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
+
+	apis "github.com/projectriff/system/pkg/apis"
 )
 
 const (
