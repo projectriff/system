@@ -24,6 +24,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -46,6 +47,9 @@ import (
 const (
 	deploymentIndexField = ".metadata.deploymentController"
 	serviceIndexField    = ".metadata.serviceController"
+	ingressIndexField    = ".metadata.ingressController"
+
+	domain = "example.com"
 )
 
 // DeployerReconciler reconciles a Deployer object
@@ -61,6 +65,7 @@ type DeployerReconciler struct {
 // +kubebuilder:rbac:groups=build.projectriff.io,resources=applications;containers;functions,verbs=get;list;watch
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=services,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses,verbs=get;list;watch;create;update;patch;delete
 
 func (r *DeployerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
@@ -132,8 +137,16 @@ func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, dep
 	deployer.Status.ServiceName = childService.Name
 	deployer.Status.PropagateServiceStatus(&childService.Status)
 
-	deployer.Status.ObservedGeneration = deployer.Generation
+	// reconcile ingress
+	childIngress, err := r.reconcileIngress(ctx, log, deployer, childService.Name)
+	if err != nil {
+		log.Error(err, "unable to reconcile Ingress", "deployer", deployer)
+		return ctrl.Result{}, err
+	}
 
+	deployer.Status.PropagateIngressStatus(childIngress)
+
+	deployer.Status.ObservedGeneration = deployer.Generation
 	return ctrl.Result{}, nil
 }
 
@@ -331,6 +344,113 @@ func (r *DeployerReconciler) constructPodSpecForDeployer(deployer *corev1alpha1.
 	return podSpec
 }
 
+func (r *DeployerReconciler) reconcileIngress(ctx context.Context, log logr.Logger, deployer *corev1alpha1.Deployer, serviceName string) (*networkingv1beta1.Ingress, error) {
+	var actualIngress networkingv1beta1.Ingress
+	var childIngresses networkingv1beta1.IngressList
+
+	if err := r.List(ctx, &childIngresses, client.InNamespace(deployer.Namespace), client.MatchingField(ingressIndexField, deployer.Name)); err != nil {
+		return nil, err
+	}
+
+	if len(childIngresses.Items) == 1 {
+		actualIngress = childIngresses.Items[0]
+	} else if len(childIngresses.Items) > 1 {
+		// this shouldn't happen, delete everything to a clean slate
+		for _, extraIngress := range childIngresses.Items {
+			log.Info("deleting extra ingress", "ingress", extraIngress)
+			if err := r.Delete(ctx, &extraIngress); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	desiredIngress, err := r.constructIngressForDeployer(deployer)
+	if err != nil {
+		return nil, err
+	}
+
+	// delete ingress if no longer needed
+	if desiredIngress == nil {
+		log.Info("deleting ingress", "ingress", actualIngress)
+		if err := r.Delete(ctx, &actualIngress); err != nil {
+			log.Error(err, "unable to delete ingress for Deployer", "ingress", actualIngress)
+			return nil, err
+		}
+		return nil, nil
+	}
+
+	// create ingress if it doesn't exist
+	if actualIngress.Name == "" {
+		log.Info("creating service", "spec", desiredIngress.Spec)
+		if err := r.Create(ctx, desiredIngress); err != nil {
+			log.Error(err, "unable to create Ingress for Deployer", "ingress", desiredIngress)
+			return nil, err
+		}
+		return desiredIngress, nil
+	}
+
+	if r.ingressSemanticEquals(desiredIngress, &actualIngress) {
+		// ingress is unchanged
+		return &actualIngress, nil
+	}
+
+	// update ingress with desired changes
+	ingress := actualIngress.DeepCopy()
+	ingress.ObjectMeta.Labels = desiredIngress.ObjectMeta.Labels
+	ingress.Spec = desiredIngress.Spec
+	log.Info("reconciling ingress", "diff", cmp.Diff(actualIngress.Spec, ingress.Spec))
+	if err := r.Update(ctx, ingress); err != nil {
+		log.Error(err, "unable to update Ingress for Deployer", "deployment", ingress)
+		return nil, err
+	}
+
+	return ingress, nil
+}
+
+func (r *DeployerReconciler) ingressSemanticEquals(desiredIngress, ingress *networkingv1beta1.Ingress) bool {
+	return equality.Semantic.DeepEqual(desiredIngress.Spec, ingress.Spec) &&
+		equality.Semantic.DeepEqual(desiredIngress.ObjectMeta.Labels, ingress.ObjectMeta.Labels)
+}
+
+func (r *DeployerReconciler) constructIngressForDeployer(deployer *corev1alpha1.Deployer) (*networkingv1beta1.Ingress, error) {
+	// construct ingress if service is present
+	if deployer.Status.ServiceName == "" {
+		return nil, nil
+	}
+	labels := r.constructLabelsForDeployer(deployer)
+
+	ingress := &networkingv1beta1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{
+			Labels:       labels,
+			Annotations:  make(map[string]string),
+			GenerateName: fmt.Sprintf("%s-deployer-", deployer.Name),
+			Namespace:    deployer.Namespace,
+		},
+		Spec: networkingv1beta1.IngressSpec{
+			Rules: []networkingv1beta1.IngressRule{{
+				Host: fmt.Sprintf("%s.%s.%s", deployer.Name, deployer.Namespace, domain),
+				IngressRuleValue: networkingv1beta1.IngressRuleValue{
+					HTTP: &networkingv1beta1.HTTPIngressRuleValue{
+						Paths: []networkingv1beta1.HTTPIngressPath{{
+							Path: "/",
+							Backend: networkingv1beta1.IngressBackend{
+								ServiceName: deployer.Status.ServiceName,
+								ServicePort: intstr.FromInt(80),
+							},
+						}},
+					},
+				},
+			}},
+		},
+	}
+
+	if err := ctrl.SetControllerReference(deployer, ingress, r.Scheme); err != nil {
+		return nil, err
+	}
+
+	return ingress, nil
+}
+
 func (r *DeployerReconciler) reconcileChildService(ctx context.Context, log logr.Logger, deployer *corev1alpha1.Deployer) (*corev1.Service, error) {
 	var actualService corev1.Service
 	var childServices corev1.ServiceList
@@ -462,11 +582,15 @@ func (r *DeployerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	if err := controllers.IndexControllersOfType(mgr, serviceIndexField, &corev1alpha1.Deployer{}, &corev1.Service{}); err != nil {
 		return err
 	}
+	if err := controllers.IndexControllersOfType(mgr, ingressIndexField, &corev1alpha1.Deployer{}, &networkingv1beta1.Ingress{}); err != nil {
+		return err
+	}
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1alpha1.Deployer{}).
 		Owns(&appsv1.Deployment{}).
 		Owns(&corev1.Service{}).
+		Owns(&networkingv1beta1.Ingress{}).
 		// watch for build mutations to update dependent deployers
 		Watches(&source.Kind{Type: &buildv1alpha1.Application{}}, enqueueTrackedResources(&buildv1alpha1.Application{})).
 		Watches(&source.Kind{Type: &buildv1alpha1.Container{}}, enqueueTrackedResources(&buildv1alpha1.Container{})).

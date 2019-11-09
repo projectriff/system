@@ -72,6 +72,7 @@ type DeployerStatus struct {
 
 	DeploymentName string `json:"deploymentName,omitempty"`
 	ServiceName    string `json:"serviceName,omitempty"`
+	IngressName    string `json:"ingressName,omitempty"`
 }
 
 // +kubebuilder:object:root=true
