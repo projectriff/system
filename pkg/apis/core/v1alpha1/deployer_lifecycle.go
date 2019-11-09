@@ -94,10 +94,15 @@ func (ds *DeployerStatus) PropagateServiceStatus(ss *corev1.ServiceStatus) {
 func (ds *DeployerStatus) PropagateIngressStatus(cs *networkingv1beta1.Ingress) {
 	switch {
 	case cs == nil:
+		ds.IngressName = ""
 		deployerCondSet.Manage(ds).MarkFalse(DeployerConditionIngressReady, "IngressNotRequired", "Ingress resource is not required.")
 	case cs != nil && len(cs.Status.LoadBalancer.Ingress) == 0:
+		ds.IngressName = cs.Name
 		deployerCondSet.Manage(ds).MarkUnknown(DeployerConditionIngressReady, "IngressNotConfigured", "Ingress has not yet been reconciled.")
-	default:
+	case cs != nil && len(cs.Status.LoadBalancer.Ingress) > 0:
+		ds.IngressName = cs.Name
 		deployerCondSet.Manage(ds).MarkTrue(DeployerConditionIngressReady)
+	default:
+		deployerCondSet.Manage(ds).MarkUnknown(DeployerConditionIngressReady, "IngressNotConfigured", "Ingress has not yet been reconciled.")
 	}
 }

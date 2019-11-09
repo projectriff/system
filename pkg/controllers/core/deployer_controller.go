@@ -143,9 +143,7 @@ func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, dep
 		log.Error(err, "unable to reconcile Ingress", "deployer", deployer)
 		return ctrl.Result{}, err
 	}
-	if childIngress != nil {
-		deployer.Status.IngressName = childIngress.Name
-	}
+
 	deployer.Status.PropagateIngressStatus(childIngress)
 
 	deployer.Status.ObservedGeneration = deployer.Generation
