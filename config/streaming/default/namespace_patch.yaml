@@ -1,5 +1,0 @@
-- op: replace
-  path: /metadata/name
-  value: riff-system
-- op: remove
-  path: /metadata/labels/component
