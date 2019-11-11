@@ -80,7 +80,7 @@ Build:
 
 Core Runtime:
 
-*none*
+- [Istio](https://istio.io) (optional for ingress)
 
 Knative Runtime:
 
