@@ -135,6 +135,7 @@ func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, dep
 		return ctrl.Result{}, err
 	}
 	deployer.Status.ServiceName = childService.Name
+	deployer.Status.Address = &apis.Addressable{URL: fmt.Sprintf("http://%s.%s.%s", childService.Name, childService.Namespace, "svc.cluster.local")}
 	deployer.Status.PropagateServiceStatus(&childService.Status)
 
 	// reconcile ingress
@@ -143,8 +144,15 @@ func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, dep
 		log.Error(err, "unable to reconcile Ingress", "deployer", deployer)
 		return ctrl.Result{}, err
 	}
-
-	deployer.Status.PropagateIngressStatus(childIngress)
+	if childIngress == nil {
+		deployer.Status.IngressName = ""
+		deployer.Status.URL = ""
+		deployer.Status.MarkIngressNotRequired()
+	} else {
+		deployer.Status.IngressName = childIngress.Name
+		deployer.Status.URL = fmt.Sprintf("http://%s", childIngress.Spec.Rules[0].Host)
+		deployer.Status.PropagateIngressStatus(&childIngress.Status)
+	}
 
 	deployer.Status.ObservedGeneration = deployer.Generation
 	return ctrl.Result{}, nil
@@ -428,7 +436,7 @@ func (r *DeployerReconciler) constructIngressForDeployer(deployer *corev1alpha1.
 		},
 		Spec: networkingv1beta1.IngressSpec{
 			Rules: []networkingv1beta1.IngressRule{{
-				Host: fmt.Sprintf("%s.%s.%s", deployer.Name, deployer.Namespace, domain),
+				Host: fmt.Sprintf("%s.%s.%s", deployer.Status.ServiceName, deployer.Namespace, domain),
 				IngressRuleValue: networkingv1beta1.IngressRuleValue{
 					HTTP: &networkingv1beta1.HTTPIngressRuleValue{
 						Paths: []networkingv1beta1.HTTPIngressPath{{

@@ -73,11 +73,18 @@ type DeployerStatus struct {
 	DeploymentName string `json:"deploymentName,omitempty"`
 	ServiceName    string `json:"serviceName,omitempty"`
 	IngressName    string `json:"ingressName,omitempty"`
+
+	// Address to target this deployer internally
+	Address *apis.Addressable `json:"address,omitempty"`
+
+	// URL to target this deployer publicly
+	URL string `json:"url,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:categories="riff"
+// +kubebuilder:printcolumn:name="URL",type=string,JSONPath=`.status.url`
 // +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
 // +kubebuilder:printcolumn:name="Reason",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].reason`
 // +genclient

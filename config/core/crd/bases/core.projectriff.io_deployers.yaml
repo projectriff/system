@@ -9,6 +9,9 @@ metadata:
   name: deployers.core.projectriff.io
 spec:
   additionalPrinterColumns:
+  - JSONPath: .status.url
+    name: URL
+    type: string
   - JSONPath: .status.conditions[?(@.type=="Ready")].status
     name: Ready
     type: string
@@ -1946,6 +1949,12 @@ spec:
           type: object
         status:
           properties:
+            address:
+              description: Address to target this deployer internally
+              properties:
+                url:
+                  type: string
+              type: object
             conditions:
               items:
                 properties:
@@ -1976,6 +1985,9 @@ spec:
               format: int64
               type: integer
             serviceName:
+              type: string
+            url:
+              description: URL to target this deployer publicly
               type: string
           type: object
       type: object

@@ -89,20 +89,16 @@ func (ds *DeployerStatus) PropagateServiceStatus(ss *corev1.ServiceStatus) {
 	deployerCondSet.Manage(ds).MarkTrue(DeployerConditionServiceReady)
 }
 
+func (ds *DeployerStatus) MarkIngressNotRequired() {
+	deployerCondSet.Manage(ds).MarkFalse(DeployerConditionIngressReady, "IngressNotRequired", "Ingress resource is not required.")
+}
+
 // PropagateIngressStatus update DeployerConditionIngressReady condition
 // in DeployerStatus according to IngressStatus.
-func (ds *DeployerStatus) PropagateIngressStatus(cs *networkingv1beta1.Ingress) {
-	switch {
-	case cs == nil:
-		ds.IngressName = ""
-		deployerCondSet.Manage(ds).MarkFalse(DeployerConditionIngressReady, "IngressNotRequired", "Ingress resource is not required.")
-	case cs != nil && len(cs.Status.LoadBalancer.Ingress) == 0:
-		ds.IngressName = cs.Name
+func (ds *DeployerStatus) PropagateIngressStatus(is *networkingv1beta1.IngressStatus) {
+	if len(is.LoadBalancer.Ingress) == 0 {
 		deployerCondSet.Manage(ds).MarkUnknown(DeployerConditionIngressReady, "IngressNotConfigured", "Ingress has not yet been reconciled.")
-	case cs != nil && len(cs.Status.LoadBalancer.Ingress) > 0:
-		ds.IngressName = cs.Name
+	} else {
 		deployerCondSet.Manage(ds).MarkTrue(DeployerConditionIngressReady)
-	default:
-		deployerCondSet.Manage(ds).MarkUnknown(DeployerConditionIngressReady, "IngressNotConfigured", "Ingress has not yet been reconciled.")
 	}
 }
