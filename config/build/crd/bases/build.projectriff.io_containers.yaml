@@ -28,68 +28,38 @@ spec:
     status: {}
   validation:
     openAPIV3Schema:
-      description: Container is the Schema for the containers API
       properties:
         apiVersion:
-          description: 'APIVersion defines the versioned schema of this representation
-            of an object. Servers should convert recognized schemas to the latest
-            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
           type: string
         kind:
-          description: 'Kind is a string value representing the REST resource this
-            object represents. Servers may infer this from the endpoint the client
-            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
           type: string
         metadata:
           type: object
         spec:
-          description: ContainerSpec defines the desired state of Container
           properties:
             image:
-              description: Image repository to watch for built images. May contain
-                a leading underscore to have the default image prefix applied, or
-                be `_` to combine the default image prefix with the resource's name
-                as a default value.
               type: string
           required:
           - image
           type: object
         status:
-          description: ContainerStatus defines the observed state of Container
           properties:
             buildCacheName:
-              description: BuildCacheName is the name of the PersistentVolumeClaim
-                used as a cache for intermediate build resources.
               type: string
             conditions:
-              description: Conditions the latest available observations of a resource's
-                current state.
               items:
-                description: 'Conditions defines a readiness condition for a Knative
-                  resource. See: https://github.com/kubernetes/community/blob/master/contributors/devel/api-conventions.md#typical-status-properties'
                 properties:
                   lastTransitionTime:
-                    description: LastTransitionTime is the last time the condition
-                      transitioned from one status to another. We use VolatileTime
-                      in place of metav1.Time to exclude this from creating equality.Semantic
-                      differences (all other things held constant).
                     type: string
                   message:
-                    description: A human readable message indicating details about
-                      the transition.
                     type: string
                   reason:
-                    description: The reason for the condition's last transition.
                     type: string
                   severity:
-                    description: Severity with which to treat failures of this type
-                      of condition. When this is not specified, it defaults to Error.
                     type: string
                   status:
-                    description: Status of the condition, one of True, False, Unknown.
                     type: string
                   type:
-                    description: Type of condition.
                     type: string
                 required:
                 - status
@@ -97,20 +67,13 @@ spec:
                 type: object
               type: array
             kpackImageName:
-              description: KpackImageName is the name of the kpack Image backing this
-                build.
               type: string
             latestImage:
-              description: LatestImage is the most recent image for this build.
               type: string
             observedGeneration:
-              description: ObservedGeneration is the 'Generation' of the Service that
-                was last processed by the controller.
               format: int64
               type: integer
             targetImage:
-              description: TargetImage is the resolved image repository where built
-                images are pushed.
               type: string
           type: object
       type: object
