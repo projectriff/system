@@ -37,26 +37,31 @@ prepare: generate fmt vet manifests ## Create all generated and scaffolded files
 # Generate manifests e.g. CRD, RBAC etc.
 .PHONY: manifests
 manifests:
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook \
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook crd:maxDescLen=0 \
 		paths="./pkg/apis/build/...;./pkg/controllers/build/..." \
-		output:crd:artifacts:config=./config/build/crd/bases \
-		output:rbac:artifacts:config=./config/build/rbac \
-		output:webhook:artifacts:config=./config/build/webhook
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook \
+		output:crd:dir=./config/build/crd/bases \
+		output:rbac:dir=./config/build/rbac \
+		output:webhook:dir=./config/build/webhook
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook crd:maxDescLen=0 \
 		paths="./pkg/apis/core/...;./pkg/controllers/core/..." \
-		output:crd:artifacts:config=./config/core/crd/bases \
-		output:rbac:artifacts:config=./config/core/rbac \
-		output:webhook:artifacts:config=./config/core/webhook
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook \
+		output:crd:dir=./config/core/crd/bases \
+		output:rbac:dir=./config/core/rbac \
+		output:webhook:dir=./config/core/webhook
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook crd:maxDescLen=0 \
 		paths="./pkg/apis/knative/...;./pkg/controllers/knative/..." \
-		output:crd:artifacts:config=./config/knative/crd/bases \
-		output:rbac:artifacts:config=./config/knative/rbac \
-		output:webhook:artifacts:config=./config/knative/webhook
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook \
+		output:crd:dir=./config/knative/crd/bases \
+		output:rbac:dir=./config/knative/rbac \
+		output:webhook:dir=./config/knative/webhook
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook crd:maxDescLen=0 \
 		paths="./pkg/apis/streaming/...;./pkg/controllers/streaming/..." \
-		output:crd:artifacts:config=./config/streaming/crd/bases \
-		output:rbac:artifacts:config=./config/streaming/rbac \
-		output:webhook:artifacts:config=./config/streaming/webhook
+		output:crd:dir=./config/streaming/crd/bases \
+		output:rbac:dir=./config/streaming/rbac \
+		output:webhook:dir=./config/streaming/webhook
+	# cleanup duplicate resource generation
+	@rm -f config/build.*
+	@rm -f config/core.*
+	@rm -f config/knative.*
+	@rm -f config/streaming.*
 
 # Run go fmt against code
 .PHONY: fmt
