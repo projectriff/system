@@ -293,7 +293,7 @@ func (r *StreamReconciler) reconcileChildBindingSecret(ctx context.Context, log 
 	// update binding secret with desired changes
 	bindingSecret := actualBindingSecret.DeepCopy()
 	bindingSecret.ObjectMeta.Labels = desiredBindingSecret.ObjectMeta.Labels
-	bindingSecret.Data = desiredBindingSecret.Data
+	bindingSecret.StringData = desiredBindingSecret.StringData
 	log.Info("reconciling binding secret")
 	if err := r.Update(ctx, bindingSecret); err != nil {
 		log.Error(err, "unable to update binding secret Secret for Stream", "secret", bindingSecret.Name)
@@ -309,6 +309,10 @@ func (r *StreamReconciler) bindingSecretSemanticEquals(desiredBindingSecret, sec
 }
 
 func (r *StreamReconciler) constructBindingSecret(stream *streamingv1alpha1.Stream) (*corev1.Secret, error) {
+	if stream.Status.Address.Gateway == "" || stream.Status.Address.Topic == "" {
+		return nil, nil
+	}
+
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
