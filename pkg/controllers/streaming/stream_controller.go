@@ -46,8 +46,12 @@ type StreamReconciler struct {
 	StreamProvisionerClient StreamProvisionerClient
 }
 
+// For
 // +kubebuilder:rbac:groups=streaming.projectriff.io,resources=streams,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=streaming.projectriff.io,resources=streams/status,verbs=get;update;patch
+// Owns
+// +kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch;create;update;patch;delete
 
 func (r *StreamReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
