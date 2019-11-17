@@ -110,15 +110,9 @@ func (r *StreamReconciler) reconcile(ctx context.Context, log logr.Logger, strea
 		log.Error(err, "unable to reconcile child binding metadata ConfigMap", "stream", stream)
 		return ctrl.Result{}, err
 	}
-	if childBindingMetadata == nil {
-		stream.Status.BindingRef.MetadataRef = corev1.ObjectReference{}
-	} else {
-		stream.Status.BindingRef.MetadataRef = corev1.ObjectReference{
-			APIVersion: "v1",
-			Kind:       "ConfigMap",
-			Namespace:  childBindingMetadata.Namespace,
-			Name:       childBindingMetadata.Name,
-		}
+	stream.Status.Binding.MetadataRef = corev1.LocalObjectReference{}
+	if childBindingMetadata != nil {
+		stream.Status.Binding.MetadataRef.Name = childBindingMetadata.Name
 	}
 
 	// reconcile binding secret
@@ -127,15 +121,9 @@ func (r *StreamReconciler) reconcile(ctx context.Context, log logr.Logger, strea
 		log.Error(err, "unable to reconcile child binding secret Secret", "stream", stream)
 		return ctrl.Result{}, err
 	}
-	if childBindingSecret == nil {
-		stream.Status.BindingRef.SecretRef = corev1.ObjectReference{}
-	} else {
-		stream.Status.BindingRef.SecretRef = corev1.ObjectReference{
-			APIVersion: "v1",
-			Kind:       "Secret",
-			Namespace:  childBindingSecret.Namespace,
-			Name:       childBindingSecret.Name,
-		}
+	stream.Status.Binding.SecretRef = corev1.LocalObjectReference{}
+	if childBindingSecret != nil {
+		stream.Status.Binding.SecretRef.Name = childBindingSecret.Name
 	}
 
 	if childBindingMetadata == nil {

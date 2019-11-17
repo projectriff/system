@@ -55,7 +55,7 @@ type StreamStatus struct {
 
 	Address StreamAddress `json:"address,omitempty"`
 
-	BindingRef BindingReference `json:"bindingRef,omitempty"`
+	Binding BindingReference `json:"binding,omitempty"`
 }
 
 type StreamAddress struct {
@@ -65,10 +65,10 @@ type StreamAddress struct {
 
 type BindingReference struct {
 	// Metadata references a ConfigMap with the binding metadata properties
-	MetadataRef corev1.ObjectReference `json:"metadataRef,omitempty"`
+	MetadataRef corev1.LocalObjectReference `json:"metadataRef,omitempty"`
 
 	// Secret references a Secret with the binding secret properties
-	SecretRef corev1.ObjectReference `json:"secretRef,omitempty"`
+	SecretRef corev1.LocalObjectReference `json:"secretRef,omitempty"`
 }
 
 func (a StreamAddress) String() string {
