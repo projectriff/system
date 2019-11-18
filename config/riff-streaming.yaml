@@ -3347,14 +3347,19 @@ spec:
             fieldRef:
               fieldPath: metadata.namespace
         image: github.com/projectriff/system/cmd/managers/streaming
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
         name: manager
         ports:
         - containerPort: 443
           name: webhook-server
           protocol: TCP
         readinessProbe:
-          tcpSocket:
-            port: webhook-server
+          httpGet:
+            path: /readyz
+            port: 8081
         resources:
           limits:
             cpu: 100m
