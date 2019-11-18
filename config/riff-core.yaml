@@ -26,7 +26,6 @@ spec:
     listKind: DeployerList
     plural: deployers
     singular: deployer
-  preserveUnknownFields: false
   scope: Namespaced
   subresources:
     status: {}

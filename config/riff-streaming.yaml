@@ -23,7 +23,6 @@ spec:
     listKind: KafkaProviderList
     plural: kafkaproviders
     singular: kafkaprovider
-  preserveUnknownFields: false
   scope: Namespaced
   subresources:
     status: {}
@@ -115,7 +114,6 @@ spec:
     listKind: ProcessorList
     plural: processors
     singular: processor
-  preserveUnknownFields: false
   scope: Namespaced
   subresources:
     status: {}
@@ -2858,7 +2856,6 @@ spec:
     listKind: StreamList
     plural: streams
     singular: stream
-  preserveUnknownFields: false
   scope: Namespaced
   subresources:
     status: {}

@@ -30,7 +30,6 @@ spec:
     listKind: ApplicationList
     plural: applications
     singular: application
-  preserveUnknownFields: false
   scope: Namespaced
   subresources:
     status: {}
@@ -240,7 +239,6 @@ spec:
     listKind: ContainerList
     plural: containers
     singular: container
-  preserveUnknownFields: false
   scope: Namespaced
   subresources:
     status: {}
@@ -332,7 +330,6 @@ spec:
     listKind: FunctionList
     plural: functions
     singular: function
-  preserveUnknownFields: false
   scope: Namespaced
   subresources:
     status: {}

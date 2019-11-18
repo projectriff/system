@@ -23,7 +23,6 @@ spec:
     listKind: AdapterList
     plural: adapters
     singular: adapter
-  preserveUnknownFields: false
   scope: Namespaced
   subresources:
     status: {}
@@ -127,7 +126,6 @@ spec:
     listKind: DeployerList
     plural: deployers
     singular: deployer
-  preserveUnknownFields: false
   scope: Namespaced
   subresources:
     status: {}
