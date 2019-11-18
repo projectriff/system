@@ -3033,14 +3033,19 @@ spec:
         - --metrics-addr=127.0.0.1:8080
         - --enable-leader-election
         image: github.com/projectriff/system/cmd/managers/core
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
         name: manager
         ports:
         - containerPort: 443
           name: webhook-server
           protocol: TCP
         readinessProbe:
-          tcpSocket:
-            port: webhook-server
+          httpGet:
+            path: /readyz
+            port: 8081
         resources:
           limits:
             cpu: 100m

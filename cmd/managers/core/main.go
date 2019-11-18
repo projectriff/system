@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"net/http"
 	"os"
 	"time"
 
@@ -50,8 +51,10 @@ func init() {
 
 func main() {
 	var metricsAddr string
+	var probesAddr string
 	var enableLeaderElection bool
 	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
+	flag.StringVar(&probesAddr, "probes-addr", ":8081", "The address health probes bind to.")
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
 	flag.Parse()
@@ -59,11 +62,12 @@ func main() {
 	ctrl.SetLogger(zap.Logger(true))
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:             scheme,
-		MetricsBindAddress: metricsAddr,
-		LeaderElection:     enableLeaderElection,
-		LeaderElectionID:   "controller-leader-election-helper-core",
-		SyncPeriod:         &syncPeriod,
+		Scheme:                 scheme,
+		MetricsBindAddress:     metricsAddr,
+		HealthProbeBindAddress: probesAddr,
+		LeaderElection:         enableLeaderElection,
+		LeaderElectionID:       "controller-leader-election-helper-core",
+		SyncPeriod:             &syncPeriod,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
@@ -84,6 +88,15 @@ func main() {
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder
+
+	if err := mgr.AddHealthzCheck("default", func(_ *http.Request) error { return nil }); err != nil {
+		setupLog.Error(err, "unable to create health check")
+		os.Exit(1)
+	}
+	if err := mgr.AddReadyzCheck("default", func(_ *http.Request) error { return nil }); err != nil {
+		setupLog.Error(err, "unable to create ready check")
+		os.Exit(1)
+	}
 
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {

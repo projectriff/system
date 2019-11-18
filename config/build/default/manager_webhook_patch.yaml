@@ -13,8 +13,13 @@ spec:
           name: webhook-server
           protocol: TCP
         readinessProbe:
-          tcpSocket:
-            port: webhook-server
+          httpGet:
+            port: 8081
+            path: /readyz
+        livenessProbe:
+          httpGet:
+            port: 8081
+            path: /healthz
         volumeMounts:
         - mountPath: /tmp/k8s-webhook-server/serving-certs
           name: cert
