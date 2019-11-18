@@ -78,7 +78,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	streamControllerLogger := ctrl.Log.WithName("controllers").WithName("Stream")
 	if err = (&controllers.KafkaProviderReconciler{
 		Client:    mgr.GetClient(),
 		Log:       ctrl.Log.WithName("controllers").WithName("KafkaProvider"),
@@ -93,6 +92,21 @@ func main() {
 		setupLog.Error(err, "unable to create webhook", "webhook", "KafkaProvider")
 		os.Exit(1)
 	}
+	if err = (&controllers.PulsarProviderReconciler{
+		Client:    mgr.GetClient(),
+		Log:       ctrl.Log.WithName("controllers").WithName("PulsarProvider"),
+		Scheme:    mgr.GetScheme(),
+		Tracker:   tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("PulsarProvider").WithName("tracker")),
+		Namespace: namespace,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "PulsarProvider")
+		os.Exit(1)
+	}
+	if err = ctrl.NewWebhookManagedBy(mgr).For(&streamingv1alpha1.PulsarProvider{}).Complete(); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "PulsarProvider")
+		os.Exit(1)
+	}
+	streamControllerLogger := ctrl.Log.WithName("controllers").WithName("Stream")
 	if err = (&controllers.StreamReconciler{
 		Client:                  mgr.GetClient(),
 		Log:                     streamControllerLogger,

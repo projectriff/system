@@ -28,6 +28,7 @@ type StreamingV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	KafkaProvidersGetter
 	ProcessorsGetter
+	PulsarProvidersGetter
 	StreamsGetter
 }
 
@@ -42,6 +43,10 @@ func (c *StreamingV1alpha1Client) KafkaProviders(namespace string) KafkaProvider
 
 func (c *StreamingV1alpha1Client) Processors(namespace string) ProcessorInterface {
 	return newProcessors(c, namespace)
+}
+
+func (c *StreamingV1alpha1Client) PulsarProviders(namespace string) PulsarProviderInterface {
+	return newPulsarProviders(c, namespace)
 }
 
 func (c *StreamingV1alpha1Client) Streams(namespace string) StreamInterface {

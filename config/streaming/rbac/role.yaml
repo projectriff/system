@@ -101,6 +101,26 @@ rules:
 - apiGroups:
   - streaming.projectriff.io
   resources:
+  - pulsarproviders
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - streaming.projectriff.io
+  resources:
+  - pulsarproviders/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - streaming.projectriff.io
+  resources:
   - streams
   verbs:
   - create

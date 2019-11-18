@@ -6,6 +6,7 @@ resources:
 - bases/streaming.projectriff.io_processors.yaml
 # providers
 - bases/streaming.projectriff.io_kafkaproviders.yaml
+- bases/streaming.projectriff.io_pulsarproviders.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patchesJson6902:
@@ -29,6 +30,12 @@ patchesJson6902:
     version: v1beta1
     kind: CustomResourceDefinition
     name: kafkaproviders.streaming.projectriff.io
+  path: patches/remove_preserveUnknownFields.yaml
+- target:
+    group: apiextensions.k8s.io
+    version: v1beta1
+    kind: CustomResourceDefinition
+    name: pulsarproviders.streaming.projectriff.io
   path: patches/remove_preserveUnknownFields.yaml
 
 patchesStrategicMerge:

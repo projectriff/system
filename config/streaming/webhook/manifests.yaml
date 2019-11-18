@@ -47,6 +47,24 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
+      path: /mutate-streaming-projectriff-io-v1alpha1-pulsarprovider
+  failurePolicy: Fail
+  name: pulsarproviders.streaming.projectriff.io
+  rules:
+  - apiGroups:
+    - streaming.projectriff.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - pulsarproviders
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: webhook-service
+      namespace: system
       path: /mutate-streaming-projectriff-io-v1alpha1-stream
   failurePolicy: Fail
   name: streams.streaming.projectriff.io
@@ -104,6 +122,24 @@ webhooks:
     - UPDATE
     resources:
     - processors
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-streaming-projectriff-io-v1alpha1-pulsarprovider
+  failurePolicy: Fail
+  name: pulsarproviders.streaming.projectriff.io
+  rules:
+  - apiGroups:
+    - streaming.projectriff.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - pulsarproviders
 - clientConfig:
     caBundle: Cg==
     service:

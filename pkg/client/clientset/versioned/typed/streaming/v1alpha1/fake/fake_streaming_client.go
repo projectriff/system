@@ -36,6 +36,10 @@ func (c *FakeStreamingV1alpha1) Processors(namespace string) v1alpha1.ProcessorI
 	return &FakeProcessors{c, namespace}
 }
 
+func (c *FakeStreamingV1alpha1) PulsarProviders(namespace string) v1alpha1.PulsarProviderInterface {
+	return &FakePulsarProviders{c, namespace}
+}
+
 func (c *FakeStreamingV1alpha1) Streams(namespace string) v1alpha1.StreamInterface {
 	return &FakeStreams{c, namespace}
 }
