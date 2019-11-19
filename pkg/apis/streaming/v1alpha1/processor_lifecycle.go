@@ -28,11 +28,13 @@ const (
 	ProcessorConditionReady = apis.ConditionReady
 	// TODO add aggregated streams ready status
 	ProcessorConditionFunctionReady     apis.ConditionType = "FunctionReady"
+	ProcessorConditionStreamsReady      apis.ConditionType = "StreamsReady"
 	ProcessorConditionDeploymentReady   apis.ConditionType = "DeploymentReady"
 	ProcessorConditionScaledObjectReady apis.ConditionType = "ScaledObjectReady"
 )
 
 var processorCondSet = apis.NewLivingConditionSet(
+	ProcessorConditionStreamsReady,
 	ProcessorConditionDeploymentReady,
 	ProcessorConditionScaledObjectReady,
 )
@@ -55,6 +57,14 @@ func (ps *ProcessorStatus) GetCondition(t apis.ConditionType) *apis.Condition {
 
 func (ps *ProcessorStatus) InitializeConditions() {
 	processorCondSet.Manage(ps).InitializeConditions()
+}
+
+func (ps *ProcessorStatus) MarkStreamsReady() {
+	processorCondSet.Manage(ps).MarkTrue(ProcessorConditionStreamsReady)
+}
+
+func (ps *ProcessorStatus) MarkStreamsNotReady(message string) {
+	processorCondSet.Manage(ps).MarkFalse(ProcessorConditionStreamsReady, "StreamNotReady", message)
 }
 
 func (ps *ProcessorStatus) PropagateDeploymentStatus(ds *appsv1.DeploymentStatus) {

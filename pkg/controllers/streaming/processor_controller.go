@@ -174,19 +174,19 @@ func (r *ProcessorReconciler) reconcile(ctx context.Context, logger logr.Logger,
 	}
 
 	// Resolve input addresses
-	inputAddresses, _, err := r.resolveStreams(ctx, processorNSName, processor.Spec.Inputs)
+	inputStreams, err := r.resolveStreams(ctx, processorNSName, processor.Spec.Inputs)
 	if err != nil {
 		return ctrl.Result{Requeue: true}, err
 	}
-	processor.Status.InputAddresses = inputAddresses
+	processor.Status.InputAddresses = r.collectStreamAddresses(inputStreams)
 
 	// Resolve output addresses
-	outputAddresses, outputContentTypes, err := r.resolveStreams(ctx, processorNSName, processor.Spec.Outputs)
+	outputStreams, err := r.resolveStreams(ctx, processorNSName, processor.Spec.Outputs)
 	if err != nil {
 		return ctrl.Result{Requeue: true}, err
 	}
-	processor.Status.OutputAddresses = outputAddresses
-	processor.Status.OutputContentTypes = outputContentTypes
+	processor.Status.OutputAddresses = r.collectStreamAddresses(outputStreams)
+	processor.Status.OutputContentTypes = r.collectStreamContentTypes(outputStreams)
 
 	// Reconcile deployment for processor
 	deployment, err := r.reconcileProcessorDeployment(ctx, logger, processor, &cm)
@@ -196,6 +196,18 @@ func (r *ProcessorReconciler) reconcile(ctx context.Context, logger logr.Logger,
 	}
 	processor.Status.DeploymentName = deployment.Name
 	processor.Status.PropagateDeploymentStatus(&deployment.Status)
+
+	processor.Status.MarkStreamsReady()
+	for _, stream := range append(inputStreams, outputStreams...) {
+		ready := stream.Status.GetCondition(stream.Status.GetReadyConditionType())
+		if ready == nil {
+			ready = &apis.Condition{Message: "stream has no ready condition"}
+		}
+		if !ready.IsTrue() {
+			processor.Status.MarkStreamsNotReady(fmt.Sprintf("stream %s is not ready: %s", stream.Name, ready.Message))
+			break
+		}
+	}
 
 	// Reconcile scaledObject for processor
 	scaledObject, err := r.reconcileProcessorScaledObject(ctx, logger, processor, deployment)
@@ -282,6 +294,12 @@ func (r *ProcessorReconciler) constructScaledObjectForProcessor(processor *strea
 
 	labels["deploymentName"] = deployment.Name
 
+	maxReplicas := thirty
+	if !processor.Status.GetCondition(streamingv1alpha1.ProcessorConditionStreamsReady).IsFalse() {
+		// scale to zero while dependencies are not ready
+		maxReplicas = zero
+	}
+
 	scaledObject := &kedav1alpha1.ScaledObject{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: fmt.Sprintf("%s-processor-", processor.Name),
@@ -296,7 +314,7 @@ func (r *ProcessorReconciler) constructScaledObjectForProcessor(processor *strea
 			CooldownPeriod:  &thirty,
 			Triggers:        triggers(processor),
 			MinReplicaCount: &zero,
-			MaxReplicaCount: &thirty,
+			MaxReplicaCount: &maxReplicas,
 		},
 	}
 
@@ -398,7 +416,7 @@ func (r *ProcessorReconciler) reconcileProcessorDeployment(ctx context.Context, 
 func (r *ProcessorReconciler) constructDeploymentForProcessor(processor *streamingv1alpha1.Processor, processorImg string) (*appsv1.Deployment, error) {
 	labels := r.constructLabelsForProcessor(processor)
 
-	one := int32(1)
+	zero := int32(0)
 	environmentVariables, err := r.computeEnvironmentVariables(processor)
 	if err != nil {
 		return nil, err
@@ -426,7 +444,7 @@ func (r *ProcessorReconciler) constructDeploymentForProcessor(processor *streami
 			Labels:       labels,
 		},
 		Spec: appsv1.DeploymentSpec{
-			Replicas: &one,
+			Replicas: &zero,
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
 					streamingv1alpha1.ProcessorLabelKey: processor.Name,
@@ -465,9 +483,8 @@ func (r *ProcessorReconciler) deploymentSemanticEquals(desiredDeployment, deploy
 		equality.Semantic.DeepEqual(desiredDeployment.ObjectMeta.Labels, deployment.ObjectMeta.Labels)
 }
 
-func (r *ProcessorReconciler) resolveStreams(ctx context.Context, processorCoordinates types.NamespacedName, bindings []streamingv1alpha1.StreamBinding) ([]string, []string, error) {
-	var addresses []string
-	var contentTypes []string
+func (r *ProcessorReconciler) resolveStreams(ctx context.Context, processorCoordinates types.NamespacedName, bindings []streamingv1alpha1.StreamBinding) ([]streamingv1alpha1.Stream, error) {
+	streams := []streamingv1alpha1.Stream{}
 	for _, binding := range bindings {
 		streamNSName := types.NamespacedName{
 			Namespace: processorCoordinates.Namespace,
@@ -480,12 +497,27 @@ func (r *ProcessorReconciler) resolveStreams(ctx context.Context, processorCoord
 			processorCoordinates,
 		)
 		if err := r.Client.Get(ctx, streamNSName, &stream); err != nil {
-			return nil, nil, err
+			return nil, err
 		}
-		addresses = append(addresses, stream.Status.Address.String())
-		contentTypes = append(contentTypes, stream.Spec.ContentType)
+		streams = append(streams, stream)
 	}
-	return addresses, contentTypes, nil
+	return streams, nil
+}
+
+func (r *ProcessorReconciler) collectStreamAddresses(streams []streamingv1alpha1.Stream) []string {
+	addresses := make([]string, len(streams))
+	for i, stream := range streams {
+		addresses[i] = stream.Status.Address.String()
+	}
+	return addresses
+}
+
+func (r *ProcessorReconciler) collectStreamContentTypes(streams []streamingv1alpha1.Stream) []string {
+	contentTypes := make([]string, len(streams))
+	for i, stream := range streams {
+		contentTypes[i] = stream.Spec.ContentType
+	}
+	return contentTypes
 }
 
 func (r *ProcessorReconciler) computeEnvironmentVariables(processor *streamingv1alpha1.Processor) ([]v1.EnvVar, error) {
