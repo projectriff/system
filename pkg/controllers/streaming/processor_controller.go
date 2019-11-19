@@ -330,9 +330,9 @@ func triggers(proc *streamingv1alpha1.Processor) []kedav1alpha1.ScaleTriggers {
 	for i, topic := range proc.Status.InputAddresses {
 		result[i].Type = "liiklus"
 		result[i].Metadata = map[string]string{
-			"address": strings.Split(topic, "/")[0],
+			"address": strings.SplitN(topic, "/", 2)[0],
 			"group":   proc.Name,
-			"topic":   strings.Split(topic, "/")[1],
+			"topic":   strings.SplitN(topic, "/", 2)[1],
 		}
 	}
 	return result
