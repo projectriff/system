@@ -399,13 +399,17 @@ func (r *DeployerReconciler) constructRouteForDeployer(deployer *knativev1alpha1
 }
 
 func (r *DeployerReconciler) constructLabelsForDeployer(deployer *knativev1alpha1.Deployer) map[string]string {
-	labels := make(map[string]string, len(deployer.ObjectMeta.Labels)+1)
+	labels := make(map[string]string, len(deployer.ObjectMeta.Labels)+2)
 	// pass through existing labels
 	for k, v := range deployer.ObjectMeta.Labels {
 		labels[k] = v
 	}
 
 	labels[knativev1alpha1.DeployerLabelKey] = deployer.Name
+
+	if deployer.Spec.IngressPolicy == knativev1alpha1.IngressPolicyClusterLocal {
+		labels["serving.knative.dev/visibility"] = "cluster-local"
+	}
 
 	return labels
 }

@@ -426,8 +426,8 @@ func (r *DeployerReconciler) ingressSemanticEquals(desiredIngress, ingress *netw
 }
 
 func (r *DeployerReconciler) constructIngressForDeployer(deployer *corev1alpha1.Deployer) (*networkingv1beta1.Ingress, error) {
-	// construct ingress if service is present
-	if deployer.Status.ServiceName == "" {
+	if deployer.Status.ServiceName == "" || deployer.Spec.IngressPolicy == corev1alpha1.IngressPolicyClusterLocal {
+		// skip ingress
 		return nil, nil
 	}
 	labels := r.constructLabelsForDeployer(deployer)

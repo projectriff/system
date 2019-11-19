@@ -49,6 +49,8 @@ spec:
                 functionRef:
                   type: string
               type: object
+            ingressPolicy:
+              type: string
             template:
               properties:
                 activeDeadlineSeconds:

@@ -43,6 +43,7 @@ func TestDeployerDefault(t *testing.T) {
 						},
 					},
 				},
+				IngressPolicy: IngressPolicyClusterLocal,
 			},
 		},
 	}}
@@ -107,6 +108,7 @@ func TestDeployerSpecDefault(t *testing.T) {
 					{Name: "handler"},
 				},
 			},
+			IngressPolicy: IngressPolicyClusterLocal,
 		},
 		want: &DeployerSpec{
 			Template: &corev1.PodSpec{

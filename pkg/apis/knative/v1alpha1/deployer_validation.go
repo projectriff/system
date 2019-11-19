@@ -84,6 +84,10 @@ func (s DeployerSpec) Validate() validation.FieldErrors {
 		errs = errs.Also(s.Build.Validate().ViaField("build"))
 	}
 
+	if s.IngressPolicy != "" && s.IngressPolicy != IngressPolicyClusterLocal && s.IngressPolicy != IngressPolicyExternal {
+		errs = errs.Also(validation.ErrInvalidValue(s.IngressPolicy, "ingressPolicy"))
+	}
+
 	return errs
 }
 
