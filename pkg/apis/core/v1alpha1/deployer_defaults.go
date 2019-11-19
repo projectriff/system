@@ -40,4 +40,19 @@ func (s *DeployerSpec) Default() {
 	if s.Template.Containers[0].Name == "" {
 		s.Template.Containers[0].Name = "handler"
 	}
+	if s.Template.Containers[0].Ports == nil {
+		s.Template.Containers[0].Ports = []corev1.ContainerPort{}
+	}
+	if len(s.Template.Containers[0].Ports) == 0 {
+		s.Template.Containers[0].Ports = append(s.Template.Containers[0].Ports, corev1.ContainerPort{})
+	}
+	if s.Template.Containers[0].Ports[0].Name == "" {
+		s.Template.Containers[0].Ports[0].Name = "http"
+	}
+	if s.Template.Containers[0].Ports[0].Protocol == "" {
+		s.Template.Containers[0].Ports[0].Protocol = corev1.ProtocolTCP
+	}
+	if s.Template.Containers[0].Ports[0].ContainerPort == 0 {
+		s.Template.Containers[0].Ports[0].ContainerPort = 8080
+	}
 }

@@ -76,6 +76,12 @@ func (s *DeployerSpec) Validate() validation.FieldErrors {
 		errs = errs.Also(validation.ErrDisallowedFields(validation.CurrentField, fmt.Sprintf("limited Template fields may be set (-want, +got) = %v", diff)))
 	}
 
+	for i, env := range s.Template.Containers[0].Env {
+		if env.Name == "PORT" {
+			errs = errs.Also(validation.ErrDisallowedFields(fmt.Sprintf("template.containers[0].env[%d]", i), "PORT is not allowed"))
+		}
+	}
+
 	if s.Build == nil && s.Template.Containers[0].Image == "" {
 		errs = errs.Also(validation.ErrMissingOneOf("build", "template.containers[0].image"))
 	} else if s.Build != nil && s.Template.Containers[0].Image != "" {
