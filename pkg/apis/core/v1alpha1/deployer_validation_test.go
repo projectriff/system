@@ -120,6 +120,17 @@ func TestValidateDeployerSpec(t *testing.T) {
 			},
 		},
 		expected: validation.ErrDisallowedFields("template.containers[0].env[0]", "PORT is not allowed"),
+	}, {
+		name: "invalid, ingress policy",
+		target: &DeployerSpec{
+			Template: &corev1.PodSpec{
+				Containers: []corev1.Container{
+					{Image: "my-iamge"},
+				},
+			},
+			IngressPolicy: "bogus",
+		},
+		expected: validation.ErrInvalidValue(IngressPolicy("bogus"), "ingressPolicy"),
 	}} {
 		t.Run(c.name, func(t *testing.T) {
 			actual := c.target.Validate()

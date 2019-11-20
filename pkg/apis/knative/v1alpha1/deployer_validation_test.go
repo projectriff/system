@@ -87,7 +87,7 @@ func TestValidateDeployerSpec(t *testing.T) {
 			Build: nil,
 			Template: &corev1.PodSpec{
 				Containers: []corev1.Container{
-					{Image: "my-iamge"},
+					{Image: "my-image"},
 				},
 			},
 		},
@@ -105,6 +105,17 @@ func TestValidateDeployerSpec(t *testing.T) {
 			},
 		},
 		expected: validation.ErrMultipleOneOf("build", "template.containers[0].image"),
+	}, {
+		name: "invalid, ingress policy",
+		target: &DeployerSpec{
+			Template: &corev1.PodSpec{
+				Containers: []corev1.Container{
+					{Image: "my-image"},
+				},
+			},
+			IngressPolicy: "bogus",
+		},
+		expected: validation.ErrInvalidValue(IngressPolicy("bogus"), "ingressPolicy"),
 	}} {
 		t.Run(c.name, func(t *testing.T) {
 			actual := c.target.Validate()

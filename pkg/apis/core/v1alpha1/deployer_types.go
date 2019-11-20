@@ -47,6 +47,10 @@ type DeployerSpec struct {
 
 	// Template pod
 	Template *corev1.PodSpec `json:"template,omitempty"`
+
+	// IngressPolicy defines whether the workload should be reachable from
+	// outside the cluster
+	IngressPolicy IngressPolicy `json:"ingressPolicy,omitempty"`
 }
 
 type Build struct {
@@ -59,6 +63,17 @@ type Build struct {
 	// FunctionRef references an application in this namespace.
 	FunctionRef string `json:"functionRef,omitempty"`
 }
+
+// IngressPolicy describes whether the container should be exposed via
+// ingress. Only one of the following ingress policies may be specified.
+// If none of the following policies is specified, the default one is
+// IngressPolicyClusterLocal.
+type IngressPolicy string
+
+const (
+	IngressPolicyClusterLocal IngressPolicy = "ClusterLocal"
+	IngressPolicyExternal     IngressPolicy = "External"
+)
 
 // DeployerStatus defines the observed state of Deployer
 type DeployerStatus struct {
