@@ -329,12 +329,17 @@ func (r *DeployerReconciler) constructDeploymentForDeployer(deployer *corev1alph
 
 func (r *DeployerReconciler) constructPodSpecForDeployer(deployer *corev1alpha1.Deployer) corev1.PodSpec {
 	podSpec := *deployer.Spec.Template.DeepCopy()
+	targetPort := podSpec.Containers[0].Ports[0]
 
+	podSpec.Containers[0].Env = append(podSpec.Containers[0].Env, corev1.EnvVar{
+		Name:  "PORT",
+		Value: fmt.Sprintf("%d", targetPort.ContainerPort),
+	})
 	if podSpec.Containers[0].LivenessProbe == nil {
 		podSpec.Containers[0].LivenessProbe = &corev1.Probe{
 			Handler: corev1.Handler{
 				TCPSocket: &corev1.TCPSocketAction{
-					Port: intstr.FromInt(8080),
+					Port: intstr.FromInt(int(targetPort.ContainerPort)),
 				},
 			},
 		}
@@ -343,7 +348,7 @@ func (r *DeployerReconciler) constructPodSpecForDeployer(deployer *corev1alpha1.
 		podSpec.Containers[0].ReadinessProbe = &corev1.Probe{
 			Handler: corev1.Handler{
 				TCPSocket: &corev1.TCPSocketAction{
-					Port: intstr.FromInt(8080),
+					Port: intstr.FromInt(int(targetPort.ContainerPort)),
 				},
 			},
 		}
@@ -531,6 +536,7 @@ func (r *DeployerReconciler) serviceSemanticEquals(desiredService, service *core
 
 func (r *DeployerReconciler) constructServiceForDeployer(deployer *corev1alpha1.Deployer) (*corev1.Service, error) {
 	labels := r.constructLabelsForDeployer(deployer)
+	targetPort := deployer.Spec.Template.Containers[0].Ports[0]
 
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
@@ -541,7 +547,7 @@ func (r *DeployerReconciler) constructServiceForDeployer(deployer *corev1alpha1.
 		},
 		Spec: corev1.ServiceSpec{
 			Ports: []corev1.ServicePort{
-				{Name: "http", Port: 80, TargetPort: intstr.FromInt(8080)},
+				{Name: targetPort.Name, Port: 80, TargetPort: intstr.FromInt(int(targetPort.ContainerPort))},
 			},
 			Selector: map[string]string{
 				corev1alpha1.DeployerLabelKey: deployer.Name,

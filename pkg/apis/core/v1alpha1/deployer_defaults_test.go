@@ -35,7 +35,12 @@ func TestDeployerDefault(t *testing.T) {
 			Spec: DeployerSpec{
 				Template: &corev1.PodSpec{
 					Containers: []corev1.Container{
-						{Name: "handler"},
+						{
+							Name: "handler",
+							Ports: []corev1.ContainerPort{
+								{Name: "http", Protocol: corev1.ProtocolTCP, ContainerPort: 8080},
+							},
+						},
 					},
 				},
 			},
@@ -64,7 +69,54 @@ func TestDeployerSpecDefault(t *testing.T) {
 		want: &DeployerSpec{
 			Template: &corev1.PodSpec{
 				Containers: []corev1.Container{
+					{
+						Name: "handler",
+						Ports: []corev1.ContainerPort{
+							{Name: "http", Protocol: corev1.ProtocolTCP, ContainerPort: 8080},
+						},
+					},
+				},
+			},
+		},
+	}, {
+		name: "ensure at least one port",
+		in: &DeployerSpec{
+			Template: &corev1.PodSpec{
+				Containers: []corev1.Container{
 					{Name: "handler"},
+				},
+			},
+		},
+		want: &DeployerSpec{
+			Template: &corev1.PodSpec{
+				Containers: []corev1.Container{
+					{
+						Name: "handler",
+						Ports: []corev1.ContainerPort{
+							{Name: "http", Protocol: corev1.ProtocolTCP, ContainerPort: 8080},
+						},
+					},
+				},
+			},
+		},
+	}, {
+		name: "ensure at least one port",
+		in: &DeployerSpec{
+			Template: &corev1.PodSpec{
+				Containers: []corev1.Container{
+					{Name: "handler"},
+				},
+			},
+		},
+		want: &DeployerSpec{
+			Template: &corev1.PodSpec{
+				Containers: []corev1.Container{
+					{
+						Name: "handler",
+						Ports: []corev1.ContainerPort{
+							{Name: "http", Protocol: corev1.ProtocolTCP, ContainerPort: 8080},
+						},
+					},
 				},
 			},
 		},
