@@ -25,12 +25,13 @@ SOFTWARE
 package v1alpha1
 
 import (
+	batchv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // +kubebuilder:object:root=true
 
-// ScaledObject is a spoecification for a ScaledObject resource
+// ScaledObject is a specification for a ScaledObject resource
 type ScaledObject struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -41,13 +42,18 @@ type ScaledObject struct {
 
 // ScaledObjectSpec is the spec for a ScaledObject resource
 type ScaledObjectSpec struct {
-	ScaleTargetRef  ObjectReference `json:"scaleTargetRef"`
-	PollingInterval *int32          `json:"pollingInterval"`
-	CooldownPeriod  *int32          `json:"cooldownPeriod"`
-	MinReplicaCount *int32          `json:"minReplicaCount"`
-	MaxReplicaCount *int32          `json:"maxReplicaCount"`
-	Triggers        []ScaleTriggers `json:"triggers"`
+	ScaleType       ScaledObjectScaleType `json:"scaleType,omitempty"`
+	ScaleTargetRef  *ObjectReference      `json:"scaleTargetRef,omitempty"`
+	JobTargetRef    *batchv1.JobSpec      `json:"jobTargetRef,omitempty"`
+	PollingInterval *int32                `json:"pollingInterval,omitempty"`
+	CooldownPeriod  *int32                `json:"cooldownPeriod,omitempty"`
+	MinReplicaCount *int32                `json:"minReplicaCount,omitempty"`
+	MaxReplicaCount *int32                `json:"maxReplicaCount,omitempty"`
+	Triggers        []ScaleTriggers       `json:"triggers"`
 }
+
+// ScaledObjectScaleType distinguish between Deployment based and K8s Jobs
+type ScaledObjectScaleType string
 
 // ObjectReference holds the a reference to the deployment this
 // ScaledObject applies
@@ -57,16 +63,24 @@ type ObjectReference struct {
 }
 
 type ScaleTriggers struct {
-	Type     string            `json:"type"`
-	Name     string            `json:"name"`
-	Metadata map[string]string `json:"metadata"`
+	Type              string               `json:"type"`
+	Name              string               `json:"name"`
+	Metadata          map[string]string    `json:"metadata"`
+	AuthenticationRef *ScaledObjectAuthRef `json:"authenticationRef,omitempty"`
+}
+
+// ScaledObjectAuthRef points to the TriggerAuthentication object that
+// is used to authenticate the scaler with the environment
+type ScaledObjectAuthRef struct {
+	Name string `json:"name"`
 }
 
 // ScaledObjectStatus is the status for a ScaledObject resource
 type ScaledObjectStatus struct {
-	LastActiveTime  *metav1.Time `json:"lastActiveTime,omitempty"`
-	CurrentReplicas int32        `json:"currentReplicas"`
-	DesiredReplicas int32        `json:"desiredReplicas"`
+	LastActiveTime      *metav1.Time `json:"lastActiveTime,omitempty"`
+	CurrentReplicas     int32        `json:"currentReplicas"`
+	DesiredReplicas     int32        `json:"desiredReplicas"`
+	ExternalMetricNames []string     `json:"externalMetricNames,omitempty"`
 }
 
 // +kubebuilder:object:root=true

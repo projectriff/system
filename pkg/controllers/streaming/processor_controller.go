@@ -307,7 +307,7 @@ func (r *ProcessorReconciler) constructScaledObjectForProcessor(processor *strea
 			Labels:       labels,
 		},
 		Spec: kedav1alpha1.ScaledObjectSpec{
-			ScaleTargetRef: kedav1alpha1.ObjectReference{
+			ScaleTargetRef: &kedav1alpha1.ObjectReference{
 				DeploymentName: deployment.Name,
 			},
 			PollingInterval: &one,
