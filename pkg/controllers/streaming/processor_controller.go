@@ -295,7 +295,7 @@ func (r *ProcessorReconciler) constructScaledObjectForProcessor(processor *strea
 	labels["deploymentName"] = deployment.Name
 
 	maxReplicas := thirty
-	if !processor.Status.GetCondition(streamingv1alpha1.ProcessorConditionStreamsReady).IsFalse() {
+	if processor.Status.GetCondition(streamingv1alpha1.ProcessorConditionStreamsReady).IsFalse() {
 		// scale to zero while dependencies are not ready
 		maxReplicas = zero
 	}
