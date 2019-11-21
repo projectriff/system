@@ -524,7 +524,7 @@ apiVersion: admissionregistration.k8s.io/v1beta1
 kind: MutatingWebhookConfiguration
 metadata:
   annotations:
-    certmanager.k8s.io/inject-ca-from: riff-system/riff-build-serving-cert
+    cert-manager.io/inject-ca-from: riff-system/riff-build-serving-cert
   creationTimestamp: null
   labels:
     component: build.projectriff.io
@@ -995,7 +995,7 @@ spec:
           defaultMode: 420
           secretName: riff-build-webhook-server-cert
 ---
-apiVersion: certmanager.k8s.io/v1alpha1
+apiVersion: cert-manager.io/v1alpha2
 kind: Certificate
 metadata:
   labels:
@@ -1005,13 +1005,14 @@ metadata:
 spec:
   commonName: riff-build-webhook-service.riff-system.svc
   dnsNames:
+  - riff-build-webhook-service.riff-system.svc
   - riff-build-webhook-service.riff-system.svc.cluster.local
   issuerRef:
     kind: Issuer
     name: riff-build-selfsigned-issuer
   secretName: riff-build-webhook-server-cert
 ---
-apiVersion: certmanager.k8s.io/v1alpha1
+apiVersion: cert-manager.io/v1alpha2
 kind: Issuer
 metadata:
   labels:
@@ -1025,7 +1026,7 @@ apiVersion: admissionregistration.k8s.io/v1beta1
 kind: ValidatingWebhookConfiguration
 metadata:
   annotations:
-    certmanager.k8s.io/inject-ca-from: riff-system/riff-build-serving-cert
+    cert-manager.io/inject-ca-from: riff-system/riff-build-serving-cert
   creationTimestamp: null
   labels:
     component: build.projectriff.io

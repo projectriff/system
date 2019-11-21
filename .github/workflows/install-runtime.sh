@@ -22,12 +22,22 @@ helm repo add projectriff https://projectriff.storage.googleapis.com/charts/rele
 helm repo update
 
 echo "Installing Cert Manager"
-helm install projectriff/cert-manager --name cert-manager --devel --wait
+#TODO: change back to Helm after charts are updated with cert-manager v0.11.0
+#helm install projectriff/cert-manager --name cert-manager --devel --wait
+kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.11.0/cert-manager.yaml
+#TODO: ^^^
 sleep 5
 wait_pod_selector_ready app=cert-manager cert-manager
 wait_pod_selector_ready app=webhook cert-manager
 
-source $FATS_DIR/macros/no-resource-requests.sh
+#TODO: change back to FATS after it is with cert-manager v0.11.0
+# source $FATS_DIR/macros/no-resource-requests.sh
+if [ $(kubectl get nodes -oname | wc -l) = "1" ]; then
+  echo "Eliminate pod resource requests"
+  fats_retry kubectl apply -f https://storage.googleapis.com/projectriff/no-resource-requests-webhook/no-resource-requests-webhook-20191121210956-521ae2a8c3323540.yaml
+  wait_pod_selector_ready app=webhook no-resource-requests
+fi
+#TODO: ^^^
 
 echo "Installing kpack"
 fats_retry kubectl apply -f https://storage.googleapis.com/projectriff/internal/kpack/kpack-0.0.5-snapshot-5a4e635d.yaml

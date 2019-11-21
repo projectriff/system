@@ -37,7 +37,10 @@ elif [ $RUNTIME = "knative" ]; then
 fi
 
 echo "Cleanup Cert Manager"
-helm delete --purge cert-manager
+#TODO: change back to Helm after charts are updated with cert-manager v0.11.0
+#helm delete --purge cert-manager
+kubectl delete -f https://github.com/jetstack/cert-manager/releases/download/v0.11.0/cert-manager.yaml
+#TODO: ^^^
 kubectl delete customresourcedefinitions.apiextensions.k8s.io -l app.kubernetes.io/managed-by=Tiller,app.kubernetes.io/instance=cert-manager 
 
 echo "Remove Helm"

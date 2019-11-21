@@ -3019,7 +3019,7 @@ apiVersion: admissionregistration.k8s.io/v1beta1
 kind: MutatingWebhookConfiguration
 metadata:
   annotations:
-    certmanager.k8s.io/inject-ca-from: riff-system/riff-streaming-serving-cert
+    cert-manager.io/inject-ca-from: riff-system/riff-streaming-serving-cert
   creationTimestamp: null
   labels:
     component: streaming.projectriff.io
@@ -3518,7 +3518,7 @@ spec:
           defaultMode: 420
           secretName: riff-streaming-webhook-server-cert
 ---
-apiVersion: certmanager.k8s.io/v1alpha1
+apiVersion: cert-manager.io/v1alpha2
 kind: Certificate
 metadata:
   labels:
@@ -3528,13 +3528,14 @@ metadata:
 spec:
   commonName: riff-streaming-webhook-service.riff-system.svc
   dnsNames:
+  - riff-streaming-webhook-service.riff-system.svc
   - riff-streaming-webhook-service.riff-system.svc.cluster.local
   issuerRef:
     kind: Issuer
     name: riff-streaming-selfsigned-issuer
   secretName: riff-streaming-webhook-server-cert
 ---
-apiVersion: certmanager.k8s.io/v1alpha1
+apiVersion: cert-manager.io/v1alpha2
 kind: Issuer
 metadata:
   labels:
@@ -3548,7 +3549,7 @@ apiVersion: admissionregistration.k8s.io/v1beta1
 kind: ValidatingWebhookConfiguration
 metadata:
   annotations:
-    certmanager.k8s.io/inject-ca-from: riff-system/riff-streaming-serving-cert
+    cert-manager.io/inject-ca-from: riff-system/riff-streaming-serving-cert
   creationTimestamp: null
   labels:
     component: streaming.projectriff.io
