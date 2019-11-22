@@ -156,7 +156,7 @@ jobs:
           ${FATS_DIR}/install.sh kubectl
           ${FATS_DIR}/install.sh riff
           ${FATS_DIR}/install.sh ytt
-          ${FATS_DIR}/install.sh kapp
+          ${FATS_DIR}/install.sh kapp 0.15.0
           if [ ! -z "$GCLOUD_CLIENT_SECRET" ]; then
             ${FATS_DIR}/install.sh gcloud
           fi
