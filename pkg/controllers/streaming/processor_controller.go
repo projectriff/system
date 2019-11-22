@@ -55,6 +55,10 @@ const (
 	processorScaledObjectIndexField = ".metadata.processorScaledObjectController"
 )
 
+const (
+	bindingsRootPath = "/var/riff/bindings"
+)
+
 // ProcessorReconciler reconciles a Processor object
 type ProcessorReconciler struct {
 	client.Client
@@ -178,18 +182,18 @@ func (r *ProcessorReconciler) reconcile(ctx context.Context, logger logr.Logger,
 	if err != nil {
 		return ctrl.Result{Requeue: true}, err
 	}
-	processor.Status.InputAddresses = r.collectStreamAddresses(inputStreams)
+	processor.Status.DeprecatedInputAddresses = r.collectStreamAddresses(inputStreams)
 
 	// Resolve output addresses
 	outputStreams, err := r.resolveStreams(ctx, processorNSName, processor.Spec.Outputs)
 	if err != nil {
 		return ctrl.Result{Requeue: true}, err
 	}
-	processor.Status.OutputAddresses = r.collectStreamAddresses(outputStreams)
-	processor.Status.OutputContentTypes = r.collectStreamContentTypes(outputStreams)
+	processor.Status.DeprecatedOutputAddresses = r.collectStreamAddresses(outputStreams)
+	processor.Status.DeprecatedOutputContentTypes = r.collectStreamContentTypes(outputStreams)
 
 	// Reconcile deployment for processor
-	deployment, err := r.reconcileProcessorDeployment(ctx, logger, processor, &cm)
+	deployment, err := r.reconcileProcessorDeployment(ctx, logger, processor, inputStreams, outputStreams, &cm)
 	if err != nil {
 		logger.Error(err, "unable to reconcile deployment")
 		return ctrl.Result{}, err
@@ -198,7 +202,10 @@ func (r *ProcessorReconciler) reconcile(ctx context.Context, logger logr.Logger,
 	processor.Status.PropagateDeploymentStatus(&deployment.Status)
 
 	processor.Status.MarkStreamsReady()
-	for _, stream := range append(inputStreams, outputStreams...) {
+	streams := []streamingv1alpha1.Stream{}
+	streams = append(streams, inputStreams...)
+	streams = append(streams, outputStreams...)
+	for _, stream := range streams {
 		ready := stream.Status.GetCondition(stream.Status.GetReadyConditionType())
 		if ready == nil {
 			ready = &apis.Condition{Message: "stream has no ready condition"}
@@ -326,8 +333,8 @@ func (r *ProcessorReconciler) constructScaledObjectForProcessor(processor *strea
 }
 
 func triggers(proc *streamingv1alpha1.Processor) []kedav1alpha1.ScaleTriggers {
-	result := make([]kedav1alpha1.ScaleTriggers, len(proc.Status.InputAddresses))
-	for i, topic := range proc.Status.InputAddresses {
+	result := make([]kedav1alpha1.ScaleTriggers, len(proc.Status.DeprecatedInputAddresses))
+	for i, topic := range proc.Status.DeprecatedInputAddresses {
 		result[i].Type = "liiklus"
 		result[i].Metadata = map[string]string{
 			"address": strings.SplitN(topic, "/", 2)[0],
@@ -343,7 +350,7 @@ func (r *ProcessorReconciler) scaledObjectSemanticEquals(desiredDeployment, depl
 		equality.Semantic.DeepEqual(desiredDeployment.ObjectMeta.Labels, deployment.ObjectMeta.Labels)
 }
 
-func (r *ProcessorReconciler) reconcileProcessorDeployment(ctx context.Context, log logr.Logger, processor *streamingv1alpha1.Processor, cm *corev1.ConfigMap) (*appsv1.Deployment, error) {
+func (r *ProcessorReconciler) reconcileProcessorDeployment(ctx context.Context, log logr.Logger, processor *streamingv1alpha1.Processor, inputStreams, outputStreams []streamingv1alpha1.Stream, cm *corev1.ConfigMap) (*appsv1.Deployment, error) {
 	var actualDeployment appsv1.Deployment
 	var childDeployments appsv1.DeploymentList
 	if err := r.List(ctx, &childDeployments, client.InNamespace(processor.Namespace), client.MatchingField(processorDeploymentIndexField, processor.Name)); err != nil {
@@ -367,7 +374,7 @@ func (r *ProcessorReconciler) reconcileProcessorDeployment(ctx context.Context, 
 		return nil, fmt.Errorf("missing processor image configuration")
 	}
 
-	desiredDeployment, err := r.constructDeploymentForProcessor(processor, processorImg)
+	desiredDeployment, err := r.constructDeploymentForProcessor(processor, inputStreams, outputStreams, processorImg)
 	if err != nil {
 		return nil, err
 	}
@@ -413,13 +420,102 @@ func (r *ProcessorReconciler) reconcileProcessorDeployment(ctx context.Context, 
 	return deployment, nil
 }
 
-func (r *ProcessorReconciler) constructDeploymentForProcessor(processor *streamingv1alpha1.Processor, processorImg string) (*appsv1.Deployment, error) {
+func (r *ProcessorReconciler) constructDeploymentForProcessor(processor *streamingv1alpha1.Processor, inputStreams, outputStreams []streamingv1alpha1.Stream, processorImg string) (*appsv1.Deployment, error) {
 	labels := r.constructLabelsForProcessor(processor)
 
 	zero := int32(0)
 	environmentVariables, err := r.computeEnvironmentVariables(processor)
 	if err != nil {
 		return nil, err
+	}
+
+	volumes := []corev1.Volume{}
+	volumeMounts := []corev1.VolumeMount{}
+	// De-dupe streams and create one volume for each
+	streams := make(map[string]streamingv1alpha1.Stream)
+	for _, s := range inputStreams {
+		streams[s.Name] = s
+	}
+	for _, s := range outputStreams {
+		streams[s.Name] = s
+	}
+	for _, stream := range streams {
+		if stream.Status.Binding.MetadataRef.Name != "" {
+			metadataVolumeName := fmt.Sprintf("processor-stream-%s-metadata", stream.Name)
+			volumes = append(volumes,
+				corev1.Volume{
+					Name: metadataVolumeName,
+					VolumeSource: corev1.VolumeSource{
+						ConfigMap: &corev1.ConfigMapVolumeSource{
+							LocalObjectReference: corev1.LocalObjectReference{
+								Name: stream.Status.Binding.MetadataRef.Name,
+							},
+						},
+					},
+				},
+			)
+		}
+		if stream.Status.Binding.SecretRef.Name != "" {
+			secretVolumeName := fmt.Sprintf("processor-stream-%s-secret", stream.Name)
+			volumes = append(volumes,
+				corev1.Volume{
+					Name: secretVolumeName,
+					VolumeSource: corev1.VolumeSource{
+						Secret: &corev1.SecretVolumeSource{
+							SecretName: stream.Status.Binding.SecretRef.Name,
+						},
+					},
+				},
+			)
+		}
+	}
+	// Create one volume mount for each *binding*, split into inputs/outputs.
+	// The consumer of those will know to count from 0..Nbindings-1 thanks to the INPUT/OUTPUT_NAMES var
+	for i, binding := range processor.Spec.Inputs {
+		stream := streams[binding.Stream]
+		if stream.Status.Binding.MetadataRef.Name != "" {
+			metadataVolumeName := fmt.Sprintf("processor-stream-%s-metadata", stream.Name)
+			volumeMounts = append(volumeMounts,
+				corev1.VolumeMount{
+					Name:      metadataVolumeName,
+					MountPath: fmt.Sprintf("%s/input_%03d/metadata", bindingsRootPath, i),
+					ReadOnly:  true,
+				},
+			)
+		}
+		if stream.Status.Binding.SecretRef.Name != "" {
+			secretVolumeName := fmt.Sprintf("processor-stream-%s-secret", stream.Name)
+			volumeMounts = append(volumeMounts,
+				corev1.VolumeMount{
+					Name:      secretVolumeName,
+					MountPath: fmt.Sprintf("%s/input_%03d/secret", bindingsRootPath, i),
+					ReadOnly:  true,
+				},
+			)
+		}
+	}
+	for i, binding := range processor.Spec.Outputs {
+		stream := streams[binding.Stream]
+		if stream.Status.Binding.MetadataRef.Name != "" {
+			metadataVolumeName := fmt.Sprintf("processor-stream-%s-metadata", stream.Name)
+			volumeMounts = append(volumeMounts,
+				corev1.VolumeMount{
+					Name:      metadataVolumeName,
+					MountPath: fmt.Sprintf("%s/output_%03d/metadata", bindingsRootPath, i),
+					ReadOnly:  true,
+				},
+			)
+		}
+		if stream.Status.Binding.SecretRef.Name != "" {
+			secretVolumeName := fmt.Sprintf("processor-stream-%s-secret", stream.Name)
+			volumeMounts = append(volumeMounts,
+				corev1.VolumeMount{
+					Name:      secretVolumeName,
+					MountPath: fmt.Sprintf("%s/output_%03d/secret", bindingsRootPath, i),
+					ReadOnly:  true,
+				},
+			)
+		}
 	}
 
 	// merge provided template with controlled values
@@ -435,7 +531,9 @@ func (r *ProcessorReconciler) constructDeploymentForProcessor(processor *streami
 		Image:           processorImg,
 		ImagePullPolicy: v1.PullAlways,
 		Env:             environmentVariables,
+		VolumeMounts:    volumeMounts,
 	})
+	podSpec.Volumes = append(podSpec.Volumes, volumes...)
 
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -484,8 +582,8 @@ func (r *ProcessorReconciler) deploymentSemanticEquals(desiredDeployment, deploy
 }
 
 func (r *ProcessorReconciler) resolveStreams(ctx context.Context, processorCoordinates types.NamespacedName, bindings []streamingv1alpha1.StreamBinding) ([]streamingv1alpha1.Stream, error) {
-	streams := []streamingv1alpha1.Stream{}
-	for _, binding := range bindings {
+	streams := make([]streamingv1alpha1.Stream, len(bindings))
+	for i, binding := range bindings {
 		streamNSName := types.NamespacedName{
 			Namespace: processorCoordinates.Namespace,
 			Name:      binding.Stream,
@@ -499,7 +597,7 @@ func (r *ProcessorReconciler) resolveStreams(ctx context.Context, processorCoord
 		if err := r.Client.Get(ctx, streamNSName, &stream); err != nil {
 			return nil, err
 		}
-		streams = append(streams, stream)
+		streams[i] = stream
 	}
 	return streams, nil
 }
@@ -521,7 +619,7 @@ func (r *ProcessorReconciler) collectStreamContentTypes(streams []streamingv1alp
 }
 
 func (r *ProcessorReconciler) computeEnvironmentVariables(processor *streamingv1alpha1.Processor) ([]v1.EnvVar, error) {
-	contentTypesJson, err := json.Marshal(processor.Status.OutputContentTypes)
+	contentTypesJson, err := json.Marshal(processor.Status.DeprecatedOutputContentTypes)
 	if err != nil {
 		return nil, err
 	}
@@ -529,12 +627,18 @@ func (r *ProcessorReconciler) computeEnvironmentVariables(processor *streamingv1
 	outputsNames := r.collectAliases(processor.Spec.Outputs)
 	return []v1.EnvVar{
 		{
-			Name:  "INPUTS",
-			Value: strings.Join(processor.Status.InputAddresses, ","),
+			Name:  "CNB_BINDINGS",
+			Value: bindingsRootPath,
 		},
 		{
+			// TODO remove once the processor images consumes bindings
+			Name:  "INPUTS",
+			Value: strings.Join(processor.Status.DeprecatedInputAddresses, ","),
+		},
+		{
+			// TODO remove once the processor images consumes bindings
 			Name:  "OUTPUTS",
-			Value: strings.Join(processor.Status.OutputAddresses, ","),
+			Value: strings.Join(processor.Status.DeprecatedOutputAddresses, ","),
 		},
 		{
 			Name:  "INPUT_NAMES",
@@ -553,6 +657,7 @@ func (r *ProcessorReconciler) computeEnvironmentVariables(processor *streamingv1
 			Value: "localhost:8081",
 		},
 		{
+			// TODO remove once the processor images consumes bindings
 			Name:  "OUTPUT_CONTENT_TYPES",
 			Value: string(contentTypesJson),
 		},

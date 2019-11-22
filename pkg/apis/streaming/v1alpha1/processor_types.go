@@ -81,12 +81,12 @@ type ProcessorStatus struct {
 
 	apis.Status `json:",inline"`
 
-	InputAddresses     []string `json:"inputAddresses,omitempty"`
-	OutputAddresses    []string `json:"outputAddresses,omitempty"`
-	OutputContentTypes []string `json:"outputContentTypes,omitempty"`
-	DeploymentName     string   `json:"deploymentName,omitempty"`
-	ScaledObjectName   string   `json:"scaledObjectName,omitempty"`
-	LatestImage        string   `json:"latestImage,omitempty"`
+	DeprecatedInputAddresses     []string `json:"inputAddresses,omitempty"`
+	DeprecatedOutputAddresses    []string `json:"outputAddresses,omitempty"`
+	DeprecatedOutputContentTypes []string `json:"outputContentTypes,omitempty"`
+	DeploymentName               string   `json:"deploymentName,omitempty"`
+	ScaledObjectName             string   `json:"scaledObjectName,omitempty"`
+	LatestImage                  string   `json:"latestImage,omitempty"`
 }
 
 // +kubebuilder:object:root=true

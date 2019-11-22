@@ -19,12 +19,11 @@ package v1alpha1
 import (
 	"fmt"
 
+	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
-
-	"github.com/google/go-cmp/cmp"
 
 	"github.com/projectriff/system/pkg/validation"
 )
@@ -108,6 +107,40 @@ func (s *ProcessorSpec) Validate() validation.FieldErrors {
 		}
 		if output.Alias == "" {
 			errs = errs.Also(validation.ErrMissingField("alias").ViaFieldIndex("outputs", i))
+		}
+	}
+
+	errs = errs.Also(s.validateStreamAliasUniqueness())
+
+	return errs
+}
+
+func (s *ProcessorSpec) validateStreamAliasUniqueness() validation.FieldErrors {
+	errs := validation.FieldErrors{}
+
+	aliases := []string{}
+	uses := map[string][]string{}
+
+	for i, input := range s.Inputs {
+		alias := input.Alias
+		if _, ok := uses[alias]; !ok {
+			uses[alias] = []string{}
+			aliases = append(aliases, alias)
+		}
+		uses[alias] = append(uses[alias], fmt.Sprintf("inputs[%d].alias", i))
+	}
+	for i, output := range s.Outputs {
+		alias := output.Alias
+		if _, ok := uses[alias]; !ok {
+			uses[alias] = []string{}
+			aliases = append(aliases, alias)
+		}
+		uses[alias] = append(uses[alias], fmt.Sprintf("outputs[%d].alias", i))
+	}
+
+	for _, alias := range aliases {
+		if len(uses[alias]) > 1 {
+			errs = errs.Also(validation.ErrDuplicateValue(alias, uses[alias]...))
 		}
 	}
 

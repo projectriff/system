@@ -194,10 +194,10 @@ func TestValidateProcessorSpec(t *testing.T) {
 				FunctionRef: "my-func",
 			},
 			Inputs: []StreamBinding{
-				{Stream: "my-stream", Alias: "my-alias"},
+				{Stream: "my-stream", Alias: "my-input"},
 			},
 			Outputs: []StreamBinding{
-				{Stream: "my-stream", Alias: "my-alias"},
+				{Stream: "my-stream", Alias: "my-output"},
 			},
 			Template: &corev1.PodSpec{
 				Containers: []corev1.Container{
@@ -207,16 +207,53 @@ func TestValidateProcessorSpec(t *testing.T) {
 		},
 		expected: validation.FieldErrors{},
 	}, {
+		name: "input alias collision",
+		target: &ProcessorSpec{
+			Build: &Build{
+				FunctionRef: "my-func",
+			},
+			Inputs: []StreamBinding{
+				{Stream: "my-stream1", Alias: "my-input"},
+				{Stream: "my-stream2", Alias: "my-input"},
+			},
+			Outputs: []StreamBinding{},
+			Template: &corev1.PodSpec{
+				Containers: []corev1.Container{
+					{Name: "function"},
+				},
+			},
+		},
+		expected: validation.ErrDuplicateValue("my-input", "inputs[0].alias", "inputs[1].alias"),
+	}, {
+		name: "input/output alias collision",
+		target: &ProcessorSpec{
+			Build: &Build{
+				FunctionRef: "my-func",
+			},
+			Inputs: []StreamBinding{
+				{Stream: "my-stream1", Alias: "my-alias"},
+			},
+			Outputs: []StreamBinding{
+				{Stream: "my-stream2", Alias: "my-alias"},
+			},
+			Template: &corev1.PodSpec{
+				Containers: []corev1.Container{
+					{Name: "function"},
+				},
+			},
+		},
+		expected: validation.ErrDuplicateValue("my-alias", "inputs[0].alias", "outputs[0].alias"),
+	}, {
 		name: "invalid container name",
 		target: &ProcessorSpec{
 			Build: &Build{
 				FunctionRef: "my-func",
 			},
 			Inputs: []StreamBinding{
-				{Stream: "my-stream", Alias: "my-alias"},
+				{Stream: "my-stream", Alias: "my-input"},
 			},
 			Outputs: []StreamBinding{
-				{Stream: "my-stream", Alias: "my-alias"},
+				{Stream: "my-stream", Alias: "my-output"},
 			},
 			Template: &corev1.PodSpec{
 				Containers: []corev1.Container{

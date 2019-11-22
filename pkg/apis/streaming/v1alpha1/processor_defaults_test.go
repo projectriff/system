@@ -39,6 +39,7 @@ func TestProcessorDefault(t *testing.T) {
 					Containers: []corev1.Container{
 						{Name: "function"},
 					},
+					Volumes: []corev1.Volume{},
 				},
 			},
 		},
@@ -70,6 +71,7 @@ func TestProcessorSpecDefault(t *testing.T) {
 				Containers: []corev1.Container{
 					{Name: "function"},
 				},
+				Volumes: []corev1.Volume{},
 			},
 		},
 	}, {
@@ -92,6 +94,7 @@ func TestProcessorSpecDefault(t *testing.T) {
 				Containers: []corev1.Container{
 					{Name: "function"},
 				},
+				Volumes: []corev1.Volume{},
 			},
 		},
 	}, {
@@ -114,6 +117,7 @@ func TestProcessorSpecDefault(t *testing.T) {
 				Containers: []corev1.Container{
 					{Name: "function"},
 				},
+				Volumes: []corev1.Volume{},
 			},
 		},
 	}, {
@@ -132,6 +136,7 @@ func TestProcessorSpecDefault(t *testing.T) {
 				Containers: []corev1.Container{
 					{Name: "function"},
 				},
+				Volumes: []corev1.Volume{},
 			},
 		},
 	}, {
@@ -160,6 +165,7 @@ func TestProcessorSpecDefault(t *testing.T) {
 						},
 					},
 				},
+				Volumes: []corev1.Volume{},
 			},
 		},
 	}}

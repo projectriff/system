@@ -171,6 +171,28 @@ func TestErrInvalidValue(t *testing.T) {
 	}
 }
 
+func TestErrDuplicateValue(t *testing.T) {
+	expected := validation.FieldErrors{
+		&field.Error{
+			Type:     field.ErrorTypeDuplicate,
+			Field:    "my-field1",
+			BadValue: "value",
+			Detail:   "",
+		},
+		&field.Error{
+			Type:     field.ErrorTypeDuplicate,
+			Field:    "my-field2",
+			BadValue: "value",
+			Detail:   "",
+		},
+	}
+	actual := validation.ErrDuplicateValue("value", "my-field1", "my-field2")
+
+	if diff := cmp.Diff(expected, actual); diff != "" {
+		t.Errorf("(-expected, +actual): %s", diff)
+	}
+}
+
 func TestErrMissingField(t *testing.T) {
 	expected := validation.FieldErrors{
 		&field.Error{

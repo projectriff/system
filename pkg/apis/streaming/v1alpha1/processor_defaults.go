@@ -57,4 +57,7 @@ func (s *ProcessorSpec) Default() {
 	if s.Template.Containers[0].Name == "" {
 		s.Template.Containers[0].Name = "function"
 	}
+	if s.Template.Volumes == nil {
+		s.Template.Volumes = []corev1.Volume{}
+	}
 }

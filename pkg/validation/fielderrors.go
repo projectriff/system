@@ -118,6 +118,16 @@ func ErrInvalidValue(value interface{}, name string) FieldErrors {
 	}
 }
 
+func ErrDuplicateValue(value interface{}, names ...string) FieldErrors {
+	errs := FieldErrors{}
+
+	for _, name := range names {
+		errs = append(errs, field.Duplicate(field.NewPath(name), value))
+	}
+
+	return errs
+}
+
 func ErrMissingField(name string) FieldErrors {
 	return FieldErrors{
 		field.Required(field.NewPath(name), ""),
