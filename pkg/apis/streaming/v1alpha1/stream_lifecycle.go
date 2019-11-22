@@ -23,10 +23,12 @@ import (
 const (
 	StreamConditionReady                                = apis.ConditionReady
 	StreamConditionResourceAvailable apis.ConditionType = "ResourceAvailable"
+	StreamConditionBindingReady      apis.ConditionType = "BindingReady"
 )
 
 var streamCondSet = apis.NewLivingConditionSet(
 	StreamConditionResourceAvailable,
+	StreamConditionBindingReady,
 )
 
 func (ss *StreamStatus) GetObservedGeneration() int64 {
@@ -55,4 +57,12 @@ func (ss *StreamStatus) MarkStreamProvisioned() {
 
 func (ss *StreamStatus) MarkStreamProvisionFailed(message string) {
 	streamCondSet.Manage(ss).MarkFalse(StreamConditionReady, "ProvisionFailed", message)
+}
+
+func (ss *StreamStatus) MarkBindingReady() {
+	streamCondSet.Manage(ss).MarkTrue(StreamConditionBindingReady)
+}
+
+func (ss *StreamStatus) MarkBindingNotReady(message string) {
+	streamCondSet.Manage(ss).MarkFalse(StreamConditionBindingReady, "BindingFailed", message)
 }

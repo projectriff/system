@@ -54,6 +54,19 @@ spec:
                 topic:
                   type: string
               type: object
+            binding:
+              properties:
+                metadataRef:
+                  properties:
+                    name:
+                      type: string
+                  type: object
+                secretRef:
+                  properties:
+                    name:
+                      type: string
+                  type: object
+              type: object
             conditions:
               items:
                 properties:

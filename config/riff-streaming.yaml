@@ -2978,6 +2978,19 @@ spec:
                 topic:
                   type: string
               type: object
+            binding:
+              properties:
+                metadataRef:
+                  properties:
+                    name:
+                      type: string
+                  type: object
+                secretRef:
+                  properties:
+                    name:
+                      type: string
+                  type: object
+              type: object
             conditions:
               items:
                 properties:
@@ -3166,8 +3179,24 @@ rules:
   resources:
   - configmaps
   verbs:
+  - create
+  - delete
   - get
   - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
   - watch
 - apiGroups:
   - ""
