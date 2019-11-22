@@ -10,7 +10,7 @@ source ${FATS_DIR}/.configure.sh
 kubectl create namespace ${NAMESPACE}
 fats_create_push_credentials ${NAMESPACE}
 
-if [ $RUNTIME = "core" ] -o [ $RUNTIME = "knative" ]; then
+if [ $RUNTIME = "core" ] || [ $RUNTIME = "knative" ]; then
   for location in cluster local; do
     for test in function application; do
       name=system-${RUNTIME}-${location}-uppercase-node-${test}
