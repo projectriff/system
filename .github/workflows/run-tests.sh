@@ -42,6 +42,6 @@ if [ $RUNTIME = "core" ] -o [ $RUNTIME = "knative" ]; then
   done
 
 elif [ $RUNTIME = "streaming" ]; then
-  # TODO test the streaming runtime
+  echo "TODO: test the streaming runtime"
 
 fi
