@@ -36,4 +36,4 @@ echo "Cleanup kpack"
 kapp delete -n apps -a kpack -y
 
 echo "Cleanup Cert Manager"
-kapp delete --purge cert-manager -y
+kapp delete -n apps -a cert-manager -y
