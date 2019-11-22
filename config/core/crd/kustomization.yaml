@@ -5,17 +5,6 @@ resources:
 - bases/core.projectriff.io_deployers.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
-patchesJson6902:
-
-# TODO remove once k8s 1.14 is no longer required
-# preserveUnknownFields is not available in 1.14, so we need to remove the value
-- target:
-    group: apiextensions.k8s.io
-    version: v1beta1
-    kind: CustomResourceDefinition
-    name: deployers.core.projectriff.io
-  path: patches/remove_preserveUnknownFields.yaml
-
 patchesStrategicMerge:
 # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix.
 # patches here are for enabling the conversion webhook for each CRD
