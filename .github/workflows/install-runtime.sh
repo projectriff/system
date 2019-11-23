@@ -9,64 +9,61 @@ readonly git_sha=$(git rev-parse HEAD)
 readonly git_timestamp=$(TZ=UTC git show --quiet --date='format-local:%Y%m%d%H%M%S' --format="%cd")
 readonly slug=${version}-${git_timestamp}-${git_sha:0:16}
 
-readonly tiller_service_account=tiller
-readonly tiller_namespace=kube-system
+readonly riff_version=0.5.0-snapshot
 
 source ${FATS_DIR}/.configure.sh
 
 export KO_DOCKER_REPO=$(fats_image_repo '#' | cut -d '#' -f 1 | sed 's|/$||g')
-
-echo "Initialize Helm"
-source $FATS_DIR/macros/helm-init.sh
-helm repo add projectriff https://projectriff.storage.googleapis.com/charts/releases
-helm repo update
+kubectl create ns apps
 
 echo "Installing Cert Manager"
-helm install projectriff/cert-manager --name cert-manager --devel --wait
-sleep 5
-wait_pod_selector_ready app=cert-manager cert-manager
-wait_pod_selector_ready app=webhook cert-manager
+kapp deploy -n apps -a cert-manager -f https://storage.googleapis.com/projectriff/charts/uncharted/${riff_version}/cert-manager.yaml -y
 
 source $FATS_DIR/macros/no-resource-requests.sh
 
 echo "Installing kpack"
-fats_retry kubectl apply -f https://storage.googleapis.com/projectriff/internal/kpack/kpack-0.0.5-snapshot-5a4e635d.yaml
+kapp deploy -n apps -a kpack -f https://storage.googleapis.com/projectriff/charts/uncharted/${riff_version}/kpack.yaml -y
 
 echo "Installing riff Build"
 if [ $MODE = "push" ]; then
-  fats_retry kubectl apply -f https://storage.googleapis.com/projectriff/riff-system/snapshots/riff-build-${slug}.yaml
+  kapp deploy -n apps -a riff-build -f https://storage.googleapis.com/projectriff/riff-system/snapshots/riff-build-${slug}.yaml -y
 elif [ $MODE = "pull_request" ]; then
-  ko apply -f config/riff-build.yaml
+  ko resolve -f config/riff-build.yaml | kapp deploy -n apps -a riff-build -f - -y
 fi
-fats_retry kubectl apply -f https://storage.googleapis.com/projectriff/riff-buildtemplate/riff-application-clusterbuilder.yaml
-fats_retry kubectl apply -f https://storage.googleapis.com/projectriff/riff-buildtemplate/riff-function-clusterbuilder.yaml
+kapp deploy -n apps -a riff-builders -f https://storage.googleapis.com/projectriff/charts/uncharted/${riff_version}/riff-builders.yaml -y
 
 if [ $RUNTIME = "core" ]; then
   echo "Installing riff Core Runtime"
   if [ $MODE = "push" ]; then
-    fats_retry kubectl apply -f https://storage.googleapis.com/projectriff/riff-system/snapshots/riff-core-${slug}.yaml
+    kapp deploy -n apps -a riff-core-runtime -f https://storage.googleapis.com/projectriff/riff-system/snapshots/riff-core-${slug}.yaml -y
   elif [ $MODE = "pull_request" ]; then
-    ko apply -f config/riff-core.yaml
+    ko resolve -f config/riff-core.yaml | kapp deploy -n apps -a riff-core-runtime -f - -y
   fi
+
 elif [ $RUNTIME = "knative" ]; then
   echo "Installing Istio"
-  helm install projectriff/istio --name istio --namespace istio-system --devel --wait --set gateways.istio-ingressgateway.type=${K8S_SERVICE_TYPE}
-  echo "Checking for ready ingress"
-  wait_for_ingress_ready 'istio-ingressgateway' 'istio-system'
+  ytt -f https://storage.googleapis.com/projectriff/charts/uncharted/${riff_version}/istio.yaml -f https://storage.googleapis.com/projectriff/charts/overlays/service-$(echo ${K8S_SERVICE_TYPE} | tr '[A-Z]' '[a-z]').yaml --file-mark istio.yaml:type=yaml-plain \
+    | kapp deploy -n apps -a istio -f - -y
   
   echo "Installing Knative Serving"
-  fats_retry kubectl apply -f https://storage.googleapis.com/knative-releases/serving/previous/v0.9.0/serving-post-1.14.yaml
+  kapp deploy -n apps -a knative -f https://storage.googleapis.com/projectriff/charts/uncharted/${riff_version}/knative.yaml -y
 
   echo "Installing riff Knative Runtime"
   if [ $MODE = "push" ]; then
-    fats_retry kubectl apply -f https://storage.googleapis.com/projectriff/riff-system/snapshots/riff-knative-${slug}.yaml
+    kapp deploy -n apps -a riff-knative-runtime -f https://storage.googleapis.com/projectriff/riff-system/snapshots/riff-knative-${slug}.yaml -y
   elif [ $MODE = "pull_request" ]; then
-    ko apply -f config/riff-knative.yaml
+    ko resolve -f config/riff-knative.yaml | kapp deploy -n apps -a riff-knative-runtime -f - -y
   fi
-elif [ $RUNTIME = "streaming" ]; then
-  echo "Streaming runtime is not implemented yet"
-  exit 1
-fi
 
-wait_pod_selector_ready "component=build.projectriff.io,control-plane=controller-manager" riff-system
-wait_pod_selector_ready "component=${RUNTIME}.projectriff.io,control-plane=controller-manager" riff-system
+elif [ $RUNTIME = "streaming" ]; then
+  echo "Installing KEDA"
+  kapp deploy -n apps -a keda -f https://storage.googleapis.com/projectriff/charts/uncharted/${riff_version}/keda.yaml -y
+
+  echo "Installing riff Streaming Runtime"
+  if [ $MODE = "push" ]; then
+    kapp deploy -n apps -a riff-streaming-runtime -f https://storage.googleapis.com/projectriff/riff-system/snapshots/riff-streaming-${slug}.yaml -y
+  elif [ $MODE = "pull_request" ]; then
+    ko resolve -f config/riff-streaming.yaml | kapp deploy -n apps -a riff-streaming-runtime -f - -y
+  fi
+
+fi

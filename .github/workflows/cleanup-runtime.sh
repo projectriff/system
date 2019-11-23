@@ -2,43 +2,38 @@
 
 set -o nounset
 
-readonly version=$(cat VERSION)
-readonly git_sha=$(git rev-parse HEAD)
-readonly git_timestamp=$(TZ=UTC git show --quiet --date='format-local:%Y%m%d%H%M%S' --format="%cd")
-readonly slug=${version}-${git_timestamp}-${git_sha:0:16}
-
 source $FATS_DIR/macros/cleanup-user-resources.sh
-
-echo "Cleanup riff Build"
-kubectl delete -f https://storage.googleapis.com/projectriff/riff-system/snapshots/riff-build-${slug}.yaml
-kubectl delete -f https://storage.googleapis.com/projectriff/riff-buildtemplate/riff-application-clusterbuilder.yaml
-kubectl delete -f https://storage.googleapis.com/projectriff/riff-buildtemplate/riff-function-clusterbuilder.yaml
-
-echo "Cleanup kpack"
-kubectl delete -f https://storage.googleapis.com/projectriff/internal/kpack/kpack-0.0.5-snapshot-5a4e635d.yaml
 
 if [ $RUNTIME = "core" ]; then
   echo "Cleanup riff Core Runtime"
-  kubectl delete -f https://storage.googleapis.com/projectriff/riff-system/snapshots/riff-core-${slug}.yaml
+  kapp delete -n apps -a riff-core-runtime -y
 
 elif [ $RUNTIME = "knative" ]; then
-  echo "Cleanup Istio"
-  helm delete --purge istio
-  kubectl delete namespace istio-system
-  kubectl get customresourcedefinitions.apiextensions.k8s.io -oname | grep istio.io | xargs -L1 kubectl delete
+  echo "Cleanup riff Knative Runtime"
+  kapp delete -n apps -a riff-knative-runtime -y
 
   echo "Cleanup Knative Serving"
-  kubectl delete knative -n $NAMESPACE --all
-  retry kubectl apply -f https://storage.googleapis.com/knative-releases/serving/previous/v0.9.0/serving-post-1.14.yaml
+  kapp delete -n apps -a knative -y
 
-  echo "Cleanup riff Knative Runtime"
-  kubectl delete -f https://storage.googleapis.com/projectriff/riff-system/snapshots/riff-knative-${slug}.yaml
+  echo "Cleanup Istio"
+  kapp delete -n apps -a istio -y
+  kubectl get customresourcedefinitions.apiextensions.k8s.io -oname | grep istio.io | xargs -L1 kubectl delete
+
+elif [ $RUNTIME = "streaming" ]; then
+  echo "Cleanup riff Streaming Runtime"
+  kapp delete -n apps -a riff-streaming-runtime -y
+
+  echo "Cleanup KEDA"
+  kapp delete -n apps -a keda -y
 
 fi
 
-echo "Cleanup Cert Manager"
-helm delete --purge cert-manager
-kubectl delete customresourcedefinitions.apiextensions.k8s.io -l app.kubernetes.io/managed-by=Tiller,app.kubernetes.io/instance=cert-manager 
+echo "Cleanup riff Build"
+kapp delete -n apps -a riff-build -y
+kapp delete -n apps -a riff-builders -y
 
-echo "Remove Helm"
-source $FATS_DIR/macros/helm-reset.sh
+echo "Cleanup kpack"
+kapp delete -n apps -a kpack -y
+
+echo "Cleanup Cert Manager"
+kapp delete -n apps -a cert-manager -y

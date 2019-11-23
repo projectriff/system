@@ -10,7 +10,7 @@ on:
 env:
   FATS_DIR: fats
   FATS_REPO: projectriff/fats
-  FATS_REFSPEC: 7bb452f1bf00ab9a9617aee7239704604c967768 # master as of 2019-11-21
+  FATS_REFSPEC: 06aacf672daaf1ab70ad4e7db9846037eaf1340a # master as of 2019-11-22
 
 jobs:
 
@@ -119,7 +119,7 @@ jobs:
         runtime:
         - core
         - knative
-        # - streaming # TODO add acceptances tests
+        - streaming
       fail-fast: false
     runs-on: ubuntu-latest
     steps:
@@ -155,7 +155,8 @@ jobs:
         run: |
           ${FATS_DIR}/install.sh kubectl
           ${FATS_DIR}/install.sh riff
-          ${FATS_DIR}/install.sh ytt 0.20.0
+          ${FATS_DIR}/install.sh ytt
+          ${FATS_DIR}/install.sh kapp
           if [ ! -z "$GCLOUD_CLIENT_SECRET" ]; then
             ${FATS_DIR}/install.sh gcloud
           fi
