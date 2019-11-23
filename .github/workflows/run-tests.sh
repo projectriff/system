@@ -45,6 +45,8 @@ elif [ $RUNTIME = "streaming" ]; then
   echo "TODO: test the streaming runtime"
   # TODO move setup to fats
   ${FATS_DIR}/install.sh helm
+  source ${FATS_DIR}/macros/helm-init.sh
+
   helm repo add incubator http://storage.googleapis.com/kubernetes-charts-incubator
   helm install --name my-kafka incubator/kafka --set replicas=1,zookeeper.replicaCount=1,zookeeper.env.ZK_HEAP_SIZE=128m --namespace $NAMESPACE --wait
 
