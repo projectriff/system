@@ -66,4 +66,7 @@ elif [ $RUNTIME = "streaming" ]; then
     ko resolve -f config/riff-streaming.yaml | kapp deploy -n apps -a riff-streaming-runtime -f - -y
   fi
 
+  echo "Installing Kafka"
+  kapp deploy -n apps -a kafka -f https://storage.googleapis.com/projectriff/charts/uncharted/${riff_version}/kafka.yaml -y
+
 fi
