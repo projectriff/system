@@ -78,8 +78,6 @@ type ScaledObjectAuthRef struct {
 // ScaledObjectStatus is the status for a ScaledObject resource
 type ScaledObjectStatus struct {
 	LastActiveTime      *metav1.Time `json:"lastActiveTime,omitempty"`
-	CurrentReplicas     int32        `json:"currentReplicas"`
-	DesiredReplicas     int32        `json:"desiredReplicas"`
 	ExternalMetricNames []string     `json:"externalMetricNames,omitempty"`
 }
 
