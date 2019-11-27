@@ -9,6 +9,7 @@ source ${FATS_DIR}/.configure.sh
 # setup namespace
 kubectl create namespace ${NAMESPACE}
 fats_create_push_credentials ${NAMESPACE}
+source ${FATS_DIR}/macros/create-riff-dev-pod.sh
 
 if [ $RUNTIME = "core" ] || [ $RUNTIME = "knative" ]; then
   for location in cluster local; do
@@ -42,6 +43,63 @@ if [ $RUNTIME = "core" ] || [ $RUNTIME = "knative" ]; then
   done
 
 elif [ $RUNTIME = "streaming" ]; then
-  echo "TODO: test the streaming runtime"
+  riff streaming kafka-provider create franz --bootstrap-servers kafka.kafka.svc.cluster.local:9092 --namespace $NAMESPACE
+
+  for test in node ; do
+    name=system-${RUNTIME}-fn-uppercase-${test}
+    image=$(fats_image_repo ${name})
+
+    echo "##[group]Run function ${name}"
+
+    riff function create ${name} --image ${image} --namespace ${NAMESPACE} --tail \
+      --git-repo https://github.com/${FATS_REPO} --git-revision ${FATS_REFSPEC} --sub-path functions/uppercase/${test}
+
+    lower_stream=${name}-lower
+    upper_stream=${name}-upper
+
+    provider=$(kubectl get kafkaproviders.streaming.projectriff.io franz --namespace ${NAMESPACE} -ojsonpath='{.status.provisionerServiceName}')
+    riff streaming stream create ${lower_stream} --namespace $NAMESPACE --provider ${provider} --content-type 'text/plain'
+    riff streaming stream create ${upper_stream} --namespace $NAMESPACE --provider ${provider} --content-type 'text/plain'
+
+    # TODO remove once riff streaming stream supports --tail
+    kubectl wait streams.streaming.projectriff.io ${lower_stream} --for=condition=Ready --namespace $NAMESPACE --timeout=60s
+    kubectl wait streams.streaming.projectriff.io ${upper_stream} --for=condition=Ready --namespace $NAMESPACE --timeout=60s
+
+    riff streaming processor create $name --function-ref $name --namespace $NAMESPACE --input ${lower_stream} --output ${upper_stream}
+    kubectl wait processors.streaming.projectriff.io $name --for=condition=Ready --namespace $NAMESPACE --timeout=60s
+
+    kubectl exec riff-dev -n $NAMESPACE -- subscribe ${upper_stream} -n $NAMESPACE --payload-as-string | tee result.txt &
+    sleep 10
+    kubectl exec riff-dev -n $NAMESPACE -- publish ${lower_stream} -n $NAMESPACE --payload "system" --content-type "text/plain"
+
+    actual_data=""
+    expected_data="SYSTEM"
+    cnt=1
+    while [ $cnt -lt 60 ]; do
+      echo -n "."
+      cnt=$((cnt+1))
+
+      actual_data=`cat result.txt | jq -r .payload`
+      if [ "$actual_data" == "$expected_data" ]; then
+        break
+      fi
+
+      sleep 1
+    done
+    fats_assert "$expected_data" "$actual_data"
+
+    kubectl exec riff-dev -n $NAMESPACE -- sh -c 'kill $(pidof subscribe)'
+
+    riff streaming stream delete ${lower_stream} --namespace $NAMESPACE
+    riff streaming stream delete ${upper_stream} --namespace $NAMESPACE
+    riff streaming processor delete $name --namespace $NAMESPACE
+
+    riff function delete ${name} --namespace ${NAMESPACE}
+    fats_delete_image ${image}
+
+    echo "##[endgroup]"
+  done
+
+  riff streaming kafka-provider delete franz --namespace $NAMESPACE
 
 fi

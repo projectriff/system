@@ -52,11 +52,11 @@ func (ss *StreamStatus) InitializeConditions() {
 }
 
 func (ss *StreamStatus) MarkStreamProvisioned() {
-	streamCondSet.Manage(ss).MarkTrue(StreamConditionReady)
+	streamCondSet.Manage(ss).MarkTrue(StreamConditionResourceAvailable)
 }
 
 func (ss *StreamStatus) MarkStreamProvisionFailed(message string) {
-	streamCondSet.Manage(ss).MarkFalse(StreamConditionReady, "ProvisionFailed", message)
+	streamCondSet.Manage(ss).MarkFalse(StreamConditionResourceAvailable, "ProvisionFailed", message)
 }
 
 func (ss *StreamStatus) MarkBindingReady() {
