@@ -49,12 +49,6 @@ const (
 	deploymentIndexField = ".metadata.deploymentController"
 	serviceIndexField    = ".metadata.serviceController"
 	ingressIndexField    = ".metadata.ingressController"
-
-	kustomizePrefix = "riff-streaming" // kustomize adds this prefix to all our resource names
-
-	coreDeployerConfigMapName = kustomizePrefix + "-core-deployer"
-	defaultDomainKey          = "defaultDomain"
-	defaultDomain             = "example.com"
 )
 
 // DeployerReconciler reconciles a Deployer object
