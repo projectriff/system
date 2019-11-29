@@ -51,6 +51,10 @@ type DeployerSpec struct {
 	// IngressPolicy defines whether the workload should be reachable from
 	// outside the cluster
 	IngressPolicy IngressPolicy `json:"ingressPolicy,omitempty"`
+
+	// ServiceName is a name for the service created by the deployer.
+	// If omitted, a name is generated.
+	ServiceName string `json:"serviceName,omitempty"`
 }
 
 type Build struct {
