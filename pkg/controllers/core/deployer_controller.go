@@ -54,10 +54,9 @@ const (
 // DeployerReconciler reconciles a Deployer object
 type DeployerReconciler struct {
 	client.Client
-	Log       logr.Logger
-	Scheme    *runtime.Scheme
-	Tracker   tracker.Tracker
-	Namespace string
+	Log     logr.Logger
+	Scheme  *runtime.Scheme
+	Tracker tracker.Tracker
 }
 
 // +kubebuilder:rbac:groups=core.projectriff.io,resources=deployers,verbs=get;list;watch;create;update;patch;delete
@@ -657,7 +656,7 @@ func (r *DeployerReconciler) enqueueTrackedConfigMapResource() handler.EventHand
 		ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
 			requests := []reconcile.Request{}
 
-			if a.Meta.GetNamespace() == r.Namespace && a.Meta.GetName() == coreDeployerConfigMapName {
+			if a.Meta.GetNamespace() == systemNamespace && a.Meta.GetName() == coreDeployerConfigMapName {
 				key := tracker.NewKey(
 					schema.GroupVersionKind{Version: "v1", Kind: "ConfigMap"},
 					types.NamespacedName{Namespace: a.Meta.GetNamespace(), Name: a.Meta.GetName()},

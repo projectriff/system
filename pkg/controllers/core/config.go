@@ -19,6 +19,8 @@ package core
 const (
 	kustomizePrefix = "riff-core" // kustomize adds this prefix to all our resource names
 
+	systemNamespace = "riff-system"
+
 	coreDeployerConfigMapName = kustomizePrefix + "-default-domain"
 	defaultDomainKey          = "defaultDomain"
 	defaultDomain             = "example.com"
