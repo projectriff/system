@@ -21,7 +21,7 @@ const (
 
 	systemNamespace = "riff-system"
 
-	coreDeployerConfigMapName = kustomizePrefix + "-default-domain"
-	defaultDomainKey          = "defaultDomain"
-	defaultDomain             = "example.com"
+	configMapName    = kustomizePrefix + "-settings"
+	defaultDomainKey = "defaultDomain"
+	defaultDomain    = "example.com"
 )

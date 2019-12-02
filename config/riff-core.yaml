@@ -2973,7 +2973,7 @@ kind: ConfigMap
 metadata:
   labels:
     component: core.projectriff.io
-  name: riff-core-default-domain
+  name: riff-core-settings
   namespace: riff-system
 ---
 apiVersion: v1

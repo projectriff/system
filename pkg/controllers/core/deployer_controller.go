@@ -656,7 +656,7 @@ func (r *DeployerReconciler) enqueueTrackedConfigMapResource() handler.EventHand
 		ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
 			requests := []reconcile.Request{}
 
-			if a.Meta.GetNamespace() == systemNamespace && a.Meta.GetName() == coreDeployerConfigMapName {
+			if a.Meta.GetNamespace() == systemNamespace && a.Meta.GetName() == configMapName {
 				key := tracker.NewKey(
 					schema.GroupVersionKind{Version: "v1", Kind: "ConfigMap"},
 					types.NamespacedName{Namespace: a.Meta.GetNamespace(), Name: a.Meta.GetName()},
