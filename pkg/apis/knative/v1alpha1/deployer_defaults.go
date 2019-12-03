@@ -38,6 +38,6 @@ func (s *DeployerSpec) Default() {
 		s.Template.Containers = append(s.Template.Containers, corev1.Container{})
 	}
 	if s.IngressPolicy == "" {
-		s.IngressPolicy = IngressPolicyExternal
+		s.IngressPolicy = IngressPolicyClusterLocal
 	}
 }
