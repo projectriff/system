@@ -131,6 +131,12 @@ func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, dep
 	// reconcile service
 	childService, err := r.reconcileChildService(ctx, log, deployer)
 	if err != nil {
+		if apierrs.IsAlreadyExists(err) {
+			service := err.(apierrs.APIStatus).Status().Details.Name
+			deployer.Status.MarkServiceNotOwned(service)
+			log.Info("unable to reconcile child Service, service not owned", "deployer", deployer, "service", service)
+			return ctrl.Result{}, nil
+		}
 		log.Error(err, "unable to reconcile child Service", "deployer", deployer)
 		return ctrl.Result{}, err
 	}
@@ -540,10 +546,10 @@ func (r *DeployerReconciler) constructServiceForDeployer(deployer *corev1alpha1.
 
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Labels:       labels,
-			Annotations:  make(map[string]string),
-			GenerateName: fmt.Sprintf("%s-deployer-", deployer.Name),
-			Namespace:    deployer.Namespace,
+			Labels:      labels,
+			Annotations: make(map[string]string),
+			Namespace:   deployer.Namespace,
+			Name:        deployer.Name,
 		},
 		Spec: corev1.ServiceSpec{
 			Ports: []corev1.ServicePort{
