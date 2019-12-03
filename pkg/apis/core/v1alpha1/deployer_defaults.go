@@ -56,6 +56,6 @@ func (s *DeployerSpec) Default() {
 		s.Template.Containers[0].Ports[0].ContainerPort = 8080
 	}
 	if s.IngressPolicy == "" {
-		s.IngressPolicy = IngressPolicyExternal
+		s.IngressPolicy = IngressPolicyClusterLocal
 	}
 }

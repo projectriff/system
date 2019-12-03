@@ -43,7 +43,7 @@ func TestDeployerDefault(t *testing.T) {
 						},
 					},
 				},
-				IngressPolicy: IngressPolicyExternal,
+				IngressPolicy: IngressPolicyClusterLocal,
 			},
 		},
 	}}
@@ -78,7 +78,7 @@ func TestDeployerSpecDefault(t *testing.T) {
 					},
 				},
 			},
-			IngressPolicy: IngressPolicyExternal,
+			IngressPolicy: IngressPolicyClusterLocal,
 		},
 	}, {
 		name: "ensure at least one port",
@@ -100,7 +100,7 @@ func TestDeployerSpecDefault(t *testing.T) {
 					},
 				},
 			},
-			IngressPolicy: IngressPolicyExternal,
+			IngressPolicy: IngressPolicyClusterLocal,
 		},
 	}, {
 		name: "ensure at least one port",
@@ -122,12 +122,12 @@ func TestDeployerSpecDefault(t *testing.T) {
 					},
 				},
 			},
-			IngressPolicy: IngressPolicyExternal,
+			IngressPolicy: IngressPolicyClusterLocal,
 		},
 	}, {
 		name: "preserve ingress policy",
 		in: &DeployerSpec{
-			IngressPolicy: IngressPolicyClusterLocal,
+			IngressPolicy: IngressPolicyExternal,
 		},
 		want: &DeployerSpec{
 			Template: &corev1.PodSpec{
@@ -140,7 +140,7 @@ func TestDeployerSpecDefault(t *testing.T) {
 					},
 				},
 			},
-			IngressPolicy: IngressPolicyClusterLocal,
+			IngressPolicy: IngressPolicyExternal,
 		},
 	}}
 

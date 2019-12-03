@@ -26,7 +26,7 @@ if [ $RUNTIME = "core" ] || [ $RUNTIME = "knative" ]; then
           --local-path ${FATS_DIR}/${test}s/uppercase/node
       fi
 
-      riff $RUNTIME deployer create $name --${test}-ref $name --namespace $NAMESPACE --tail
+      riff $RUNTIME deployer create $name --${test}-ref $name --namespace $NAMESPACE --ingress-policy External --tail
       if [ $test = 'function' ] ; then
         source ${FATS_DIR}/macros/invoke_${RUNTIME}_deployer.sh $name "-H Content-Type:text/plain -H Accept:text/plain -d system" SYSTEM
       else

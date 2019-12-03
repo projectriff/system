@@ -38,7 +38,7 @@ func TestDeployerDefault(t *testing.T) {
 						{},
 					},
 				},
-				IngressPolicy: IngressPolicyExternal,
+				IngressPolicy: IngressPolicyClusterLocal,
 			},
 		},
 	}}
@@ -68,7 +68,7 @@ func TestDeployerSpecDefault(t *testing.T) {
 					{},
 				},
 			},
-			IngressPolicy: IngressPolicyExternal,
+			IngressPolicy: IngressPolicyClusterLocal,
 		},
 	}}
 
