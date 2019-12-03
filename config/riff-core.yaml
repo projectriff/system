@@ -51,8 +51,6 @@ spec:
               type: object
             ingressPolicy:
               type: string
-            serviceName:
-              type: string
             template:
               properties:
                 activeDeadlineSeconds:
