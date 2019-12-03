@@ -89,6 +89,10 @@ func (ds *DeployerStatus) PropagateServiceStatus(ss *corev1.ServiceStatus) {
 	deployerCondSet.Manage(ds).MarkTrue(DeployerConditionServiceReady)
 }
 
+func (ds *DeployerStatus) MarkServiceCreationFailed(err error) {
+	deployerCondSet.Manage(ds).MarkFalse(DeployerConditionServiceReady, "serviceCreationFailed", "%v", err)
+}
+
 func (ds *DeployerStatus) MarkIngressNotRequired() {
 	deployerCondSet.Manage(ds).MarkFalse(DeployerConditionIngressReady, "IngressNotRequired", "Ingress resource is not required.")
 }

@@ -503,6 +503,7 @@ func (r *DeployerReconciler) reconcileChildService(ctx context.Context, log logr
 		log.Info("creating service", "spec", desiredService.Spec)
 		if err := r.Create(ctx, desiredService); err != nil {
 			log.Error(err, "unable to create Service for Deployer", "service", desiredService)
+			deployer.Status.MarkServiceCreationFailed(err)
 			return nil, err
 		}
 		return desiredService, nil
@@ -540,10 +541,10 @@ func (r *DeployerReconciler) constructServiceForDeployer(deployer *corev1alpha1.
 
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Labels:       labels,
-			Annotations:  make(map[string]string),
-			GenerateName: fmt.Sprintf("%s-deployer-", deployer.Name),
-			Namespace:    deployer.Namespace,
+			Labels:      labels,
+			Annotations: make(map[string]string),
+			Namespace:   deployer.Namespace,
+			Name:        deployer.Name,
 		},
 		Spec: corev1.ServiceSpec{
 			Ports: []corev1.ServicePort{
