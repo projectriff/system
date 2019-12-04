@@ -131,6 +131,12 @@ func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, dep
 	// reconcile service
 	childService, err := r.reconcileChildService(ctx, log, deployer)
 	if err != nil {
+		if apierrs.IsAlreadyExists(err) {
+			service := err.(apierrs.APIStatus).Status().Details.Name
+			deployer.Status.MarkServiceNotOwned(service)
+			log.Info("unable to reconcile child Service, service not owned", "deployer", deployer, "service", service)
+			return ctrl.Result{}, nil
+		}
 		log.Error(err, "unable to reconcile child Service", "deployer", deployer)
 		return ctrl.Result{}, err
 	}
@@ -503,7 +509,6 @@ func (r *DeployerReconciler) reconcileChildService(ctx context.Context, log logr
 		log.Info("creating service", "spec", desiredService.Spec)
 		if err := r.Create(ctx, desiredService); err != nil {
 			log.Error(err, "unable to create Service for Deployer", "service", desiredService)
-			deployer.Status.MarkServiceCreationFailed(err)
 			return nil, err
 		}
 		return desiredService, nil
