@@ -29,7 +29,6 @@ import (
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -104,11 +103,17 @@ func (r *DeployerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 func (r *DeployerReconciler) getAndTrackConfigMap(ctx context.Context, log logr.Logger, deployer *corev1alpha1.Deployer) (*corev1.ConfigMap, error) {
 	cm := &corev1.ConfigMap{}
-	cmKey := types.NamespacedName{Namespace: deployer.Namespace, Name: configMapName}
 
-	// track config map for updated domain name
+	versionKinds, _, err := r.Scheme.ObjectKinds(cm)
+	if err != nil {
+		r.Log.Error(err, "Unable to detect version kind")
+		return nil, err
+	}
+
+	cmKey := types.NamespacedName{Namespace: systemNamespace, Name: configMapName}
+
 	r.Tracker.Track(
-		tracker.NewKey(schema.GroupVersionKind{Version: "v1", Kind: "ConfigMap"}, cmKey),
+		tracker.NewKey(versionKinds[0], cmKey),
 		types.NamespacedName{Namespace: deployer.Namespace, Name: deployer.Name},
 	)
 	if err := r.Get(ctx, cmKey, cm); err != nil {
@@ -612,16 +617,22 @@ func (r *DeployerReconciler) constructHostForDeployer(deployer *corev1alpha1.Dep
 }
 
 func (r *DeployerReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	enqueueTrackedResources := func(t apis.Resource) handler.EventHandler {
+	enqueueTrackedResources := func(t runtime.Object) handler.EventHandler {
 		return &handler.EnqueueRequestsFromMapFunc{
 			ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
-				requests := []reconcile.Request{}
-				key := tracker.NewKey(
-					t.GetGroupVersionKind(),
-					types.NamespacedName{Namespace: a.Meta.GetNamespace(), Name: a.Meta.GetName()},
-				)
-				for _, item := range r.Tracker.Lookup(key) {
-					requests = append(requests, reconcile.Request{NamespacedName: item})
+				var requests []reconcile.Request
+
+				versionKinds, _, err := r.Scheme.ObjectKinds(t)
+				if err != nil {
+					r.Log.Error(err, "Unable to detect version kind")
+				} else {
+					key := tracker.NewKey(
+						versionKinds[0],
+						types.NamespacedName{Namespace: a.Meta.GetNamespace(), Name: a.Meta.GetName()},
+					)
+					for _, item := range r.Tracker.Lookup(key) {
+						requests = append(requests, reconcile.Request{NamespacedName: item})
+					}
 				}
 				return requests
 			}),
@@ -644,28 +655,9 @@ func (r *DeployerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&corev1.Service{}).
 		Owns(&networkingv1beta1.Ingress{}).
 		// watch for build mutations to update dependent deployers
-		Watches(&source.Kind{Type: &corev1.ConfigMap{}}, r.enqueueTrackedConfigMapResource()).
+		Watches(&source.Kind{Type: &corev1.ConfigMap{}}, enqueueTrackedResources(&corev1.ConfigMap{})).
 		Watches(&source.Kind{Type: &buildv1alpha1.Application{}}, enqueueTrackedResources(&buildv1alpha1.Application{})).
 		Watches(&source.Kind{Type: &buildv1alpha1.Container{}}, enqueueTrackedResources(&buildv1alpha1.Container{})).
 		Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, enqueueTrackedResources(&buildv1alpha1.Function{})).
 		Complete(r)
-}
-
-func (r *DeployerReconciler) enqueueTrackedConfigMapResource() handler.EventHandler {
-	return &handler.EnqueueRequestsFromMapFunc{
-		ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
-			requests := []reconcile.Request{}
-
-			if a.Meta.GetNamespace() == systemNamespace && a.Meta.GetName() == configMapName {
-				key := tracker.NewKey(
-					schema.GroupVersionKind{Version: "v1", Kind: "ConfigMap"},
-					types.NamespacedName{Namespace: a.Meta.GetNamespace(), Name: a.Meta.GetName()},
-				)
-				for _, item := range r.Tracker.Lookup(key) {
-					requests = append(requests, reconcile.Request{NamespacedName: item})
-				}
-			}
-			return requests
-		}),
-	}
 }
