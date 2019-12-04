@@ -110,7 +110,7 @@ func (r *DeployerReconciler) getAndTrackConfigMap(ctx context.Context, log logr.
 		return nil, err
 	}
 
-	cmKey := types.NamespacedName{Namespace: systemNamespace, Name: configMapName}
+	cmKey := types.NamespacedName{Namespace: systemNamespace, Name: settingsConfigMapName}
 
 	r.Tracker.Track(
 		tracker.NewKey(versionKinds[0], cmKey),

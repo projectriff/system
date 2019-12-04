@@ -21,7 +21,7 @@ const (
 
 	systemNamespace = "riff-system"
 
-	configMapName    = kustomizePrefix + "-settings"
-	defaultDomainKey = "defaultDomain"
-	defaultDomain    = "example.com"
+	settingsConfigMapName = kustomizePrefix + "-settings"
+	defaultDomainKey      = "defaultDomain"
+	defaultDomain         = "example.com"
 )
