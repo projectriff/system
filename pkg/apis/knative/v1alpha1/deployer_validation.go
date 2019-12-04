@@ -88,6 +88,19 @@ func (s DeployerSpec) Validate() validation.FieldErrors {
 		errs = errs.Also(validation.ErrInvalidValue(s.IngressPolicy, "ingressPolicy"))
 	}
 
+	if s.Scale != nil {
+		if s.Scale.Minimum != nil && *s.Scale.Minimum < int64(0) {
+			errs = errs.Also(validation.ErrInvalidValue(*s.Scale.Minimum, "scale.minimum"))
+		}
+		// knative doesn't recognise maxScale of 0
+		if s.Scale.Maximum != nil && *s.Scale.Maximum < int64(1) {
+			errs = errs.Also(validation.ErrInvalidValue(*s.Scale.Maximum, "scale.maximum"))
+		}
+		if s.Scale.Minimum != nil && s.Scale.Maximum != nil && *s.Scale.Minimum > *s.Scale.Maximum {
+			errs = errs.Also(validation.ErrInvalidValue(*s.Scale.Maximum, "scale.maximum"))
+		}
+	}
+
 	return errs
 }
 

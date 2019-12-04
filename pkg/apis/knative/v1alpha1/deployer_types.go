@@ -45,6 +45,8 @@ type DeployerSpec struct {
 	// deployer.
 	Build *Build `json:"build,omitempty"`
 
+	Scale *Scale `json:"scale,omitempty"`
+
 	// Template pod
 	Template *corev1.PodSpec `json:"template,omitempty"`
 
@@ -63,6 +65,11 @@ const (
 	IngressPolicyClusterLocal IngressPolicy = "ClusterLocal"
 	IngressPolicyExternal     IngressPolicy = "External"
 )
+
+type Scale struct {
+	Minimum *int64 `json:"minimum,omitempty"`
+	Maximum *int64 `json:"maximum,omitempty"`
+}
 
 // DeployerStatus defines the observed state of Deployer
 type DeployerStatus struct {

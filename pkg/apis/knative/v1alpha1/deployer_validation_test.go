@@ -60,6 +60,11 @@ func TestValidateDeployer(t *testing.T) {
 }
 
 func TestValidateDeployerSpec(t *testing.T) {
+	negativeOne := int64(-1)
+	zero := int64(0)
+	one := int64(1)
+	five := int64(5)
+
 	for _, c := range []struct {
 		name     string
 		target   *DeployerSpec
@@ -116,6 +121,104 @@ func TestValidateDeployerSpec(t *testing.T) {
 			IngressPolicy: "bogus",
 		},
 		expected: validation.ErrInvalidValue(IngressPolicy("bogus"), "ingressPolicy"),
+	}, {
+		name: "valid, empty scale",
+		target: &DeployerSpec{
+			Build: nil,
+			Template: &corev1.PodSpec{
+				Containers: []corev1.Container{
+					{Image: "my-image"},
+				},
+			},
+			Scale: &Scale{},
+		},
+		expected: validation.FieldErrors{},
+	}, {
+		name: "valid, minScale",
+		target: &DeployerSpec{
+			Build: nil,
+			Template: &corev1.PodSpec{
+				Containers: []corev1.Container{
+					{Image: "my-image"},
+				},
+			},
+			Scale: &Scale{
+				Minimum: &one,
+			},
+		},
+		expected: validation.FieldErrors{},
+	}, {
+		name: "invalid, negative minScale",
+		target: &DeployerSpec{
+			Build: nil,
+			Template: &corev1.PodSpec{
+				Containers: []corev1.Container{
+					{Image: "my-image"},
+				},
+			},
+			Scale: &Scale{
+				Minimum: &negativeOne,
+			},
+		},
+		expected: validation.ErrInvalidValue(negativeOne, "scale.minimum"),
+	}, {
+		name: "valid, maxScale",
+		target: &DeployerSpec{
+			Build: nil,
+			Template: &corev1.PodSpec{
+				Containers: []corev1.Container{
+					{Image: "my-image"},
+				},
+			},
+			Scale: &Scale{
+				Maximum: &one,
+			},
+		},
+		expected: validation.FieldErrors{},
+	}, {
+		name: "invalid, non-positive maxScale",
+		target: &DeployerSpec{
+			Build: nil,
+			Template: &corev1.PodSpec{
+				Containers: []corev1.Container{
+					{Image: "my-image"},
+				},
+			},
+			Scale: &Scale{
+				Maximum: &zero,
+			},
+		},
+		expected: validation.ErrInvalidValue(zero, "scale.maximum"),
+	}, {
+		name: "valid, minScale and maxScale",
+		target: &DeployerSpec{
+			Build: nil,
+			Template: &corev1.PodSpec{
+				Containers: []corev1.Container{
+					{Image: "my-image"},
+				},
+			},
+			Scale: &Scale{
+				Minimum: &one,
+				Maximum: &five,
+			},
+		},
+		expected: validation.FieldErrors{},
+	}, {
+		name: "invalid, maxScale lower than minScale",
+		target: &DeployerSpec{
+			Build: nil,
+			Template: &corev1.PodSpec{
+				Containers: []corev1.Container{
+					{Image: "my-image"},
+				},
+			},
+			Scale: &Scale{
+				Minimum: &five,
+				Maximum: &one,
+			},
+		},
+		expected: validation.ErrInvalidValue(one, "scale.maximum"),
 	}} {
 		t.Run(c.name, func(t *testing.T) {
 			actual := c.target.Validate()

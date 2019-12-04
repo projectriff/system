@@ -19,6 +19,7 @@ package knative
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"
@@ -268,17 +269,20 @@ func (r *DeployerReconciler) configurationSemanticEquals(desiredConfiguration, c
 
 func (r *DeployerReconciler) constructConfigurationForDeployer(deployer *knativev1alpha1.Deployer) (*servingv1.Configuration, error) {
 	labels := r.constructLabelsForDeployer(deployer)
+	annotations := r.constructAnnotationsForDeployer(deployer)
 
 	configuration := &servingv1.Configuration{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: fmt.Sprintf("%s-deployer-", deployer.Name),
 			Namespace:    deployer.Namespace,
 			Labels:       labels,
+			Annotations:  annotations,
 		},
 		Spec: servingv1.ConfigurationSpec{
 			Template: servingv1.RevisionTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels: labels,
+					Labels:      labels,
+					Annotations: annotations,
 				},
 				Spec: servingv1.RevisionSpec{
 					PodSpec: corev1.PodSpec{
@@ -412,6 +416,27 @@ func (r *DeployerReconciler) constructLabelsForDeployer(deployer *knativev1alpha
 	}
 
 	return labels
+}
+
+func (r *DeployerReconciler) constructAnnotationsForDeployer(deployer *knativev1alpha1.Deployer) map[string]string {
+	// make a little extra space just in case
+	annotations := make(map[string]string, len(deployer.ObjectMeta.Annotations)+2)
+
+	// pass through existing annotations
+	for k, v := range deployer.ObjectMeta.Annotations {
+		annotations[k] = v
+	}
+
+	if deployer.Spec.Scale != nil {
+		if deployer.Spec.Scale.Minimum != nil {
+			annotations["autoscaling.knative.dev/minScale"] = strconv.Itoa(int(*deployer.Spec.Scale.Minimum))
+		}
+		if deployer.Spec.Scale.Maximum != nil {
+			annotations["autoscaling.knative.dev/maxScale"] = strconv.Itoa(int(*deployer.Spec.Scale.Maximum))
+		}
+	}
+
+	return annotations
 }
 
 func (r *DeployerReconciler) SetupWithManager(mgr ctrl.Manager) error {
