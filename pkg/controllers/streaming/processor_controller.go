@@ -529,7 +529,7 @@ func (r *ProcessorReconciler) constructDeploymentForProcessor(processor *streami
 	podSpec.Containers = append(podSpec.Containers, v1.Container{
 		Name:            "processor",
 		Image:           processorImg,
-		ImagePullPolicy: v1.PullAlways,
+		ImagePullPolicy: v1.PullIfNotPresent,
 		Env:             environmentVariables,
 		VolumeMounts:    volumeMounts,
 	})
