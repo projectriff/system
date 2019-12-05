@@ -1,2 +1,2 @@
 resources:
-  - ingress-domain.yaml
+  - settings.yaml

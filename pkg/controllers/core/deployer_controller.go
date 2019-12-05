@@ -29,6 +29,7 @@ import (
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -103,17 +104,11 @@ func (r *DeployerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 func (r *DeployerReconciler) getAndTrackConfigMap(ctx context.Context, log logr.Logger, deployer *corev1alpha1.Deployer) (*corev1.ConfigMap, error) {
 	cm := &corev1.ConfigMap{}
-
-	versionKinds, _, err := r.Scheme.ObjectKinds(cm)
-	if err != nil {
-		r.Log.Error(err, "Unable to detect version kind")
-		return nil, err
-	}
-
 	cmKey := types.NamespacedName{Namespace: systemNamespace, Name: settingsConfigMapName}
 
+	// track config map
 	r.Tracker.Track(
-		tracker.NewKey(versionKinds[0], cmKey),
+		tracker.NewKey(schema.GroupVersionKind{Version: "v1", Kind: "ConfigMap"}, cmKey),
 		types.NamespacedName{Namespace: deployer.Namespace, Name: deployer.Name},
 	)
 	if err := r.Get(ctx, cmKey, cm); err != nil {
@@ -129,7 +124,7 @@ func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, dep
 		return ctrl.Result{}, nil
 	}
 
-	cm, err := r.getAndTrackConfigMap(ctx, log, deployer)
+	configMap, err := r.getAndTrackConfigMap(ctx, log, deployer)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -165,7 +160,7 @@ func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, dep
 	deployer.Status.PropagateServiceStatus(&childService.Status)
 
 	// reconcile ingress
-	childIngress, err := r.reconcileIngress(ctx, log, deployer, childService.Name, cm)
+	childIngress, err := r.reconcileIngress(ctx, log, deployer, childService.Name, configMap)
 	if err != nil {
 		log.Error(err, "unable to reconcile Ingress", "deployer", deployer)
 		return ctrl.Result{}, err
@@ -613,7 +608,7 @@ func (r *DeployerReconciler) constructHostForDeployer(deployer *corev1alpha1.Dep
 		domain = d
 	}
 
-	return fmt.Sprintf("%s.%s", deployer.Name, domain)
+	return fmt.Sprintf("%s.%s.%s", deployer.Name, deployer.Namespace, domain)
 }
 
 func (r *DeployerReconciler) SetupWithManager(mgr ctrl.Manager) error {
@@ -624,16 +619,17 @@ func (r *DeployerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 				versionKinds, _, err := r.Scheme.ObjectKinds(t)
 				if err != nil {
-					r.Log.Error(err, "Unable to detect version kind")
-				} else {
-					key := tracker.NewKey(
-						versionKinds[0],
-						types.NamespacedName{Namespace: a.Meta.GetNamespace(), Name: a.Meta.GetName()},
-					)
-					for _, item := range r.Tracker.Lookup(key) {
-						requests = append(requests, reconcile.Request{NamespacedName: item})
-					}
+					panic(err)
 				}
+
+				key := tracker.NewKey(
+					versionKinds[0],
+					types.NamespacedName{Namespace: a.Meta.GetNamespace(), Name: a.Meta.GetName()},
+				)
+				for _, item := range r.Tracker.Lookup(key) {
+					requests = append(requests, reconcile.Request{NamespacedName: item})
+				}
+
 				return requests
 			}),
 		}
