@@ -60,6 +60,8 @@ func TestValidateDeployer(t *testing.T) {
 }
 
 func TestValidateDeployerSpec(t *testing.T) {
+	negativeOne := int32(-1)
+
 	for _, c := range []struct {
 		name     string
 		target   *DeployerSpec
@@ -116,6 +118,19 @@ func TestValidateDeployerSpec(t *testing.T) {
 			IngressPolicy: "bogus",
 		},
 		expected: validation.ErrInvalidValue(IngressPolicy("bogus"), "ingressPolicy"),
+	}, {
+		name: "invalid, negative minScale",
+		target: &DeployerSpec{
+			Template: &corev1.PodSpec{
+				Containers: []corev1.Container{
+					{Image: "my-image"},
+				},
+			},
+			Scale: Scale{
+				Min: &negativeOne,
+			},
+		},
+		expected: validation.ErrInvalidValue(negativeOne, "scale.min"),
 	}} {
 		t.Run(c.name, func(t *testing.T) {
 			actual := c.target.Validate()
