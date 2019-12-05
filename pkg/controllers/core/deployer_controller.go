@@ -102,17 +102,17 @@ func (r *DeployerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	return result, err
 }
 
-func (r *DeployerReconciler) getAndTrackConfigMap(ctx context.Context, log logr.Logger, deployer *corev1alpha1.Deployer) (*corev1.ConfigMap, error) {
+func (r *DeployerReconciler) getAndTrackSettings(ctx context.Context, log logr.Logger, obj metav1.Object) (*corev1.ConfigMap, error) {
 	cm := &corev1.ConfigMap{}
 	cmKey := types.NamespacedName{Namespace: systemNamespace, Name: settingsConfigMapName}
 
 	// track config map
 	r.Tracker.Track(
 		tracker.NewKey(schema.GroupVersionKind{Version: "v1", Kind: "ConfigMap"}, cmKey),
-		types.NamespacedName{Namespace: deployer.Namespace, Name: deployer.Name},
+		types.NamespacedName{Namespace: obj.GetNamespace(), Name: obj.GetName()},
 	)
 	if err := r.Get(ctx, cmKey, cm); err != nil {
-		log.Error(err, "unable to lookup images configMap")
+		log.Error(err, fmt.Sprintf("unable to fetch resource with reference: %s", cmKey.String()))
 		return nil, err
 	}
 
@@ -124,7 +124,7 @@ func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, dep
 		return ctrl.Result{}, nil
 	}
 
-	configMap, err := r.getAndTrackConfigMap(ctx, log, deployer)
+	coreSettings, err := r.getAndTrackSettings(ctx, log, deployer)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -160,7 +160,7 @@ func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, dep
 	deployer.Status.PropagateServiceStatus(&childService.Status)
 
 	// reconcile ingress
-	childIngress, err := r.reconcileIngress(ctx, log, deployer, childService.Name, configMap)
+	childIngress, err := r.reconcileIngress(ctx, log, deployer, childService.Name, coreSettings)
 	if err != nil {
 		log.Error(err, "unable to reconcile Ingress", "deployer", deployer)
 		return ctrl.Result{}, err
@@ -378,7 +378,7 @@ func (r *DeployerReconciler) constructPodSpecForDeployer(deployer *corev1alpha1.
 	return podSpec
 }
 
-func (r *DeployerReconciler) reconcileIngress(ctx context.Context, log logr.Logger, deployer *corev1alpha1.Deployer, serviceName string, cm *corev1.ConfigMap) (*networkingv1beta1.Ingress, error) {
+func (r *DeployerReconciler) reconcileIngress(ctx context.Context, log logr.Logger, deployer *corev1alpha1.Deployer, serviceName string, coreSettings *corev1.ConfigMap) (*networkingv1beta1.Ingress, error) {
 	var actualIngress networkingv1beta1.Ingress
 	var childIngresses networkingv1beta1.IngressList
 
@@ -398,7 +398,7 @@ func (r *DeployerReconciler) reconcileIngress(ctx context.Context, log logr.Logg
 		}
 	}
 
-	desiredIngress, err := r.constructIngressForDeployer(deployer, cm)
+	desiredIngress, err := r.constructIngressForDeployer(deployer, coreSettings)
 	if err != nil {
 		return nil, err
 	}
@@ -446,13 +446,13 @@ func (r *DeployerReconciler) ingressSemanticEquals(desiredIngress, ingress *netw
 		equality.Semantic.DeepEqual(desiredIngress.ObjectMeta.Labels, ingress.ObjectMeta.Labels)
 }
 
-func (r *DeployerReconciler) constructIngressForDeployer(deployer *corev1alpha1.Deployer, cm *corev1.ConfigMap) (*networkingv1beta1.Ingress, error) {
+func (r *DeployerReconciler) constructIngressForDeployer(deployer *corev1alpha1.Deployer, coreSettings *corev1.ConfigMap) (*networkingv1beta1.Ingress, error) {
 	if deployer.Status.ServiceName == "" || deployer.Spec.IngressPolicy == corev1alpha1.IngressPolicyClusterLocal {
 		// skip ingress
 		return nil, nil
 	}
 	labels := r.constructLabelsForDeployer(deployer)
-	host := r.constructHostForDeployer(deployer, cm)
+	host := r.constructHostForDeployer(deployer, coreSettings)
 
 	ingress := &networkingv1beta1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
