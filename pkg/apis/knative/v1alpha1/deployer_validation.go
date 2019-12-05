@@ -109,7 +109,7 @@ func (s Scale) Validate() validation.FieldErrors {
 	if s.Min != nil && *s.Min < int32(0) {
 		errs = errs.Also(validation.ErrInvalidValue(*s.Min, "min"))
 	}
-	// knative doesn't recognise maxof 0
+	// knative doesn't recognise max of 0
 	if s.Max != nil && *s.Max < int32(1) {
 		errs = errs.Also(validation.ErrInvalidValue(*s.Max, "max"))
 	}
