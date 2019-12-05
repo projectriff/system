@@ -263,7 +263,8 @@ func (r *DeployerReconciler) reconcileChildConfiguration(ctx context.Context, lo
 
 func (r *DeployerReconciler) configurationSemanticEquals(desiredConfiguration, configuration *servingv1.Configuration) bool {
 	return equality.Semantic.DeepEqual(desiredConfiguration.Spec, configuration.Spec) &&
-		equality.Semantic.DeepEqual(desiredConfiguration.ObjectMeta.Labels, configuration.ObjectMeta.Labels)
+		equality.Semantic.DeepEqual(desiredConfiguration.ObjectMeta.Labels, configuration.ObjectMeta.Labels) &&
+		equality.Semantic.DeepEqual(desiredConfiguration.ObjectMeta.Annotations, configuration.ObjectMeta.Annotations)
 }
 
 func (r *DeployerReconciler) constructConfigurationForDeployer(deployer *knativev1alpha1.Deployer) (*servingv1.Configuration, error) {
