@@ -124,6 +124,12 @@ func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, dep
 	// reconcile route
 	childRoute, err := r.reconcileChildRoute(ctx, log, deployer)
 	if err != nil {
+		if apierrs.IsAlreadyExists(err) {
+			route := err.(apierrs.APIStatus).Status().Details.Name
+			deployer.Status.MarkRouteNotOwned(route)
+			log.Info("unable to reconcile child Route, route not owned", "deployer", deployer, "route", route)
+			return ctrl.Result{}, nil
+		}
 		log.Error(err, "unable to reconcile child Route", "deployer", deployer)
 		return ctrl.Result{}, err
 	}
@@ -377,10 +383,10 @@ func (r *DeployerReconciler) constructRouteForDeployer(deployer *knativev1alpha1
 
 	route := &servingv1.Route{
 		ObjectMeta: metav1.ObjectMeta{
-			Labels:       labels,
-			Annotations:  make(map[string]string),
-			GenerateName: fmt.Sprintf("%s-deployer-", deployer.Name),
-			Namespace:    deployer.Namespace,
+			Labels:      labels,
+			Annotations: make(map[string]string),
+			Namespace:   deployer.Namespace,
+			Name:        deployer.Name,
 		},
 		Spec: servingv1.RouteSpec{
 			Traffic: []servingv1.TrafficTarget{
