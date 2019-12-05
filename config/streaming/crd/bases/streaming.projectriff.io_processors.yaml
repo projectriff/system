@@ -49,9 +49,12 @@ spec:
                 properties:
                   alias:
                     type: string
+                  startOffset:
+                    type: string
                   stream:
                     type: string
                 required:
+                - startOffset
                 - stream
                 type: object
               type: array

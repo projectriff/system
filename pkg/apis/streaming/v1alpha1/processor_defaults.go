@@ -31,16 +31,19 @@ func (r *Processor) Default() {
 
 func (s *ProcessorSpec) Default() {
 	if s.Inputs == nil {
-		s.Inputs = []StreamBinding{}
+		s.Inputs = []InputStreamBinding{}
 	}
 	for i := range s.Inputs {
 		if s.Inputs[i].Alias == "" {
 			s.Inputs[i].Alias = s.Inputs[i].Stream
 		}
+		if s.Inputs[i].StartOffset == "" {
+			s.Inputs[i].StartOffset = Latest
+		}
 	}
 
 	if s.Outputs == nil {
-		s.Outputs = []StreamBinding{}
+		s.Outputs = []OutputStreamBinding{}
 	}
 	for i := range s.Outputs {
 		if s.Outputs[i].Alias == "" {

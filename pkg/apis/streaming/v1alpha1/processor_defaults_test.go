@@ -34,8 +34,8 @@ func TestProcessorDefault(t *testing.T) {
 		in:   &Processor{},
 		want: &Processor{
 			Spec: ProcessorSpec{
-				Inputs:  []StreamBinding{},
-				Outputs: []StreamBinding{},
+				Inputs:  []InputStreamBinding{},
+				Outputs: []OutputStreamBinding{},
 				Template: &corev1.PodTemplateSpec{
 					ObjectMeta: metav1.ObjectMeta{
 						Annotations: map[string]string{},
@@ -72,8 +72,8 @@ func TestProcessorSpecDefault(t *testing.T) {
 		name: "empty",
 		in:   &ProcessorSpec{},
 		want: &ProcessorSpec{
-			Inputs:  []StreamBinding{},
-			Outputs: []StreamBinding{},
+			Inputs:  []InputStreamBinding{},
+			Outputs: []OutputStreamBinding{},
 			Template: &corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{},
@@ -90,17 +90,17 @@ func TestProcessorSpecDefault(t *testing.T) {
 	}, {
 		name: "add alias",
 		in: &ProcessorSpec{
-			Inputs: []StreamBinding{
+			Inputs: []InputStreamBinding{
 				{Stream: "my-input"},
 			},
-			Outputs: []StreamBinding{
+			Outputs: []OutputStreamBinding{
 				{Stream: "my-output"},
 			}},
 		want: &ProcessorSpec{
-			Inputs: []StreamBinding{
-				{Stream: "my-input", Alias: "my-input"},
+			Inputs: []InputStreamBinding{
+				{Stream: "my-input", Alias: "my-input", StartOffset: Latest},
 			},
-			Outputs: []StreamBinding{
+			Outputs: []OutputStreamBinding{
 				{Stream: "my-output", Alias: "my-output"},
 			},
 			Template: &corev1.PodTemplateSpec{
@@ -119,17 +119,17 @@ func TestProcessorSpecDefault(t *testing.T) {
 	}, {
 		name: "preserves alias",
 		in: &ProcessorSpec{
-			Inputs: []StreamBinding{
+			Inputs: []InputStreamBinding{
 				{Stream: "my-input", Alias: "in"},
 			},
-			Outputs: []StreamBinding{
+			Outputs: []OutputStreamBinding{
 				{Stream: "my-output", Alias: "out"},
 			}},
 		want: &ProcessorSpec{
-			Inputs: []StreamBinding{
-				{Stream: "my-input", Alias: "in"},
+			Inputs: []InputStreamBinding{
+				{Stream: "my-input", Alias: "in", StartOffset: Latest},
 			},
-			Outputs: []StreamBinding{
+			Outputs: []OutputStreamBinding{
 				{Stream: "my-output", Alias: "out"},
 			},
 			Template: &corev1.PodTemplateSpec{
@@ -157,8 +157,8 @@ func TestProcessorSpecDefault(t *testing.T) {
 			},
 		},
 		want: &ProcessorSpec{
-			Inputs:  []StreamBinding{},
-			Outputs: []StreamBinding{},
+			Inputs:  []InputStreamBinding{},
+			Outputs: []OutputStreamBinding{},
 			Template: &corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{},
@@ -189,8 +189,8 @@ func TestProcessorSpecDefault(t *testing.T) {
 			},
 		},
 		want: &ProcessorSpec{
-			Inputs:  []StreamBinding{},
-			Outputs: []StreamBinding{},
+			Inputs:  []InputStreamBinding{},
+			Outputs: []OutputStreamBinding{},
 			Template: &corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{},

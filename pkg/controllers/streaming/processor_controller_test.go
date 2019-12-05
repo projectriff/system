@@ -524,6 +524,7 @@ func processorDeployment(namespace, processorName, imageRef string) *appsv1.Depl
 							{Name: "CNB_BINDINGS", Value: "/var/riff/bindings"},
 							{Name: "INPUTS"},
 							{Name: "OUTPUTS"},
+							{Name: "INPUT_START_OFFSETS"},
 							{Name: "INPUT_NAMES"},
 							{Name: "OUTPUT_NAMES"},
 							{Name: "GROUP", Value: processorName},

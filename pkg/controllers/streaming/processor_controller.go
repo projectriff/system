@@ -182,7 +182,7 @@ func (r *ProcessorReconciler) reconcile(ctx context.Context, logger logr.Logger,
 	}
 
 	// Resolve input addresses
-	inputStreams, err := r.resolveStreams(ctx, processorNSName, processor.Spec.Inputs)
+	inputStreams, err := r.resolveInputStreams(ctx, processorNSName, processor.Spec.Inputs)
 	if err != nil {
 		return ctrl.Result{Requeue: true}, err
 	}
@@ -192,7 +192,7 @@ func (r *ProcessorReconciler) reconcile(ctx context.Context, logger logr.Logger,
 	}
 
 	// Resolve output addresses
-	outputStreams, err := r.resolveStreams(ctx, processorNSName, processor.Spec.Outputs)
+	outputStreams, err := r.resolveOutputStreams(ctx, processorNSName, processor.Spec.Outputs)
 	if err != nil {
 		return ctrl.Result{Requeue: true}, err
 	}
@@ -586,7 +586,28 @@ func (r *ProcessorReconciler) deploymentSemanticEquals(desiredDeployment, deploy
 		equality.Semantic.DeepEqual(desiredDeployment.ObjectMeta.Labels, deployment.ObjectMeta.Labels)
 }
 
-func (r *ProcessorReconciler) resolveStreams(ctx context.Context, processorCoordinates types.NamespacedName, bindings []streamingv1alpha1.StreamBinding) ([]streamingv1alpha1.Stream, error) {
+func (r *ProcessorReconciler) resolveOutputStreams(ctx context.Context, processorCoordinates types.NamespacedName, bindings []streamingv1alpha1.OutputStreamBinding) ([]streamingv1alpha1.Stream, error) {
+	streams := make([]streamingv1alpha1.Stream, len(bindings))
+	for i, binding := range bindings {
+		streamNSName := types.NamespacedName{
+			Namespace: processorCoordinates.Namespace,
+			Name:      binding.Stream,
+		}
+		var stream streamingv1alpha1.Stream
+		// track stream for new coordinates
+		r.Tracker.Track(
+			tracker.NewKey(stream.GetGroupVersionKind(), streamNSName),
+			processorCoordinates,
+		)
+		if err := r.Client.Get(ctx, streamNSName, &stream); err != nil {
+			return nil, err
+		}
+		streams[i] = stream
+	}
+	return streams, nil
+}
+
+func (r *ProcessorReconciler) resolveInputStreams(ctx context.Context, processorCoordinates types.NamespacedName, bindings []streamingv1alpha1.InputStreamBinding) ([]streamingv1alpha1.Stream, error) {
 	streams := make([]streamingv1alpha1.Stream, len(bindings))
 	for i, binding := range bindings {
 		streamNSName := types.NamespacedName{
@@ -645,8 +666,9 @@ func (r *ProcessorReconciler) computeEnvironmentVariables(processor *streamingv1
 	if err != nil {
 		return nil, err
 	}
-	inputsNames := r.collectAliases(processor.Spec.Inputs)
-	outputsNames := r.collectAliases(processor.Spec.Outputs)
+	inputsNames := r.collectInputAliases(processor.Spec.Inputs)
+	inputStartOffsets := r.collectInputStartOffsets(processor.Spec.Inputs)
+	outputsNames := r.collectOutputAliases(processor.Spec.Outputs)
 	return []v1.EnvVar{
 		{
 			Name:  "CNB_BINDINGS",
@@ -661,6 +683,10 @@ func (r *ProcessorReconciler) computeEnvironmentVariables(processor *streamingv1
 			// TODO remove once the processor images consumes bindings
 			Name:  "OUTPUTS",
 			Value: strings.Join(processor.Status.DeprecatedOutputAddresses, ","),
+		},
+		{
+			Name:  "INPUT_START_OFFSETS",
+			Value: strings.Join(inputStartOffsets, ","),
 		},
 		{
 			Name:  "INPUT_NAMES",
@@ -686,12 +712,28 @@ func (r *ProcessorReconciler) computeEnvironmentVariables(processor *streamingv1
 	}, nil
 }
 
-func (*ProcessorReconciler) collectAliases(bindings []streamingv1alpha1.StreamBinding) []string {
+func (*ProcessorReconciler) collectOutputAliases(bindings []streamingv1alpha1.OutputStreamBinding) []string {
 	names := make([]string, len(bindings))
 	for i := range bindings {
 		names[i] = bindings[i].Alias
 	}
 	return names
+}
+
+func (*ProcessorReconciler) collectInputAliases(bindings []streamingv1alpha1.InputStreamBinding) []string {
+	names := make([]string, len(bindings))
+	for i := range bindings {
+		names[i] = bindings[i].Alias
+	}
+	return names
+}
+
+func (*ProcessorReconciler) collectInputStartOffsets(bindings []streamingv1alpha1.InputStreamBinding) []string {
+	offsets := make([]string, len(bindings))
+	for i := range bindings {
+		offsets[i] = bindings[i].StartOffset
+	}
+	return offsets
 }
 
 func (r *ProcessorReconciler) SetupWithManager(mgr ctrl.Manager) error {

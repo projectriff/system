@@ -48,10 +48,10 @@ type ProcessorSpec struct {
 	Build *Build `json:"build,omitempty"`
 
 	// Inputs references an ordered list of streams to bind as inputs
-	Inputs []StreamBinding `json:"inputs"`
+	Inputs []InputStreamBinding `json:"inputs"`
 	// Outputs references an ordered list of streams to bind as outputs
 	// +optional
-	Outputs []StreamBinding `json:"outputs,omitempty"`
+	Outputs []OutputStreamBinding `json:"outputs"`
 
 	// Template pod
 	// +optional
@@ -66,13 +66,30 @@ type Build struct {
 	FunctionRef string `json:"functionRef,omitempty"`
 }
 
-type StreamBinding struct {
+type OutputStreamBinding struct {
 	// Stream name, from this namespace, to be bound to the processor
 	Stream string `json:"stream"`
 
 	// Alias exposes the stream under another name within the processor
 	// +optional
 	Alias string `json:"alias,omitempty"`
+}
+
+const (
+	Earliest = "earliest"
+	Latest   = "latest"
+)
+
+type InputStreamBinding struct {
+	// Stream name, from this namespace, to be bound to the processor
+	Stream string `json:"stream"`
+
+	// Alias exposes the stream under another name within the processor
+	// +optional
+	Alias string `json:"alias,omitempty"`
+
+	// Where to start consuming this stream the first time a processor runs.
+	StartOffset string `json:"startOffset"`
 }
 
 // ProcessorStatus defines the observed state of Processor
