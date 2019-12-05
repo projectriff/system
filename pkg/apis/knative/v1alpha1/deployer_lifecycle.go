@@ -86,3 +86,7 @@ func (ds *DeployerStatus) PropagateRouteStatus(rs *servingv1.RouteStatus) {
 		deployerCondSet.Manage(ds).MarkFalse(DeployerConditionRouteReady, sc.Reason, sc.Message)
 	}
 }
+
+func (ds *DeployerStatus) MarkRouteNotOwned(name string) {
+	deployerCondSet.Manage(ds).MarkFalse(DeployerConditionRouteReady, "NotOwned", "There is an existing Route %q that the Deployer does not own.", name)
+}
