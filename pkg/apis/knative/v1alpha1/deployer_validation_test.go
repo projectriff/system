@@ -60,11 +60,6 @@ func TestValidateDeployer(t *testing.T) {
 }
 
 func TestValidateDeployerSpec(t *testing.T) {
-	negativeOne := int64(-1)
-	zero := int64(0)
-	one := int64(1)
-	five := int64(5)
-
 	for _, c := range []struct {
 		name     string
 		target   *DeployerSpec
@@ -121,109 +116,73 @@ func TestValidateDeployerSpec(t *testing.T) {
 			IngressPolicy: "bogus",
 		},
 		expected: validation.ErrInvalidValue(IngressPolicy("bogus"), "ingressPolicy"),
-	}, {
-		name: "valid, empty scale",
-		target: &DeployerSpec{
-			Build: nil,
-			Template: &corev1.PodSpec{
-				Containers: []corev1.Container{
-					{Image: "my-image"},
-				},
-			},
-			Scale: &Scale{},
-		},
-		expected: validation.FieldErrors{},
-	}, {
-		name: "valid, minScale",
-		target: &DeployerSpec{
-			Build: nil,
-			Template: &corev1.PodSpec{
-				Containers: []corev1.Container{
-					{Image: "my-image"},
-				},
-			},
-			Scale: &Scale{
-				Minimum: &one,
-			},
-		},
-		expected: validation.FieldErrors{},
-	}, {
-		name: "invalid, negative minScale",
-		target: &DeployerSpec{
-			Build: nil,
-			Template: &corev1.PodSpec{
-				Containers: []corev1.Container{
-					{Image: "my-image"},
-				},
-			},
-			Scale: &Scale{
-				Minimum: &negativeOne,
-			},
-		},
-		expected: validation.ErrInvalidValue(negativeOne, "scale.minimum"),
-	}, {
-		name: "valid, maxScale",
-		target: &DeployerSpec{
-			Build: nil,
-			Template: &corev1.PodSpec{
-				Containers: []corev1.Container{
-					{Image: "my-image"},
-				},
-			},
-			Scale: &Scale{
-				Maximum: &one,
-			},
-		},
-		expected: validation.FieldErrors{},
-	}, {
-		name: "invalid, non-positive maxScale",
-		target: &DeployerSpec{
-			Build: nil,
-			Template: &corev1.PodSpec{
-				Containers: []corev1.Container{
-					{Image: "my-image"},
-				},
-			},
-			Scale: &Scale{
-				Maximum: &zero,
-			},
-		},
-		expected: validation.ErrInvalidValue(zero, "scale.maximum"),
-	}, {
-		name: "valid, minScale and maxScale",
-		target: &DeployerSpec{
-			Build: nil,
-			Template: &corev1.PodSpec{
-				Containers: []corev1.Container{
-					{Image: "my-image"},
-				},
-			},
-			Scale: &Scale{
-				Minimum: &one,
-				Maximum: &five,
-			},
-		},
-		expected: validation.FieldErrors{},
-	}, {
-		name: "invalid, maxScale lower than minScale",
-		target: &DeployerSpec{
-			Build: nil,
-			Template: &corev1.PodSpec{
-				Containers: []corev1.Container{
-					{Image: "my-image"},
-				},
-			},
-			Scale: &Scale{
-				Minimum: &five,
-				Maximum: &one,
-			},
-		},
-		expected: validation.ErrInvalidValue(one, "scale.maximum"),
 	}} {
 		t.Run(c.name, func(t *testing.T) {
 			actual := c.target.Validate()
 			if diff := cmp.Diff(c.expected, actual); diff != "" {
 				t.Errorf("validateDeployerSpec(%s) (-expected, +actual) = %v", c.name, diff)
+			}
+		})
+	}
+}
+
+func TestValidateScale(t *testing.T) {
+	negativeOne := int32(-1)
+	zero := int32(0)
+	one := int32(1)
+	five := int32(5)
+
+	for _, c := range []struct {
+		name     string
+		target   *Scale
+		expected validation.FieldErrors
+	}{{
+		name:     "valid, empty scale",
+		target:   &Scale{},
+		expected: validation.FieldErrors{},
+	}, {
+		name: "valid, minScale",
+		target: &Scale{
+			Min: &one,
+		},
+		expected: validation.FieldErrors{},
+	}, {
+		name: "invalid, negative minScale",
+		target: &Scale{
+			Min: &negativeOne,
+		},
+		expected: validation.ErrInvalidValue(negativeOne, "min"),
+	}, {
+		name: "valid, maxScale",
+		target: &Scale{
+			Max: &one,
+		},
+		expected: validation.FieldErrors{},
+	}, {
+		name: "invalid, non-positive maxScale",
+		target: &Scale{
+			Max: &zero,
+		},
+		expected: validation.ErrInvalidValue(zero, "max"),
+	}, {
+		name: "valid, minScale and maxScale",
+		target: &Scale{
+			Min: &one,
+			Max: &five,
+		},
+		expected: validation.FieldErrors{},
+	}, {
+		name: "invalid, maxScale lower than minScale",
+		target: &Scale{
+			Min: &five,
+			Max: &one,
+		},
+		expected: validation.ErrInvalidValue(one, "max"),
+	}} {
+		t.Run(c.name, func(t *testing.T) {
+			actual := c.target.Validate()
+			if diff := cmp.Diff(c.expected, actual); diff != "" {
+				t.Errorf("validateScale(%s) (-expected, +actual) = %v", c.name, diff)
 			}
 		})
 	}

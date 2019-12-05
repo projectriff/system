@@ -427,13 +427,11 @@ func (r *DeployerReconciler) constructAnnotationsForDeployer(deployer *knativev1
 		annotations[k] = v
 	}
 
-	if deployer.Spec.Scale != nil {
-		if deployer.Spec.Scale.Minimum != nil {
-			annotations["autoscaling.knative.dev/minScale"] = strconv.Itoa(int(*deployer.Spec.Scale.Minimum))
-		}
-		if deployer.Spec.Scale.Maximum != nil {
-			annotations["autoscaling.knative.dev/maxScale"] = strconv.Itoa(int(*deployer.Spec.Scale.Maximum))
-		}
+	if deployer.Spec.Scale.Min != nil {
+		annotations["autoscaling.knative.dev/minScale"] = strconv.Itoa(int(*deployer.Spec.Scale.Min))
+	}
+	if deployer.Spec.Scale.Max != nil {
+		annotations["autoscaling.knative.dev/maxScale"] = strconv.Itoa(int(*deployer.Spec.Scale.Max))
 	}
 
 	return annotations
