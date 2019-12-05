@@ -19,7 +19,6 @@ package knative
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"
@@ -428,10 +427,10 @@ func (r *DeployerReconciler) constructAnnotationsForDeployer(deployer *knativev1
 	}
 
 	if deployer.Spec.Scale.Min != nil {
-		annotations["autoscaling.knative.dev/minScale"] = strconv.Itoa(int(*deployer.Spec.Scale.Min))
+		annotations["autoscaling.knative.dev/minScale"] = fmt.Sprintf("%d", *deployer.Spec.Scale.Min)
 	}
 	if deployer.Spec.Scale.Max != nil {
-		annotations["autoscaling.knative.dev/maxScale"] = strconv.Itoa(int(*deployer.Spec.Scale.Max))
+		annotations["autoscaling.knative.dev/maxScale"] = fmt.Sprintf("%d", *deployer.Spec.Scale.Max)
 	}
 
 	return annotations
