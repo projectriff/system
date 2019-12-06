@@ -42,6 +42,7 @@ import (
 	"github.com/projectriff/system/pkg/apis"
 	kedav1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/keda/v1alpha1"
 	"github.com/projectriff/system/pkg/controllers"
+	"github.com/projectriff/system/pkg/refs"
 
 	"github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	"github.com/projectriff/system/pkg/tracker"
@@ -198,7 +199,7 @@ func (r *ProcessorReconciler) reconcile(ctx context.Context, logger logr.Logger,
 		logger.Error(err, "unable to reconcile deployment")
 		return ctrl.Result{}, err
 	}
-	processor.Status.DeploymentName = deployment.Name
+	processor.Status.DeploymentRef = refs.NewTypedLocalObjectReferenceForObject(deployment, r.Scheme)
 	processor.Status.PropagateDeploymentStatus(&deployment.Status)
 
 	processor.Status.MarkStreamsReady()
@@ -222,7 +223,7 @@ func (r *ProcessorReconciler) reconcile(ctx context.Context, logger logr.Logger,
 		logger.Error(err, "unable to reconcile scaledObject")
 		return ctrl.Result{}, err
 	}
-	processor.Status.ScaledObjectName = scaledObject.Name
+	processor.Status.ScaledObjectRef = refs.NewTypedLocalObjectReferenceForObject(scaledObject, r.Scheme)
 	processor.Status.PropagateScaledObjectStatus(&scaledObject.Status)
 
 	processor.Status.ObservedGeneration = processor.Generation

@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/projectriff/system/pkg/apis"
+	"github.com/projectriff/system/pkg/refs"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -81,12 +82,12 @@ type ProcessorStatus struct {
 
 	apis.Status `json:",inline"`
 
-	DeprecatedInputAddresses     []string `json:"inputAddresses,omitempty"`
-	DeprecatedOutputAddresses    []string `json:"outputAddresses,omitempty"`
-	DeprecatedOutputContentTypes []string `json:"outputContentTypes,omitempty"`
-	DeploymentName               string   `json:"deploymentName,omitempty"`
-	ScaledObjectName             string   `json:"scaledObjectName,omitempty"`
-	LatestImage                  string   `json:"latestImage,omitempty"`
+	DeprecatedInputAddresses     []string                        `json:"inputAddresses,omitempty"`
+	DeprecatedOutputAddresses    []string                        `json:"outputAddresses,omitempty"`
+	DeprecatedOutputContentTypes []string                        `json:"outputContentTypes,omitempty"`
+	DeploymentRef                *refs.TypedLocalObjectReference `json:"deploymentRef,omitempty"`
+	ScaledObjectRef              *refs.TypedLocalObjectReference `json:"scaledObjectRef,omitempty"`
+	LatestImage                  string                          `json:"latestImage,omitempty"`
 }
 
 // +kubebuilder:object:root=true

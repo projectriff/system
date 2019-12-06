@@ -64,17 +64,61 @@ spec:
                 - type
                 type: object
               type: array
-            gatewayDeploymentName:
-              type: string
-            gatewayServiceName:
-              type: string
+            gatewayDeploymentRef:
+              properties:
+                apiGroup:
+                  nullable: true
+                  type: string
+                kind:
+                  type: string
+                name:
+                  type: string
+              required:
+              - kind
+              - name
+              type: object
+            gatewayServiceRef:
+              properties:
+                apiGroup:
+                  nullable: true
+                  type: string
+                kind:
+                  type: string
+                name:
+                  type: string
+              required:
+              - kind
+              - name
+              type: object
             observedGeneration:
               format: int64
               type: integer
-            provisionerDeploymentName:
-              type: string
-            provisionerServiceName:
-              type: string
+            provisionerDeploymentRef:
+              properties:
+                apiGroup:
+                  nullable: true
+                  type: string
+                kind:
+                  type: string
+                name:
+                  type: string
+              required:
+              - kind
+              - name
+              type: object
+            provisionerServiceRef:
+              properties:
+                apiGroup:
+                  nullable: true
+                  type: string
+                kind:
+                  type: string
+                name:
+                  type: string
+              required:
+              - kind
+              - name
+              type: object
           type: object
       type: object
   version: v1alpha1
@@ -2796,8 +2840,19 @@ spec:
                 - type
                 type: object
               type: array
-            deploymentName:
-              type: string
+            deploymentRef:
+              properties:
+                apiGroup:
+                  nullable: true
+                  type: string
+                kind:
+                  type: string
+                name:
+                  type: string
+              required:
+              - kind
+              - name
+              type: object
             inputAddresses:
               items:
                 type: string
@@ -2815,8 +2870,19 @@ spec:
               items:
                 type: string
               type: array
-            scaledObjectName:
-              type: string
+            scaledObjectRef:
+              properties:
+                apiGroup:
+                  nullable: true
+                  type: string
+                kind:
+                  type: string
+                name:
+                  type: string
+              required:
+              - kind
+              - name
+              type: object
           type: object
       type: object
   version: v1alpha1
@@ -2897,17 +2963,61 @@ spec:
                 - type
                 type: object
               type: array
-            gatewayDeploymentName:
-              type: string
-            gatewayServiceName:
-              type: string
+            gatewayDeploymentRef:
+              properties:
+                apiGroup:
+                  nullable: true
+                  type: string
+                kind:
+                  type: string
+                name:
+                  type: string
+              required:
+              - kind
+              - name
+              type: object
+            gatewayServiceRef:
+              properties:
+                apiGroup:
+                  nullable: true
+                  type: string
+                kind:
+                  type: string
+                name:
+                  type: string
+              required:
+              - kind
+              - name
+              type: object
             observedGeneration:
               format: int64
               type: integer
-            provisionerDeploymentName:
-              type: string
-            provisionerServiceName:
-              type: string
+            provisionerDeploymentRef:
+              properties:
+                apiGroup:
+                  nullable: true
+                  type: string
+                kind:
+                  type: string
+                name:
+                  type: string
+              required:
+              - kind
+              - name
+              type: object
+            provisionerServiceRef:
+              properties:
+                apiGroup:
+                  nullable: true
+                  type: string
+                kind:
+                  type: string
+                name:
+                  type: string
+              required:
+              - kind
+              - name
+              type: object
           type: object
       type: object
   version: v1alpha1

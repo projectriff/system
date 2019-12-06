@@ -39,6 +39,7 @@ import (
 	knativev1alpha1 "github.com/projectriff/system/pkg/apis/knative/v1alpha1"
 	servingv1 "github.com/projectriff/system/pkg/apis/thirdparty/knative/serving/v1"
 	"github.com/projectriff/system/pkg/controllers"
+	"github.com/projectriff/system/pkg/refs"
 	"github.com/projectriff/system/pkg/tracker"
 )
 
@@ -118,7 +119,7 @@ func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, dep
 		log.Error(err, "unable to reconcile child Configuration", "deployer", deployer)
 		return ctrl.Result{}, err
 	}
-	deployer.Status.ConfigurationName = childConfiguration.Name
+	deployer.Status.ConfigurationRef = refs.NewTypedLocalObjectReferenceForObject(childConfiguration, r.Scheme)
 	deployer.Status.PropagateConfigurationStatus(&childConfiguration.Status)
 
 	// reconcile route
@@ -133,7 +134,7 @@ func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, dep
 		log.Error(err, "unable to reconcile child Route", "deployer", deployer)
 		return ctrl.Result{}, err
 	}
-	deployer.Status.RouteName = childRoute.Name
+	deployer.Status.RouteRef = refs.NewTypedLocalObjectReferenceForObject(childRoute, r.Scheme)
 	deployer.Status.PropagateRouteStatus(&childRoute.Status)
 
 	deployer.Status.ObservedGeneration = deployer.Generation
@@ -379,7 +380,7 @@ func (r *DeployerReconciler) routeSemanticEquals(desiredRoute, route *servingv1.
 }
 
 func (r *DeployerReconciler) constructRouteForDeployer(deployer *knativev1alpha1.Deployer) (*servingv1.Route, error) {
-	if deployer.Status.ConfigurationName == "" {
+	if deployer.Status.ConfigurationRef == nil {
 		return nil, fmt.Errorf("unable to create Route, waiting for Configuration")
 	}
 
@@ -397,7 +398,7 @@ func (r *DeployerReconciler) constructRouteForDeployer(deployer *knativev1alpha1
 			Traffic: []servingv1.TrafficTarget{
 				{
 					Percent:           &allTraffic,
-					ConfigurationName: deployer.Status.ConfigurationName,
+					ConfigurationName: deployer.Status.ConfigurationRef.Name,
 				},
 			},
 		},

@@ -38,6 +38,7 @@ import (
 
 	streamingv1alpha1 "github.com/projectriff/system/pkg/apis/streaming/v1alpha1"
 	"github.com/projectriff/system/pkg/controllers"
+	"github.com/projectriff/system/pkg/refs"
 	"github.com/projectriff/system/pkg/tracker"
 )
 
@@ -115,7 +116,7 @@ func (r *KafkaProviderReconciler) reconcile(ctx context.Context, log logr.Logger
 		log.Error(err, "unable to reconcile gateway Deployment", "kafkaprovider", kafkaProvider)
 		return ctrl.Result{}, err
 	}
-	kafkaProvider.Status.GatewayDeploymentName = gatewayDeployment.Name
+	kafkaProvider.Status.GatewayDeploymentRef = refs.NewTypedLocalObjectReferenceForObject(gatewayDeployment, r.Scheme)
 	kafkaProvider.Status.PropagateGatewayDeploymentStatus(&gatewayDeployment.Status)
 
 	// Reconcile service for gateway
@@ -124,7 +125,7 @@ func (r *KafkaProviderReconciler) reconcile(ctx context.Context, log logr.Logger
 		log.Error(err, "unable to reconcile gateway Service", "kafkaprovider", kafkaProvider)
 		return ctrl.Result{}, err
 	}
-	kafkaProvider.Status.GatewayServiceName = gatewayService.Name
+	kafkaProvider.Status.GatewayServiceRef = refs.NewTypedLocalObjectReferenceForObject(gatewayService, r.Scheme)
 	kafkaProvider.Status.PropagateGatewayServiceStatus(&gatewayService.Status)
 
 	// Reconcile deployment for provisioner
@@ -133,7 +134,7 @@ func (r *KafkaProviderReconciler) reconcile(ctx context.Context, log logr.Logger
 		log.Error(err, "unable to reconcile provisioner Deployment", "kafkaprovider", kafkaProvider)
 		return ctrl.Result{}, err
 	}
-	kafkaProvider.Status.ProvisionerDeploymentName = provisionerDeployment.Name
+	kafkaProvider.Status.ProvisionerDeploymentRef = refs.NewTypedLocalObjectReferenceForObject(provisionerDeployment, r.Scheme)
 	kafkaProvider.Status.PropagateProvisionerDeploymentStatus(&provisionerDeployment.Status)
 
 	// Reconcile service for provisioner
@@ -142,7 +143,7 @@ func (r *KafkaProviderReconciler) reconcile(ctx context.Context, log logr.Logger
 		log.Error(err, "unable to reconcile provisioner Service", "kafkaprovider", kafkaProvider)
 		return ctrl.Result{}, err
 	}
-	kafkaProvider.Status.ProvisionerServiceName = provisionerService.Name
+	kafkaProvider.Status.ProvisionerServiceRef = refs.NewTypedLocalObjectReferenceForObject(provisionerService, r.Scheme)
 	kafkaProvider.Status.PropagateProvisionerServiceStatus(&provisionerService.Status)
 
 	return ctrl.Result{}, nil
@@ -468,7 +469,7 @@ func (r *KafkaProviderReconciler) constructProvisionerDeploymentForKafkaProvider
 	labels := r.constructProvisionerLabelsForKafkaProvider(kafkaProvider)
 
 	env := []corev1.EnvVar{
-		{Name: "GATEWAY", Value: fmt.Sprintf("%s.%s:6565", kafkaProvider.Status.GatewayServiceName, kafkaProvider.Namespace)}, // TODO get port number from svc lookup?
+		{Name: "GATEWAY", Value: fmt.Sprintf("%s.%s:6565", kafkaProvider.Status.GatewayServiceRef.Name, kafkaProvider.Namespace)}, // TODO get port number from svc lookup?
 		{Name: "BROKER", Value: kafkaProvider.Spec.BootstrapServers},
 	}
 	deployment := &appsv1.Deployment{

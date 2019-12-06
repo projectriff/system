@@ -21,6 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/projectriff/system/pkg/apis"
+	"github.com/projectriff/system/pkg/refs"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -51,11 +52,11 @@ type PulsarProviderStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	apis.Status               `json:",inline"`
-	GatewayDeploymentName     string `json:"gatewayDeploymentName,omitempty"`
-	GatewayServiceName        string `json:"gatewayServiceName,omitempty"`
-	ProvisionerDeploymentName string `json:"provisionerDeploymentName,omitempty"`
-	ProvisionerServiceName    string `json:"provisionerServiceName,omitempty"`
+	apis.Status              `json:",inline"`
+	GatewayDeploymentRef     *refs.TypedLocalObjectReference `json:"gatewayDeploymentRef,omitempty"`
+	GatewayServiceRef        *refs.TypedLocalObjectReference `json:"gatewayServiceRef,omitempty"`
+	ProvisionerDeploymentRef *refs.TypedLocalObjectReference `json:"provisionerDeploymentRef,omitempty"`
+	ProvisionerServiceRef    *refs.TypedLocalObjectReference `json:"provisionerServiceRef,omitempty"`
 }
 
 // +kubebuilder:object:root=true

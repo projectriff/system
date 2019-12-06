@@ -55,7 +55,8 @@ func (fs *FunctionStatus) InitializeConditions() {
 }
 
 func (fs *FunctionStatus) MarkBuildNotUsed() {
-	fs.KpackImageName = ""
+	fs.KpackImageRef = nil
+	fs.BuildCacheRef = nil
 	functionCondSet.Manage(fs).MarkTrue(FunctionConditionKpackImageReady)
 }
 

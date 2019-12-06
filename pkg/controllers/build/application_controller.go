@@ -28,6 +28,7 @@ import (
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -35,6 +36,7 @@ import (
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	kpackbuildv1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/kpack/build/v1alpha1"
 	"github.com/projectriff/system/pkg/controllers"
+	"github.com/projectriff/system/pkg/refs"
 )
 
 const applicationIndexField = ".metadata.applicationController"
@@ -116,9 +118,9 @@ func (r *ApplicationReconciler) reconcile(ctx context.Context, log logr.Logger, 
 		application.Status.LatestImage = application.Status.TargetImage
 		application.Status.MarkBuildNotUsed()
 	} else {
-		application.Status.KpackImageName = childImage.Name
+		application.Status.KpackImageRef = refs.NewTypedLocalObjectReferenceForObject(childImage, r.Scheme)
 		application.Status.LatestImage = childImage.Status.LatestImage
-		application.Status.BuildCacheName = childImage.Status.BuildCacheName
+		application.Status.BuildCacheRef = refs.NewTypedLocalObjectReference(childImage.Status.BuildCacheName, schema.GroupKind{Kind: "PersistentVolumeClaim"})
 		application.Status.PropagateKpackImageStatus(&childImage.Status)
 	}
 

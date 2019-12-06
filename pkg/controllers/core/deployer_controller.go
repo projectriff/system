@@ -42,6 +42,7 @@ import (
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	corev1alpha1 "github.com/projectriff/system/pkg/apis/core/v1alpha1"
 	"github.com/projectriff/system/pkg/controllers"
+	"github.com/projectriff/system/pkg/refs"
 	"github.com/projectriff/system/pkg/tracker"
 )
 
@@ -146,7 +147,7 @@ func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, dep
 		log.Error(err, "unable to reconcile child Deployment", "deployer", deployer)
 		return ctrl.Result{}, err
 	}
-	deployer.Status.DeploymentName = childDeployment.Name
+	deployer.Status.DeploymentRef = refs.NewTypedLocalObjectReferenceForObject(childDeployment, r.Scheme)
 	deployer.Status.PropagateDeploymentStatus(&childDeployment.Status)
 
 	// reconcile service
@@ -161,7 +162,7 @@ func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, dep
 		log.Error(err, "unable to reconcile child Service", "deployer", deployer)
 		return ctrl.Result{}, err
 	}
-	deployer.Status.ServiceName = childService.Name
+	deployer.Status.ServiceRef = refs.NewTypedLocalObjectReferenceForObject(childService, r.Scheme)
 	deployer.Status.Address = &apis.Addressable{URL: fmt.Sprintf("http://%s.%s.%s", childService.Name, childService.Namespace, "svc.cluster.local")}
 	deployer.Status.PropagateServiceStatus(&childService.Status)
 
@@ -172,11 +173,11 @@ func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, dep
 		return ctrl.Result{}, err
 	}
 	if childIngress == nil {
-		deployer.Status.IngressName = ""
+		deployer.Status.IngressRef = nil
 		deployer.Status.URL = ""
 		deployer.Status.MarkIngressNotRequired()
 	} else {
-		deployer.Status.IngressName = childIngress.Name
+		deployer.Status.IngressRef = refs.NewTypedLocalObjectReferenceForObject(childIngress, r.Scheme)
 		deployer.Status.URL = fmt.Sprintf("http://%s", childIngress.Spec.Rules[0].Host)
 		deployer.Status.PropagateIngressStatus(&childIngress.Status)
 	}
@@ -453,7 +454,7 @@ func (r *DeployerReconciler) ingressSemanticEquals(desiredIngress, ingress *netw
 }
 
 func (r *DeployerReconciler) constructIngressForDeployer(deployer *corev1alpha1.Deployer, coreSettings *corev1.ConfigMap) (*networkingv1beta1.Ingress, error) {
-	if deployer.Status.ServiceName == "" || deployer.Spec.IngressPolicy == corev1alpha1.IngressPolicyClusterLocal {
+	if deployer.Status.ServiceRef == nil || deployer.Spec.IngressPolicy == corev1alpha1.IngressPolicyClusterLocal {
 		// skip ingress
 		return nil, nil
 	}
@@ -475,7 +476,7 @@ func (r *DeployerReconciler) constructIngressForDeployer(deployer *corev1alpha1.
 						Paths: []networkingv1beta1.HTTPIngressPath{{
 							Path: "/",
 							Backend: networkingv1beta1.IngressBackend{
-								ServiceName: deployer.Status.ServiceName,
+								ServiceName: deployer.Status.ServiceRef.Name,
 								ServicePort: intstr.FromInt(80),
 							},
 						}},

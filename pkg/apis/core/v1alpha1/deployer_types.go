@@ -21,7 +21,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	apis "github.com/projectriff/system/pkg/apis"
+	"github.com/projectriff/system/pkg/apis"
+	"github.com/projectriff/system/pkg/refs"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -85,9 +86,9 @@ type DeployerStatus struct {
 	// LatestImage is the most recent image resolved from the build
 	LatestImage string `json:"latestImage,omitempty"`
 
-	DeploymentName string `json:"deploymentName,omitempty"`
-	ServiceName    string `json:"serviceName,omitempty"`
-	IngressName    string `json:"ingressName,omitempty"`
+	DeploymentRef *refs.TypedLocalObjectReference `json:"deploymentRef,omitempty"`
+	ServiceRef    *refs.TypedLocalObjectReference `json:"serviceRef,omitempty"`
+	IngressRef    *refs.TypedLocalObjectReference `json:"ingressRef,omitempty"`
 
 	// Address to target this deployer internally
 	Address *apis.Addressable `json:"address,omitempty"`

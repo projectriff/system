@@ -21,7 +21,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	apis "github.com/projectriff/system/pkg/apis"
+	"github.com/projectriff/system/pkg/apis"
+	"github.com/projectriff/system/pkg/refs"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -81,13 +82,13 @@ type DeployerStatus struct {
 	// LatestImage is the most recent image resolved from the build
 	LatestImage string `json:"latestImage,omitempty"`
 
-	// ConfigurationName is the name of the Knative Serving configuration
+	// ConfigurationRef is a reference to the Knative Serving configuration
 	// backing this deployer.
-	ConfigurationName string `json:"configurationName,omitempty"`
+	ConfigurationRef *refs.TypedLocalObjectReference `json:"configurationRef,omitempty"`
 
-	// RouteName is the name of the Knative Serving route backing this
+	// RouteRef is a reference to the Knative Serving route backing this
 	// deployer.
-	RouteName string `json:"routeName,omitempty"`
+	RouteRef *refs.TypedLocalObjectReference `json:"routeRef,omitempty"`
 
 	// Address to target this deployer internally
 	Address *apis.Addressable `json:"address,omitempty"`

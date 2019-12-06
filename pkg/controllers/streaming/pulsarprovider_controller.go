@@ -38,6 +38,7 @@ import (
 
 	streamingv1alpha1 "github.com/projectriff/system/pkg/apis/streaming/v1alpha1"
 	"github.com/projectriff/system/pkg/controllers"
+	"github.com/projectriff/system/pkg/refs"
 	"github.com/projectriff/system/pkg/tracker"
 )
 
@@ -114,7 +115,7 @@ func (r *PulsarProviderReconciler) reconcile(ctx context.Context, log logr.Logge
 		log.Error(err, "unable to reconcile gateway Deployment")
 		return ctrl.Result{}, err
 	}
-	pulsarProvider.Status.GatewayDeploymentName = gatewayDeployment.Name
+	pulsarProvider.Status.GatewayDeploymentRef = refs.NewTypedLocalObjectReferenceForObject(gatewayDeployment, r.Scheme)
 	pulsarProvider.Status.PropagateGatewayDeploymentStatus(&gatewayDeployment.Status)
 
 	// Reconcile service for gateway
@@ -123,7 +124,7 @@ func (r *PulsarProviderReconciler) reconcile(ctx context.Context, log logr.Logge
 		log.Error(err, "unable to reconcile gateway Service")
 		return ctrl.Result{}, err
 	}
-	pulsarProvider.Status.GatewayServiceName = gatewayService.Name
+	pulsarProvider.Status.GatewayServiceRef = refs.NewTypedLocalObjectReferenceForObject(gatewayService, r.Scheme)
 	pulsarProvider.Status.PropagateGatewayServiceStatus(&gatewayService.Status)
 
 	// Reconcile deployment for provisioner
@@ -132,7 +133,7 @@ func (r *PulsarProviderReconciler) reconcile(ctx context.Context, log logr.Logge
 		log.Error(err, "unable to reconcile provisioner Deployment")
 		return ctrl.Result{}, err
 	}
-	pulsarProvider.Status.ProvisionerDeploymentName = provisionerDeployment.Name
+	pulsarProvider.Status.ProvisionerDeploymentRef = refs.NewTypedLocalObjectReferenceForObject(provisionerDeployment, r.Scheme)
 	pulsarProvider.Status.PropagateProvisionerDeploymentStatus(&provisionerDeployment.Status)
 
 	// Reconcile service for provisioner
@@ -141,7 +142,7 @@ func (r *PulsarProviderReconciler) reconcile(ctx context.Context, log logr.Logge
 		log.Error(err, "unable to reconcile provisioner Service")
 		return ctrl.Result{}, err
 	}
-	pulsarProvider.Status.ProvisionerServiceName = provisionerService.Name
+	pulsarProvider.Status.ProvisionerServiceRef = refs.NewTypedLocalObjectReferenceForObject(provisionerService, r.Scheme)
 	pulsarProvider.Status.PropagateProvisionerServiceStatus(&provisionerService.Status)
 
 	return ctrl.Result{}, nil
@@ -467,7 +468,7 @@ func (r *PulsarProviderReconciler) constructProvisionerDeploymentForPulsarProvid
 	labels := r.constructProvisionerLabelsForPulsarProvider(pulsarProvider)
 
 	env := []corev1.EnvVar{
-		{Name: "GATEWAY", Value: fmt.Sprintf("%s.%s:6565", pulsarProvider.Status.GatewayServiceName, pulsarProvider.Namespace)}, // TODO get port number from svc lookup?
+		{Name: "GATEWAY", Value: fmt.Sprintf("%s.%s:6565", pulsarProvider.Status.GatewayServiceRef.Name, pulsarProvider.Namespace)}, // TODO get port number from svc lookup?
 		{Name: "BROKER", Value: pulsarProvider.Spec.ServiceURL},
 	}
 	deployment := &appsv1.Deployment{

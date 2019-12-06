@@ -29,6 +29,7 @@ import (
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -36,6 +37,7 @@ import (
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	kpackbuildv1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/kpack/build/v1alpha1"
 	"github.com/projectriff/system/pkg/controllers"
+	"github.com/projectriff/system/pkg/refs"
 )
 
 const functionIndexField = ".metadata.functionController"
@@ -117,9 +119,9 @@ func (r *FunctionReconciler) reconcile(ctx context.Context, log logr.Logger, fun
 		function.Status.LatestImage = function.Status.TargetImage
 		function.Status.MarkBuildNotUsed()
 	} else {
-		function.Status.KpackImageName = childImage.Name
+		function.Status.KpackImageRef = refs.NewTypedLocalObjectReferenceForObject(childImage, r.Scheme)
 		function.Status.LatestImage = childImage.Status.LatestImage
-		function.Status.BuildCacheName = childImage.Status.BuildCacheName
+		function.Status.BuildCacheRef = refs.NewTypedLocalObjectReference(childImage.Status.BuildCacheName, schema.GroupKind{Kind: "PersistentVolumeClaim"})
 		function.Status.PropagateKpackImageStatus(&childImage.Status)
 	}
 

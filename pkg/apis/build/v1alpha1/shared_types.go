@@ -21,6 +21,8 @@ import (
 	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/projectriff/system/pkg/refs"
 )
 
 var (
@@ -30,12 +32,12 @@ var (
 )
 
 type BuildStatus struct {
-	// BuildCacheName is the name of the PersistentVolumeClaim used as a cache
+	// BuildCacheRef is a reference to the PersistentVolumeClaim used as a cache
 	// for intermediate build resources.
-	BuildCacheName string `json:"buildCacheName,omitempty"`
+	BuildCacheRef *refs.TypedLocalObjectReference `json:"buildCacheRef,omitempty"`
 
-	// KpackImageName is the name of the kpack Image backing this build.
-	KpackImageName string `json:"kpackImageName,omitempty"`
+	// KpackImageRef is a reference to the kpack Image backing this build.
+	KpackImageRef *refs.TypedLocalObjectReference `json:"kpackImageRef,omitempty"`
 
 	// LatestImage is the most recent image for this build.
 	LatestImage string `json:"latestImage,omitempty"`

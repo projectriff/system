@@ -29,9 +29,24 @@ if [ $RUNTIME = "core" ] || [ $RUNTIME = "knative" ]; then
 
       riff $RUNTIME deployer create $name --${test}-ref $name --namespace $NAMESPACE --ingress-policy External --tail
       if [ $test = 'function' ] ; then
-        source ${FATS_DIR}/macros/invoke_${RUNTIME}_deployer.sh $name "-H Content-Type:text/plain -H Accept:text/plain -d system" SYSTEM
+        curl_opts="-H Content-Type:text/plain -H Accept:text/plain -d system"
+        expected_data="SYSTEM"
       else
-        source ${FATS_DIR}/macros/invoke_${RUNTIME}_deployer.sh $name "--get --data-urlencode input=system" SYSTEM
+        curl_opts="--get --data-urlencode input=system"
+        expected_data="SYSTEM"
+      fi
+      # invoke ClusterLocal
+      source ${FATS_DIR}/macros/invoke_incluster.sh \
+        "$(kubectl get deployers.${RUNTIME}.projectriff.io ${name} --namespace ${NAMESPACE} -ojsonpath='{.status.address.url}')" \
+        "${curl_opts}" \
+        "${expected_data}"
+      # invoke External
+      # TODO also test ingress for the core runtime
+      if [ $RUNTIME = "knative" ]; then
+        source ${FATS_DIR}/macros/invoke_${RUNTIME}_deployer.sh \
+          "${name}" \
+          "${curl_opts}" \
+          "${expected_data}"
       fi
       riff $RUNTIME deployer delete $name --namespace $NAMESPACE
 
@@ -57,7 +72,7 @@ elif [ $RUNTIME = "streaming" ]; then
     lower_stream=${name}-lower
     upper_stream=${name}-upper
 
-    provider=$(kubectl get kafkaproviders.streaming.projectriff.io franz --namespace ${NAMESPACE} -ojsonpath='{.status.provisionerServiceName}')
+    provider=$(kubectl get kafkaproviders.streaming.projectriff.io franz --namespace ${NAMESPACE} -ojsonpath='{.status.provisionerServiceRef.name}')
     riff streaming stream create ${lower_stream} --namespace $NAMESPACE --provider ${provider} --content-type 'text/plain'
     riff streaming stream create ${upper_stream} --namespace $NAMESPACE --provider ${provider} --content-type 'text/plain'
 
