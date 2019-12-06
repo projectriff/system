@@ -21,7 +21,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/kpack/build/v1alpha1"
@@ -144,13 +143,11 @@ func (in *BuildStatus) DeepCopyInto(out *BuildStatus) {
 	*out = *in
 	if in.BuildCacheRef != nil {
 		in, out := &in.BuildCacheRef, &out.BuildCacheRef
-		*out = new(v1.TypedLocalObjectReference)
-		(*in).DeepCopyInto(*out)
+		*out = (*in).DeepCopy()
 	}
 	if in.KpackImageRef != nil {
 		in, out := &in.KpackImageRef, &out.KpackImageRef
-		*out = new(v1.TypedLocalObjectReference)
-		(*in).DeepCopyInto(*out)
+		*out = (*in).DeepCopy()
 	}
 }
 

@@ -17,11 +17,11 @@ limitations under the License.
 package v1alpha1
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/projectriff/system/pkg/apis"
+	"github.com/projectriff/system/pkg/refs"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -53,10 +53,10 @@ type PulsarProviderStatus struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	apis.Status              `json:",inline"`
-	GatewayDeploymentRef     *corev1.TypedLocalObjectReference `json:"gatewayDeploymentRef,omitempty"`
-	GatewayServiceRef        *corev1.TypedLocalObjectReference `json:"gatewayServiceRef,omitempty"`
-	ProvisionerDeploymentRef *corev1.TypedLocalObjectReference `json:"provisionerDeploymentRef,omitempty"`
-	ProvisionerServiceRef    *corev1.TypedLocalObjectReference `json:"provisionerServiceRef,omitempty"`
+	GatewayDeploymentRef     *refs.TypedLocalObjectReference `json:"gatewayDeploymentRef,omitempty"`
+	GatewayServiceRef        *refs.TypedLocalObjectReference `json:"gatewayServiceRef,omitempty"`
+	ProvisionerDeploymentRef *refs.TypedLocalObjectReference `json:"provisionerDeploymentRef,omitempty"`
+	ProvisionerServiceRef    *refs.TypedLocalObjectReference `json:"provisionerServiceRef,omitempty"`
 }
 
 // +kubebuilder:object:root=true

@@ -147,7 +147,7 @@ func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, dep
 		log.Error(err, "unable to reconcile child Deployment", "deployer", deployer)
 		return ctrl.Result{}, err
 	}
-	deployer.Status.DeploymentRef = refs.TypedLocalObjectReferenceForObject(childDeployment, r.Scheme)
+	deployer.Status.DeploymentRef = refs.NewTypedLocalObjectReferenceForObject(childDeployment, r.Scheme)
 	deployer.Status.PropagateDeploymentStatus(&childDeployment.Status)
 
 	// reconcile service
@@ -162,7 +162,7 @@ func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, dep
 		log.Error(err, "unable to reconcile child Service", "deployer", deployer)
 		return ctrl.Result{}, err
 	}
-	deployer.Status.ServiceRef = refs.TypedLocalObjectReferenceForObject(childService, r.Scheme)
+	deployer.Status.ServiceRef = refs.NewTypedLocalObjectReferenceForObject(childService, r.Scheme)
 	deployer.Status.Address = &apis.Addressable{URL: fmt.Sprintf("http://%s.%s.%s", childService.Name, childService.Namespace, "svc.cluster.local")}
 	deployer.Status.PropagateServiceStatus(&childService.Status)
 
@@ -177,7 +177,7 @@ func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, dep
 		deployer.Status.URL = ""
 		deployer.Status.MarkIngressNotRequired()
 	} else {
-		deployer.Status.IngressRef = refs.TypedLocalObjectReferenceForObject(childIngress, r.Scheme)
+		deployer.Status.IngressRef = refs.NewTypedLocalObjectReferenceForObject(childIngress, r.Scheme)
 		deployer.Status.URL = fmt.Sprintf("http://%s", childIngress.Spec.Rules[0].Host)
 		deployer.Status.PropagateIngressStatus(&childIngress.Status)
 	}

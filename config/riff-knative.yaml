@@ -2805,6 +2805,7 @@ spec:
             configurationRef:
               properties:
                 apiGroup:
+                  nullable: true
                   type: string
                 kind:
                   type: string
@@ -2822,6 +2823,7 @@ spec:
             routeRef:
               properties:
                 apiGroup:
+                  nullable: true
                   type: string
                 kind:
                   type: string

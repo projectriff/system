@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/projectriff/system/pkg/apis"
+	"github.com/projectriff/system/pkg/refs"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -83,11 +84,11 @@ type DeployerStatus struct {
 
 	// ConfigurationRef is a reference to the Knative Serving configuration
 	// backing this deployer.
-	ConfigurationRef *corev1.TypedLocalObjectReference `json:"configurationRef,omitempty"`
+	ConfigurationRef *refs.TypedLocalObjectReference `json:"configurationRef,omitempty"`
 
 	// RouteRef is a reference to the Knative Serving route backing this
 	// deployer.
-	RouteRef *corev1.TypedLocalObjectReference `json:"routeRef,omitempty"`
+	RouteRef *refs.TypedLocalObjectReference `json:"routeRef,omitempty"`
 
 	// Address to target this deployer internally
 	Address *apis.Addressable `json:"address,omitempty"`

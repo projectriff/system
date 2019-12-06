@@ -199,7 +199,7 @@ func (r *ProcessorReconciler) reconcile(ctx context.Context, logger logr.Logger,
 		logger.Error(err, "unable to reconcile deployment")
 		return ctrl.Result{}, err
 	}
-	processor.Status.DeploymentRef = refs.TypedLocalObjectReferenceForObject(deployment, r.Scheme)
+	processor.Status.DeploymentRef = refs.NewTypedLocalObjectReferenceForObject(deployment, r.Scheme)
 	processor.Status.PropagateDeploymentStatus(&deployment.Status)
 
 	processor.Status.MarkStreamsReady()
@@ -223,7 +223,7 @@ func (r *ProcessorReconciler) reconcile(ctx context.Context, logger logr.Logger,
 		logger.Error(err, "unable to reconcile scaledObject")
 		return ctrl.Result{}, err
 	}
-	processor.Status.ScaledObjectRef = refs.TypedLocalObjectReferenceForObject(scaledObject, r.Scheme)
+	processor.Status.ScaledObjectRef = refs.NewTypedLocalObjectReferenceForObject(scaledObject, r.Scheme)
 	processor.Status.PropagateScaledObjectStatus(&scaledObject.Status)
 
 	processor.Status.ObservedGeneration = processor.Generation

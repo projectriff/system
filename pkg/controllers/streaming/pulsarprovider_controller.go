@@ -115,7 +115,7 @@ func (r *PulsarProviderReconciler) reconcile(ctx context.Context, log logr.Logge
 		log.Error(err, "unable to reconcile gateway Deployment")
 		return ctrl.Result{}, err
 	}
-	pulsarProvider.Status.GatewayDeploymentRef = refs.TypedLocalObjectReferenceForObject(gatewayDeployment, r.Scheme)
+	pulsarProvider.Status.GatewayDeploymentRef = refs.NewTypedLocalObjectReferenceForObject(gatewayDeployment, r.Scheme)
 	pulsarProvider.Status.PropagateGatewayDeploymentStatus(&gatewayDeployment.Status)
 
 	// Reconcile service for gateway
@@ -124,7 +124,7 @@ func (r *PulsarProviderReconciler) reconcile(ctx context.Context, log logr.Logge
 		log.Error(err, "unable to reconcile gateway Service")
 		return ctrl.Result{}, err
 	}
-	pulsarProvider.Status.GatewayServiceRef = refs.TypedLocalObjectReferenceForObject(gatewayService, r.Scheme)
+	pulsarProvider.Status.GatewayServiceRef = refs.NewTypedLocalObjectReferenceForObject(gatewayService, r.Scheme)
 	pulsarProvider.Status.PropagateGatewayServiceStatus(&gatewayService.Status)
 
 	// Reconcile deployment for provisioner
@@ -133,7 +133,7 @@ func (r *PulsarProviderReconciler) reconcile(ctx context.Context, log logr.Logge
 		log.Error(err, "unable to reconcile provisioner Deployment")
 		return ctrl.Result{}, err
 	}
-	pulsarProvider.Status.ProvisionerDeploymentRef = refs.TypedLocalObjectReferenceForObject(provisionerDeployment, r.Scheme)
+	pulsarProvider.Status.ProvisionerDeploymentRef = refs.NewTypedLocalObjectReferenceForObject(provisionerDeployment, r.Scheme)
 	pulsarProvider.Status.PropagateProvisionerDeploymentStatus(&provisionerDeployment.Status)
 
 	// Reconcile service for provisioner
@@ -142,7 +142,7 @@ func (r *PulsarProviderReconciler) reconcile(ctx context.Context, log logr.Logge
 		log.Error(err, "unable to reconcile provisioner Service")
 		return ctrl.Result{}, err
 	}
-	pulsarProvider.Status.ProvisionerServiceRef = refs.TypedLocalObjectReferenceForObject(provisionerService, r.Scheme)
+	pulsarProvider.Status.ProvisionerServiceRef = refs.NewTypedLocalObjectReferenceForObject(provisionerService, r.Scheme)
 	pulsarProvider.Status.PropagateProvisionerServiceStatus(&provisionerService.Status)
 
 	return ctrl.Result{}, nil

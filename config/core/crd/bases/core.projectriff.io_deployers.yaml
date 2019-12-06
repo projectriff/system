@@ -2696,6 +2696,7 @@ spec:
             deploymentRef:
               properties:
                 apiGroup:
+                  nullable: true
                   type: string
                 kind:
                   type: string
@@ -2708,6 +2709,7 @@ spec:
             ingressRef:
               properties:
                 apiGroup:
+                  nullable: true
                   type: string
                 kind:
                   type: string
@@ -2725,6 +2727,7 @@ spec:
             serviceRef:
               properties:
                 apiGroup:
+                  nullable: true
                   type: string
                 kind:
                   type: string

@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/projectriff/system/pkg/apis"
+	"github.com/projectriff/system/pkg/refs"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -85,9 +86,9 @@ type DeployerStatus struct {
 	// LatestImage is the most recent image resolved from the build
 	LatestImage string `json:"latestImage,omitempty"`
 
-	DeploymentRef *corev1.TypedLocalObjectReference `json:"deploymentRef,omitempty"`
-	ServiceRef    *corev1.TypedLocalObjectReference `json:"serviceRef,omitempty"`
-	IngressRef    *corev1.TypedLocalObjectReference `json:"ingressRef,omitempty"`
+	DeploymentRef *refs.TypedLocalObjectReference `json:"deploymentRef,omitempty"`
+	ServiceRef    *refs.TypedLocalObjectReference `json:"serviceRef,omitempty"`
+	IngressRef    *refs.TypedLocalObjectReference `json:"ingressRef,omitempty"`
 
 	// Address to target this deployer internally
 	Address *apis.Addressable `json:"address,omitempty"`

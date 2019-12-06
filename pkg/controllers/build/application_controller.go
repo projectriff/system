@@ -118,9 +118,9 @@ func (r *ApplicationReconciler) reconcile(ctx context.Context, log logr.Logger, 
 		application.Status.LatestImage = application.Status.TargetImage
 		application.Status.MarkBuildNotUsed()
 	} else {
-		application.Status.KpackImageRef = refs.TypedLocalObjectReferenceForObject(childImage, r.Scheme)
+		application.Status.KpackImageRef = refs.NewTypedLocalObjectReferenceForObject(childImage, r.Scheme)
 		application.Status.LatestImage = childImage.Status.LatestImage
-		application.Status.BuildCacheRef = refs.TypedLocalObjectReference(childImage.Status.BuildCacheName, schema.GroupKind{Kind: "PersistentVolumeClaim"})
+		application.Status.BuildCacheRef = refs.NewTypedLocalObjectReference(childImage.Status.BuildCacheName, schema.GroupKind{Kind: "PersistentVolumeClaim"})
 		application.Status.PropagateKpackImageStatus(&childImage.Status)
 	}
 

@@ -20,8 +20,9 @@ import (
 	"fmt"
 	"strings"
 
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/projectriff/system/pkg/refs"
 )
 
 var (
@@ -33,10 +34,10 @@ var (
 type BuildStatus struct {
 	// BuildCacheRef is a reference to the PersistentVolumeClaim used as a cache
 	// for intermediate build resources.
-	BuildCacheRef *corev1.TypedLocalObjectReference `json:"buildCacheRef,omitempty"`
+	BuildCacheRef *refs.TypedLocalObjectReference `json:"buildCacheRef,omitempty"`
 
 	// KpackImageRef is a reference to the kpack Image backing this build.
-	KpackImageRef *corev1.TypedLocalObjectReference `json:"kpackImageRef,omitempty"`
+	KpackImageRef *refs.TypedLocalObjectReference `json:"kpackImageRef,omitempty"`
 
 	// LatestImage is the most recent image for this build.
 	LatestImage string `json:"latestImage,omitempty"`

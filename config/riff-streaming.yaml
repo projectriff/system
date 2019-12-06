@@ -67,6 +67,7 @@ spec:
             gatewayDeploymentRef:
               properties:
                 apiGroup:
+                  nullable: true
                   type: string
                 kind:
                   type: string
@@ -79,6 +80,7 @@ spec:
             gatewayServiceRef:
               properties:
                 apiGroup:
+                  nullable: true
                   type: string
                 kind:
                   type: string
@@ -94,6 +96,7 @@ spec:
             provisionerDeploymentRef:
               properties:
                 apiGroup:
+                  nullable: true
                   type: string
                 kind:
                   type: string
@@ -106,6 +109,7 @@ spec:
             provisionerServiceRef:
               properties:
                 apiGroup:
+                  nullable: true
                   type: string
                 kind:
                   type: string
@@ -2839,6 +2843,7 @@ spec:
             deploymentRef:
               properties:
                 apiGroup:
+                  nullable: true
                   type: string
                 kind:
                   type: string
@@ -2868,6 +2873,7 @@ spec:
             scaledObjectRef:
               properties:
                 apiGroup:
+                  nullable: true
                   type: string
                 kind:
                   type: string
@@ -2960,6 +2966,7 @@ spec:
             gatewayDeploymentRef:
               properties:
                 apiGroup:
+                  nullable: true
                   type: string
                 kind:
                   type: string
@@ -2972,6 +2979,7 @@ spec:
             gatewayServiceRef:
               properties:
                 apiGroup:
+                  nullable: true
                   type: string
                 kind:
                   type: string
@@ -2987,6 +2995,7 @@ spec:
             provisionerDeploymentRef:
               properties:
                 apiGroup:
+                  nullable: true
                   type: string
                 kind:
                   type: string
@@ -2999,6 +3008,7 @@ spec:
             provisionerServiceRef:
               properties:
                 apiGroup:
+                  nullable: true
                   type: string
                 kind:
                   type: string

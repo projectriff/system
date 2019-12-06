@@ -137,23 +137,19 @@ func (in *KafkaProviderStatus) DeepCopyInto(out *KafkaProviderStatus) {
 	in.Status.DeepCopyInto(&out.Status)
 	if in.GatewayDeploymentRef != nil {
 		in, out := &in.GatewayDeploymentRef, &out.GatewayDeploymentRef
-		*out = new(v1.TypedLocalObjectReference)
-		(*in).DeepCopyInto(*out)
+		*out = (*in).DeepCopy()
 	}
 	if in.GatewayServiceRef != nil {
 		in, out := &in.GatewayServiceRef, &out.GatewayServiceRef
-		*out = new(v1.TypedLocalObjectReference)
-		(*in).DeepCopyInto(*out)
+		*out = (*in).DeepCopy()
 	}
 	if in.ProvisionerDeploymentRef != nil {
 		in, out := &in.ProvisionerDeploymentRef, &out.ProvisionerDeploymentRef
-		*out = new(v1.TypedLocalObjectReference)
-		(*in).DeepCopyInto(*out)
+		*out = (*in).DeepCopy()
 	}
 	if in.ProvisionerServiceRef != nil {
 		in, out := &in.ProvisionerServiceRef, &out.ProvisionerServiceRef
-		*out = new(v1.TypedLocalObjectReference)
-		(*in).DeepCopyInto(*out)
+		*out = (*in).DeepCopy()
 	}
 }
 
@@ -282,13 +278,11 @@ func (in *ProcessorStatus) DeepCopyInto(out *ProcessorStatus) {
 	}
 	if in.DeploymentRef != nil {
 		in, out := &in.DeploymentRef, &out.DeploymentRef
-		*out = new(v1.TypedLocalObjectReference)
-		(*in).DeepCopyInto(*out)
+		*out = (*in).DeepCopy()
 	}
 	if in.ScaledObjectRef != nil {
 		in, out := &in.ScaledObjectRef, &out.ScaledObjectRef
-		*out = new(v1.TypedLocalObjectReference)
-		(*in).DeepCopyInto(*out)
+		*out = (*in).DeepCopy()
 	}
 }
 
@@ -382,23 +376,19 @@ func (in *PulsarProviderStatus) DeepCopyInto(out *PulsarProviderStatus) {
 	in.Status.DeepCopyInto(&out.Status)
 	if in.GatewayDeploymentRef != nil {
 		in, out := &in.GatewayDeploymentRef, &out.GatewayDeploymentRef
-		*out = new(v1.TypedLocalObjectReference)
-		(*in).DeepCopyInto(*out)
+		*out = (*in).DeepCopy()
 	}
 	if in.GatewayServiceRef != nil {
 		in, out := &in.GatewayServiceRef, &out.GatewayServiceRef
-		*out = new(v1.TypedLocalObjectReference)
-		(*in).DeepCopyInto(*out)
+		*out = (*in).DeepCopy()
 	}
 	if in.ProvisionerDeploymentRef != nil {
 		in, out := &in.ProvisionerDeploymentRef, &out.ProvisionerDeploymentRef
-		*out = new(v1.TypedLocalObjectReference)
-		(*in).DeepCopyInto(*out)
+		*out = (*in).DeepCopy()
 	}
 	if in.ProvisionerServiceRef != nil {
 		in, out := &in.ProvisionerServiceRef, &out.ProvisionerServiceRef
-		*out = new(v1.TypedLocalObjectReference)
-		(*in).DeepCopyInto(*out)
+		*out = (*in).DeepCopy()
 	}
 }
 

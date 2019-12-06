@@ -119,7 +119,7 @@ func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, dep
 		log.Error(err, "unable to reconcile child Configuration", "deployer", deployer)
 		return ctrl.Result{}, err
 	}
-	deployer.Status.ConfigurationRef = refs.TypedLocalObjectReferenceForObject(childConfiguration, r.Scheme)
+	deployer.Status.ConfigurationRef = refs.NewTypedLocalObjectReferenceForObject(childConfiguration, r.Scheme)
 	deployer.Status.PropagateConfigurationStatus(&childConfiguration.Status)
 
 	// reconcile route
@@ -134,7 +134,7 @@ func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, dep
 		log.Error(err, "unable to reconcile child Route", "deployer", deployer)
 		return ctrl.Result{}, err
 	}
-	deployer.Status.RouteRef = refs.TypedLocalObjectReferenceForObject(childRoute, r.Scheme)
+	deployer.Status.RouteRef = refs.NewTypedLocalObjectReferenceForObject(childRoute, r.Scheme)
 	deployer.Status.PropagateRouteStatus(&childRoute.Status)
 
 	deployer.Status.ObservedGeneration = deployer.Generation

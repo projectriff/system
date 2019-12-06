@@ -165,6 +165,7 @@ spec:
             buildCacheRef:
               properties:
                 apiGroup:
+                  nullable: true
                   type: string
                 kind:
                   type: string
@@ -197,6 +198,7 @@ spec:
             kpackImageRef:
               properties:
                 apiGroup:
+                  nullable: true
                   type: string
                 kind:
                   type: string

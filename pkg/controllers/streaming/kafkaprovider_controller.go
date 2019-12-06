@@ -116,7 +116,7 @@ func (r *KafkaProviderReconciler) reconcile(ctx context.Context, log logr.Logger
 		log.Error(err, "unable to reconcile gateway Deployment", "kafkaprovider", kafkaProvider)
 		return ctrl.Result{}, err
 	}
-	kafkaProvider.Status.GatewayDeploymentRef = refs.TypedLocalObjectReferenceForObject(gatewayDeployment, r.Scheme)
+	kafkaProvider.Status.GatewayDeploymentRef = refs.NewTypedLocalObjectReferenceForObject(gatewayDeployment, r.Scheme)
 	kafkaProvider.Status.PropagateGatewayDeploymentStatus(&gatewayDeployment.Status)
 
 	// Reconcile service for gateway
@@ -125,7 +125,7 @@ func (r *KafkaProviderReconciler) reconcile(ctx context.Context, log logr.Logger
 		log.Error(err, "unable to reconcile gateway Service", "kafkaprovider", kafkaProvider)
 		return ctrl.Result{}, err
 	}
-	kafkaProvider.Status.GatewayServiceRef = refs.TypedLocalObjectReferenceForObject(gatewayService, r.Scheme)
+	kafkaProvider.Status.GatewayServiceRef = refs.NewTypedLocalObjectReferenceForObject(gatewayService, r.Scheme)
 	kafkaProvider.Status.PropagateGatewayServiceStatus(&gatewayService.Status)
 
 	// Reconcile deployment for provisioner
@@ -134,7 +134,7 @@ func (r *KafkaProviderReconciler) reconcile(ctx context.Context, log logr.Logger
 		log.Error(err, "unable to reconcile provisioner Deployment", "kafkaprovider", kafkaProvider)
 		return ctrl.Result{}, err
 	}
-	kafkaProvider.Status.ProvisionerDeploymentRef = refs.TypedLocalObjectReferenceForObject(provisionerDeployment, r.Scheme)
+	kafkaProvider.Status.ProvisionerDeploymentRef = refs.NewTypedLocalObjectReferenceForObject(provisionerDeployment, r.Scheme)
 	kafkaProvider.Status.PropagateProvisionerDeploymentStatus(&provisionerDeployment.Status)
 
 	// Reconcile service for provisioner
@@ -143,7 +143,7 @@ func (r *KafkaProviderReconciler) reconcile(ctx context.Context, log logr.Logger
 		log.Error(err, "unable to reconcile provisioner Service", "kafkaprovider", kafkaProvider)
 		return ctrl.Result{}, err
 	}
-	kafkaProvider.Status.ProvisionerServiceRef = refs.TypedLocalObjectReferenceForObject(provisionerService, r.Scheme)
+	kafkaProvider.Status.ProvisionerServiceRef = refs.NewTypedLocalObjectReferenceForObject(provisionerService, r.Scheme)
 	kafkaProvider.Status.PropagateProvisionerServiceStatus(&provisionerService.Status)
 
 	return ctrl.Result{}, nil

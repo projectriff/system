@@ -132,18 +132,15 @@ func (in *DeployerStatus) DeepCopyInto(out *DeployerStatus) {
 	in.Status.DeepCopyInto(&out.Status)
 	if in.DeploymentRef != nil {
 		in, out := &in.DeploymentRef, &out.DeploymentRef
-		*out = new(v1.TypedLocalObjectReference)
-		(*in).DeepCopyInto(*out)
+		*out = (*in).DeepCopy()
 	}
 	if in.ServiceRef != nil {
 		in, out := &in.ServiceRef, &out.ServiceRef
-		*out = new(v1.TypedLocalObjectReference)
-		(*in).DeepCopyInto(*out)
+		*out = (*in).DeepCopy()
 	}
 	if in.IngressRef != nil {
 		in, out := &in.IngressRef, &out.IngressRef
-		*out = new(v1.TypedLocalObjectReference)
-		(*in).DeepCopyInto(*out)
+		*out = (*in).DeepCopy()
 	}
 	if in.Address != nil {
 		in, out := &in.Address, &out.Address
