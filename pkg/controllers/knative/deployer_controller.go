@@ -251,6 +251,7 @@ func (r *DeployerReconciler) reconcileChildConfiguration(ctx context.Context, lo
 	// update configuration with desired changes
 	configuration := actualConfiguration.DeepCopy()
 	configuration.ObjectMeta.Labels = desiredConfiguration.ObjectMeta.Labels
+	configuration.ObjectMeta.Annotations = desiredConfiguration.ObjectMeta.Annotations
 	configuration.Spec = desiredConfiguration.Spec
 	log.Info("reconciling configuration", "diff", cmp.Diff(actualConfiguration.Spec, configuration.Spec))
 	if err := r.Update(ctx, configuration); err != nil {
