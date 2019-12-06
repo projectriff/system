@@ -219,7 +219,7 @@ func (in *DeployerSpec) DeepCopyInto(out *DeployerSpec) {
 	in.Scale.DeepCopyInto(&out.Scale)
 	if in.Template != nil {
 		in, out := &in.Template, &out.Template
-		*out = new(v1.PodSpec)
+		*out = new(v1.PodTemplateSpec)
 		(*in).DeepCopyInto(*out)
 	}
 }

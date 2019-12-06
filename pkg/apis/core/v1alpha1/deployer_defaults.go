@@ -32,28 +32,34 @@ func (r *Deployer) Default() {
 
 func (s *DeployerSpec) Default() {
 	if s.Template == nil {
-		s.Template = &corev1.PodSpec{}
+		s.Template = &corev1.PodTemplateSpec{}
 	}
-	if len(s.Template.Containers) == 0 {
-		s.Template.Containers = append(s.Template.Containers, corev1.Container{})
+	if s.Template.ObjectMeta.Annotations == nil {
+		s.Template.ObjectMeta.Annotations = map[string]string{}
 	}
-	if s.Template.Containers[0].Name == "" {
-		s.Template.Containers[0].Name = "handler"
+	if s.Template.ObjectMeta.Labels == nil {
+		s.Template.ObjectMeta.Labels = map[string]string{}
 	}
-	if s.Template.Containers[0].Ports == nil {
-		s.Template.Containers[0].Ports = []corev1.ContainerPort{}
+	if len(s.Template.Spec.Containers) == 0 {
+		s.Template.Spec.Containers = append(s.Template.Spec.Containers, corev1.Container{})
 	}
-	if len(s.Template.Containers[0].Ports) == 0 {
-		s.Template.Containers[0].Ports = append(s.Template.Containers[0].Ports, corev1.ContainerPort{})
+	if s.Template.Spec.Containers[0].Name == "" {
+		s.Template.Spec.Containers[0].Name = "handler"
 	}
-	if s.Template.Containers[0].Ports[0].Name == "" {
-		s.Template.Containers[0].Ports[0].Name = "http"
+	if s.Template.Spec.Containers[0].Ports == nil {
+		s.Template.Spec.Containers[0].Ports = []corev1.ContainerPort{}
 	}
-	if s.Template.Containers[0].Ports[0].Protocol == "" {
-		s.Template.Containers[0].Ports[0].Protocol = corev1.ProtocolTCP
+	if len(s.Template.Spec.Containers[0].Ports) == 0 {
+		s.Template.Spec.Containers[0].Ports = append(s.Template.Spec.Containers[0].Ports, corev1.ContainerPort{})
 	}
-	if s.Template.Containers[0].Ports[0].ContainerPort == 0 {
-		s.Template.Containers[0].Ports[0].ContainerPort = 8080
+	if s.Template.Spec.Containers[0].Ports[0].Name == "" {
+		s.Template.Spec.Containers[0].Ports[0].Name = "http"
+	}
+	if s.Template.Spec.Containers[0].Ports[0].Protocol == "" {
+		s.Template.Spec.Containers[0].Ports[0].Protocol = corev1.ProtocolTCP
+	}
+	if s.Template.Spec.Containers[0].Ports[0].ContainerPort == 0 {
+		s.Template.Spec.Containers[0].Ports[0].ContainerPort = 8080
 	}
 	if s.IngressPolicy == "" {
 		s.IngressPolicy = IngressPolicyClusterLocal

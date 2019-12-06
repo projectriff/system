@@ -44,9 +44,11 @@ func TestValidateProcessor(t *testing.T) {
 				Inputs: []StreamBinding{
 					{Stream: "my-stream", Alias: "in"},
 				},
-				Template: &corev1.PodSpec{
-					Containers: []corev1.Container{
-						{Name: "function"},
+				Template: &corev1.PodTemplateSpec{
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{
+							{Name: "function"},
+						},
 					},
 				},
 			},
@@ -80,9 +82,11 @@ func TestValidateProcessorSpec(t *testing.T) {
 			Inputs: []StreamBinding{
 				{Stream: "my-stream", Alias: "in"},
 			},
-			Template: &corev1.PodSpec{
-				Containers: []corev1.Container{
-					{Name: "function"},
+			Template: &corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{Name: "function"},
+					},
 				},
 			},
 		},
@@ -93,13 +97,15 @@ func TestValidateProcessorSpec(t *testing.T) {
 			Inputs: []StreamBinding{
 				{Stream: "my-stream", Alias: "in"},
 			},
-			Template: &corev1.PodSpec{
-				Containers: []corev1.Container{
-					{Name: "function", Image: ""},
+			Template: &corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{Name: "function", Image: ""},
+					},
 				},
 			},
 		},
-		expected: validation.ErrMissingOneOf("build", "template.containers[0].image"),
+		expected: validation.ErrMissingOneOf("build", "template.spec.containers[0].image"),
 	}, {
 		name: "forbids both function ref and container image",
 		target: &ProcessorSpec{
@@ -109,13 +115,15 @@ func TestValidateProcessorSpec(t *testing.T) {
 			Inputs: []StreamBinding{
 				{Stream: "my-stream", Alias: "in"},
 			},
-			Template: &corev1.PodSpec{
-				Containers: []corev1.Container{
-					{Name: "function", Image: "my-image"},
+			Template: &corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{Name: "function", Image: "my-image"},
+					},
 				},
 			},
 		},
-		expected: validation.ErrMultipleOneOf("build", "template.containers[0].image"),
+		expected: validation.ErrMultipleOneOf("build", "template.spec.containers[0].image"),
 	}, {
 		name: "requires inputs",
 		target: &ProcessorSpec{
@@ -123,9 +131,11 @@ func TestValidateProcessorSpec(t *testing.T) {
 				FunctionRef: "my-func",
 			},
 			Inputs: nil,
-			Template: &corev1.PodSpec{
-				Containers: []corev1.Container{
-					{Name: "function"},
+			Template: &corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{Name: "function"},
+					},
 				},
 			},
 		},
@@ -139,9 +149,11 @@ func TestValidateProcessorSpec(t *testing.T) {
 			Inputs: []StreamBinding{
 				{},
 			},
-			Template: &corev1.PodSpec{
-				Containers: []corev1.Container{
-					{Name: "function"},
+			Template: &corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{Name: "function"},
+					},
 				},
 			},
 		},
@@ -158,9 +170,11 @@ func TestValidateProcessorSpec(t *testing.T) {
 			Inputs: []StreamBinding{
 				{Stream: "my-stream", Alias: "in"},
 			},
-			Template: &corev1.PodSpec{
-				Containers: []corev1.Container{
-					{Name: "function"},
+			Template: &corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{Name: "function"},
+					},
 				},
 			},
 		},
@@ -177,9 +191,11 @@ func TestValidateProcessorSpec(t *testing.T) {
 			Outputs: []StreamBinding{
 				{},
 			},
-			Template: &corev1.PodSpec{
-				Containers: []corev1.Container{
-					{Name: "function"},
+			Template: &corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{Name: "function"},
+					},
 				},
 			},
 		},
@@ -199,9 +215,11 @@ func TestValidateProcessorSpec(t *testing.T) {
 			Outputs: []StreamBinding{
 				{Stream: "my-stream", Alias: "my-output"},
 			},
-			Template: &corev1.PodSpec{
-				Containers: []corev1.Container{
-					{Name: "function"},
+			Template: &corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{Name: "function"},
+					},
 				},
 			},
 		},
@@ -217,12 +235,13 @@ func TestValidateProcessorSpec(t *testing.T) {
 				{Stream: "my-stream2", Alias: "my-input"},
 			},
 			Outputs: []StreamBinding{},
-			Template: &corev1.PodSpec{
-				Containers: []corev1.Container{
-					{Name: "function"},
+			Template: &corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{Name: "function"},
+					},
 				},
-			},
-		},
+			}},
 		expected: validation.ErrDuplicateValue("my-input", "inputs[0].alias", "inputs[1].alias"),
 	}, {
 		name: "input/output alias collision",
@@ -236,9 +255,11 @@ func TestValidateProcessorSpec(t *testing.T) {
 			Outputs: []StreamBinding{
 				{Stream: "my-stream2", Alias: "my-alias"},
 			},
-			Template: &corev1.PodSpec{
-				Containers: []corev1.Container{
-					{Name: "function"},
+			Template: &corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{Name: "function"},
+					},
 				},
 			},
 		},
@@ -255,13 +276,15 @@ func TestValidateProcessorSpec(t *testing.T) {
 			Outputs: []StreamBinding{
 				{Stream: "my-stream", Alias: "my-output"},
 			},
-			Template: &corev1.PodSpec{
-				Containers: []corev1.Container{
-					{Name: "processor"},
+			Template: &corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{Name: "processor"},
+					},
 				},
 			},
 		},
-		expected: validation.ErrInvalidValue("processor", "template.containers[0].name"),
+		expected: validation.ErrInvalidValue("processor", "template.spec.containers[0].name"),
 	}} {
 		t.Run(c.name, func(t *testing.T) {
 			actual := c.target.Validate()

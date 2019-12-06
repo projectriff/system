@@ -188,7 +188,7 @@ func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, dep
 func (r *DeployerReconciler) reconcileBuildImage(ctx context.Context, log logr.Logger, deployer *corev1alpha1.Deployer) error {
 	build := deployer.Spec.Build
 	if build == nil {
-		deployer.Status.LatestImage = deployer.Spec.Template.Containers[0].Image
+		deployer.Status.LatestImage = deployer.Spec.Template.Spec.Containers[0].Image
 		return nil
 	}
 
@@ -321,7 +321,6 @@ func (r *DeployerReconciler) deploymentSemanticEquals(desiredDeployment, deploym
 
 func (r *DeployerReconciler) constructDeploymentForDeployer(deployer *corev1alpha1.Deployer) (*appsv1.Deployment, error) {
 	labels := r.constructLabelsForDeployer(deployer)
-	podSpec := r.constructPodSpecForDeployer(deployer)
 
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -336,12 +335,7 @@ func (r *DeployerReconciler) constructDeploymentForDeployer(deployer *corev1alph
 					corev1alpha1.DeployerLabelKey: deployer.Name,
 				},
 			},
-			Template: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: labels,
-				},
-				Spec: podSpec,
-			},
+			Template: r.constructPodTemplateSpecForDeployer(deployer),
 		},
 	}
 	if deployment.Spec.Template.Spec.Containers[0].Image == "" {
@@ -354,16 +348,20 @@ func (r *DeployerReconciler) constructDeploymentForDeployer(deployer *corev1alph
 	return deployment, nil
 }
 
-func (r *DeployerReconciler) constructPodSpecForDeployer(deployer *corev1alpha1.Deployer) corev1.PodSpec {
-	podSpec := *deployer.Spec.Template.DeepCopy()
-	targetPort := podSpec.Containers[0].Ports[0]
+func (r *DeployerReconciler) constructPodTemplateSpecForDeployer(deployer *corev1alpha1.Deployer) corev1.PodTemplateSpec {
+	template := *deployer.Spec.Template.DeepCopy()
+	targetPort := template.Spec.Containers[0].Ports[0]
 
-	podSpec.Containers[0].Env = append(podSpec.Containers[0].Env, corev1.EnvVar{
+	for k, v := range r.constructLabelsForDeployer(deployer) {
+		template.Labels[k] = v
+	}
+
+	template.Spec.Containers[0].Env = append(template.Spec.Containers[0].Env, corev1.EnvVar{
 		Name:  "PORT",
 		Value: fmt.Sprintf("%d", targetPort.ContainerPort),
 	})
-	if podSpec.Containers[0].LivenessProbe == nil {
-		podSpec.Containers[0].LivenessProbe = &corev1.Probe{
+	if template.Spec.Containers[0].LivenessProbe == nil {
+		template.Spec.Containers[0].LivenessProbe = &corev1.Probe{
 			Handler: corev1.Handler{
 				TCPSocket: &corev1.TCPSocketAction{
 					Port: intstr.FromInt(int(targetPort.ContainerPort)),
@@ -371,8 +369,8 @@ func (r *DeployerReconciler) constructPodSpecForDeployer(deployer *corev1alpha1.
 			},
 		}
 	}
-	if podSpec.Containers[0].ReadinessProbe == nil {
-		podSpec.Containers[0].ReadinessProbe = &corev1.Probe{
+	if template.Spec.Containers[0].ReadinessProbe == nil {
+		template.Spec.Containers[0].ReadinessProbe = &corev1.Probe{
 			Handler: corev1.Handler{
 				TCPSocket: &corev1.TCPSocketAction{
 					Port: intstr.FromInt(int(targetPort.ContainerPort)),
@@ -381,7 +379,7 @@ func (r *DeployerReconciler) constructPodSpecForDeployer(deployer *corev1alpha1.
 		}
 	}
 
-	return podSpec
+	return template
 }
 
 func (r *DeployerReconciler) reconcileIngress(ctx context.Context, log logr.Logger, deployer *corev1alpha1.Deployer, serviceName string, coreSettings *corev1.ConfigMap) (*networkingv1beta1.Ingress, error) {
@@ -564,7 +562,7 @@ func (r *DeployerReconciler) serviceSemanticEquals(desiredService, service *core
 
 func (r *DeployerReconciler) constructServiceForDeployer(deployer *corev1alpha1.Deployer) (*corev1.Service, error) {
 	labels := r.constructLabelsForDeployer(deployer)
-	targetPort := deployer.Spec.Template.Containers[0].Ports[0]
+	targetPort := deployer.Spec.Template.Spec.Containers[0].Ports[0]
 
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{

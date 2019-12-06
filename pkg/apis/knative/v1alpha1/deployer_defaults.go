@@ -32,10 +32,16 @@ func (r *Deployer) Default() {
 
 func (s *DeployerSpec) Default() {
 	if s.Template == nil {
-		s.Template = &corev1.PodSpec{}
+		s.Template = &corev1.PodTemplateSpec{}
 	}
-	if len(s.Template.Containers) == 0 {
-		s.Template.Containers = append(s.Template.Containers, corev1.Container{})
+	if s.Template.ObjectMeta.Annotations == nil {
+		s.Template.ObjectMeta.Annotations = map[string]string{}
+	}
+	if s.Template.ObjectMeta.Labels == nil {
+		s.Template.ObjectMeta.Labels = map[string]string{}
+	}
+	if len(s.Template.Spec.Containers) == 0 {
+		s.Template.Spec.Containers = append(s.Template.Spec.Containers, corev1.Container{})
 	}
 	if s.IngressPolicy == "" {
 		s.IngressPolicy = IngressPolicyClusterLocal
