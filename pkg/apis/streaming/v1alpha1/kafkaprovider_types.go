@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -55,11 +56,11 @@ type KafkaProviderStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	apis.Status               `json:",inline"`
-	GatewayDeploymentName     string `json:"gatewayDeploymentName,omitempty"`
-	GatewayServiceName        string `json:"gatewayServiceName,omitempty"`
-	ProvisionerDeploymentName string `json:"provisionerDeploymentName,omitempty"`
-	ProvisionerServiceName    string `json:"provisionerServiceName,omitempty"`
+	apis.Status              `json:",inline"`
+	GatewayDeploymentRef     *corev1.TypedLocalObjectReference `json:"gatewayDeploymentRef,omitempty"`
+	GatewayServiceRef        *corev1.TypedLocalObjectReference `json:"gatewayServiceRef,omitempty"`
+	ProvisionerDeploymentRef *corev1.TypedLocalObjectReference `json:"provisionerDeploymentRef,omitempty"`
+	ProvisionerServiceRef    *corev1.TypedLocalObjectReference `json:"provisionerServiceRef,omitempty"`
 }
 
 // +kubebuilder:object:root=true

@@ -2693,17 +2693,47 @@ spec:
                 - type
                 type: object
               type: array
-            deploymentName:
-              type: string
-            ingressName:
-              type: string
+            deploymentRef:
+              properties:
+                apiGroup:
+                  type: string
+                kind:
+                  type: string
+                name:
+                  type: string
+              required:
+              - kind
+              - name
+              type: object
+            ingressRef:
+              properties:
+                apiGroup:
+                  type: string
+                kind:
+                  type: string
+                name:
+                  type: string
+              required:
+              - kind
+              - name
+              type: object
             latestImage:
               type: string
             observedGeneration:
               format: int64
               type: integer
-            serviceName:
-              type: string
+            serviceRef:
+              properties:
+                apiGroup:
+                  type: string
+                kind:
+                  type: string
+                name:
+                  type: string
+              required:
+              - kind
+              - name
+              type: object
             url:
               type: string
           type: object

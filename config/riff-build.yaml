@@ -169,8 +169,18 @@ spec:
           type: object
         status:
           properties:
-            buildCacheName:
-              type: string
+            buildCacheRef:
+              properties:
+                apiGroup:
+                  type: string
+                kind:
+                  type: string
+                name:
+                  type: string
+              required:
+              - kind
+              - name
+              type: object
             conditions:
               items:
                 properties:
@@ -191,8 +201,18 @@ spec:
                 - type
                 type: object
               type: array
-            kpackImageName:
-              type: string
+            kpackImageRef:
+              properties:
+                apiGroup:
+                  type: string
+                kind:
+                  type: string
+                name:
+                  type: string
+              required:
+              - kind
+              - name
+              type: object
             latestImage:
               type: string
             observedGeneration:
@@ -260,8 +280,18 @@ spec:
           type: object
         status:
           properties:
-            buildCacheName:
-              type: string
+            buildCacheRef:
+              properties:
+                apiGroup:
+                  type: string
+                kind:
+                  type: string
+                name:
+                  type: string
+              required:
+              - kind
+              - name
+              type: object
             conditions:
               items:
                 properties:
@@ -282,8 +312,18 @@ spec:
                 - type
                 type: object
               type: array
-            kpackImageName:
-              type: string
+            kpackImageRef:
+              properties:
+                apiGroup:
+                  type: string
+                kind:
+                  type: string
+                name:
+                  type: string
+              required:
+              - kind
+              - name
+              type: object
             latestImage:
               type: string
             observedGeneration:
@@ -475,8 +515,18 @@ spec:
           type: object
         status:
           properties:
-            buildCacheName:
-              type: string
+            buildCacheRef:
+              properties:
+                apiGroup:
+                  type: string
+                kind:
+                  type: string
+                name:
+                  type: string
+              required:
+              - kind
+              - name
+              type: object
             conditions:
               items:
                 properties:
@@ -497,8 +547,18 @@ spec:
                 - type
                 type: object
               type: array
-            kpackImageName:
-              type: string
+            kpackImageRef:
+              properties:
+                apiGroup:
+                  type: string
+                kind:
+                  type: string
+                name:
+                  type: string
+              required:
+              - kind
+              - name
+              type: object
             latestImage:
               type: string
             observedGeneration:

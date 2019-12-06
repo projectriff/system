@@ -130,6 +130,21 @@ func (in *DeployerSpec) DeepCopy() *DeployerSpec {
 func (in *DeployerStatus) DeepCopyInto(out *DeployerStatus) {
 	*out = *in
 	in.Status.DeepCopyInto(&out.Status)
+	if in.DeploymentRef != nil {
+		in, out := &in.DeploymentRef, &out.DeploymentRef
+		*out = new(v1.TypedLocalObjectReference)
+		(*in).DeepCopyInto(*out)
+	}
+	if in.ServiceRef != nil {
+		in, out := &in.ServiceRef, &out.ServiceRef
+		*out = new(v1.TypedLocalObjectReference)
+		(*in).DeepCopyInto(*out)
+	}
+	if in.IngressRef != nil {
+		in, out := &in.IngressRef, &out.IngressRef
+		*out = new(v1.TypedLocalObjectReference)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.Address != nil {
 		in, out := &in.Address, &out.Address
 		*out = new(apis.Addressable)
