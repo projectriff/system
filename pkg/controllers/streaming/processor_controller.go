@@ -441,10 +441,9 @@ func (r *ProcessorReconciler) constructDeploymentForProcessor(processor *streami
 	}
 	for _, stream := range streams {
 		if stream.Status.Binding.MetadataRef.Name != "" {
-			metadataVolumeName := fmt.Sprintf("processor-stream-%s-metadata", stream.Name)
 			volumes = append(volumes,
 				corev1.Volume{
-					Name: metadataVolumeName,
+					Name: fmt.Sprintf("stream-%s-metadata", stream.UID),
 					VolumeSource: corev1.VolumeSource{
 						ConfigMap: &corev1.ConfigMapVolumeSource{
 							LocalObjectReference: corev1.LocalObjectReference{
@@ -456,10 +455,9 @@ func (r *ProcessorReconciler) constructDeploymentForProcessor(processor *streami
 			)
 		}
 		if stream.Status.Binding.SecretRef.Name != "" {
-			secretVolumeName := fmt.Sprintf("processor-stream-%s-secret", stream.Name)
 			volumes = append(volumes,
 				corev1.Volume{
-					Name: secretVolumeName,
+					Name: fmt.Sprintf("stream-%s-secret", stream.UID),
 					VolumeSource: corev1.VolumeSource{
 						Secret: &corev1.SecretVolumeSource{
 							SecretName: stream.Status.Binding.SecretRef.Name,
@@ -474,20 +472,18 @@ func (r *ProcessorReconciler) constructDeploymentForProcessor(processor *streami
 	for i, binding := range processor.Spec.Inputs {
 		stream := streams[binding.Stream]
 		if stream.Status.Binding.MetadataRef.Name != "" {
-			metadataVolumeName := fmt.Sprintf("processor-stream-%s-metadata", stream.Name)
 			volumeMounts = append(volumeMounts,
 				corev1.VolumeMount{
-					Name:      metadataVolumeName,
+					Name:      fmt.Sprintf("stream-%s-metadata", stream.UID),
 					MountPath: fmt.Sprintf("%s/input_%03d/metadata", bindingsRootPath, i),
 					ReadOnly:  true,
 				},
 			)
 		}
 		if stream.Status.Binding.SecretRef.Name != "" {
-			secretVolumeName := fmt.Sprintf("processor-stream-%s-secret", stream.Name)
 			volumeMounts = append(volumeMounts,
 				corev1.VolumeMount{
-					Name:      secretVolumeName,
+					Name:      fmt.Sprintf("stream-%s-secret", stream.UID),
 					MountPath: fmt.Sprintf("%s/input_%03d/secret", bindingsRootPath, i),
 					ReadOnly:  true,
 				},
@@ -497,20 +493,18 @@ func (r *ProcessorReconciler) constructDeploymentForProcessor(processor *streami
 	for i, binding := range processor.Spec.Outputs {
 		stream := streams[binding.Stream]
 		if stream.Status.Binding.MetadataRef.Name != "" {
-			metadataVolumeName := fmt.Sprintf("processor-stream-%s-metadata", stream.Name)
 			volumeMounts = append(volumeMounts,
 				corev1.VolumeMount{
-					Name:      metadataVolumeName,
+					Name:      fmt.Sprintf("stream-%s-metadata", stream.UID),
 					MountPath: fmt.Sprintf("%s/output_%03d/metadata", bindingsRootPath, i),
 					ReadOnly:  true,
 				},
 			)
 		}
 		if stream.Status.Binding.SecretRef.Name != "" {
-			secretVolumeName := fmt.Sprintf("processor-stream-%s-secret", stream.Name)
 			volumeMounts = append(volumeMounts,
 				corev1.VolumeMount{
-					Name:      secretVolumeName,
+					Name:      fmt.Sprintf("stream-%s-secret", stream.UID),
 					MountPath: fmt.Sprintf("%s/output_%03d/secret", bindingsRootPath, i),
 					ReadOnly:  true,
 				},
