@@ -320,7 +320,7 @@ func (r *ProcessorReconciler) constructScaledObjectForProcessor(processor *strea
 			PollingInterval: &one,
 			CooldownPeriod:  &thirty,
 			Triggers:        triggers(processor),
-			MinReplicaCount: &zero,
+			MinReplicaCount: &one,
 			MaxReplicaCount: &maxReplicas,
 		},
 	}
