@@ -37,7 +37,7 @@ if [ $RUNTIME = "core" ] || [ $RUNTIME = "knative" ]; then
       fi
       # invoke ClusterLocal
       source ${FATS_DIR}/macros/invoke_incluster.sh \
-        "$(kubectl get deployers.${$RUNTIME}.projectriff.io ${name} --namespace ${NAMESPACE} -ojsonpath='{.status.address.url}')" \
+        "$(kubectl get deployers.${RUNTIME}.projectriff.io ${name} --namespace ${NAMESPACE} -ojsonpath='{.status.address.url}')" \
         "${curl_opts}" \
         "${expected_data}"
       # invoke External
