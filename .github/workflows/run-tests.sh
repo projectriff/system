@@ -72,7 +72,7 @@ elif [ $RUNTIME = "streaming" ]; then
     lower_stream=${name}-lower
     upper_stream=${name}-upper
 
-    provider=$(kubectl get kafkaproviders.streaming.projectriff.io franz --namespace ${NAMESPACE} -ojsonpath='{.status.provisionerServiceName}')
+    provider=$(kubectl get kafkaproviders.streaming.projectriff.io franz --namespace ${NAMESPACE} -ojsonpath='{.status.provisionerServiceRef.name}')
     riff streaming stream create ${lower_stream} --namespace $NAMESPACE --provider ${provider} --content-type 'text/plain'
     riff streaming stream create ${upper_stream} --namespace $NAMESPACE --provider ${provider} --content-type 'text/plain'
 
