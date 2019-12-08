@@ -151,6 +151,15 @@ spec:
               type: object
             ingressPolicy:
               type: string
+            scale:
+              properties:
+                max:
+                  format: int32
+                  type: integer
+                min:
+                  format: int32
+                  type: integer
+              type: object
             template:
               properties:
                 activeDeadlineSeconds:

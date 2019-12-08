@@ -257,6 +257,7 @@ func (r *DeployerReconciler) reconcileChildConfiguration(ctx context.Context, lo
 	// update configuration with desired changes
 	configuration := actualConfiguration.DeepCopy()
 	configuration.ObjectMeta.Labels = desiredConfiguration.ObjectMeta.Labels
+	configuration.ObjectMeta.Annotations = desiredConfiguration.ObjectMeta.Annotations
 	configuration.Spec = desiredConfiguration.Spec
 	log.Info("reconciling configuration", "diff", cmp.Diff(actualConfiguration.Spec, configuration.Spec))
 	if err := r.Update(ctx, configuration); err != nil {
@@ -269,22 +270,26 @@ func (r *DeployerReconciler) reconcileChildConfiguration(ctx context.Context, lo
 
 func (r *DeployerReconciler) configurationSemanticEquals(desiredConfiguration, configuration *servingv1.Configuration) bool {
 	return equality.Semantic.DeepEqual(desiredConfiguration.Spec, configuration.Spec) &&
-		equality.Semantic.DeepEqual(desiredConfiguration.ObjectMeta.Labels, configuration.ObjectMeta.Labels)
+		equality.Semantic.DeepEqual(desiredConfiguration.ObjectMeta.Labels, configuration.ObjectMeta.Labels) &&
+		equality.Semantic.DeepEqual(desiredConfiguration.ObjectMeta.Annotations, configuration.ObjectMeta.Annotations)
 }
 
 func (r *DeployerReconciler) constructConfigurationForDeployer(deployer *knativev1alpha1.Deployer) (*servingv1.Configuration, error) {
 	labels := r.constructLabelsForDeployer(deployer)
+	annotations := r.constructAnnotationsForDeployer(deployer)
 
 	configuration := &servingv1.Configuration{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: fmt.Sprintf("%s-deployer-", deployer.Name),
 			Namespace:    deployer.Namespace,
 			Labels:       labels,
+			Annotations:  annotations,
 		},
 		Spec: servingv1.ConfigurationSpec{
 			Template: servingv1.RevisionTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels: labels,
+					Labels:      labels,
+					Annotations: annotations,
 				},
 				Spec: servingv1.RevisionSpec{
 					PodSpec: corev1.PodSpec{
@@ -418,6 +423,25 @@ func (r *DeployerReconciler) constructLabelsForDeployer(deployer *knativev1alpha
 	}
 
 	return labels
+}
+
+func (r *DeployerReconciler) constructAnnotationsForDeployer(deployer *knativev1alpha1.Deployer) map[string]string {
+	// make a little extra space just in case
+	annotations := make(map[string]string, len(deployer.ObjectMeta.Annotations)+2)
+
+	// pass through existing annotations
+	for k, v := range deployer.ObjectMeta.Annotations {
+		annotations[k] = v
+	}
+
+	if deployer.Spec.Scale.Min != nil {
+		annotations["autoscaling.knative.dev/minScale"] = fmt.Sprintf("%d", *deployer.Spec.Scale.Min)
+	}
+	if deployer.Spec.Scale.Max != nil {
+		annotations["autoscaling.knative.dev/maxScale"] = fmt.Sprintf("%d", *deployer.Spec.Scale.Max)
+	}
+
+	return annotations
 }
 
 func (r *DeployerReconciler) SetupWithManager(mgr ctrl.Manager) error {

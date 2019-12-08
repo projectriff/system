@@ -88,6 +88,8 @@ func (s DeployerSpec) Validate() validation.FieldErrors {
 		errs = errs.Also(validation.ErrInvalidValue(s.IngressPolicy, "ingressPolicy"))
 	}
 
+	errs = errs.Also(s.Scale.Validate().ViaField("scale"))
+
 	return errs
 }
 
@@ -99,4 +101,21 @@ func filterInvalidContainers(containers []corev1.Container) []corev1.Container {
 func filterInvalidVolumes(volumes []corev1.Volume) []corev1.Volume {
 	// TODO remove unsupported fields
 	return volumes
+}
+
+func (s Scale) Validate() validation.FieldErrors {
+	errs := validation.FieldErrors{}
+
+	if s.Min != nil && *s.Min < int32(0) {
+		errs = errs.Also(validation.ErrInvalidValue(*s.Min, "min"))
+	}
+	// knative doesn't recognise max of 0
+	if s.Max != nil && *s.Max < int32(1) {
+		errs = errs.Also(validation.ErrInvalidValue(*s.Max, "max"))
+	}
+	if s.Min != nil && s.Max != nil && *s.Min > *s.Max {
+		errs = errs.Also(validation.ErrInvalidValue(*s.Max, "max"))
+	}
+
+	return errs
 }
