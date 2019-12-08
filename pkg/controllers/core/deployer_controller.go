@@ -29,6 +29,7 @@ import (
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -48,8 +49,6 @@ const (
 	deploymentIndexField = ".metadata.deploymentController"
 	serviceIndexField    = ".metadata.serviceController"
 	ingressIndexField    = ".metadata.ingressController"
-
-	domain = "example.com"
 )
 
 // DeployerReconciler reconciles a Deployer object
@@ -103,9 +102,31 @@ func (r *DeployerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	return result, err
 }
 
+func (r *DeployerReconciler) getAndTrackSettings(ctx context.Context, log logr.Logger, obj metav1.Object) (*corev1.ConfigMap, error) {
+	cm := &corev1.ConfigMap{}
+	cmKey := types.NamespacedName{Namespace: systemNamespace, Name: settingsConfigMapName}
+
+	// track config map
+	r.Tracker.Track(
+		tracker.NewKey(schema.GroupVersionKind{Version: "v1", Kind: "ConfigMap"}, cmKey),
+		types.NamespacedName{Namespace: obj.GetNamespace(), Name: obj.GetName()},
+	)
+	if err := r.Get(ctx, cmKey, cm); err != nil {
+		log.Error(err, fmt.Sprintf("unable to fetch resource with reference: %s", cmKey.String()))
+		return nil, err
+	}
+
+	return cm, nil
+}
+
 func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, deployer *corev1alpha1.Deployer) (ctrl.Result, error) {
 	if deployer.GetDeletionTimestamp() != nil {
 		return ctrl.Result{}, nil
+	}
+
+	coreSettings, err := r.getAndTrackSettings(ctx, log, deployer)
+	if err != nil {
+		return ctrl.Result{}, err
 	}
 
 	// resolve build image
@@ -145,7 +166,7 @@ func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, dep
 	deployer.Status.PropagateServiceStatus(&childService.Status)
 
 	// reconcile ingress
-	childIngress, err := r.reconcileIngress(ctx, log, deployer, childService.Name)
+	childIngress, err := r.reconcileIngress(ctx, log, deployer, childService.Name, coreSettings)
 	if err != nil {
 		log.Error(err, "unable to reconcile Ingress", "deployer", deployer)
 		return ctrl.Result{}, err
@@ -363,7 +384,7 @@ func (r *DeployerReconciler) constructPodSpecForDeployer(deployer *corev1alpha1.
 	return podSpec
 }
 
-func (r *DeployerReconciler) reconcileIngress(ctx context.Context, log logr.Logger, deployer *corev1alpha1.Deployer, serviceName string) (*networkingv1beta1.Ingress, error) {
+func (r *DeployerReconciler) reconcileIngress(ctx context.Context, log logr.Logger, deployer *corev1alpha1.Deployer, serviceName string, coreSettings *corev1.ConfigMap) (*networkingv1beta1.Ingress, error) {
 	var actualIngress networkingv1beta1.Ingress
 	var childIngresses networkingv1beta1.IngressList
 
@@ -383,7 +404,7 @@ func (r *DeployerReconciler) reconcileIngress(ctx context.Context, log logr.Logg
 		}
 	}
 
-	desiredIngress, err := r.constructIngressForDeployer(deployer)
+	desiredIngress, err := r.constructIngressForDeployer(deployer, coreSettings)
 	if err != nil {
 		return nil, err
 	}
@@ -431,12 +452,13 @@ func (r *DeployerReconciler) ingressSemanticEquals(desiredIngress, ingress *netw
 		equality.Semantic.DeepEqual(desiredIngress.ObjectMeta.Labels, ingress.ObjectMeta.Labels)
 }
 
-func (r *DeployerReconciler) constructIngressForDeployer(deployer *corev1alpha1.Deployer) (*networkingv1beta1.Ingress, error) {
+func (r *DeployerReconciler) constructIngressForDeployer(deployer *corev1alpha1.Deployer, coreSettings *corev1.ConfigMap) (*networkingv1beta1.Ingress, error) {
 	if deployer.Status.ServiceName == "" || deployer.Spec.IngressPolicy == corev1alpha1.IngressPolicyClusterLocal {
 		// skip ingress
 		return nil, nil
 	}
 	labels := r.constructLabelsForDeployer(deployer)
+	host := r.constructHostForDeployer(deployer, coreSettings)
 
 	ingress := &networkingv1beta1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
@@ -447,7 +469,7 @@ func (r *DeployerReconciler) constructIngressForDeployer(deployer *corev1alpha1.
 		},
 		Spec: networkingv1beta1.IngressSpec{
 			Rules: []networkingv1beta1.IngressRule{{
-				Host: fmt.Sprintf("%s.%s.%s", deployer.Status.ServiceName, deployer.Namespace, domain),
+				Host: host,
 				IngressRuleValue: networkingv1beta1.IngressRuleValue{
 					HTTP: &networkingv1beta1.HTTPIngressRuleValue{
 						Paths: []networkingv1beta1.HTTPIngressPath{{
@@ -579,18 +601,34 @@ func (r *DeployerReconciler) constructLabelsForDeployer(deployer *corev1alpha1.D
 	return labels
 }
 
+func (r *DeployerReconciler) constructHostForDeployer(deployer *corev1alpha1.Deployer, cm *corev1.ConfigMap) string {
+	domain := defaultDomain
+	if d := cm.Data[defaultDomainKey]; d != "" {
+		domain = d
+	}
+
+	return fmt.Sprintf("%s.%s.%s", deployer.Name, deployer.Namespace, domain)
+}
+
 func (r *DeployerReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	enqueueTrackedResources := func(t apis.Resource) handler.EventHandler {
+	enqueueTrackedResources := func(t runtime.Object) handler.EventHandler {
 		return &handler.EnqueueRequestsFromMapFunc{
 			ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
-				requests := []reconcile.Request{}
+				var requests []reconcile.Request
+
+				versionKinds, _, err := r.Scheme.ObjectKinds(t)
+				if err != nil {
+					panic(err)
+				}
+
 				key := tracker.NewKey(
-					t.GetGroupVersionKind(),
+					versionKinds[0],
 					types.NamespacedName{Namespace: a.Meta.GetNamespace(), Name: a.Meta.GetName()},
 				)
 				for _, item := range r.Tracker.Lookup(key) {
 					requests = append(requests, reconcile.Request{NamespacedName: item})
 				}
+
 				return requests
 			}),
 		}
@@ -612,6 +650,7 @@ func (r *DeployerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&corev1.Service{}).
 		Owns(&networkingv1beta1.Ingress{}).
 		// watch for build mutations to update dependent deployers
+		Watches(&source.Kind{Type: &corev1.ConfigMap{}}, enqueueTrackedResources(&corev1.ConfigMap{})).
 		Watches(&source.Kind{Type: &buildv1alpha1.Application{}}, enqueueTrackedResources(&buildv1alpha1.Application{})).
 		Watches(&source.Kind{Type: &buildv1alpha1.Container{}}, enqueueTrackedResources(&buildv1alpha1.Container{})).
 		Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, enqueueTrackedResources(&buildv1alpha1.Function{})).

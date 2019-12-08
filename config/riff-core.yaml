@@ -2965,6 +2965,16 @@ subjects:
   namespace: riff-system
 ---
 apiVersion: v1
+data:
+  defaultDomain: example.com
+kind: ConfigMap
+metadata:
+  labels:
+    component: core.projectriff.io
+  name: riff-core-settings
+  namespace: riff-system
+---
+apiVersion: v1
 kind: Service
 metadata:
   annotations:
