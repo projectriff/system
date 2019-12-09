@@ -47,7 +47,7 @@ type DeployerSpec struct {
 	Build *Build `json:"build,omitempty"`
 
 	// Template pod
-	Template *corev1.PodSpec `json:"template,omitempty"`
+	Template *corev1.PodTemplateSpec `json:"template,omitempty"`
 
 	// IngressPolicy defines whether the workload should be reachable from
 	// outside the cluster

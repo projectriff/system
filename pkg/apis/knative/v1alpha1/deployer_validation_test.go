@@ -41,9 +41,11 @@ func TestValidateDeployer(t *testing.T) {
 				Build: &Build{
 					FunctionRef: "my-function",
 				},
-				Template: &corev1.PodSpec{
-					Containers: []corev1.Container{
-						{},
+				Template: &corev1.PodTemplateSpec{
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{
+							{},
+						},
 					},
 				},
 			},
@@ -76,9 +78,11 @@ func TestValidateDeployerSpec(t *testing.T) {
 			Build: &Build{
 				FunctionRef: "my-function",
 			},
-			Template: &corev1.PodSpec{
-				Containers: []corev1.Container{
-					{},
+			Template: &corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{},
+					},
 				},
 			},
 		},
@@ -87,9 +91,11 @@ func TestValidateDeployerSpec(t *testing.T) {
 		name: "valid, container image",
 		target: &DeployerSpec{
 			Build: nil,
-			Template: &corev1.PodSpec{
-				Containers: []corev1.Container{
-					{Image: "my-image"},
+			Template: &corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{Image: "my-image"},
+					},
 				},
 			},
 		},
@@ -100,19 +106,23 @@ func TestValidateDeployerSpec(t *testing.T) {
 			Build: &Build{
 				FunctionRef: "my-function",
 			},
-			Template: &corev1.PodSpec{
-				Containers: []corev1.Container{
-					{Image: "my-image"},
+			Template: &corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{Image: "my-image"},
+					},
 				},
 			},
 		},
-		expected: validation.ErrMultipleOneOf("build", "template.containers[0].image"),
+		expected: validation.ErrMultipleOneOf("build", "template.spec.containers[0].image"),
 	}, {
 		name: "invalid, ingress policy",
 		target: &DeployerSpec{
-			Template: &corev1.PodSpec{
-				Containers: []corev1.Container{
-					{Image: "my-image"},
+			Template: &corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{Image: "my-image"},
+					},
 				},
 			},
 			IngressPolicy: "bogus",
@@ -121,9 +131,11 @@ func TestValidateDeployerSpec(t *testing.T) {
 	}, {
 		name: "invalid, negative minScale",
 		target: &DeployerSpec{
-			Template: &corev1.PodSpec{
-				Containers: []corev1.Container{
-					{Image: "my-image"},
+			Template: &corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{Image: "my-image"},
+					},
 				},
 			},
 			Scale: Scale{

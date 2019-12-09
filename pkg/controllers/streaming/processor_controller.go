@@ -171,7 +171,7 @@ func (r *ProcessorReconciler) reconcile(ctx context.Context, logger logr.Logger,
 		}
 	} else {
 		// defaulter guarantees a container
-		processor.Status.LatestImage = processor.Spec.Template.Containers[0].Image
+		processor.Status.LatestImage = processor.Spec.Template.Spec.Containers[0].Image
 	}
 
 	if processor.Status.LatestImage == "" {
@@ -514,21 +514,24 @@ func (r *ProcessorReconciler) constructDeploymentForProcessor(processor *streami
 	}
 
 	// merge provided template with controlled values
-	podSpec := processor.Spec.Template.DeepCopy()
-	podSpec.Containers[0].Image = processor.Status.LatestImage
-	podSpec.Containers[0].Ports = []v1.ContainerPort{
+	template := processor.Spec.Template.DeepCopy()
+	for k, v := range r.constructLabelsForProcessor(processor) {
+		template.Labels[k] = v
+	}
+	template.Spec.Containers[0].Image = processor.Status.LatestImage
+	template.Spec.Containers[0].Ports = []v1.ContainerPort{
 		{
 			ContainerPort: 8081,
 		},
 	}
-	podSpec.Containers = append(podSpec.Containers, v1.Container{
+	template.Spec.Containers = append(template.Spec.Containers, v1.Container{
 		Name:            "processor",
 		Image:           processorImg,
 		ImagePullPolicy: v1.PullIfNotPresent,
 		Env:             environmentVariables,
 		VolumeMounts:    volumeMounts,
 	})
-	podSpec.Volumes = append(podSpec.Volumes, volumes...)
+	template.Spec.Volumes = append(template.Spec.Volumes, volumes...)
 
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -543,14 +546,7 @@ func (r *ProcessorReconciler) constructDeploymentForProcessor(processor *streami
 					streamingv1alpha1.ProcessorLabelKey: processor.Name,
 				},
 			},
-			Template: v1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						streamingv1alpha1.ProcessorLabelKey: processor.Name,
-					},
-				},
-				Spec: *podSpec,
-			},
+			Template: *template,
 		},
 	}
 	if err := ctrl.SetControllerReference(processor, deployment, r.Scheme); err != nil {

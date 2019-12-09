@@ -21,6 +21,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestDeployerDefault(t *testing.T) {
@@ -33,9 +34,15 @@ func TestDeployerDefault(t *testing.T) {
 		in:   &Deployer{},
 		want: &Deployer{
 			Spec: DeployerSpec{
-				Template: &corev1.PodSpec{
-					Containers: []corev1.Container{
-						{},
+				Template: &corev1.PodTemplateSpec{
+					ObjectMeta: metav1.ObjectMeta{
+						Annotations: map[string]string{},
+						Labels:      map[string]string{},
+					},
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{
+							{},
+						},
 					},
 				},
 				IngressPolicy: IngressPolicyClusterLocal,
@@ -63,9 +70,15 @@ func TestDeployerSpecDefault(t *testing.T) {
 		name: "ensure at least one container",
 		in:   &DeployerSpec{},
 		want: &DeployerSpec{
-			Template: &corev1.PodSpec{
-				Containers: []corev1.Container{
-					{},
+			Template: &corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{},
+					Labels:      map[string]string{},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{},
+					},
 				},
 			},
 			IngressPolicy: IngressPolicyClusterLocal,

@@ -21,6 +21,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestDeployerDefault(t *testing.T) {
@@ -33,12 +34,18 @@ func TestDeployerDefault(t *testing.T) {
 		in:   &Deployer{},
 		want: &Deployer{
 			Spec: DeployerSpec{
-				Template: &corev1.PodSpec{
-					Containers: []corev1.Container{
-						{
-							Name: "handler",
-							Ports: []corev1.ContainerPort{
-								{Name: "http", Protocol: corev1.ProtocolTCP, ContainerPort: 8080},
+				Template: &corev1.PodTemplateSpec{
+					ObjectMeta: metav1.ObjectMeta{
+						Annotations: map[string]string{},
+						Labels:      map[string]string{},
+					},
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{
+							{
+								Name: "handler",
+								Ports: []corev1.ContainerPort{
+									{Name: "http", Protocol: corev1.ProtocolTCP, ContainerPort: 8080},
+								},
 							},
 						},
 					},
@@ -68,12 +75,18 @@ func TestDeployerSpecDefault(t *testing.T) {
 		name: "ensure at least one container",
 		in:   &DeployerSpec{},
 		want: &DeployerSpec{
-			Template: &corev1.PodSpec{
-				Containers: []corev1.Container{
-					{
-						Name: "handler",
-						Ports: []corev1.ContainerPort{
-							{Name: "http", Protocol: corev1.ProtocolTCP, ContainerPort: 8080},
+			Template: &corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{},
+					Labels:      map[string]string{},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name: "handler",
+							Ports: []corev1.ContainerPort{
+								{Name: "http", Protocol: corev1.ProtocolTCP, ContainerPort: 8080},
+							},
 						},
 					},
 				},
@@ -83,19 +96,27 @@ func TestDeployerSpecDefault(t *testing.T) {
 	}, {
 		name: "ensure at least one port",
 		in: &DeployerSpec{
-			Template: &corev1.PodSpec{
-				Containers: []corev1.Container{
-					{Name: "handler"},
+			Template: &corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{Name: "handler"},
+					},
 				},
 			},
 		},
 		want: &DeployerSpec{
-			Template: &corev1.PodSpec{
-				Containers: []corev1.Container{
-					{
-						Name: "handler",
-						Ports: []corev1.ContainerPort{
-							{Name: "http", Protocol: corev1.ProtocolTCP, ContainerPort: 8080},
+			Template: &corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{},
+					Labels:      map[string]string{},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name: "handler",
+							Ports: []corev1.ContainerPort{
+								{Name: "http", Protocol: corev1.ProtocolTCP, ContainerPort: 8080},
+							},
 						},
 					},
 				},
@@ -105,19 +126,27 @@ func TestDeployerSpecDefault(t *testing.T) {
 	}, {
 		name: "ensure at least one port",
 		in: &DeployerSpec{
-			Template: &corev1.PodSpec{
-				Containers: []corev1.Container{
-					{Name: "handler"},
+			Template: &corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{Name: "handler"},
+					},
 				},
 			},
 		},
 		want: &DeployerSpec{
-			Template: &corev1.PodSpec{
-				Containers: []corev1.Container{
-					{
-						Name: "handler",
-						Ports: []corev1.ContainerPort{
-							{Name: "http", Protocol: corev1.ProtocolTCP, ContainerPort: 8080},
+			Template: &corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{},
+					Labels:      map[string]string{},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name: "handler",
+							Ports: []corev1.ContainerPort{
+								{Name: "http", Protocol: corev1.ProtocolTCP, ContainerPort: 8080},
+							},
 						},
 					},
 				},
@@ -130,12 +159,18 @@ func TestDeployerSpecDefault(t *testing.T) {
 			IngressPolicy: IngressPolicyExternal,
 		},
 		want: &DeployerSpec{
-			Template: &corev1.PodSpec{
-				Containers: []corev1.Container{
-					{
-						Name: "handler",
-						Ports: []corev1.ContainerPort{
-							{Name: "http", Protocol: corev1.ProtocolTCP, ContainerPort: 8080},
+			Template: &corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{},
+					Labels:      map[string]string{},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name: "handler",
+							Ports: []corev1.ContainerPort{
+								{Name: "http", Protocol: corev1.ProtocolTCP, ContainerPort: 8080},
+							},
 						},
 					},
 				},

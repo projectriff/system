@@ -55,7 +55,7 @@ type ProcessorSpec struct {
 
 	// Template pod
 	// +optional
-	Template *corev1.PodSpec `json:"template,omitempty"`
+	Template *corev1.PodTemplateSpec `json:"template,omitempty"`
 }
 
 type Build struct {

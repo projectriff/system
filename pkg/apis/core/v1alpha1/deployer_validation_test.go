@@ -41,9 +41,11 @@ func TestValidateDeployer(t *testing.T) {
 				Build: &Build{
 					FunctionRef: "my-function",
 				},
-				Template: &corev1.PodSpec{
-					Containers: []corev1.Container{
-						{},
+				Template: &corev1.PodTemplateSpec{
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{
+							{},
+						},
 					},
 				},
 			},
@@ -74,9 +76,11 @@ func TestValidateDeployerSpec(t *testing.T) {
 			Build: &Build{
 				FunctionRef: "my-function",
 			},
-			Template: &corev1.PodSpec{
-				Containers: []corev1.Container{
-					{},
+			Template: &corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{},
+					},
 				},
 			},
 		},
@@ -85,9 +89,11 @@ func TestValidateDeployerSpec(t *testing.T) {
 		name: "valid, container image",
 		target: &DeployerSpec{
 			Build: nil,
-			Template: &corev1.PodSpec{
-				Containers: []corev1.Container{
-					{Image: "my-iamge"},
+			Template: &corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{Image: "my-iamge"},
+					},
 				},
 			},
 		},
@@ -98,34 +104,40 @@ func TestValidateDeployerSpec(t *testing.T) {
 			Build: &Build{
 				FunctionRef: "my-function",
 			},
-			Template: &corev1.PodSpec{
-				Containers: []corev1.Container{
-					{Image: "my-image"},
+			Template: &corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{Image: "my-image"},
+					},
 				},
 			},
 		},
-		expected: validation.ErrMultipleOneOf("build", "template.containers[0].image"),
+		expected: validation.ErrMultipleOneOf("build", "template.spec.containers[0].image"),
 	}, {
 		name: "no PORT env",
 		target: &DeployerSpec{
-			Template: &corev1.PodSpec{
-				Containers: []corev1.Container{
-					{
-						Image: "my-iamge",
-						Env: []corev1.EnvVar{
-							{Name: "PORT", Value: "8080"},
+			Template: &corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Image: "my-iamge",
+							Env: []corev1.EnvVar{
+								{Name: "PORT", Value: "8080"},
+							},
 						},
 					},
 				},
 			},
 		},
-		expected: validation.ErrDisallowedFields("template.containers[0].env[0]", "PORT is not allowed"),
+		expected: validation.ErrDisallowedFields("template.spec.containers[0].env[0]", "PORT is not allowed"),
 	}, {
 		name: "invalid, ingress policy",
 		target: &DeployerSpec{
-			Template: &corev1.PodSpec{
-				Containers: []corev1.Container{
-					{Image: "my-iamge"},
+			Template: &corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{Image: "my-iamge"},
+					},
 				},
 			},
 			IngressPolicy: "bogus",

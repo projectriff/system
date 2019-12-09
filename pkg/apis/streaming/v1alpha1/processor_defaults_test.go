@@ -21,6 +21,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestProcessorDefault(t *testing.T) {
@@ -35,11 +36,17 @@ func TestProcessorDefault(t *testing.T) {
 			Spec: ProcessorSpec{
 				Inputs:  []StreamBinding{},
 				Outputs: []StreamBinding{},
-				Template: &corev1.PodSpec{
-					Containers: []corev1.Container{
-						{Name: "function"},
+				Template: &corev1.PodTemplateSpec{
+					ObjectMeta: metav1.ObjectMeta{
+						Annotations: map[string]string{},
+						Labels:      map[string]string{},
 					},
-					Volumes: []corev1.Volume{},
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{
+							{Name: "function"},
+						},
+						Volumes: []corev1.Volume{},
+					},
 				},
 			},
 		},
@@ -67,11 +74,17 @@ func TestProcessorSpecDefault(t *testing.T) {
 		want: &ProcessorSpec{
 			Inputs:  []StreamBinding{},
 			Outputs: []StreamBinding{},
-			Template: &corev1.PodSpec{
-				Containers: []corev1.Container{
-					{Name: "function"},
+			Template: &corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{},
+					Labels:      map[string]string{},
 				},
-				Volumes: []corev1.Volume{},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{Name: "function"},
+					},
+					Volumes: []corev1.Volume{},
+				},
 			},
 		},
 	}, {
@@ -90,11 +103,17 @@ func TestProcessorSpecDefault(t *testing.T) {
 			Outputs: []StreamBinding{
 				{Stream: "my-output", Alias: "my-output"},
 			},
-			Template: &corev1.PodSpec{
-				Containers: []corev1.Container{
-					{Name: "function"},
+			Template: &corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{},
+					Labels:      map[string]string{},
 				},
-				Volumes: []corev1.Volume{},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{Name: "function"},
+					},
+					Volumes: []corev1.Volume{},
+				},
 			},
 		},
 	}, {
@@ -113,41 +132,57 @@ func TestProcessorSpecDefault(t *testing.T) {
 			Outputs: []StreamBinding{
 				{Stream: "my-output", Alias: "out"},
 			},
-			Template: &corev1.PodSpec{
-				Containers: []corev1.Container{
-					{Name: "function"},
+			Template: &corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{},
+					Labels:      map[string]string{},
 				},
-				Volumes: []corev1.Volume{},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{Name: "function"},
+					},
+					Volumes: []corev1.Volume{},
+				},
 			},
 		},
 	}, {
 		name: "add container name",
 		in: &ProcessorSpec{
-			Template: &corev1.PodSpec{
-				Containers: []corev1.Container{
-					{},
+			Template: &corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{},
+					},
 				},
 			},
 		},
 		want: &ProcessorSpec{
 			Inputs:  []StreamBinding{},
 			Outputs: []StreamBinding{},
-			Template: &corev1.PodSpec{
-				Containers: []corev1.Container{
-					{Name: "function"},
+			Template: &corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{},
+					Labels:      map[string]string{},
 				},
-				Volumes: []corev1.Volume{},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{Name: "function"},
+					},
+					Volumes: []corev1.Volume{},
+				},
 			},
 		},
 	}, {
 		name: "preserves container",
 		in: &ProcessorSpec{
-			Template: &corev1.PodSpec{
-				Containers: []corev1.Container{
-					{
-						Name: "function",
-						Env: []corev1.EnvVar{
-							{Name: "MY_VAR", Value: "my-value"},
+			Template: &corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name: "function",
+							Env: []corev1.EnvVar{
+								{Name: "MY_VAR", Value: "my-value"},
+							},
 						},
 					},
 				},
@@ -156,16 +191,22 @@ func TestProcessorSpecDefault(t *testing.T) {
 		want: &ProcessorSpec{
 			Inputs:  []StreamBinding{},
 			Outputs: []StreamBinding{},
-			Template: &corev1.PodSpec{
-				Containers: []corev1.Container{
-					{
-						Name: "function",
-						Env: []corev1.EnvVar{
-							{Name: "MY_VAR", Value: "my-value"},
+			Template: &corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{},
+					Labels:      map[string]string{},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name: "function",
+							Env: []corev1.EnvVar{
+								{Name: "MY_VAR", Value: "my-value"},
+							},
 						},
 					},
+					Volumes: []corev1.Volume{},
 				},
-				Volumes: []corev1.Volume{},
 			},
 		},
 	}}

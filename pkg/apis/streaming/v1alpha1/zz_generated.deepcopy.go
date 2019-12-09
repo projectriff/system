@@ -242,7 +242,7 @@ func (in *ProcessorSpec) DeepCopyInto(out *ProcessorSpec) {
 	}
 	if in.Template != nil {
 		in, out := &in.Template, &out.Template
-		*out = new(v1.PodSpec)
+		*out = new(v1.PodTemplateSpec)
 		(*in).DeepCopyInto(*out)
 	}
 }

@@ -68,21 +68,21 @@ func (s *ProcessorSpec) Validate() validation.FieldErrors {
 
 	if diff := cmp.Diff(&corev1.PodSpec{
 		// add supported PodSpec fields here, otherwise their usage will be rejected
-		ServiceAccountName: s.Template.ServiceAccountName,
+		ServiceAccountName: s.Template.Spec.ServiceAccountName,
 		// the defaulter guarantees at least one container
-		Containers: filterInvalidContainers(s.Template.Containers[:1]),
-		Volumes:    filterInvalidVolumes(s.Template.Volumes),
-	}, s.Template); diff != "" {
-		errs = errs.Also(validation.ErrDisallowedFields("template", fmt.Sprintf("limited Template fields may be set (-want, +got) = %v", diff)))
+		Containers: filterInvalidContainers(s.Template.Spec.Containers[:1]),
+		Volumes:    filterInvalidVolumes(s.Template.Spec.Volumes),
+	}, &s.Template.Spec); diff != "" {
+		errs = errs.Also(validation.ErrDisallowedFields("template.spec", fmt.Sprintf("limited PodSpec fields may be set (-want, +got) = %v", diff)))
 	}
-	if s.Template.Containers[0].Name != "function" {
-		errs = errs.Also(validation.ErrInvalidValue(s.Template.Containers[0].Name, "template.containers[0].name"))
+	if s.Template.Spec.Containers[0].Name != "function" {
+		errs = errs.Also(validation.ErrInvalidValue(s.Template.Spec.Containers[0].Name, "template.spec.containers[0].name"))
 	}
 
-	if s.Build == nil && s.Template.Containers[0].Image == "" {
-		errs = errs.Also(validation.ErrMissingOneOf("build", "template.containers[0].image"))
-	} else if s.Build != nil && s.Template.Containers[0].Image != "" {
-		errs = errs.Also(validation.ErrMultipleOneOf("build", "template.containers[0].image"))
+	if s.Build == nil && s.Template.Spec.Containers[0].Image == "" {
+		errs = errs.Also(validation.ErrMissingOneOf("build", "template.spec.containers[0].image"))
+	} else if s.Build != nil && s.Template.Spec.Containers[0].Image != "" {
+		errs = errs.Also(validation.ErrMultipleOneOf("build", "template.spec.containers[0].image"))
 	} else if s.Build != nil {
 		errs = errs.Also(s.Build.Validate().ViaField("build"))
 	}

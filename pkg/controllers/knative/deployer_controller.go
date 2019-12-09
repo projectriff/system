@@ -22,7 +22,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -145,7 +144,7 @@ func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, dep
 func (r *DeployerReconciler) reconcileBuildImage(ctx context.Context, log logr.Logger, deployer *knativev1alpha1.Deployer) error {
 	build := deployer.Spec.Build
 	if build == nil {
-		deployer.Status.LatestImage = deployer.Spec.Template.Containers[0].Image
+		deployer.Status.LatestImage = deployer.Spec.Template.Spec.Containers[0].Image
 		return nil
 	}
 
@@ -278,6 +277,14 @@ func (r *DeployerReconciler) configurationSemanticEquals(desiredConfiguration, c
 func (r *DeployerReconciler) constructConfigurationForDeployer(deployer *knativev1alpha1.Deployer) (*servingv1.Configuration, error) {
 	labels := r.constructLabelsForDeployer(deployer)
 	annotations := r.constructAnnotationsForDeployer(deployer)
+	template := deployer.Spec.Template.DeepCopy()
+
+	for k, v := range labels {
+		template.Labels[k] = v
+	}
+	for k, v := range annotations {
+		template.Annotations[k] = v
+	}
 
 	configuration := &servingv1.Configuration{
 		ObjectMeta: metav1.ObjectMeta{
@@ -293,11 +300,7 @@ func (r *DeployerReconciler) constructConfigurationForDeployer(deployer *knative
 					Annotations: annotations,
 				},
 				Spec: servingv1.RevisionSpec{
-					PodSpec: corev1.PodSpec{
-						ServiceAccountName: deployer.Spec.Template.ServiceAccountName,
-						Containers:         deployer.Spec.Template.Containers,
-						Volumes:            deployer.Spec.Template.Volumes,
-					},
+					PodSpec: template.Spec,
 				},
 			},
 		},
