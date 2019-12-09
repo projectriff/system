@@ -22,6 +22,12 @@ rules:
   - build.projectriff.io
   resources:
   - containers
+  verbs:
+  - get
+  - watch
+- apiGroups:
+  - build.projectriff.io
+  resources:
   - functions
   verbs:
   - get

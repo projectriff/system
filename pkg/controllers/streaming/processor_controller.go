@@ -77,7 +77,9 @@ type ProcessorReconciler struct {
 // +kubebuilder:rbac:groups=keda.k8s.io,resources=scaledobjects,verbs=get;list;watch;create;update;patch;delete
 // Watches
 // +kubebuilder:rbac:groups=streaming.projectriff.io,resources=streams,verbs=get;watch
-// +kubebuilder:rbac:groups=build.projectriff.io,resources=containers;functions,verbs=get;watch
+// +kubebuilder:rbac:groups=build.projectriff.io,resources=containers,verbs=get;watch
+// +kubebuilder:rbac:groups=build.projectriff.io,resources=functions,verbs=get;watch
+// +kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch
 
 func (r *ProcessorReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
@@ -664,12 +666,16 @@ func (*ProcessorReconciler) collectAliases(bindings []streamingv1alpha1.StreamBi
 }
 
 func (r *ProcessorReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	enqueueTrackedResources := func(t apis.Resource) handler.EventHandler {
+	enqueueTrackedResources := func(t runtime.Object) handler.EventHandler {
+		versionKinds, _, err := r.Scheme.ObjectKinds(t)
+		if err != nil {
+			panic(err)
+		}
 		return &handler.EnqueueRequestsFromMapFunc{
 			ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
-				requests := []reconcile.Request{}
+				var requests []reconcile.Request
 				key := tracker.NewKey(
-					t.GetGroupVersionKind(),
+					versionKinds[0],
 					types.NamespacedName{Namespace: a.Meta.GetNamespace(), Name: a.Meta.GetName()},
 				)
 				for _, item := range r.Tracker.Lookup(key) {
@@ -694,5 +700,6 @@ func (r *ProcessorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(&source.Kind{Type: &buildv1alpha1.Container{}}, enqueueTrackedResources(&buildv1alpha1.Container{})).
 		Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, enqueueTrackedResources(&buildv1alpha1.Function{})).
 		Watches(&source.Kind{Type: &streamingv1alpha1.Stream{}}, enqueueTrackedResources(&streamingv1alpha1.Stream{})).
+		Watches(&source.Kind{Type: &corev1.ConfigMap{}}, enqueueTrackedResources(&v1.ConfigMap{})).
 		Complete(r)
 }
