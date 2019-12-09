@@ -26,15 +26,26 @@ import (
 	"github.com/projectriff/system/pkg/tracker"
 )
 
+// TrackRequest records that one object is tracking another object.
 type TrackRequest struct {
-	Ref tracker.Key
-	Obj types.NamespacedName
+	// Tracker is the object doing the tracking
+	Tracker types.NamespacedName
+	// Tracked is the object being tracked
+	Tracked tracker.Key
 }
 
-func CreateTrackRequest(group, kind, namespace, name, controllerNamespace, controllerName string) TrackRequest {
-	return TrackRequest{
-		Ref: tracker.Key{GroupKind: schema.GroupKind{Group: group, Kind: kind}, NamespacedName: types.NamespacedName{Namespace: namespace, Name: name}},
-		Obj: types.NamespacedName{Namespace: controllerNamespace, Name: controllerName},
+type trackBy func(trackingObjNamespace, trackingObjName string) TrackRequest
+
+func (t trackBy) By(trackingObjNamespace, trackingObjName string) TrackRequest {
+	return t(trackingObjNamespace, trackingObjName)
+}
+
+func CreateTrackRequest(trackedObjGroup, trackedObjKind, trackedObjNamespace, trackedObjName string) trackBy {
+	return func(trackingObjNamespace, trackingObjName string) TrackRequest {
+		return TrackRequest{
+			Tracked: tracker.Key{GroupKind: schema.GroupKind{Group: trackedObjGroup, Kind: trackedObjKind}, NamespacedName: types.NamespacedName{Namespace: trackedObjNamespace, Name: trackedObjName}},
+			Tracker: types.NamespacedName{Namespace: trackingObjNamespace, Name: trackingObjName},
+		}
 	}
 }
 
@@ -53,7 +64,7 @@ var _ tracker.Tracker = &mockTracker{}
 
 func (t *mockTracker) Track(ref tracker.Key, obj types.NamespacedName) {
 	t.Tracker.Track(ref, obj)
-	t.reqs = append(t.reqs, TrackRequest{Ref: ref, Obj: obj})
+	t.reqs = append(t.reqs, TrackRequest{Tracked: ref, Tracker: obj})
 }
 
 func (t *mockTracker) getTrackRequests() []TrackRequest {
