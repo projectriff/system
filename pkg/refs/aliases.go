@@ -16,45 +16,6 @@ limitations under the License.
 
 package refs
 
-import (
-	"fmt"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-)
-
-func NewTypedLocalObjectReference(name string, gk schema.GroupKind) *TypedLocalObjectReference {
-	if name == "" || gk.Empty() {
-		return nil
-	}
-
-	ref := &TypedLocalObjectReference{
-		Kind: gk.Kind,
-		Name: name,
-	}
-	if gk.Group != "" && gk.Group != "core" {
-		ref.APIGroup = &gk.Group
-	}
-	return ref
-}
-
-func NewTypedLocalObjectReferenceForObject(obj runtime.Object, scheme *runtime.Scheme) *TypedLocalObjectReference {
-	if obj == nil || scheme == nil {
-		return nil
-	}
-	meta, ok := obj.(metav1.Object)
-	if !ok {
-		return nil
-	}
-
-	gvks, _, err := scheme.ObjectKinds(obj)
-	if err != nil || len(gvks) == 0 {
-		panic(fmt.Errorf("Unregistered runtime object: %v", err))
-	}
-	return NewTypedLocalObjectReference(meta.GetName(), gvks[0].GroupKind())
-}
-
 // TODO restore corev1.TypedLocalObjectReference
 // HACK this version supports nullable APIGroup, until controller-gen supports *string
 
