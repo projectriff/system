@@ -136,7 +136,7 @@ func (r *FunctionReconciler) resolveTargetImage(ctx context.Context, log logr.Lo
 	}
 
 	var riffBuildConfig v1.ConfigMap
-	if err := r.Get(ctx, types.NamespacedName{Namespace: function.Namespace, Name: "riff-build"}, &riffBuildConfig); err != nil {
+	if err := r.Get(ctx, types.NamespacedName{Namespace: function.Namespace, Name: riffBuildServiceAccount}, &riffBuildConfig); err != nil {
 		if apierrs.IsNotFound(err) {
 			return "", errMissingDefaultPrefix
 		}
@@ -242,7 +242,7 @@ func (r *FunctionReconciler) constructImageForFunction(function *buildv1alpha1.F
 				},
 				Name: "riff-function",
 			},
-			ServiceAccount:           "riff-build",
+			ServiceAccount:           riffBuildServiceAccount,
 			Source:                   *function.Spec.Source,
 			CacheSize:                function.Spec.CacheSize,
 			FailedBuildHistoryLimit:  function.Spec.FailedBuildHistoryLimit,

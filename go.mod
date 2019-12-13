@@ -5,6 +5,7 @@ go 1.13
 require (
 	github.com/go-logr/logr v0.1.0
 	github.com/google/go-cmp v0.3.1
+	github.com/google/go-containerregistry v0.0.0-20191002200252-ff1ac7f97758
 	github.com/onsi/ginkgo v1.10.3
 	github.com/onsi/gomega v1.7.1
 	// equivelent of kubernetes-1.16.3 tag for each k8s.io repo

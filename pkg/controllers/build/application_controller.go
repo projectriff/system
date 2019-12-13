@@ -135,7 +135,7 @@ func (r *ApplicationReconciler) resolveTargetImage(ctx context.Context, log logr
 	}
 
 	var riffBuildConfig v1.ConfigMap
-	if err := r.Get(ctx, types.NamespacedName{Namespace: application.Namespace, Name: "riff-build"}, &riffBuildConfig); err != nil {
+	if err := r.Get(ctx, types.NamespacedName{Namespace: application.Namespace, Name: riffBuildServiceAccount}, &riffBuildConfig); err != nil {
 		if apierrs.IsNotFound(err) {
 			return "", errMissingDefaultPrefix
 		}
@@ -241,7 +241,7 @@ func (r *ApplicationReconciler) constructImageForApplication(application *buildv
 				},
 				Name: "riff-application",
 			},
-			ServiceAccount:           "riff-build",
+			ServiceAccount:           riffBuildServiceAccount,
 			Source:                   *application.Spec.Source,
 			CacheSize:                application.Spec.CacheSize,
 			FailedBuildHistoryLimit:  application.Spec.FailedBuildHistoryLimit,

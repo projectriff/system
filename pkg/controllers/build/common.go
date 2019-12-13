@@ -18,4 +18,6 @@ package build
 
 import "fmt"
 
+const riffBuildServiceAccount = "riff-build"
+
 var errMissingDefaultPrefix = fmt.Errorf("missing default image prefix")
