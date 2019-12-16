@@ -21,6 +21,7 @@ const (
 
 	kafkaProviderImages  = kustomizePrefix + "-kafka-provider"  // contains image names for the kafka provider
 	pulsarProviderImages = kustomizePrefix + "-pulsar-provider" // contains image names for the pulsar provider
+	nopProviderImages    = kustomizePrefix + "-nop-provider"    // contains image names for the nop provider
 	gatewayImageKey      = "gatewayImage"
 	provisionerImageKey  = "provisionerImage"
 

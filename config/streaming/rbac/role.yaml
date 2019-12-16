@@ -83,6 +83,26 @@ rules:
 - apiGroups:
   - streaming.projectriff.io
   resources:
+  - inmemoryproviders
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - streaming.projectriff.io
+  resources:
+  - inmemoryproviders/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - streaming.projectriff.io
+  resources:
   - kafkaproviders
   verbs:
   - create

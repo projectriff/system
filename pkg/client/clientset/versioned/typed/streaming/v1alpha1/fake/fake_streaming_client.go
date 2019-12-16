@@ -28,6 +28,10 @@ type FakeStreamingV1alpha1 struct {
 	*testing.Fake
 }
 
+func (c *FakeStreamingV1alpha1) InMemoryProviders(namespace string) v1alpha1.InMemoryProviderInterface {
+	return &FakeInMemoryProviders{c, namespace}
+}
+
 func (c *FakeStreamingV1alpha1) KafkaProviders(namespace string) v1alpha1.KafkaProviderInterface {
 	return &FakeKafkaProviders{c, namespace}
 }
