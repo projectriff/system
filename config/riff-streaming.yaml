@@ -3158,6 +3158,24 @@ webhooks:
     service:
       name: riff-streaming-webhook-service
       namespace: riff-system
+      path: /mutate-streaming-projectriff-io-v1alpha1-inmemoryprovider
+  failurePolicy: Fail
+  name: inmemoryproviders.streaming.projectriff.io
+  rules:
+  - apiGroups:
+    - streaming.projectriff.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - inmemoryproviders
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: riff-streaming-webhook-service
+      namespace: riff-system
       path: /mutate-streaming-projectriff-io-v1alpha1-kafkaprovider
   failurePolicy: Fail
   name: kafkaproviders.streaming.projectriff.io
@@ -3343,6 +3361,26 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - streaming.projectriff.io
+  resources:
+  - inmemoryproviders
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - streaming.projectriff.io
+  resources:
+  - inmemoryproviders/status
+  verbs:
+  - get
+  - patch
+  - update
 - apiGroups:
   - streaming.projectriff.io
   resources:
@@ -3542,6 +3580,17 @@ metadata:
 ---
 apiVersion: v1
 data:
+  gatewayImage: bsideup/liiklus:0.9.0
+  provisionerImage: docker pull gcr.io/projectriff/nop-provisioner/provisioner-735f690b778af94ebf6fae1b426bbf1d:0.1.0-snapshot-20191217171417-f7375453aafcc28e
+kind: ConfigMap
+metadata:
+  labels:
+    component: streaming.projectriff.io
+  name: riff-streaming-nop-provider
+  namespace: riff-system
+---
+apiVersion: v1
+data:
   processorImage: projectriff/streaming-processor-native:1.0.0-SNAPSHOT-20191203102618-89ff1efe9c78c2e0
 kind: ConfigMap
 metadata:
@@ -3705,6 +3754,24 @@ metadata:
     component: streaming.projectriff.io
   name: riff-streaming-validating-webhook-configuration
 webhooks:
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: riff-streaming-webhook-service
+      namespace: riff-system
+      path: /validate-streaming-projectriff-io-v1alpha1-inmemoryprovider
+  failurePolicy: Fail
+  name: inmemoryproviders.streaming.projectriff.io
+  rules:
+  - apiGroups:
+    - streaming.projectriff.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - inmemoryproviders
 - clientConfig:
     caBundle: Cg==
     service:

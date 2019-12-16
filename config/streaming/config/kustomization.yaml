@@ -1,4 +1,5 @@
 resources:
   - bases/processor.yaml
   - bases/kafka-provider.yaml
+  - bases/nop-provider.yaml
   - bases/pulsar-provider.yaml

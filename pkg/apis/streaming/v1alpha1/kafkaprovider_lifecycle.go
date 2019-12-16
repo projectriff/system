@@ -31,7 +31,7 @@ const (
 	KafkaProviderConditionProvisionerServiceReady    apis.ConditionType = "ProvisionerServiceReady"
 )
 
-var providerCondSet = apis.NewLivingConditionSet(
+var kafkaProviderCondSet = apis.NewLivingConditionSet(
 	KafkaProviderConditionGatewayDeploymentReady,
 	KafkaProviderConditionGatewayServiceReady,
 	KafkaProviderConditionProvisionerDeploymentReady,
@@ -43,7 +43,7 @@ func (ps *KafkaProviderStatus) GetObservedGeneration() int64 {
 }
 
 func (ps *KafkaProviderStatus) IsReady() bool {
-	return providerCondSet.Manage(ps).IsHappy()
+	return kafkaProviderCondSet.Manage(ps).IsHappy()
 }
 
 func (*KafkaProviderStatus) GetReadyConditionType() apis.ConditionType {
@@ -51,11 +51,11 @@ func (*KafkaProviderStatus) GetReadyConditionType() apis.ConditionType {
 }
 
 func (ps *KafkaProviderStatus) GetCondition(t apis.ConditionType) *apis.Condition {
-	return providerCondSet.Manage(ps).GetCondition(t)
+	return kafkaProviderCondSet.Manage(ps).GetCondition(t)
 }
 
 func (ps *KafkaProviderStatus) InitializeConditions() {
-	providerCondSet.Manage(ps).InitializeConditions()
+	kafkaProviderCondSet.Manage(ps).InitializeConditions()
 }
 
 func (ps *KafkaProviderStatus) PropagateGatewayDeploymentStatus(cds *appsv1.DeploymentStatus) {
@@ -73,22 +73,22 @@ func (ps *KafkaProviderStatus) PropagateGatewayDeploymentStatus(cds *appsv1.Depl
 	}
 	if progressing.Status == corev1.ConditionTrue && available.Status == corev1.ConditionFalse {
 		// DeploymentAvailable is False while progressing, avoid reporting KafkaProviderConditionReady as False
-		providerCondSet.Manage(ps).MarkUnknown(KafkaProviderConditionGatewayDeploymentReady, progressing.Reason, progressing.Message)
+		kafkaProviderCondSet.Manage(ps).MarkUnknown(KafkaProviderConditionGatewayDeploymentReady, progressing.Reason, progressing.Message)
 		return
 	}
 	switch {
 	case available.Status == corev1.ConditionUnknown:
-		providerCondSet.Manage(ps).MarkUnknown(KafkaProviderConditionGatewayDeploymentReady, available.Reason, available.Message)
+		kafkaProviderCondSet.Manage(ps).MarkUnknown(KafkaProviderConditionGatewayDeploymentReady, available.Reason, available.Message)
 	case available.Status == corev1.ConditionTrue:
-		providerCondSet.Manage(ps).MarkTrue(KafkaProviderConditionGatewayDeploymentReady)
+		kafkaProviderCondSet.Manage(ps).MarkTrue(KafkaProviderConditionGatewayDeploymentReady)
 	case available.Status == corev1.ConditionFalse:
-		providerCondSet.Manage(ps).MarkFalse(KafkaProviderConditionGatewayDeploymentReady, available.Reason, available.Message)
+		kafkaProviderCondSet.Manage(ps).MarkFalse(KafkaProviderConditionGatewayDeploymentReady, available.Reason, available.Message)
 	}
 }
 
 func (ps *KafkaProviderStatus) PropagateGatewayServiceStatus(ss *corev1.ServiceStatus) {
 	// services don't have meaningful status
-	providerCondSet.Manage(ps).MarkTrue(KafkaProviderConditionGatewayServiceReady)
+	kafkaProviderCondSet.Manage(ps).MarkTrue(KafkaProviderConditionGatewayServiceReady)
 }
 
 func (ps *KafkaProviderStatus) PropagateProvisionerDeploymentStatus(cds *appsv1.DeploymentStatus) {
@@ -106,20 +106,20 @@ func (ps *KafkaProviderStatus) PropagateProvisionerDeploymentStatus(cds *appsv1.
 	}
 	if progressing.Status == corev1.ConditionTrue && available.Status == corev1.ConditionFalse {
 		// DeploymentAvailable is False while progressing, avoid reporting KafkaProviderConditionReady as False
-		providerCondSet.Manage(ps).MarkUnknown(KafkaProviderConditionProvisionerDeploymentReady, progressing.Reason, progressing.Message)
+		kafkaProviderCondSet.Manage(ps).MarkUnknown(KafkaProviderConditionProvisionerDeploymentReady, progressing.Reason, progressing.Message)
 		return
 	}
 	switch {
 	case available.Status == corev1.ConditionUnknown:
-		providerCondSet.Manage(ps).MarkUnknown(KafkaProviderConditionProvisionerDeploymentReady, available.Reason, available.Message)
+		kafkaProviderCondSet.Manage(ps).MarkUnknown(KafkaProviderConditionProvisionerDeploymentReady, available.Reason, available.Message)
 	case available.Status == corev1.ConditionTrue:
-		providerCondSet.Manage(ps).MarkTrue(KafkaProviderConditionProvisionerDeploymentReady)
+		kafkaProviderCondSet.Manage(ps).MarkTrue(KafkaProviderConditionProvisionerDeploymentReady)
 	case available.Status == corev1.ConditionFalse:
-		providerCondSet.Manage(ps).MarkFalse(KafkaProviderConditionProvisionerDeploymentReady, available.Reason, available.Message)
+		kafkaProviderCondSet.Manage(ps).MarkFalse(KafkaProviderConditionProvisionerDeploymentReady, available.Reason, available.Message)
 	}
 }
 
 func (ps *KafkaProviderStatus) PropagateProvisionerServiceStatus(ss *corev1.ServiceStatus) {
 	// services don't have meaningful status
-	providerCondSet.Manage(ps).MarkTrue(KafkaProviderConditionProvisionerServiceReady)
+	kafkaProviderCondSet.Manage(ps).MarkTrue(KafkaProviderConditionProvisionerServiceReady)
 }

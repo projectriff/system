@@ -73,22 +73,22 @@ func (ps *PulsarProviderStatus) PropagateGatewayDeploymentStatus(cds *appsv1.Dep
 	}
 	if progressing.Status == corev1.ConditionTrue && available.Status == corev1.ConditionFalse {
 		// DeploymentAvailable is False while progressing, avoid reporting PulsarProviderConditionReady as False
-		providerCondSet.Manage(ps).MarkUnknown(PulsarProviderConditionGatewayDeploymentReady, progressing.Reason, progressing.Message)
+		pulsarProviderCondSet.Manage(ps).MarkUnknown(PulsarProviderConditionGatewayDeploymentReady, progressing.Reason, progressing.Message)
 		return
 	}
 	switch {
 	case available.Status == corev1.ConditionUnknown:
-		providerCondSet.Manage(ps).MarkUnknown(PulsarProviderConditionGatewayDeploymentReady, available.Reason, available.Message)
+		pulsarProviderCondSet.Manage(ps).MarkUnknown(PulsarProviderConditionGatewayDeploymentReady, available.Reason, available.Message)
 	case available.Status == corev1.ConditionTrue:
-		providerCondSet.Manage(ps).MarkTrue(PulsarProviderConditionGatewayDeploymentReady)
+		pulsarProviderCondSet.Manage(ps).MarkTrue(PulsarProviderConditionGatewayDeploymentReady)
 	case available.Status == corev1.ConditionFalse:
-		providerCondSet.Manage(ps).MarkFalse(PulsarProviderConditionGatewayDeploymentReady, available.Reason, available.Message)
+		pulsarProviderCondSet.Manage(ps).MarkFalse(PulsarProviderConditionGatewayDeploymentReady, available.Reason, available.Message)
 	}
 }
 
 func (ps *PulsarProviderStatus) PropagateGatewayServiceStatus(ss *corev1.ServiceStatus) {
 	// services don't have meaningful status
-	providerCondSet.Manage(ps).MarkTrue(PulsarProviderConditionGatewayServiceReady)
+	pulsarProviderCondSet.Manage(ps).MarkTrue(PulsarProviderConditionGatewayServiceReady)
 }
 
 func (ps *PulsarProviderStatus) PropagateProvisionerDeploymentStatus(cds *appsv1.DeploymentStatus) {
@@ -106,20 +106,20 @@ func (ps *PulsarProviderStatus) PropagateProvisionerDeploymentStatus(cds *appsv1
 	}
 	if progressing.Status == corev1.ConditionTrue && available.Status == corev1.ConditionFalse {
 		// DeploymentAvailable is False while progressing, avoid reporting PulsarProviderConditionReady as False
-		providerCondSet.Manage(ps).MarkUnknown(PulsarProviderConditionProvisionerDeploymentReady, progressing.Reason, progressing.Message)
+		pulsarProviderCondSet.Manage(ps).MarkUnknown(PulsarProviderConditionProvisionerDeploymentReady, progressing.Reason, progressing.Message)
 		return
 	}
 	switch {
 	case available.Status == corev1.ConditionUnknown:
-		providerCondSet.Manage(ps).MarkUnknown(PulsarProviderConditionProvisionerDeploymentReady, available.Reason, available.Message)
+		pulsarProviderCondSet.Manage(ps).MarkUnknown(PulsarProviderConditionProvisionerDeploymentReady, available.Reason, available.Message)
 	case available.Status == corev1.ConditionTrue:
-		providerCondSet.Manage(ps).MarkTrue(PulsarProviderConditionProvisionerDeploymentReady)
+		pulsarProviderCondSet.Manage(ps).MarkTrue(PulsarProviderConditionProvisionerDeploymentReady)
 	case available.Status == corev1.ConditionFalse:
-		providerCondSet.Manage(ps).MarkFalse(PulsarProviderConditionProvisionerDeploymentReady, available.Reason, available.Message)
+		pulsarProviderCondSet.Manage(ps).MarkFalse(PulsarProviderConditionProvisionerDeploymentReady, available.Reason, available.Message)
 	}
 }
 
 func (ps *PulsarProviderStatus) PropagateProvisionerServiceStatus(ss *corev1.ServiceStatus) {
 	// services don't have meaningful status
-	providerCondSet.Manage(ps).MarkTrue(PulsarProviderConditionProvisionerServiceReady)
+	pulsarProviderCondSet.Manage(ps).MarkTrue(PulsarProviderConditionProvisionerServiceReady)
 }
