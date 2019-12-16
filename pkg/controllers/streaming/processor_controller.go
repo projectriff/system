@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/go-logr/logr"
@@ -514,6 +515,11 @@ func (r *ProcessorReconciler) constructDeploymentForProcessor(processor *streami
 			)
 		}
 	}
+
+	// sort volumes to avoid update diffs caused by iteration order
+	sort.SliceStable(volumes, func(i, j int) bool {
+		return volumes[i].Name < volumes[j].Name
+	})
 
 	// merge provided template with controlled values
 	template := processor.Spec.Template.DeepCopy()
