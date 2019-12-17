@@ -17,6 +17,8 @@ limitations under the License.
 
 package v1alpha1
 
+type InMemoryProviderExpansion interface{}
+
 type KafkaProviderExpansion interface{}
 
 type ProcessorExpansion interface{}
