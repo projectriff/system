@@ -45,13 +45,13 @@ type ProcessorSpec struct {
 	// produces new images, they will be automatically rolled out to the
 	// processor.
 	// +optional
-	Build *Build `json:"build"`
+	Build *Build `json:"build,omitempty"`
 
 	// Inputs references an ordered list of streams to bind as inputs
 	Inputs []StreamBinding `json:"inputs"`
 	// Outputs references an ordered list of streams to bind as outputs
 	// +optional
-	Outputs []StreamBinding `json:"outputs"`
+	Outputs []StreamBinding `json:"outputs,omitempty"`
 
 	// Template pod
 	// +optional

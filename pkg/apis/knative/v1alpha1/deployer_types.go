@@ -44,11 +44,13 @@ type DeployerSpec struct {
 	// Build resolves the image from a build resource. As the target build
 	// produces new images, they will be automatically rolled out to the
 	// deployer.
+	// +optional
 	Build *Build `json:"build,omitempty"`
 
 	Scale Scale `json:"scale,omitempty"`
 
 	// Template pod
+	// +optional
 	Template *corev1.PodTemplateSpec `json:"template,omitempty"`
 
 	// IngressPolicy defines whether the workload should be reachable from
