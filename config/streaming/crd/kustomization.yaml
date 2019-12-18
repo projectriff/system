@@ -7,6 +7,7 @@ resources:
 # providers
 - bases/streaming.projectriff.io_kafkaproviders.yaml
 - bases/streaming.projectriff.io_pulsarproviders.yaml
+- bases/streaming.projectriff.io_inmemoryproviders.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patchesStrategicMerge:

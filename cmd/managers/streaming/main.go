@@ -106,6 +106,20 @@ func main() {
 		setupLog.Error(err, "unable to create webhook", "webhook", "PulsarProvider")
 		os.Exit(1)
 	}
+	if err = (&controllers.InMemoryProviderReconciler{
+		Client:    mgr.GetClient(),
+		Log:       ctrl.Log.WithName("controllers").WithName("InMemoryProvider"),
+		Scheme:    mgr.GetScheme(),
+		Tracker:   tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("InMemoryProvider").WithName("tracker")),
+		Namespace: namespace,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "InMemoryProvider")
+		os.Exit(1)
+	}
+	if err = ctrl.NewWebhookManagedBy(mgr).For(&streamingv1alpha1.InMemoryProvider{}).Complete(); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "InMemoryProvider")
+		os.Exit(1)
+	}
 	streamControllerLogger := ctrl.Log.WithName("controllers").WithName("Stream")
 	if err = (&controllers.StreamReconciler{
 		Client:                  mgr.GetClient(),
