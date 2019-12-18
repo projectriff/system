@@ -19,7 +19,6 @@ package streaming
 import (
 	"context"
 	"errors"
-	"fmt"
 	"testing"
 
 	"github.com/go-logr/logr"
@@ -63,20 +62,20 @@ func TestReconcile(t *testing.T) {
 		Key:          types.NamespacedName{Namespace: testNamespace, Name: testName},
 		ExpectTracks: []rtesting.TrackRequest{},
 	}, {
-		Name:             "getting processor fails",
-		Key:              types.NamespacedName{Namespace: testNamespace, Name: testName},
-		ExpectTracks:     []rtesting.TrackRequest{},
-		GetHook:          getErrorOn(&streamingv1alpha1.Processor{}, testNamespace, testName, scheme),
-		ShouldErr:        true,
-		ExpectErrMessage: testErrorMessage,
+		Name:         "getting processor fails",
+		Key:          types.NamespacedName{Namespace: testNamespace, Name: testName},
+		ExpectTracks: []rtesting.TrackRequest{},
+		GetHook:      getErrorOn(&streamingv1alpha1.Processor{}, testNamespace, testName, scheme),
+		ShouldErr:    true,
+		Verify:       rtesting.AssertErrorEqual(testError),
 	}, {
 		Name: "configMap does not exist",
 		GivenObjects: []runtime.Object{
 			processor(testNamespace, testName),
 		},
-		Key:              types.NamespacedName{Namespace: testNamespace, Name: testName},
-		ShouldErr:        true,
-		ExpectErrMessage: fmt.Sprintf(`configmaps %q not found`, processorImages),
+		Key:       types.NamespacedName{Namespace: testNamespace, Name: testName},
+		ShouldErr: true,
+		Verify:    rtesting.AssertErrorMessagef("configmaps %q not found", processorImages),
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.CreateTrackRequest("", "ConfigMap", "", processorImages).By(testNamespace, testName),
 		},
@@ -100,9 +99,9 @@ func TestReconcile(t *testing.T) {
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.CreateTrackRequest("", "ConfigMap", "", processorImages).By(testNamespace, testName),
 		},
-		GetHook:          getErrorOn(&corev1.ConfigMap{}, "", processorImages, scheme),
-		ShouldErr:        true,
-		ExpectErrMessage: testErrorMessage,
+		GetHook:   getErrorOn(&corev1.ConfigMap{}, "", processorImages, scheme),
+		ShouldErr: true,
+		Verify:    rtesting.AssertErrorEqual(testError),
 		ExpectStatusUpdates: []runtime.Object{
 			processorStatusConditionsUnknown(testNamespace, testName),
 		},
@@ -112,9 +111,9 @@ func TestReconcile(t *testing.T) {
 			processor(testNamespace, testName),
 			configMap(testNamespace, processorImages),
 		},
-		Key:              types.NamespacedName{Namespace: testNamespace, Name: testName},
-		ShouldErr:        true,
-		ExpectErrMessage: "missing processor image configuration",
+		Key:       types.NamespacedName{Namespace: testNamespace, Name: testName},
+		ShouldErr: true,
+		Verify:    rtesting.AssertErrorMessagef("missing processor image configuration"),
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.CreateTrackRequest("", "ConfigMap", "", processorImages).By(testNamespace, testName),
 		},
@@ -131,9 +130,9 @@ func TestReconcile(t *testing.T) {
 			}),
 			configMap(testNamespace, processorImages, map[string]string{processorImageKey: testProcessorImage}),
 		},
-		Key:              types.NamespacedName{Namespace: testNamespace, Name: testName},
-		ShouldErr:        true,
-		ExpectErrMessage: "could not resolve an image",
+		Key:       types.NamespacedName{Namespace: testNamespace, Name: testName},
+		ShouldErr: true,
+		Verify:    rtesting.AssertErrorMessagef("could not resolve an image"),
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.CreateTrackRequest("", "ConfigMap", "", processorImages).By(testNamespace, testName),
 		},
@@ -181,8 +180,8 @@ func TestReconcile(t *testing.T) {
 			}
 			return createFake(ctx, obj, opts...)
 		},
-		ShouldErr:        true,
-		ExpectErrMessage: testErrorMessage,
+		ShouldErr: true,
+		Verify:    rtesting.AssertErrorEqual(testError),
 		ExpectStatusUpdates: []runtime.Object{
 			processorStatusConditionsUnknown(testNamespace, testName,
 				setProcessorStatusLatestImage(testDefaultImage),
@@ -208,8 +207,8 @@ func TestReconcile(t *testing.T) {
 			}
 			return createFake(ctx, obj, opts...)
 		},
-		ShouldErr:        true,
-		ExpectErrMessage: testErrorMessage,
+		ShouldErr: true,
+		Verify:    rtesting.AssertErrorEqual(testError),
 		ExpectStatusUpdates: []runtime.Object{
 			processorStatusConditionsUnknown(testNamespace, testName,
 				setProcessorConditionsTrue("StreamsReady"),
@@ -242,9 +241,10 @@ func TestReconcile(t *testing.T) {
 			rtesting.CreateTrackRequest("", "ConfigMap", "", processorImages).By(testNamespace, testName),
 			rtesting.CreateTrackRequest("build.projectriff.io", "Function", testNamespace, testFunction).By(testNamespace, testName),
 		},
-		GetHook:          getErrorOn(&v1alpha1.Function{}, testNamespace, testFunction, scheme),
-		ShouldErr:        true,
-		ExpectErrMessage: testErrorMessage,
+		GetHook:       getErrorOn(&v1alpha1.Function{}, testNamespace, testFunction, scheme),
+		ShouldErr:     true,
+		ShouldRequeue: true,
+		Verify:        rtesting.AssertErrorEqual(testError),
 	}, {
 		Name: "successful reconciliation with satisfied function reference",
 		GivenObjects: []runtime.Object{
@@ -294,9 +294,10 @@ func TestReconcile(t *testing.T) {
 			rtesting.CreateTrackRequest("", "ConfigMap", "", processorImages).By(testNamespace, testName),
 			rtesting.CreateTrackRequest("build.projectriff.io", "Container", testNamespace, testContainer).By(testNamespace, testName),
 		},
-		GetHook:          getErrorOn(&v1alpha1.Container{}, testNamespace, testContainer, scheme),
-		ShouldErr:        true,
-		ExpectErrMessage: testErrorMessage,
+		GetHook:       getErrorOn(&v1alpha1.Container{}, testNamespace, testContainer, scheme),
+		ShouldErr:     true,
+		ShouldRequeue: true,
+		Verify:        rtesting.AssertErrorEqual(testError),
 	}, {
 		Name: "successful reconciliation with satisfied container reference",
 		GivenObjects: []runtime.Object{
