@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -56,51 +57,65 @@ type Testcase struct {
 	// ExpectCreates holds the ordered list of objects expected to be created during reconciliation
 	ExpectCreates []runtime.Object
 
-	// ExpectStatusUpdates holds the ordered list of objects whose status is updated during reconciliation.
+	// ExpectStatusUpdates holds the ordered list of objects whose status is updated during reconciliation
 	ExpectStatusUpdates []runtime.Object
 
 	// ShouldErr is true if and only if reconciliation is expected to return an error
 	ShouldErr bool
 
-	// ExpectErrMessage is the error message expected if ShouldErr is true
-	ExpectErrMessage string
+	// ShouldRequeue is true if and only if reconciliation is expected to return a Result with Requeue set to true
+	ShouldRequeue bool
 
-	// Hooks, if provided, wrap the corresponding client method. They are typically used to inject errors. The object
-	// will be recorded as created if and only if the hook calls the wrapped method.
-	CreateHook CreateHook
-	GetHook    GetHook
+	// Verify provides the reconciliation Result and error for custom assertions
+	Verify VerifyFunc
+
+	// Hooks, if provided, wrap the corresponding client method. They are typically used to inject errors. Example usage:
+	// CreateHook: func(createFake rtesting.CreateFunc, ctx context.Context, obj runtime.Object, opts ...client.CreateOption) error {
+	// 			// Inject an error if we are creating a deployment
+	//			if _, ok := obj.(*appsv1.Deployment); ok {
+	//				return testError
+	//			}
+	// 			// Otherwise delegate to client Create method
+	//			return createFake(ctx, obj, opts...)
+	//		},
+	CreateHook CreateHook // Hook client Create methods
+	GetHook    GetHook    // Hook client Get methods
 }
+
+// VerifyFunc is a verification function
+type VerifyFunc func(t *testing.T, result controllerruntime.Result, err error)
 
 // Table represents a list of Testcase tests instances.
 type Table []Testcase
 
 // Test executes the test for a table row.
-func (r *Testcase) Test(t *testing.T, scheme *runtime.Scheme, factory Factory) {
+func (tc *Testcase) Test(t *testing.T, scheme *runtime.Scheme, factory Factory) {
 	t.Helper()
-	if r.Skip {
+	if tc.Skip {
 		t.SkipNow()
 	}
-	clientWrapper := newClientWrapperWithScheme(scheme, r.GivenObjects...)
-	clientWrapper.createHook = r.CreateHook
-	clientWrapper.getHook = r.GetHook
+	clientWrapper := newClientWrapperWithScheme(scheme, tc.GivenObjects...)
+	clientWrapper.createHook = tc.CreateHook
+	clientWrapper.getHook = tc.GetHook
 	tracker := createTracker()
 	log := TestLogger(t)
-	c := factory(t, r, clientWrapper, tracker, log)
+	c := factory(t, tc, clientWrapper, tracker, log)
+
 	// Run the Reconcile we're testing.
-	if _, err := c.Reconcile(reconcile.Request{
-		NamespacedName: r.Key,
-	}); (err != nil) != r.ShouldErr {
-		t.Errorf("Reconcile() error = %v, ExpectErr %v", err, r.ShouldErr)
-	} else {
-		if r.ShouldErr && r.ExpectErrMessage != "" {
-			if diff := cmp.Diff(r.ExpectErrMessage, err.Error()); diff != "" {
-				t.Errorf("Unexpected error message(-expected, +actual): %s", diff)
-			}
-		}
+	result, err := c.Reconcile(reconcile.Request{
+		NamespacedName: tc.Key,
+	})
+
+	if (err != nil) != tc.ShouldErr {
+		t.Errorf("Reconcile() error = %v, ExpectErr %v", err, tc.ShouldErr)
+	}
+
+	if tc.Verify != nil {
+		tc.Verify(t, result, err)
 	}
 
 	actualTrack := tracker.getTrackRequests()
-	for i, exp := range r.ExpectTracks {
+	for i, exp := range tc.ExpectTracks {
 		if i >= len(actualTrack) {
 			t.Errorf("Missing tracking request: %s", exp)
 			continue
@@ -110,13 +125,13 @@ func (r *Testcase) Test(t *testing.T, scheme *runtime.Scheme, factory Factory) {
 			t.Errorf("Unexpected tracking request(-expected, +actual): %s", diff)
 		}
 	}
-	if actual, exp := len(actualTrack), len(r.ExpectTracks); actual > exp {
+	if actual, exp := len(actualTrack), len(tc.ExpectTracks); actual > exp {
 		for _, extra := range actualTrack[exp:] {
 			t.Errorf("Extra tracking request: %s", extra)
 		}
 	}
 
-	for i, exp := range r.ExpectCreates {
+	for i, exp := range tc.ExpectCreates {
 		if i >= len(clientWrapper.created) {
 			t.Errorf("Missing create: %#v", exp)
 			continue
@@ -127,13 +142,13 @@ func (r *Testcase) Test(t *testing.T, scheme *runtime.Scheme, factory Factory) {
 			t.Errorf("Unexpected create (-expected, +actual): %s", diff)
 		}
 	}
-	if actual, expected := len(clientWrapper.created), len(r.ExpectCreates); actual > expected {
+	if actual, expected := len(clientWrapper.created), len(tc.ExpectCreates); actual > expected {
 		for _, extra := range clientWrapper.created[expected:] {
 			t.Errorf("Extra create: %#v", extra)
 		}
 	}
 
-	for i, exp := range r.ExpectStatusUpdates {
+	for i, exp := range tc.ExpectStatusUpdates {
 		if i >= len(clientWrapper.statusUpdated) {
 			t.Errorf("Missing status update: %#v", exp)
 			continue
@@ -144,7 +159,7 @@ func (r *Testcase) Test(t *testing.T, scheme *runtime.Scheme, factory Factory) {
 			t.Errorf("Unexpected status update (-expected, +actual): %s", diff)
 		}
 	}
-	if actual, expected := len(clientWrapper.statusUpdated), len(r.ExpectStatusUpdates); actual > expected {
+	if actual, expected := len(clientWrapper.statusUpdated), len(tc.ExpectStatusUpdates); actual > expected {
 		for _, extra := range clientWrapper.statusUpdated[expected:] {
 			t.Errorf("Extra status update: %#v", extra)
 		}
