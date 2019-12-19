@@ -102,7 +102,6 @@ func (r *StreamReconciler) reconcile(ctx context.Context, log logr.Logger, strea
 		return ctrl.Result{Requeue: true}, err
 	}
 	stream.Status.MarkStreamProvisioned()
-	stream.Status.Address = *address
 
 	// reconcile binding metadata
 	childBindingMetadata, err := r.reconcileChildBindingMetadata(ctx, log, stream)
@@ -116,7 +115,7 @@ func (r *StreamReconciler) reconcile(ctx context.Context, log logr.Logger, strea
 	}
 
 	// reconcile binding secret
-	childBindingSecret, err := r.reconcileChildBindingSecret(ctx, log, stream)
+	childBindingSecret, err := r.reconcileChildBindingSecret(ctx, log, stream, address)
 	if err != nil {
 		log.Error(err, "unable to reconcile child binding secret Secret", "stream", stream)
 		return ctrl.Result{}, err
@@ -233,7 +232,7 @@ func (r *StreamReconciler) constructBindingMetadata(stream *streamingv1alpha1.St
 	return metadata, nil
 }
 
-func (r *StreamReconciler) reconcileChildBindingSecret(ctx context.Context, log logr.Logger, stream *streamingv1alpha1.Stream) (*corev1.Secret, error) {
+func (r *StreamReconciler) reconcileChildBindingSecret(ctx context.Context, log logr.Logger, stream *streamingv1alpha1.Stream, address *StreamAddress) (*corev1.Secret, error) {
 	var actualBindingSecret corev1.Secret
 	var childBindingSecrets corev1.SecretList
 	if err := r.List(ctx, &childBindingSecrets, client.InNamespace(stream.Namespace), client.MatchingField(bindingSecretIndexField, stream.Name)); err != nil {
@@ -252,7 +251,7 @@ func (r *StreamReconciler) reconcileChildBindingSecret(ctx context.Context, log 
 		}
 	}
 
-	desiredBindingSecret, err := r.constructBindingSecret(stream)
+	desiredBindingSecret, err := r.constructBindingSecret(stream, address)
 	if err != nil {
 		return nil, err
 	}
@@ -300,8 +299,8 @@ func (r *StreamReconciler) bindingSecretSemanticEquals(desiredBindingSecret, sec
 		equality.Semantic.DeepEqual(desiredBindingSecret.ObjectMeta.Labels, secret.ObjectMeta.Labels)
 }
 
-func (r *StreamReconciler) constructBindingSecret(stream *streamingv1alpha1.Stream) (*corev1.Secret, error) {
-	if stream.Status.Address.Gateway == "" || stream.Status.Address.Topic == "" {
+func (r *StreamReconciler) constructBindingSecret(stream *streamingv1alpha1.Stream, address *StreamAddress) (*corev1.Secret, error) {
+	if address.Gateway == "" || address.Topic == "" {
 		return nil, nil
 	}
 
@@ -315,8 +314,8 @@ func (r *StreamReconciler) constructBindingSecret(stream *streamingv1alpha1.Stre
 			Namespace:   stream.Namespace,
 		},
 		StringData: map[string]string{
-			"gateway": stream.Status.Address.Gateway,
-			"topic":   stream.Status.Address.Topic,
+			"gateway": address.Gateway,
+			"topic":   address.Topic,
 		},
 	}
 	if err := ctrl.SetControllerReference(stream, secret, r.Scheme); err != nil {

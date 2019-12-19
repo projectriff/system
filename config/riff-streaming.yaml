@@ -3216,13 +3216,6 @@ spec:
           type: object
         status:
           properties:
-            address:
-              properties:
-                gateway:
-                  type: string
-                topic:
-                  type: string
-              type: object
             binding:
               properties:
                 metadataRef:

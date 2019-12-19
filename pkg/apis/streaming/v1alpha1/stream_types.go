@@ -17,8 +17,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"fmt"
-
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -53,14 +51,7 @@ type StreamStatus struct {
 
 	apis.Status `json:",inline"`
 
-	Address StreamAddress `json:"address,omitempty"`
-
 	Binding BindingReference `json:"binding,omitempty"`
-}
-
-type StreamAddress struct {
-	Gateway string `json:"gateway,omitempty"`
-	Topic   string `json:"topic,omitempty"`
 }
 
 type BindingReference struct {
@@ -69,10 +60,6 @@ type BindingReference struct {
 
 	// Secret references a Secret with the binding secret properties
 	SecretRef corev1.LocalObjectReference `json:"secretRef,omitempty"`
-}
-
-func (a StreamAddress) String() string {
-	return fmt.Sprintf("%s/%s", a.Gateway, a.Topic)
 }
 
 // +kubebuilder:object:root=true
