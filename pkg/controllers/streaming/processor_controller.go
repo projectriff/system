@@ -612,8 +612,8 @@ func (r *ProcessorReconciler) collectStreamAddresses(ctx context.Context, stream
 	for i, stream := range streams {
 		var secret corev1.Secret
 		if err := r.Get(ctx, types.NamespacedName{Namespace: stream.Namespace, Name: stream.Status.Binding.SecretRef.Name}, &secret); err != nil {
-				r.Log.Error(err, "failed to get binding secret", "stream", stream.Name, "secret", stream.Status.Binding.SecretRef.Name)
-				return nil, err
+			r.Log.Error(err, "failed to get binding secret", "stream", stream.Name, "secret", stream.Status.Binding.SecretRef.Name)
+			return nil, err
 		}
 		gateway, ok := secret.Data["gateway"]
 		if !ok {
