@@ -29,7 +29,12 @@ import (
 )
 
 type StreamProvisionerClient interface {
-	ProvisionStream(stream *streamingv1alpha1.Stream) (*streamingv1alpha1.StreamAddress, error)
+	ProvisionStream(stream *streamingv1alpha1.Stream) (*StreamAddress, error)
+}
+
+type StreamAddress struct {
+	Gateway string `json:"gateway,omitempty"`
+	Topic   string `json:"topic,omitempty"`
 }
 
 type streamProvisionerRestClient struct {
@@ -44,7 +49,7 @@ func NewStreamProvisionerClient(httpClient *http.Client, logger logr.Logger) Str
 	}
 }
 
-func (s *streamProvisionerRestClient) ProvisionStream(stream *streamingv1alpha1.Stream) (*streamingv1alpha1.StreamAddress, error) {
+func (s *streamProvisionerRestClient) ProvisionStream(stream *streamingv1alpha1.Stream) (*StreamAddress, error) {
 	url := fmt.Sprintf("http://%s.%s.svc.cluster.local/%s/%s", stream.Spec.Provider, stream.Namespace, stream.Namespace, stream.Name)
 	req, err := http.NewRequest(http.MethodPut, url, bytes.NewReader([]byte{}))
 	if err != nil {
@@ -64,7 +69,7 @@ func (s *streamProvisionerRestClient) ProvisionStream(stream *streamingv1alpha1.
 		msg, _ := ioutil.ReadAll(res.Body)
 		return nil, fmt.Errorf("status: %d, body: %q", res.StatusCode, string(msg))
 	}
-	address := &streamingv1alpha1.StreamAddress{}
+	address := &StreamAddress{}
 	if err := json.NewDecoder(res.Body).Decode(address); err != nil {
 		return nil, err
 	}

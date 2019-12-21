@@ -186,14 +186,20 @@ func (r *ProcessorReconciler) reconcile(ctx context.Context, logger logr.Logger,
 	if err != nil {
 		return ctrl.Result{Requeue: true}, err
 	}
-	processor.Status.DeprecatedInputAddresses = r.collectStreamAddresses(inputStreams)
+	processor.Status.DeprecatedInputAddresses, err = r.collectStreamAddresses(ctx, inputStreams)
+	if err != nil {
+		return ctrl.Result{Requeue: true}, err
+	}
 
 	// Resolve output addresses
 	outputStreams, err := r.resolveStreams(ctx, processorNSName, processor.Spec.Outputs)
 	if err != nil {
 		return ctrl.Result{Requeue: true}, err
 	}
-	processor.Status.DeprecatedOutputAddresses = r.collectStreamAddresses(outputStreams)
+	processor.Status.DeprecatedOutputAddresses, err = r.collectStreamAddresses(ctx, outputStreams)
+	if err != nil {
+		return ctrl.Result{Requeue: true}, err
+	}
 	processor.Status.DeprecatedOutputContentTypes = r.collectStreamContentTypes(outputStreams)
 
 	// Reconcile deployment for processor
@@ -601,12 +607,29 @@ func (r *ProcessorReconciler) resolveStreams(ctx context.Context, processorCoord
 	return streams, nil
 }
 
-func (r *ProcessorReconciler) collectStreamAddresses(streams []streamingv1alpha1.Stream) []string {
+func (r *ProcessorReconciler) collectStreamAddresses(ctx context.Context, streams []streamingv1alpha1.Stream) ([]string, error) {
 	addresses := make([]string, len(streams))
 	for i, stream := range streams {
-		addresses[i] = stream.Status.Address.String()
+		var secret corev1.Secret
+		if err := r.Get(ctx, types.NamespacedName{Namespace: stream.Namespace, Name: stream.Status.Binding.SecretRef.Name}, &secret); err != nil {
+			r.Log.Error(err, "failed to get binding secret", "stream", stream.Name, "secret", stream.Status.Binding.SecretRef.Name)
+			return nil, err
+		}
+		gateway, ok := secret.Data["gateway"]
+		if !ok {
+			err := fmt.Errorf("binding missing data 'gateway'")
+			r.Log.Error(err, "invalid binding", "secret", secret.Name)
+			return nil, err
+		}
+		topic, ok := secret.Data["topic"]
+		if !ok {
+			err := fmt.Errorf("binding missing data 'topic'")
+			r.Log.Error(err, "invalid binding", "secret", secret.Name)
+			return nil, err
+		}
+		addresses[i] = fmt.Sprintf("%s/%s", gateway, topic)
 	}
-	return addresses
+	return addresses, nil
 }
 
 func (r *ProcessorReconciler) collectStreamContentTypes(streams []streamingv1alpha1.Stream) []string {
