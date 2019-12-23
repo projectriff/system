@@ -504,7 +504,7 @@ func processorDeployment(namespace, processorName, imageRef string) *appsv1.Depl
 			}},
 		},
 		Spec: appsv1.DeploymentSpec{
-			Replicas: int32Ptr(0),
+			Replicas: int32Ptr(1),
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{"streaming.projectriff.io/processor": processorName},
 			},
