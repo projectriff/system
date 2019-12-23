@@ -20,9 +20,6 @@ elif [ $RUNTIME = "knative" ]; then
   kubectl get customresourcedefinitions.apiextensions.k8s.io -oname | grep istio.io | xargs -L1 kubectl delete
 
 elif [ $RUNTIME = "streaming" ]; then
-  echo "Cleanup Kafka"
-  kapp delete -n apps -a kafka -y
-
   echo "Cleanup riff Streaming Runtime"
   kapp delete -n apps -a riff-streaming-runtime -y
 
