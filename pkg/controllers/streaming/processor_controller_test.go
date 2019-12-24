@@ -17,7 +17,6 @@ limitations under the License.
 package streaming
 
 import (
-	"context"
 	"errors"
 	"testing"
 
@@ -29,7 +28,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/projectriff/system/pkg/apis"
@@ -62,18 +60,19 @@ func TestReconcile(t *testing.T) {
 		Key:          types.NamespacedName{Namespace: testNamespace, Name: testName},
 		ExpectTracks: []rtesting.TrackRequest{},
 	}, {
-		Name:         "getting processor fails",
-		Key:          types.NamespacedName{Namespace: testNamespace, Name: testName},
+		Name: "getting processor fails",
+		Key:  types.NamespacedName{Namespace: testNamespace, Name: testName},
+		WithReactors: []rtesting.ReactionFunc{
+			rtesting.InduceFailure("get", "Processor"),
+		},
 		ExpectTracks: []rtesting.TrackRequest{},
-		GetHook:      getErrorOn(&streamingv1alpha1.Processor{}, testNamespace, testName, scheme),
 		ShouldErr:    true,
-		Verify:       rtesting.AssertErrorEqual(testError),
 	}, {
 		Name: "configMap does not exist",
+		Key:  types.NamespacedName{Namespace: testNamespace, Name: testName},
 		GivenObjects: []runtime.Object{
 			processor(testNamespace, testName),
 		},
-		Key:       types.NamespacedName{Namespace: testNamespace, Name: testName},
 		ShouldErr: true,
 		Verify:    rtesting.AssertErrorMessagef("configmaps %q not found", processorImages),
 		ExpectTracks: []rtesting.TrackRequest{
@@ -92,26 +91,27 @@ func TestReconcile(t *testing.T) {
 		Key: types.NamespacedName{Namespace: testNamespace, Name: testName},
 	}, {
 		Name: "getting configMap fails",
+		Key:  types.NamespacedName{Namespace: testNamespace, Name: testName},
 		GivenObjects: []runtime.Object{
 			processor(testNamespace, testName),
 		},
-		Key: types.NamespacedName{Namespace: testNamespace, Name: testName},
+		WithReactors: []rtesting.ReactionFunc{
+			rtesting.InduceFailure("get", "ConfigMap"),
+		},
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.CreateTrackRequest("", "ConfigMap", "", processorImages).By(testNamespace, testName),
 		},
-		GetHook:   getErrorOn(&corev1.ConfigMap{}, "", processorImages, scheme),
 		ShouldErr: true,
-		Verify:    rtesting.AssertErrorEqual(testError),
 		ExpectStatusUpdates: []runtime.Object{
 			processorStatusConditionsUnknown(testNamespace, testName),
 		},
 	}, {
 		Name: "processor sidecar image not present in configMap",
+		Key:  types.NamespacedName{Namespace: testNamespace, Name: testName},
 		GivenObjects: []runtime.Object{
 			processor(testNamespace, testName),
 			configMap(testNamespace, processorImages),
 		},
-		Key:       types.NamespacedName{Namespace: testNamespace, Name: testName},
 		ShouldErr: true,
 		Verify:    rtesting.AssertErrorMessagef("missing processor image configuration"),
 		ExpectTracks: []rtesting.TrackRequest{
@@ -124,13 +124,13 @@ func TestReconcile(t *testing.T) {
 		},
 	}, {
 		Name: "default application image not set",
+		Key:  types.NamespacedName{Namespace: testNamespace, Name: testName},
 		GivenObjects: []runtime.Object{
 			processor(testNamespace, testName, func(proc *streamingv1alpha1.Processor) {
 				proc.Spec.Template = nil
 			}),
 			configMap(testNamespace, processorImages, map[string]string{processorImageKey: testProcessorImage}),
 		},
-		Key:       types.NamespacedName{Namespace: testNamespace, Name: testName},
 		ShouldErr: true,
 		Verify:    rtesting.AssertErrorMessagef("could not resolve an image"),
 		ExpectTracks: []rtesting.TrackRequest{
@@ -141,11 +141,11 @@ func TestReconcile(t *testing.T) {
 		},
 	}, {
 		Name: "successful reconciliation",
+		Key:  types.NamespacedName{Namespace: testNamespace, Name: testName},
 		GivenObjects: []runtime.Object{
 			processor(testNamespace, testName),
 			configMap(testNamespace, processorImages, map[string]string{processorImageKey: testProcessorImage}),
 		},
-		Key: types.NamespacedName{Namespace: testNamespace, Name: testName},
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.CreateTrackRequest("", "ConfigMap", "", processorImages).By(testNamespace, testName),
 		},
@@ -163,25 +163,21 @@ func TestReconcile(t *testing.T) {
 		},
 	}, {
 		Name: "deployment creation fails",
+		Key:  types.NamespacedName{Namespace: testNamespace, Name: testName},
 		GivenObjects: []runtime.Object{
 			processor(testNamespace, testName),
 			configMap(testNamespace, processorImages, map[string]string{processorImageKey: testProcessorImage}),
 		},
-		Key: types.NamespacedName{Namespace: testNamespace, Name: testName},
+		WithReactors: []rtesting.ReactionFunc{
+			rtesting.InduceFailure("create", "Deployment"),
+		},
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.CreateTrackRequest("", "ConfigMap", "", processorImages).By(testNamespace, testName),
 		},
 		ExpectCreates: []runtime.Object{
 			processorDeployment(testNamespace, testName, testDefaultImage),
 		},
-		CreateHook: func(createFake rtesting.CreateFunc, ctx context.Context, obj runtime.Object, opts ...client.CreateOption) error {
-			if _, ok := obj.(*appsv1.Deployment); ok {
-				return testError
-			}
-			return createFake(ctx, obj, opts...)
-		},
 		ShouldErr: true,
-		Verify:    rtesting.AssertErrorEqual(testError),
 		ExpectStatusUpdates: []runtime.Object{
 			processorStatusConditionsUnknown(testNamespace, testName,
 				setProcessorStatusLatestImage(testDefaultImage),
@@ -189,11 +185,14 @@ func TestReconcile(t *testing.T) {
 		},
 	}, {
 		Name: "scaled object creation fails",
+		Key:  types.NamespacedName{Namespace: testNamespace, Name: testName},
 		GivenObjects: []runtime.Object{
 			processor(testNamespace, testName),
 			configMap(testNamespace, processorImages, map[string]string{processorImageKey: testProcessorImage}),
 		},
-		Key: types.NamespacedName{Namespace: testNamespace, Name: testName},
+		WithReactors: []rtesting.ReactionFunc{
+			rtesting.InduceFailure("create", "ScaledObject"),
+		},
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.CreateTrackRequest("", "ConfigMap", "", processorImages).By(testNamespace, testName),
 		},
@@ -201,14 +200,7 @@ func TestReconcile(t *testing.T) {
 			processorDeployment(testNamespace, testName, testDefaultImage),
 			processorScaledObject(testNamespace, testName),
 		},
-		CreateHook: func(createFake rtesting.CreateFunc, ctx context.Context, obj runtime.Object, opts ...client.CreateOption) error {
-			if _, ok := obj.(*kedav1alpha1.ScaledObject); ok {
-				return testError
-			}
-			return createFake(ctx, obj, opts...)
-		},
 		ShouldErr: true,
-		Verify:    rtesting.AssertErrorEqual(testError),
 		ExpectStatusUpdates: []runtime.Object{
 			processorStatusConditionsUnknown(testNamespace, testName,
 				setProcessorConditionsTrue("StreamsReady"),
@@ -218,11 +210,11 @@ func TestReconcile(t *testing.T) {
 		},
 	}, {
 		Name: "successful reconciliation with unsatisfied function reference",
+		Key:  types.NamespacedName{Namespace: testNamespace, Name: testName},
 		GivenObjects: []runtime.Object{
 			processor(testNamespace, testName, functionDelta),
 			configMap(testNamespace, processorImages, map[string]string{processorImageKey: testProcessorImage}),
 		},
-		Key: types.NamespacedName{Namespace: testNamespace, Name: testName},
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.CreateTrackRequest("", "ConfigMap", "", processorImages).By(testNamespace, testName),
 			rtesting.CreateTrackRequest("build.projectriff.io", "Function", testNamespace, testFunction).By(testNamespace, testName),
@@ -232,27 +224,27 @@ func TestReconcile(t *testing.T) {
 		},
 	}, {
 		Name: "get function fails",
+		Key:  types.NamespacedName{Namespace: testNamespace, Name: testName},
 		GivenObjects: []runtime.Object{
 			processor(testNamespace, testName, functionDelta),
 			configMap(testNamespace, processorImages, map[string]string{processorImageKey: testProcessorImage}),
 		},
-		Key: types.NamespacedName{Namespace: testNamespace, Name: testName},
+		WithReactors: []rtesting.ReactionFunc{
+			rtesting.InduceFailure("get", "Function"),
+		},
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.CreateTrackRequest("", "ConfigMap", "", processorImages).By(testNamespace, testName),
 			rtesting.CreateTrackRequest("build.projectriff.io", "Function", testNamespace, testFunction).By(testNamespace, testName),
 		},
-		GetHook:       getErrorOn(&v1alpha1.Function{}, testNamespace, testFunction, scheme),
-		ShouldErr:     true,
-		ShouldRequeue: true,
-		Verify:        rtesting.AssertErrorEqual(testError),
+		ShouldErr: true,
 	}, {
 		Name: "successful reconciliation with satisfied function reference",
+		Key:  types.NamespacedName{Namespace: testNamespace, Name: testName},
 		GivenObjects: []runtime.Object{
 			processor(testNamespace, testName, functionDelta),
 			configMap(testNamespace, processorImages, map[string]string{processorImageKey: testProcessorImage}),
 			function(testNamespace),
 		},
-		Key: types.NamespacedName{Namespace: testNamespace, Name: testName},
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.CreateTrackRequest("", "ConfigMap", "", processorImages).By(testNamespace, testName),
 			rtesting.CreateTrackRequest("build.projectriff.io", "Function", testNamespace, testFunction).By(testNamespace, testName),
@@ -271,11 +263,11 @@ func TestReconcile(t *testing.T) {
 		},
 	}, {
 		Name: "successful reconciliation with unsatisfied container reference",
+		Key:  types.NamespacedName{Namespace: testNamespace, Name: testName},
 		GivenObjects: []runtime.Object{
 			processor(testNamespace, testName, containerDelta),
 			configMap(testNamespace, processorImages, map[string]string{processorImageKey: testProcessorImage}),
 		},
-		Key: types.NamespacedName{Namespace: testNamespace, Name: testName},
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.CreateTrackRequest("", "ConfigMap", "", processorImages).By(testNamespace, testName),
 			rtesting.CreateTrackRequest("build.projectriff.io", "Container", testNamespace, testContainer).By(testNamespace, testName),
@@ -285,27 +277,27 @@ func TestReconcile(t *testing.T) {
 		},
 	}, {
 		Name: "get container fails",
+		Key:  types.NamespacedName{Namespace: testNamespace, Name: testName},
 		GivenObjects: []runtime.Object{
 			processor(testNamespace, testName, containerDelta),
 			configMap(testNamespace, processorImages, map[string]string{processorImageKey: testProcessorImage}),
 		},
-		Key: types.NamespacedName{Namespace: testNamespace, Name: testName},
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.CreateTrackRequest("", "ConfigMap", "", processorImages).By(testNamespace, testName),
 			rtesting.CreateTrackRequest("build.projectriff.io", "Container", testNamespace, testContainer).By(testNamespace, testName),
 		},
-		GetHook:       getErrorOn(&v1alpha1.Container{}, testNamespace, testContainer, scheme),
-		ShouldErr:     true,
-		ShouldRequeue: true,
-		Verify:        rtesting.AssertErrorEqual(testError),
+		WithReactors: []rtesting.ReactionFunc{
+			rtesting.InduceFailure("get", "Container"),
+		},
+		ShouldErr: true,
 	}, {
 		Name: "successful reconciliation with satisfied container reference",
+		Key:  types.NamespacedName{Namespace: testNamespace, Name: testName},
 		GivenObjects: []runtime.Object{
 			processor(testNamespace, testName, containerDelta),
 			configMap(testNamespace, processorImages, map[string]string{processorImageKey: testProcessorImage}),
 			container(testNamespace),
 		},
-		Key: types.NamespacedName{Namespace: testNamespace, Name: testName},
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.CreateTrackRequest("", "ConfigMap", "", processorImages).By(testNamespace, testName),
 			rtesting.CreateTrackRequest("build.projectriff.io", "Container", testNamespace, testContainer).By(testNamespace, testName),
@@ -560,23 +552,6 @@ func processorScaledObject(namespace, processorName string) runtime.Object {
 			MinReplicaCount: int32Ptr(1),
 			MaxReplicaCount: int32Ptr(30),
 		},
-	}
-}
-
-func getErrorOn(onObj runtime.Object, namespace, name string, scheme *runtime.Scheme) func(getFake rtesting.GetFunc, ctx context.Context, key client.ObjectKey, obj runtime.Object) error {
-	return func(getFake rtesting.GetFunc, ctx context.Context, key client.ObjectKey, obj runtime.Object) error {
-		gvk, err := apiutil.GVKForObject(onObj, scheme)
-		if err != nil {
-			return err
-		}
-		objGvk, err := apiutil.GVKForObject(obj, scheme)
-		if err != nil {
-			return err
-		}
-		if gvk == objGvk && key == (types.NamespacedName{Namespace: namespace, Name: name}) {
-			return testError
-		}
-		return getFake(ctx, key, obj)
 	}
 }
 
