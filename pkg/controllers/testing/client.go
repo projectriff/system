@@ -22,85 +22,198 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	clientgotesting "k8s.io/client-go/testing"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-// CreateFunc is the signature of the client Create method.
-type CreateFunc func(ctx context.Context, obj runtime.Object, opts ...client.CreateOption) error
-
-// CreateHook wraps the given create function. The hook could, for example, return an error or delegate to the create function.
-type CreateHook func(createFake CreateFunc, ctx context.Context, obj runtime.Object, opts ...client.CreateOption) error
-
-// GetFunc is the signature of the client Get method.
-type GetFunc func(ctx context.Context, key client.ObjectKey, obj runtime.Object) error
-
-// GetHook wraps the given get function. The hook could, for example, return an error or delegate to the get function.
-// An alternative to using a GetHook to return "not found" is to omit the object from the initial set of objects.
-type GetHook func(getFake GetFunc, ctx context.Context, key client.ObjectKey, obj runtime.Object) error
-
 type clientWrapper struct {
-	client        client.Client
-	created       []runtime.Object
-	statusUpdated []runtime.Object
-	createHook    CreateHook
-	getHook       GetHook
-	genCount      int
+	client              client.Client
+	scheme              *runtime.Scheme
+	createActions       []CreateAction
+	updateActions       []UpdateAction
+	deleteActions       []DeleteAction
+	statusUpdateActions []UpdateAction
+	genCount            int
+	reactionChain       []Reactor
 }
 
 var _ client.Client = &clientWrapper{}
 
-func newClientWrapperWithScheme(clientScheme *runtime.Scheme, initObjs ...runtime.Object) *clientWrapper {
-	return &clientWrapper{
-		client:  fakeclient.NewFakeClientWithScheme(clientScheme, initObjs...),
-		created: []runtime.Object{},
+func newClientWrapperWithScheme(scheme *runtime.Scheme, objs ...runtime.Object) *clientWrapper {
+	client := &clientWrapper{
+		client:              fakeclient.NewFakeClientWithScheme(scheme, objs...),
+		scheme:              scheme,
+		createActions:       []CreateAction{},
+		updateActions:       []UpdateAction{},
+		deleteActions:       []DeleteAction{},
+		statusUpdateActions: []UpdateAction{},
+		genCount:            0,
+		reactionChain:       []Reactor{},
 	}
+	// generate names on create
+	client.AddReactor("create", "*", func(action Action) (bool, runtime.Object, error) {
+		if createAction, ok := action.(CreateAction); ok {
+			obj := createAction.GetObject()
+			if accessor, ok := obj.(metav1.ObjectMetaAccessor); ok {
+				objmeta := accessor.GetObjectMeta()
+				if objmeta.GetName() == "" && objmeta.GetGenerateName() != "" {
+					client.genCount++
+					// mutate the existing obj
+					objmeta.SetName(fmt.Sprintf("%s%03d", objmeta.GetGenerateName(), client.genCount))
+				}
+			}
+		}
+		// never handle the action
+		return false, nil, nil
+	})
+	return client
 }
 
-func (w *clientWrapper) Create(ctx context.Context, obj runtime.Object, opts ...client.CreateOption) error {
-	w.created = append(w.created, obj.DeepCopyObject())
-	if accessor, ok := obj.(metav1.ObjectMetaAccessor); ok {
-		objmeta := accessor.GetObjectMeta()
-		if objmeta.GetName() == "" && objmeta.GetGenerateName() != "" {
-			w.genCount++
-			objmeta.SetName(fmt.Sprintf("%s%03d", objmeta.GetGenerateName(), w.genCount))
+func (w *clientWrapper) AddReactor(verb, kind string, reaction ReactionFunc) {
+	w.reactionChain = append(w.reactionChain, &clientgotesting.SimpleReactor{Verb: verb, Resource: kind, Reaction: reaction})
+}
+
+func (w *clientWrapper) PrependReactor(verb, kind string, reaction ReactionFunc) {
+	w.reactionChain = append([]Reactor{&clientgotesting.SimpleReactor{Verb: verb, Resource: kind, Reaction: reaction}}, w.reactionChain...)
+}
+
+func (w *clientWrapper) objmeta(obj runtime.Object) (schema.GroupVersionResource, string, string, error) {
+	gvks, _, err := w.scheme.ObjectKinds(obj)
+	if err != nil {
+		return schema.GroupVersionResource{}, "", "", err
+	}
+	gvk := gvks[0]
+	// NOTE kind != resource, but for this purpose it's good enough
+	gvr := schema.GroupVersionResource{
+		Group:    gvk.Group,
+		Version:  gvk.Version,
+		Resource: gvk.Kind,
+	}
+
+	if objmeta, ok := obj.(metav1.ObjectMetaAccessor); ok {
+		return gvr, objmeta.GetObjectMeta().GetNamespace(), objmeta.GetObjectMeta().GetName(), nil
+	}
+	if _, ok := obj.(metav1.ListMetaAccessor); ok {
+		return gvr, "", "", nil
+	}
+
+	return schema.GroupVersionResource{}, "", "", fmt.Errorf("invalid object")
+}
+
+func (w *clientWrapper) react(action Action) error {
+	for _, reactor := range w.reactionChain {
+		if !reactor.Handles(action) {
+			continue
 		}
+		handled, _, err := reactor.React(action)
+		if !handled {
+			continue
+		}
+		return err
 	}
-	if w.createHook != nil {
-		return w.createHook(w.client.Create, ctx, obj, opts...)
-	}
-	return w.client.Create(ctx, obj, opts...)
+	return nil
 }
 
 func (w *clientWrapper) Get(ctx context.Context, key client.ObjectKey, obj runtime.Object) error {
-	if w.getHook != nil {
-		return w.getHook(w.client.Get, ctx, key, obj)
+	gvr, namespace, name, err := w.objmeta(obj)
+	if err != nil {
+		return err
 	}
+
+	// call reactor chain
+	err = w.react(clientgotesting.NewGetAction(gvr, namespace, name))
+	if err != nil {
+		return err
+	}
+
 	return w.client.Get(ctx, key, obj)
 }
 
 func (w *clientWrapper) List(ctx context.Context, list runtime.Object, opts ...client.ListOption) error {
-	// TODO add a hook?
+	gvr, _, _, err := w.objmeta(list)
+	if err != nil {
+		return err
+	}
+	gvk := schema.GroupVersionKind{
+		Group:   gvr.Group,
+		Version: gvr.Version,
+		Kind:    gvr.Resource,
+	}
+	listopts := &client.ListOptions{}
+	for _, opt := range opts {
+		opt.ApplyToList(listopts)
+	}
+
+	// call reactor chain
+	err = w.react(clientgotesting.NewListAction(gvr, gvk, listopts.Namespace, metav1.ListOptions{}))
+	if err != nil {
+		return err
+	}
+
 	return w.client.List(ctx, list, opts...)
 }
 
+func (w *clientWrapper) Create(ctx context.Context, obj runtime.Object, opts ...client.CreateOption) error {
+	gvr, namespace, _, err := w.objmeta(obj)
+	if err != nil {
+		return err
+	}
+
+	// capture action
+	w.createActions = append(w.createActions, clientgotesting.NewCreateAction(gvr, namespace, obj.DeepCopyObject()))
+
+	// call reactor chain
+	err = w.react(clientgotesting.NewCreateAction(gvr, namespace, obj))
+	if err != nil {
+		return err
+	}
+
+	return w.client.Create(ctx, obj, opts...)
+}
+
 func (w clientWrapper) Delete(ctx context.Context, obj runtime.Object, opts ...client.DeleteOption) error {
-	// TODO add a hook?
+	gvr, namespace, name, err := w.objmeta(obj)
+	if err != nil {
+		return err
+	}
+
+	// capture action
+	w.deleteActions = append(w.deleteActions, clientgotesting.NewDeleteAction(gvr, namespace, name))
+
+	// call reactor chain
+	err = w.react(clientgotesting.NewDeleteAction(gvr, namespace, name))
+	if err != nil {
+		return err
+	}
+
 	return w.client.Delete(ctx, obj, opts...)
 }
 
 func (w clientWrapper) Update(ctx context.Context, obj runtime.Object, opts ...client.UpdateOption) error {
-	// TODO add a hook?
+	gvr, namespace, _, err := w.objmeta(obj)
+	if err != nil {
+		return err
+	}
+
+	// capture action
+	w.updateActions = append(w.updateActions, clientgotesting.NewUpdateAction(gvr, namespace, obj.DeepCopyObject()))
+
+	// call reactor chain
+	err = w.react(clientgotesting.NewUpdateAction(gvr, namespace, obj))
+	if err != nil {
+		return err
+	}
+
 	return w.client.Update(ctx, obj, opts...)
 }
 func (w clientWrapper) Patch(ctx context.Context, obj runtime.Object, patch client.Patch, opts ...client.PatchOption) error {
-	// TODO add a hook?
-	return w.client.Patch(ctx, obj, patch, opts...)
+	panic(fmt.Errorf("Patch() is not implemented"))
 }
 
 func (w clientWrapper) DeleteAllOf(ctx context.Context, obj runtime.Object, opts ...client.DeleteAllOfOption) error {
-	// TODO add a hook?
-	return w.client.DeleteAllOf(ctx, obj, opts...)
+	panic(fmt.Errorf("DeleteAllOf() is not implemented"))
 }
 
 func (w *clientWrapper) Status() client.StatusWriter {
@@ -118,10 +231,38 @@ type statusWriterWrapper struct {
 var _ client.StatusWriter = &statusWriterWrapper{}
 
 func (w statusWriterWrapper) Update(ctx context.Context, obj runtime.Object, opts ...client.UpdateOption) error {
-	w.clientWrapper.statusUpdated = append(w.clientWrapper.statusUpdated, obj.DeepCopyObject())
+	gvr, namespace, _, err := w.clientWrapper.objmeta(obj)
+	if err != nil {
+		return err
+	}
+
+	// capture action
+	w.clientWrapper.statusUpdateActions = append(w.clientWrapper.statusUpdateActions, clientgotesting.NewUpdateSubresourceAction(gvr, "status", namespace, obj.DeepCopyObject()))
+
+	// call reactor chain
+	err = w.clientWrapper.react(clientgotesting.NewUpdateSubresourceAction(gvr, "status", namespace, obj))
+	if err != nil {
+		return err
+	}
+
 	return w.statusWriter.Update(ctx, obj, opts...)
 }
 
 func (w statusWriterWrapper) Patch(ctx context.Context, obj runtime.Object, patch client.Patch, opts ...client.PatchOption) error {
-	panic("implement me")
+	panic(fmt.Errorf("Patch() is not implemented"))
+}
+
+// InduceFailure is used in conjunction with TableTest's WithReactors field.
+// Tests that want to induce a failure in a row of a TableTest would add:
+//   WithReactors: []rifftesting.ReactionFunc{
+//      // Makes calls to create stream return an error.
+//      rifftesting.InduceFailure("create", "Stream"),
+//   },
+func InduceFailure(verb, resource string) ReactionFunc {
+	return func(action Action) (handled bool, ret runtime.Object, err error) {
+		if !action.Matches(verb, resource) {
+			return false, nil, nil
+		}
+		return true, nil, fmt.Errorf("inducing failure for %s %s", action.GetVerb(), action.GetResource().Resource)
+	}
 }

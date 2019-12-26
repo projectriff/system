@@ -37,49 +37,38 @@ import (
 type Testcase struct {
 	// Name is a descriptive name for this test suitable as a first argument to t.Run()
 	Name string
-
 	// Focus is true if and only if only this and any other focussed tests are to be executed.
 	// If one or more tests are focussed, the overall table test will fail.
 	Focus bool
-
 	// Skip is true if and only if this test should be skipped.
 	Skip bool
 
 	// Key identifies the object to be reconciled
 	Key types.NamespacedName
 
+	// WithReactors installs each ReactionFunc into each fake clientset. ReactionFuncs intercept
+	// each call to the clientset providing the ability to mutate the resource or inject an error.
+	WithReactors []ReactionFunc
 	// GivenObjects holds the kubernetes objects which are present at the onset of reconciliation
 	GivenObjects []runtime.Object
 
 	// ExpectTracks holds the ordered list of Track calls expected during reconciliation
 	ExpectTracks []TrackRequest
-
 	// ExpectCreates holds the ordered list of objects expected to be created during reconciliation
 	ExpectCreates []runtime.Object
-
+	// ExpectUpdates holds the ordered list of objects expected to be updated during reconciliation
+	ExpectUpdates []runtime.Object
+	// ExpectDeletes holds the ordered list of objects expected to be deleted during reconciliation
+	ExpectDeletes []DeleteRef
 	// ExpectStatusUpdates holds the ordered list of objects whose status is updated during reconciliation
 	ExpectStatusUpdates []runtime.Object
 
 	// ShouldErr is true if and only if reconciliation is expected to return an error
 	ShouldErr bool
-
-	// ShouldRequeue is true if and only if reconciliation is expected to return a Result with Requeue set to true
-	ShouldRequeue bool
-
+	// ExpectedResult is compared to the result returned from the reconciler if there was no error
+	ExpectedResult controllerruntime.Result
 	// Verify provides the reconciliation Result and error for custom assertions
 	Verify VerifyFunc
-
-	// Hooks, if provided, wrap the corresponding client method. They are typically used to inject errors. Example usage:
-	// CreateHook: func(createFake rtesting.CreateFunc, ctx context.Context, obj runtime.Object, opts ...client.CreateOption) error {
-	// 			// Inject an error if we are creating a deployment
-	//			if _, ok := obj.(*appsv1.Deployment); ok {
-	//				return testError
-	//			}
-	// 			// Otherwise delegate to client Create method
-	//			return createFake(ctx, obj, opts...)
-	//		},
-	CreateHook CreateHook // Hook client Create methods
-	GetHook    GetHook    // Hook client Get methods
 }
 
 // VerifyFunc is a verification function
@@ -95,8 +84,11 @@ func (tc *Testcase) Test(t *testing.T, scheme *runtime.Scheme, factory Factory) 
 		t.SkipNow()
 	}
 	clientWrapper := newClientWrapperWithScheme(scheme, tc.GivenObjects...)
-	clientWrapper.createHook = tc.CreateHook
-	clientWrapper.getHook = tc.GetHook
+	for i := range tc.WithReactors {
+		// in reverse order since we prepend
+		reactor := tc.WithReactors[len(tc.WithReactors)-1-i]
+		clientWrapper.PrependReactor("*", "*", reactor)
+	}
 	tracker := createTracker()
 	log := TestLogger(t)
 	c := factory(t, tc, clientWrapper, tracker, log)
@@ -108,6 +100,12 @@ func (tc *Testcase) Test(t *testing.T, scheme *runtime.Scheme, factory Factory) 
 
 	if (err != nil) != tc.ShouldErr {
 		t.Errorf("Reconcile() error = %v, ExpectErr %v", err, tc.ShouldErr)
+	}
+	if err == nil {
+		// result is only significant if there wasn't an error
+		if diff := cmp.Diff(tc.ExpectedResult, result); diff != "" {
+			t.Errorf("Unexpected result (-expected, +actual): %s", diff)
+		}
 	}
 
 	if tc.Verify != nil {
@@ -132,35 +130,69 @@ func (tc *Testcase) Test(t *testing.T, scheme *runtime.Scheme, factory Factory) 
 	}
 
 	for i, exp := range tc.ExpectCreates {
-		if i >= len(clientWrapper.created) {
+		if i >= len(clientWrapper.createActions) {
 			t.Errorf("Missing create: %#v", exp)
 			continue
 		}
-		actual := clientWrapper.created[i]
+		actual := clientWrapper.createActions[i].GetObject()
 
 		if diff := cmp.Diff(exp, actual, ignoreLastTransitionTime, safeDeployDiff, cmpopts.EquateEmpty()); diff != "" {
 			t.Errorf("Unexpected create (-expected, +actual): %s", diff)
 		}
 	}
-	if actual, expected := len(clientWrapper.created), len(tc.ExpectCreates); actual > expected {
-		for _, extra := range clientWrapper.created[expected:] {
+	if actual, expected := len(clientWrapper.createActions), len(tc.ExpectCreates); actual > expected {
+		for _, extra := range clientWrapper.createActions[expected:] {
 			t.Errorf("Extra create: %#v", extra)
 		}
 	}
 
+	for i, exp := range tc.ExpectUpdates {
+		if i >= len(clientWrapper.updateActions) {
+			t.Errorf("Missing update: %#v", exp)
+			continue
+		}
+		actual := clientWrapper.updateActions[i].GetObject()
+
+		if diff := cmp.Diff(exp, actual, ignoreLastTransitionTime, safeDeployDiff, cmpopts.EquateEmpty()); diff != "" {
+			t.Errorf("Unexpected update (-expected, +actual): %s", diff)
+		}
+	}
+	if actual, expected := len(clientWrapper.updateActions), len(tc.ExpectUpdates); actual > expected {
+		for _, extra := range clientWrapper.updateActions[expected:] {
+			t.Errorf("Extra update: %#v", extra)
+		}
+	}
+
+	for i, exp := range tc.ExpectDeletes {
+		if i >= len(clientWrapper.deleteActions) {
+			t.Errorf("Missing delete: %#v", exp)
+			continue
+		}
+		actual := NewDeleteRef(clientWrapper.deleteActions[i])
+
+		if diff := cmp.Diff(exp, actual); diff != "" {
+			t.Errorf("Unexpected delete (-expected, +actual): %s", diff)
+		}
+	}
+	if actual, expected := len(clientWrapper.deleteActions), len(tc.ExpectDeletes); actual > expected {
+		for _, extra := range clientWrapper.deleteActions[expected:] {
+			t.Errorf("Extra delete: %#v", extra)
+		}
+	}
+
 	for i, exp := range tc.ExpectStatusUpdates {
-		if i >= len(clientWrapper.statusUpdated) {
+		if i >= len(clientWrapper.statusUpdateActions) {
 			t.Errorf("Missing status update: %#v", exp)
 			continue
 		}
-		actual := clientWrapper.statusUpdated[i]
+		actual := clientWrapper.statusUpdateActions[i].GetObject()
 
 		if diff := cmp.Diff(exp, actual, statusSubresourceOnly, ignoreLastTransitionTime, safeDeployDiff, cmpopts.EquateEmpty()); diff != "" {
 			t.Errorf("Unexpected status update (-expected, +actual): %s", diff)
 		}
 	}
-	if actual, expected := len(clientWrapper.statusUpdated), len(tc.ExpectStatusUpdates); actual > expected {
-		for _, extra := range clientWrapper.statusUpdated[expected:] {
+	if actual, expected := len(clientWrapper.statusUpdateActions), len(tc.ExpectStatusUpdates); actual > expected {
+		for _, extra := range clientWrapper.statusUpdateActions[expected:] {
 			t.Errorf("Extra status update: %#v", extra)
 		}
 	}
@@ -219,3 +251,19 @@ func (tb Table) Test(t *testing.T, scheme *runtime.Scheme, factory Factory) {
 // ActionRecorderList/EventList to capture k8s actions/events produced during reconciliation
 // and FakeStatsReporter to capture stats.
 type Factory func(t *testing.T, row *Testcase, client client.Client, tracker tracker.Tracker, log logr.Logger) reconcile.Reconciler
+
+type DeleteRef struct {
+	Group     string
+	Kind      string
+	Namespace string
+	Name      string
+}
+
+func NewDeleteRef(action DeleteAction) DeleteRef {
+	return DeleteRef{
+		Group:     action.GetResource().Group,
+		Kind:      action.GetResource().Resource,
+		Namespace: action.GetNamespace(),
+		Name:      action.GetName(),
+	}
+}
