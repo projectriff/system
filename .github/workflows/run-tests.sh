@@ -58,7 +58,7 @@ if [ $RUNTIME = "core" ] || [ $RUNTIME = "knative" ]; then
   done
 
 elif [ $RUNTIME = "streaming" ]; then
-  riff streaming inmemory-provider create franz --namespace $NAMESPACE
+  riff streaming kafka-provider create franz --bootstrap-servers kafka.kafka.svc.cluster.local:9092 --namespace $NAMESPACE
 
   for test in node ; do
     name=system-${RUNTIME}-fn-uppercase-${test}
@@ -72,7 +72,7 @@ elif [ $RUNTIME = "streaming" ]; then
     lower_stream=${name}-lower
     upper_stream=${name}-upper
 
-    provider=$(kubectl get inmemoryproviders.streaming.projectriff.io franz --namespace ${NAMESPACE} -ojsonpath='{.status.provisionerServiceRef.name}')
+    provider=$(kubectl get kafkaproviders.streaming.projectriff.io franz --namespace ${NAMESPACE} -ojsonpath='{.status.provisionerServiceRef.name}')
     riff streaming stream create ${lower_stream} --namespace $NAMESPACE --provider ${provider} --content-type 'text/plain' --tail
     riff streaming stream create ${upper_stream} --namespace $NAMESPACE --provider ${provider} --content-type 'text/plain' --tail
 
@@ -110,6 +110,6 @@ elif [ $RUNTIME = "streaming" ]; then
     echo "##[endgroup]"
   done
 
-  riff streaming inmemory-provider delete franz --namespace $NAMESPACE
+  riff streaming kafka-provider delete franz --namespace $NAMESPACE
 
 fi
