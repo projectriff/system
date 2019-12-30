@@ -79,7 +79,7 @@ func (r *ContainerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	result, err := r.reconcile(ctx, log, &container)
 
 	// check if status has changed before updating, unless requeued
-	if !equality.Semantic.DeepEqual(container.Status, originalContainer.Status) {
+	if !equality.Semantic.DeepEqual(container.Status, originalContainer.Status) && container.GetDeletionTimestamp() == nil {
 		// update status
 		log.Info("updating container status", "diff", cmp.Diff(originalContainer.Status, container.Status))
 		if updateErr := r.Status().Update(ctx, &container); updateErr != nil {

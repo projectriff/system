@@ -136,7 +136,7 @@ func (tc *Testcase) Test(t *testing.T, scheme *runtime.Scheme, factory Factory) 
 		}
 		actual := clientWrapper.createActions[i].GetObject()
 
-		if diff := cmp.Diff(exp, actual, ignoreLastTransitionTime, safeDeployDiff, cmpopts.EquateEmpty()); diff != "" {
+		if diff := cmp.Diff(exp, actual, ignoreLastTransitionTime, safeDeployDiff, ignoreTypeMeta, cmpopts.EquateEmpty()); diff != "" {
 			t.Errorf("Unexpected create (-expected, +actual): %s", diff)
 		}
 	}
@@ -153,7 +153,7 @@ func (tc *Testcase) Test(t *testing.T, scheme *runtime.Scheme, factory Factory) 
 		}
 		actual := clientWrapper.updateActions[i].GetObject()
 
-		if diff := cmp.Diff(exp, actual, ignoreLastTransitionTime, safeDeployDiff, cmpopts.EquateEmpty()); diff != "" {
+		if diff := cmp.Diff(exp, actual, ignoreLastTransitionTime, safeDeployDiff, ignoreTypeMeta, cmpopts.EquateEmpty()); diff != "" {
 			t.Errorf("Unexpected update (-expected, +actual): %s", diff)
 		}
 	}
@@ -201,6 +201,9 @@ func (tc *Testcase) Test(t *testing.T, scheme *runtime.Scheme, factory Factory) 
 var (
 	ignoreLastTransitionTime = cmp.FilterPath(func(p cmp.Path) bool {
 		return strings.HasSuffix(p.String(), "LastTransitionTime.Inner.Time")
+	}, cmp.Ignore())
+	ignoreTypeMeta = cmp.FilterPath(func(p cmp.Path) bool {
+		return strings.HasSuffix(p.String(), "TypeMeta.APIVersion") || strings.HasSuffix(p.String(), "TypeMeta.Kind")
 	}, cmp.Ignore())
 
 	statusSubresourceOnly = cmp.FilterPath(func(p cmp.Path) bool {

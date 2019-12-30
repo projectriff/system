@@ -76,7 +76,7 @@ func (r *ApplicationReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 	result, err := r.reconcile(ctx, log, &application)
 
 	// check if status has changed before updating, unless requeued
-	if !result.Requeue && !equality.Semantic.DeepEqual(application.Status, originalApplication.Status) {
+	if !result.Requeue && !equality.Semantic.DeepEqual(application.Status, originalApplication.Status) && application.GetDeletionTimestamp() == nil {
 		// update status
 		log.Info("updating application status", "diff", cmp.Diff(originalApplication.Status, application.Status))
 		if updateErr := r.Status().Update(ctx, &application); updateErr != nil {

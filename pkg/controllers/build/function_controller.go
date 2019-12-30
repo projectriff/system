@@ -77,7 +77,7 @@ func (r *FunctionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	result, err := r.reconcile(ctx, log, &function)
 
 	// check if status has changed before updating, unless requeued
-	if !result.Requeue && !equality.Semantic.DeepEqual(function.Status, originalFunction.Status) {
+	if !result.Requeue && !equality.Semantic.DeepEqual(function.Status, originalFunction.Status) && function.GetDeletionTimestamp() == nil {
 		// update status
 		log.Info("updating function status", "diff", cmp.Diff(originalFunction.Status, function.Status))
 		if updateErr := r.Status().Update(ctx, &function); updateErr != nil {

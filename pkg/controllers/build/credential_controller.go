@@ -123,7 +123,7 @@ func (r *CredentialReconciler) reconcileServiceAccount(ctx context.Context, log 
 		}
 	}
 	// add new secrets
-	for _, secret := range desiredBoundSecrets.Difference(boundSecrets).UnsortedList() {
+	for _, secret := range desiredBoundSecrets.Difference(boundSecrets).List() {
 		secrets = append(secrets, corev1.ObjectReference{Name: secret})
 	}
 	serviceAccount.Secrets = secrets
@@ -156,6 +156,12 @@ func (r *CredentialReconciler) isServiceAccountNeeded(ctx context.Context, secre
 	if err := r.List(ctx, &functions, client.InNamespace(namespace)); err != nil {
 		return false, err
 	} else if len(functions.Items) != 0 {
+		return true, nil
+	}
+	var containers buildv1alpha1.ContainerList
+	if err := r.List(ctx, &containers, client.InNamespace(namespace)); err != nil {
+		return false, err
+	} else if len(containers.Items) != 0 {
 		return true, nil
 	}
 	return false, nil

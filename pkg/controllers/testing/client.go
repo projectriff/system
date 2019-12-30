@@ -173,7 +173,7 @@ func (w *clientWrapper) Create(ctx context.Context, obj runtime.Object, opts ...
 	return w.client.Create(ctx, obj, opts...)
 }
 
-func (w clientWrapper) Delete(ctx context.Context, obj runtime.Object, opts ...client.DeleteOption) error {
+func (w *clientWrapper) Delete(ctx context.Context, obj runtime.Object, opts ...client.DeleteOption) error {
 	gvr, namespace, name, err := w.objmeta(obj)
 	if err != nil {
 		return err
@@ -191,7 +191,7 @@ func (w clientWrapper) Delete(ctx context.Context, obj runtime.Object, opts ...c
 	return w.client.Delete(ctx, obj, opts...)
 }
 
-func (w clientWrapper) Update(ctx context.Context, obj runtime.Object, opts ...client.UpdateOption) error {
+func (w *clientWrapper) Update(ctx context.Context, obj runtime.Object, opts ...client.UpdateOption) error {
 	gvr, namespace, _, err := w.objmeta(obj)
 	if err != nil {
 		return err
@@ -208,11 +208,11 @@ func (w clientWrapper) Update(ctx context.Context, obj runtime.Object, opts ...c
 
 	return w.client.Update(ctx, obj, opts...)
 }
-func (w clientWrapper) Patch(ctx context.Context, obj runtime.Object, patch client.Patch, opts ...client.PatchOption) error {
+func (w *clientWrapper) Patch(ctx context.Context, obj runtime.Object, patch client.Patch, opts ...client.PatchOption) error {
 	panic(fmt.Errorf("Patch() is not implemented"))
 }
 
-func (w clientWrapper) DeleteAllOf(ctx context.Context, obj runtime.Object, opts ...client.DeleteAllOfOption) error {
+func (w *clientWrapper) DeleteAllOf(ctx context.Context, obj runtime.Object, opts ...client.DeleteAllOfOption) error {
 	panic(fmt.Errorf("DeleteAllOf() is not implemented"))
 }
 
@@ -230,7 +230,7 @@ type statusWriterWrapper struct {
 
 var _ client.StatusWriter = &statusWriterWrapper{}
 
-func (w statusWriterWrapper) Update(ctx context.Context, obj runtime.Object, opts ...client.UpdateOption) error {
+func (w *statusWriterWrapper) Update(ctx context.Context, obj runtime.Object, opts ...client.UpdateOption) error {
 	gvr, namespace, _, err := w.clientWrapper.objmeta(obj)
 	if err != nil {
 		return err
@@ -248,7 +248,7 @@ func (w statusWriterWrapper) Update(ctx context.Context, obj runtime.Object, opt
 	return w.statusWriter.Update(ctx, obj, opts...)
 }
 
-func (w statusWriterWrapper) Patch(ctx context.Context, obj runtime.Object, patch client.Patch, opts ...client.PatchOption) error {
+func (w *statusWriterWrapper) Patch(ctx context.Context, obj runtime.Object, patch client.Patch, opts ...client.PatchOption) error {
 	panic(fmt.Errorf("Patch() is not implemented"))
 }
 
