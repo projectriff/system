@@ -19,6 +19,7 @@ package factories
 import (
 	"fmt"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/projectriff/system/pkg/apis"
@@ -119,6 +120,15 @@ func (f *application) StatusConditions(conditions ...apis.Condition) *applicatio
 	return f.Mutate(func(app *buildv1alpha1.Application) {
 		app.Status.Conditions = conditions
 	})
+}
+
+func (f *application) StatusReady() *application {
+	return f.StatusConditions(
+		apis.Condition{
+			Type:   apis.ConditionReady,
+			Status: corev1.ConditionTrue,
+		},
+	)
 }
 
 func (f *application) StatusObservedGeneration(generation int64) *application {

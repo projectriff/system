@@ -83,7 +83,7 @@ func (r *DeployerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	result, err := r.reconcile(ctx, log, &deployer)
 
 	// check if status has changed before updating, unless requeued
-	if !result.Requeue && !equality.Semantic.DeepEqual(deployer.Status, originalDeployer.Status) {
+	if !result.Requeue && !equality.Semantic.DeepEqual(deployer.Status, originalDeployer.Status) && deployer.GetDeletionTimestamp() == nil {
 		// update status
 		log.Info("updating deployer status", "diff", cmp.Diff(originalDeployer.Status, deployer.Status))
 		if updateErr := r.Status().Update(ctx, &deployer); updateErr != nil {

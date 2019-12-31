@@ -76,7 +76,7 @@ func (r *AdapterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	result, err := r.reconcile(ctx, log, &adapter)
 
 	// check if status has changed before updating, unless requeued
-	if !result.Requeue && !equality.Semantic.DeepEqual(adapter.Status, originalAdapter.Status) {
+	if !result.Requeue && !equality.Semantic.DeepEqual(adapter.Status, originalAdapter.Status) && adapter.GetDeletionTimestamp() == nil {
 		// update status
 		log.Info("updating adapter status", "diff", cmp.Diff(originalAdapter.Status, adapter.Status))
 		if updateErr := r.Status().Update(ctx, &adapter); updateErr != nil {
@@ -105,14 +105,9 @@ func (r *AdapterReconciler) reconcile(ctx context.Context, log logr.Logger, adap
 		return ctrl.Result{Requeue: true}, err
 	}
 
-	// reconcile configuration
+	// reconcile target service or configuration
 	if adapter.Status.LatestImage != "" {
 		if err := r.reconcileTarget(ctx, log, adapter); err != nil {
-			if apierrs.IsNotFound(err) {
-				// we'll ignore not-found errors, since the reference build resource
-				// may not exist yet.
-				return ctrl.Result{}, nil
-			}
 			log.Error(err, "unable to reconcile target for Adapter", "adapter", adapter)
 			return ctrl.Result{Requeue: true}, err
 		}
@@ -139,6 +134,7 @@ func (r *AdapterReconciler) reconcileBuildImage(ctx context.Context, log logr.Lo
 			return err
 		}
 		if application.Status.LatestImage == "" {
+			// TODO this normal when first creating an application and should not be an error
 			return fmt.Errorf("application %q does not have a ready image", build.ApplicationRef)
 		}
 		adapter.Status.LatestImage = application.Status.LatestImage
@@ -157,6 +153,7 @@ func (r *AdapterReconciler) reconcileBuildImage(ctx context.Context, log logr.Lo
 			return err
 		}
 		if container.Status.LatestImage == "" {
+			// TODO this normal when first creating a container and should not be an error
 			return fmt.Errorf("container %q does not have a ready image", build.ContainerRef)
 		}
 		adapter.Status.LatestImage = container.Status.LatestImage
@@ -175,6 +172,7 @@ func (r *AdapterReconciler) reconcileBuildImage(ctx context.Context, log logr.Lo
 			return err
 		}
 		if function.Status.LatestImage == "" {
+			// TODO this normal when first creating a function and should not be an error
 			return fmt.Errorf("function %q does not have a ready image", build.FunctionRef)
 		}
 		adapter.Status.LatestImage = function.Status.LatestImage
