@@ -161,6 +161,7 @@ func (r *DeployerReconciler) reconcileBuildImage(ctx context.Context, log logr.L
 			return err
 		}
 		if application.Status.LatestImage == "" {
+			// TODO this should not be an error
 			return fmt.Errorf("application %q does not have a ready image", build.ApplicationRef)
 		}
 		deployer.Status.LatestImage = application.Status.LatestImage
@@ -178,6 +179,7 @@ func (r *DeployerReconciler) reconcileBuildImage(ctx context.Context, log logr.L
 			return err
 		}
 		if container.Status.LatestImage == "" {
+			// TODO this should not be an error
 			return fmt.Errorf("container %q does not have a ready image", build.ContainerRef)
 		}
 		deployer.Status.LatestImage = container.Status.LatestImage
@@ -195,6 +197,7 @@ func (r *DeployerReconciler) reconcileBuildImage(ctx context.Context, log logr.L
 			return err
 		}
 		if function.Status.LatestImage == "" {
+			// TODO this should not be an error
 			return fmt.Errorf("function %q does not have a ready image", build.FunctionRef)
 		}
 		deployer.Status.LatestImage = function.Status.LatestImage
@@ -304,6 +307,9 @@ func (r *DeployerReconciler) constructConfigurationForDeployer(deployer *knative
 				},
 			},
 		},
+	}
+	if configuration.Spec.Template.Spec.Containers[0].Name == "" {
+		configuration.Spec.Template.Spec.Containers[0].Name = "user-container"
 	}
 	if configuration.Spec.Template.Spec.Containers[0].Image == "" {
 		configuration.Spec.Template.Spec.Containers[0].Image = deployer.Status.LatestImage

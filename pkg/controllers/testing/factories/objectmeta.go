@@ -26,6 +26,7 @@ import (
 
 type ObjectMeta interface {
 	Mutate(m func(*metav1.ObjectMeta)) ObjectMeta
+	Get() metav1.ObjectMeta
 
 	Namespace(namespace string) ObjectMeta
 	Name(format string, a ...interface{}) ObjectMeta

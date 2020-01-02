@@ -28,4 +28,5 @@ type GetAction = clientgotesting.GetAction
 type ListAction = clientgotesting.ListAction
 type CreateAction = clientgotesting.CreateAction
 type UpdateAction = clientgotesting.UpdateAction
+type PatchAction = clientgotesting.PatchAction
 type DeleteAction = clientgotesting.DeleteAction

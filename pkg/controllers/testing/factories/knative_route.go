@@ -71,6 +71,12 @@ func (f *knativeRoute) ObjectMeta(nf func(ObjectMeta)) *knativeRoute {
 	})
 }
 
+func (f *knativeRoute) Traffic(traffic ...knativeservingv1.TrafficTarget) *knativeRoute {
+	return f.Mutate(func(route *knativeservingv1.Route) {
+		route.Spec.Traffic = traffic
+	})
+}
+
 func (f *knativeRoute) StatusConditions(conditions ...apis.Condition) *knativeRoute {
 	return f.Mutate(func(route *knativeservingv1.Route) {
 		route.Status.Conditions = conditions
