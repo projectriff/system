@@ -19,15 +19,11 @@ package refs
 import (
 	"fmt"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-)
 
-type Object interface {
-	runtime.Object
-	metav1.Object
-}
+	"github.com/projectriff/system/pkg/apis"
+)
 
 func NewTypedLocalObjectReference(name string, gk schema.GroupKind) *TypedLocalObjectReference {
 	if name == "" || gk.Empty() {
@@ -44,7 +40,7 @@ func NewTypedLocalObjectReference(name string, gk schema.GroupKind) *TypedLocalO
 	return ref
 }
 
-func NewTypedLocalObjectReferenceForObject(obj Object, scheme *runtime.Scheme) *TypedLocalObjectReference {
+func NewTypedLocalObjectReferenceForObject(obj apis.Object, scheme *runtime.Scheme) *TypedLocalObjectReference {
 	if obj == nil {
 		return nil
 	}

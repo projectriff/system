@@ -165,6 +165,15 @@ func (f *kpackImage) StatusConditions(conditions ...apis.Condition) *kpackImage 
 	})
 }
 
+func (f *kpackImage) StatusReady() *kpackImage {
+	return f.StatusConditions(
+		apis.Condition{
+			Type:   apis.ConditionReady,
+			Status: corev1.ConditionTrue,
+		},
+	)
+}
+
 func (f *kpackImage) StatusObservedGeneration(generation int64) *kpackImage {
 	return f.Mutate(func(image *kpackbuildv1alpha1.Image) {
 		image.Status.ObservedGeneration = generation

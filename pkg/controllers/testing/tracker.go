@@ -20,9 +20,11 @@ import (
 	"time"
 
 	"github.com/go-logr/logr/testing"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 
+	"github.com/projectriff/system/pkg/apis"
 	"github.com/projectriff/system/pkg/tracker"
 )
 
@@ -46,6 +48,17 @@ func CreateTrackRequest(trackedObjGroup, trackedObjKind, trackedObjNamespace, tr
 			Tracked: tracker.Key{GroupKind: schema.GroupKind{Group: trackedObjGroup, Kind: trackedObjKind}, NamespacedName: types.NamespacedName{Namespace: trackedObjNamespace, Name: trackedObjName}},
 			Tracker: types.NamespacedName{Namespace: trackingObjNamespace, Name: trackingObjName},
 		}
+	}
+}
+
+func NewTrackRequest(tracked, by apis.Object, scheme *runtime.Scheme) TrackRequest {
+	gvks, _, err := scheme.ObjectKinds(tracked)
+	if err != nil {
+		panic(err)
+	}
+	return TrackRequest{
+		Tracked: tracker.Key{GroupKind: schema.GroupKind{Group: gvks[0].Group, Kind: gvks[0].Kind}, NamespacedName: types.NamespacedName{Namespace: tracked.GetNamespace(), Name: tracked.GetName()}},
+		Tracker: types.NamespacedName{Namespace: by.GetNamespace(), Name: by.GetName()},
 	}
 }
 

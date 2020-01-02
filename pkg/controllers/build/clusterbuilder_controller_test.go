@@ -20,14 +20,12 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/projectriff/system/pkg/apis"
 	kpackbuildv1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/kpack/build/v1alpha1"
 	"github.com/projectriff/system/pkg/controllers/build"
 	rtesting "github.com/projectriff/system/pkg/controllers/testing"
@@ -51,12 +49,7 @@ func TestClusterBuildersReconcile(t *testing.T) {
 		Image(testApplicationImage).
 		Get()
 	testApplicationBuilderReady := factories.KpackClusterBuilder(testApplicationBuilder).
-		StatusConditions(
-			apis.Condition{
-				Type:   apis.ConditionReady,
-				Status: corev1.ConditionTrue,
-			},
-		).
+		StatusReady().
 		StatusLatestImage(testApplicationImage).
 		Get()
 	testFunctionBuilder := factories.KpackClusterBuilder().
@@ -64,12 +57,7 @@ func TestClusterBuildersReconcile(t *testing.T) {
 		Image(testFunctionImage).
 		Get()
 	testFunctionBuilderReady := factories.KpackClusterBuilder(testFunctionBuilder).
-		StatusConditions(
-			apis.Condition{
-				Type:   apis.ConditionReady,
-				Status: corev1.ConditionTrue,
-			},
-		).
+		StatusReady().
 		StatusLatestImage(testFunctionImage).
 		Get()
 

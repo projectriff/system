@@ -383,12 +383,7 @@ func TestFunctionReconcile(t *testing.T) {
 		GivenObjects: []runtime.Object{
 			funcValid,
 			factories.KpackImage(kpackImageGiven).
-				StatusConditions(
-					apis.Condition{
-						Type:   apis.ConditionReady,
-						Status: corev1.ConditionTrue,
-					},
-				).
+				StatusReady().
 				StatusLatestImage("%s/%s@sha256:%s", testImagePrefix, testName, testSha256).
 				Get(),
 		},
@@ -419,12 +414,7 @@ func TestFunctionReconcile(t *testing.T) {
 		GivenObjects: []runtime.Object{
 			funcValid,
 			factories.KpackImage(kpackImageGiven).
-				StatusConditions(
-					apis.Condition{
-						Type:   apis.ConditionReady,
-						Status: corev1.ConditionTrue,
-					},
-				).
+				StatusReady().
 				StatusBuildCacheName(testBuildCacheName).
 				StatusLatestImage("%s/%s@sha256:%s", testImagePrefix, testName, testSha256).
 				Get(),
