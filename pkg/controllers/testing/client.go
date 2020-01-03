@@ -26,6 +26,8 @@ import (
 	clientgotesting "k8s.io/client-go/testing"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
+
+	"github.com/projectriff/system/pkg/apis"
 )
 
 type clientWrapper struct {
@@ -258,11 +260,60 @@ func (w *statusWriterWrapper) Patch(ctx context.Context, obj runtime.Object, pat
 //      // Makes calls to create stream return an error.
 //      rifftesting.InduceFailure("create", "Stream"),
 //   },
-func InduceFailure(verb, resource string) ReactionFunc {
+func InduceFailure(verb, kind string, o ...InduceFailureOpts) ReactionFunc {
+	var opts *InduceFailureOpts
+	switch len(o) {
+	case 0:
+		opts = &InduceFailureOpts{}
+	case 1:
+		opts = &o[0]
+	default:
+		panic(fmt.Errorf("expected exactly zero or one InduceFailureOpts, got %v", o))
+	}
 	return func(action Action) (handled bool, ret runtime.Object, err error) {
-		if !action.Matches(verb, resource) {
+		if !action.Matches(verb, kind) {
 			return false, nil, nil
 		}
-		return true, nil, fmt.Errorf("inducing failure for %s %s", action.GetVerb(), action.GetResource().Resource)
+		if opts.Namespace != "" && opts.Namespace != action.GetNamespace() {
+			return false, nil, nil
+		}
+		if opts.Name != "" {
+			switch a := action.(type) {
+			case namedAction: // matches GetAction, PatchAction, DeleteAction
+				if opts.Name != a.GetName() {
+					return false, nil, nil
+				}
+			case objectAction: // matches CreateAction, UpdateAction
+				obj, ok := a.GetObject().(apis.Object)
+				if ok && opts.Name != obj.GetName() {
+					return false, nil, nil
+				}
+			}
+		}
+		if opts.SubResource != "" && opts.SubResource != action.GetSubresource() {
+			return false, nil, nil
+		}
+		err = opts.Error
+		if err == nil {
+			err = fmt.Errorf("inducing failure for %s %s", action.GetVerb(), action.GetResource().Resource)
+		}
+		return true, nil, err
 	}
+}
+
+type namedAction interface {
+	Action
+	GetName() string
+}
+
+type objectAction interface {
+	Action
+	GetObject() runtime.Object
+}
+
+type InduceFailureOpts struct {
+	Error       error
+	Namespace   string
+	Name        string
+	SubResource string
 }

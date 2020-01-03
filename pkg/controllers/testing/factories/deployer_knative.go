@@ -75,6 +75,18 @@ func (f *deployerKnative) ObjectMeta(nf func(ObjectMeta)) *deployerKnative {
 	})
 }
 
+func (f *deployerKnative) PodTemplateSpec(nf func(PodTemplateSpec)) *deployerKnative {
+	return f.Mutate(func(deployer *knativev1alpha1.Deployer) {
+		if deployer.Spec.Template == nil {
+			deployer.Spec.Template = &corev1.PodTemplateSpec{}
+		}
+		ptsf := podTemplateSpec(*deployer.Spec.Template)
+		nf(ptsf)
+		pts := ptsf.Get()
+		deployer.Spec.Template = &pts
+	})
+}
+
 func (f *deployerKnative) ApplicationRef(format string, a ...interface{}) *deployerKnative {
 	return f.Mutate(func(deployer *knativev1alpha1.Deployer) {
 		deployer.Spec.Build = &knativev1alpha1.Build{
@@ -100,14 +112,10 @@ func (f *deployerKnative) FunctionRef(format string, a ...interface{}) *deployer
 }
 
 func (f *deployerKnative) Image(format string, a ...interface{}) *deployerKnative {
-	return f.Mutate(func(deployer *knativev1alpha1.Deployer) {
-		if deployer.Spec.Template == nil {
-			deployer.Spec.Template = &corev1.PodTemplateSpec{}
-		}
-		if len(deployer.Spec.Template.Spec.Containers) == 0 {
-			deployer.Spec.Template.Spec.Containers = []corev1.Container{{}}
-		}
-		deployer.Spec.Template.Spec.Containers[0].Image = fmt.Sprintf(format, a...)
+	return f.PodTemplateSpec(func(ptsf PodTemplateSpec) {
+		ptsf.ContainerNamed("user-container", func(container *corev1.Container) {
+			container.Image = fmt.Sprintf(format, a...)
+		})
 	})
 }
 
