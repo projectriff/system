@@ -261,9 +261,14 @@ func (w *statusWriterWrapper) Patch(ctx context.Context, obj runtime.Object, pat
 //      rifftesting.InduceFailure("create", "Stream"),
 //   },
 func InduceFailure(verb, kind string, o ...InduceFailureOpts) ReactionFunc {
-	opts := InduceFailureOpts{}
-	if len(o) > 0 {
-		opts = o[0]
+	var opts *InduceFailureOpts
+	switch len(o) {
+	case 0:
+		opts = &InduceFailureOpts{}
+	case 1:
+		opts = &o[0]
+	default:
+		panic(fmt.Errorf("expected exactly zero or one InduceFailureOpts, got %v", o))
 	}
 	return func(action Action) (handled bool, ret runtime.Object, err error) {
 		if !action.Matches(verb, kind) {
@@ -274,26 +279,13 @@ func InduceFailure(verb, kind string, o ...InduceFailureOpts) ReactionFunc {
 		}
 		if opts.Name != "" {
 			switch a := action.(type) {
-			case GetAction:
-				if opts.Name == a.GetName() {
+			case namedAction: // matches GetAction, PatchAction, DeleteAction
+				if opts.Name != a.GetName() {
 					return false, nil, nil
 				}
-			case CreateAction:
+			case objectAction: // matches CreateAction, UpdateAction
 				obj, ok := a.GetObject().(apis.Object)
-				if ok && opts.Name == obj.GetName() {
-					return false, nil, nil
-				}
-			case UpdateAction:
-				obj, ok := a.GetObject().(apis.Object)
-				if ok && opts.Name == obj.GetName() {
-					return false, nil, nil
-				}
-			case PatchAction:
-				if opts.Name == a.GetName() {
-					return false, nil, nil
-				}
-			case DeleteAction:
-				if opts.Name == a.GetName() {
+				if ok && opts.Name != obj.GetName() {
 					return false, nil, nil
 				}
 			}
@@ -307,6 +299,16 @@ func InduceFailure(verb, kind string, o ...InduceFailureOpts) ReactionFunc {
 		}
 		return true, nil, err
 	}
+}
+
+type namedAction interface {
+	Action
+	GetName() string
+}
+
+type objectAction interface {
+	Action
+	GetObject() runtime.Object
 }
 
 type InduceFailureOpts struct {
