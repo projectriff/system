@@ -30,7 +30,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/projectriff/system/pkg/apis"
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	knativev1alpha1 "github.com/projectriff/system/pkg/apis/knative/v1alpha1"
 	knativeservingv1 "github.com/projectriff/system/pkg/apis/thirdparty/knative/serving/v1"
@@ -49,6 +48,10 @@ func TestDeployerReconcile(t *testing.T) {
 	testImage := fmt.Sprintf("%s/%s@sha256:%s", testImagePrefix, testName, testSha256)
 	testAddressURL := "http://internal.local"
 	testURL := "http://example.com"
+
+	deployerConditionConfigurationReady := factories.Condition().Type(knativev1alpha1.DeployerConditionConfigurationReady)
+	deployerConditionReady := factories.Condition().Type(knativev1alpha1.DeployerConditionReady)
+	deployerConditionRouteReady := factories.Condition().Type(knativev1alpha1.DeployerConditionRouteReady)
 
 	scheme := runtime.NewScheme()
 	_ = clientgoscheme.AddToScheme(scheme)
@@ -158,18 +161,9 @@ func TestDeployerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			testDeployer.
 				StatusConditions(
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionConfigurationReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionRouteReady,
-						Status: corev1.ConditionUnknown,
-					},
+					deployerConditionConfigurationReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
 				StatusConfigurationRef(testConfigurationGiven.Get().Name).
@@ -190,18 +184,9 @@ func TestDeployerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			testDeployer.
 				StatusConditions(
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionConfigurationReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionRouteReady,
-						Status: corev1.ConditionUnknown,
-					},
+					deployerConditionConfigurationReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionRouteReady.Unknown(),
 				).
 				Get(),
 		},
@@ -254,18 +239,9 @@ func TestDeployerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			testDeployer.
 				StatusConditions(
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionConfigurationReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionRouteReady,
-						Status: corev1.ConditionUnknown,
-					},
+					deployerConditionConfigurationReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
 				StatusConfigurationRef(testConfigurationGiven.Get().Name).
@@ -286,18 +262,9 @@ func TestDeployerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			testDeployer.
 				StatusConditions(
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionConfigurationReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionRouteReady,
-						Status: corev1.ConditionUnknown,
-					},
+					deployerConditionConfigurationReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionRouteReady.Unknown(),
 				).
 				Get(),
 		},
@@ -350,18 +317,9 @@ func TestDeployerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			testDeployer.
 				StatusConditions(
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionConfigurationReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionRouteReady,
-						Status: corev1.ConditionUnknown,
-					},
+					deployerConditionConfigurationReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
 				StatusConfigurationRef(testConfigurationGiven.Get().Name).
@@ -382,18 +340,9 @@ func TestDeployerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			testDeployer.
 				StatusConditions(
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionConfigurationReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionRouteReady,
-						Status: corev1.ConditionUnknown,
-					},
+					deployerConditionConfigurationReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionRouteReady.Unknown(),
 				).
 				Get(),
 		},
@@ -442,18 +391,9 @@ func TestDeployerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			testDeployer.
 				StatusConditions(
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionConfigurationReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionRouteReady,
-						Status: corev1.ConditionUnknown,
-					},
+					deployerConditionConfigurationReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
 				StatusConfigurationRef(testConfigurationGiven.Get().Name).
@@ -478,18 +418,9 @@ func TestDeployerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			testDeployer.
 				StatusConditions(
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionConfigurationReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionRouteReady,
-						Status: corev1.ConditionUnknown,
-					},
+					deployerConditionConfigurationReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
 				Get(),
@@ -513,18 +444,9 @@ func TestDeployerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			testDeployer.
 				StatusConditions(
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionConfigurationReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionRouteReady,
-						Status: corev1.ConditionUnknown,
-					},
+					deployerConditionConfigurationReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
 				StatusConfigurationRef(testConfigurationGiven.Get().Name).
@@ -550,22 +472,9 @@ func TestDeployerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			testDeployer.
 				StatusConditions(
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionConfigurationReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:    knativev1alpha1.DeployerConditionReady,
-						Status:  corev1.ConditionFalse,
-						Reason:  "NotOwned",
-						Message: `There is an existing Route "test-deployer" that the Deployer does not own.`,
-					},
-					apis.Condition{
-						Type:    knativev1alpha1.DeployerConditionRouteReady,
-						Status:  corev1.ConditionFalse,
-						Reason:  "NotOwned",
-						Message: `There is an existing Route "test-deployer" that the Deployer does not own.`,
-					},
+					deployerConditionConfigurationReady.Unknown(),
+					deployerConditionReady.False().Reason("NotOwned", `There is an existing Route "test-deployer" that the Deployer does not own.`),
+					deployerConditionRouteReady.False().Reason("NotOwned", `There is an existing Route "test-deployer" that the Deployer does not own.`),
 				).
 				StatusLatestImage(testImage).
 				StatusConfigurationRef(testConfigurationGiven.Get().Name).
@@ -596,18 +505,9 @@ func TestDeployerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			testDeployer.
 				StatusConditions(
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionConfigurationReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionRouteReady,
-						Status: corev1.ConditionUnknown,
-					},
+					deployerConditionConfigurationReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
 				StatusConfigurationRef(testConfigurationGiven.Get().Name).
@@ -638,18 +538,9 @@ func TestDeployerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			testDeployer.
 				StatusConditions(
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionConfigurationReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionRouteReady,
-						Status: corev1.ConditionUnknown,
-					},
+					deployerConditionConfigurationReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
 				Get(),
@@ -679,18 +570,9 @@ func TestDeployerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			testDeployer.
 				StatusConditions(
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionConfigurationReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionRouteReady,
-						Status: corev1.ConditionUnknown,
-					},
+					deployerConditionConfigurationReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
 				StatusConfigurationRef(testConfigurationGiven.Get().Name).
@@ -724,18 +606,9 @@ func TestDeployerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			testDeployer.
 				StatusConditions(
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionConfigurationReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionRouteReady,
-						Status: corev1.ConditionUnknown,
-					},
+					deployerConditionConfigurationReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
 				StatusConfigurationRef(testConfigurationGiven.Get().Name).
@@ -761,18 +634,9 @@ func TestDeployerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			testDeployer.
 				StatusConditions(
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionConfigurationReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionRouteReady,
-						Status: corev1.ConditionUnknown,
-					},
+					deployerConditionConfigurationReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
 				StatusConfigurationRef(testConfigurationGiven.Get().Name).
@@ -800,18 +664,9 @@ func TestDeployerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			testDeployer.
 				StatusConditions(
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionConfigurationReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionRouteReady,
-						Status: corev1.ConditionUnknown,
-					},
+					deployerConditionConfigurationReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
 				Get(),
@@ -840,18 +695,9 @@ func TestDeployerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			testDeployer.
 				StatusConditions(
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionConfigurationReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionRouteReady,
-						Status: corev1.ConditionUnknown,
-					},
+					deployerConditionConfigurationReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
 				Get(),
@@ -874,18 +720,9 @@ func TestDeployerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			testDeployer.
 				StatusConditions(
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionConfigurationReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionRouteReady,
-						Status: corev1.ConditionUnknown,
-					},
+					deployerConditionConfigurationReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
 				StatusConfigurationRef(testConfigurationGiven.Get().Name).
@@ -911,18 +748,9 @@ func TestDeployerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			testDeployer.
 				StatusConditions(
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionConfigurationReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionRouteReady,
-						Status: corev1.ConditionUnknown,
-					},
+					deployerConditionConfigurationReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
 				StatusConfigurationRef(testConfigurationGiven.Get().Name).
@@ -950,18 +778,9 @@ func TestDeployerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			testDeployer.
 				StatusConditions(
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionConfigurationReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionRouteReady,
-						Status: corev1.ConditionUnknown,
-					},
+					deployerConditionConfigurationReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
 				StatusConfigurationRef(testConfigurationGiven.Get().Name).
@@ -984,18 +803,9 @@ func TestDeployerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			testDeployer.
 				StatusConditions(
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionConfigurationReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionRouteReady,
-						Status: corev1.ConditionUnknown,
-					},
+					deployerConditionConfigurationReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
 				StatusConfigurationRef(testConfigurationGiven.Get().Name).
@@ -1040,18 +850,9 @@ func TestDeployerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			testDeployer.
 				StatusConditions(
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionConfigurationReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionRouteReady,
-						Status: corev1.ConditionUnknown,
-					},
+					deployerConditionConfigurationReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
 				StatusConfigurationRef(testConfigurationGiven.Get().Name).
@@ -1086,18 +887,9 @@ func TestDeployerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			testDeployer.
 				StatusConditions(
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionConfigurationReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionRouteReady,
-						Status: corev1.ConditionUnknown,
-					},
+					deployerConditionConfigurationReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
 				StatusConfigurationRef(testConfigurationGiven.Get().Name).
@@ -1113,18 +905,12 @@ func TestDeployerReconcile(t *testing.T) {
 				Get(),
 			testConfigurationGiven.
 				StatusConditions(
-					apis.Condition{
-						Type:   knativeservingv1.ConfigurationConditionReady,
-						Status: corev1.ConditionTrue,
-					},
+					factories.Condition().Type(knativeservingv1.ConfigurationConditionReady).True(),
 				).
 				Get(),
 			testRouteGiven.
 				StatusConditions(
-					apis.Condition{
-						Type:   knativeservingv1.RouteConditionReady,
-						Status: corev1.ConditionTrue,
-					},
+					factories.Condition().Type(knativeservingv1.RouteConditionReady).True(),
 				).
 				StatusAddressURL(testAddressURL).
 				StatusURL(testURL).
@@ -1133,18 +919,9 @@ func TestDeployerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			testDeployer.
 				StatusConditions(
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionConfigurationReady,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionReady,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionRouteReady,
-						Status: corev1.ConditionTrue,
-					},
+					deployerConditionConfigurationReady.True(),
+					deployerConditionReady.True(),
+					deployerConditionRouteReady.True(),
 				).
 				StatusLatestImage(testImage).
 				StatusConfigurationRef(testConfigurationGiven.Get().Name).
@@ -1162,21 +939,11 @@ func TestDeployerReconcile(t *testing.T) {
 				Get(),
 			testConfigurationGiven.
 				StatusConditions(
-					apis.Condition{
-						Type:    knativeservingv1.ConfigurationConditionReady,
-						Status:  corev1.ConditionFalse,
-						Reason:  "TestReason",
-						Message: "a human readable message",
-					},
+					factories.Condition().Type(knativeservingv1.ConfigurationConditionReady).False().Reason("TestReason", "a human readable message"),
 				).
 				Get(),
 			testRouteGiven.
-				StatusConditions(
-					apis.Condition{
-						Type:   knativeservingv1.RouteConditionReady,
-						Status: corev1.ConditionTrue,
-					},
-				).
+				StatusReady().
 				StatusAddressURL(testAddressURL).
 				StatusURL(testURL).
 				Get(),
@@ -1184,22 +951,9 @@ func TestDeployerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			testDeployer.
 				StatusConditions(
-					apis.Condition{
-						Type:    knativev1alpha1.DeployerConditionConfigurationReady,
-						Status:  corev1.ConditionFalse,
-						Reason:  "TestReason",
-						Message: "a human readable message",
-					},
-					apis.Condition{
-						Type:    knativev1alpha1.DeployerConditionReady,
-						Status:  corev1.ConditionFalse,
-						Reason:  "TestReason",
-						Message: "a human readable message",
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionRouteReady,
-						Status: corev1.ConditionTrue,
-					},
+					deployerConditionConfigurationReady.False().Reason("TestReason", "a human readable message"),
+					deployerConditionReady.False().Reason("TestReason", "a human readable message"),
+					deployerConditionRouteReady.True(),
 				).
 				StatusLatestImage(testImage).
 				StatusConfigurationRef(testConfigurationGiven.Get().Name).
@@ -1216,21 +970,11 @@ func TestDeployerReconcile(t *testing.T) {
 				Image(testImage).
 				Get(),
 			testConfigurationGiven.
-				StatusConditions(
-					apis.Condition{
-						Type:   knativeservingv1.ConfigurationConditionReady,
-						Status: corev1.ConditionTrue,
-					},
-				).
+				StatusReady().
 				Get(),
 			testRouteGiven.
 				StatusConditions(
-					apis.Condition{
-						Type:    knativeservingv1.RouteConditionReady,
-						Status:  corev1.ConditionFalse,
-						Reason:  "TestReason",
-						Message: "a human readable message",
-					},
+					factories.Condition().Type(knativeservingv1.RouteConditionReady).False().Reason("TestReason", "a human readable message"),
 				).
 				StatusAddressURL(testAddressURL).
 				StatusURL(testURL).
@@ -1239,22 +983,9 @@ func TestDeployerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			testDeployer.
 				StatusConditions(
-					apis.Condition{
-						Type:   knativev1alpha1.DeployerConditionConfigurationReady,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:    knativev1alpha1.DeployerConditionReady,
-						Status:  corev1.ConditionFalse,
-						Reason:  "TestReason",
-						Message: "a human readable message",
-					},
-					apis.Condition{
-						Type:    knativev1alpha1.DeployerConditionRouteReady,
-						Status:  corev1.ConditionFalse,
-						Reason:  "TestReason",
-						Message: "a human readable message",
-					},
+					deployerConditionConfigurationReady.True(),
+					deployerConditionReady.False().Reason("TestReason", "a human readable message"),
+					deployerConditionRouteReady.False().Reason("TestReason", "a human readable message"),
 				).
 				StatusLatestImage(testImage).
 				StatusConfigurationRef(testConfigurationGiven.Get().Name).

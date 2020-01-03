@@ -77,10 +77,20 @@ func (f *knativeRoute) Traffic(traffic ...knativeservingv1.TrafficTarget) *knati
 	})
 }
 
-func (f *knativeRoute) StatusConditions(conditions ...apis.Condition) *knativeRoute {
+func (f *knativeRoute) StatusConditions(conditions ...*condition) *knativeRoute {
 	return f.Mutate(func(route *knativeservingv1.Route) {
-		route.Status.Conditions = conditions
+		c := make([]apis.Condition, len(conditions))
+		for i, cg := range conditions {
+			c[i] = cg.Get()
+		}
+		route.Status.Conditions = c
 	})
+}
+
+func (f *knativeRoute) StatusReady() *knativeRoute {
+	return f.StatusConditions(
+		Condition().Type(knativeservingv1.RouteConditionReady).True(),
+	)
 }
 
 func (f *knativeRoute) StatusObservedGeneration(generation int64) *knativeRoute {

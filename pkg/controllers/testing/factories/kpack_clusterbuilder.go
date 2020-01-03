@@ -19,8 +19,6 @@ package factories
 import (
 	"fmt"
 
-	corev1 "k8s.io/api/core/v1"
-
 	"github.com/projectriff/system/pkg/apis"
 	kpackbuildv1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/kpack/build/v1alpha1"
 )
@@ -79,18 +77,19 @@ func (f *kpackClusterBuilder) Image(format string, a ...interface{}) *kpackClust
 	})
 }
 
-func (f *kpackClusterBuilder) StatusConditions(conditions ...apis.Condition) *kpackClusterBuilder {
+func (f *kpackClusterBuilder) StatusConditions(conditions ...*condition) *kpackClusterBuilder {
 	return f.Mutate(func(cb *kpackbuildv1alpha1.ClusterBuilder) {
-		cb.Status.Conditions = conditions
+		c := make([]apis.Condition, len(conditions))
+		for i, cg := range conditions {
+			c[i] = cg.Get()
+		}
+		cb.Status.Conditions = c
 	})
 }
 
 func (f *kpackClusterBuilder) StatusReady() *kpackClusterBuilder {
 	return f.StatusConditions(
-		apis.Condition{
-			Type:   apis.ConditionReady,
-			Status: corev1.ConditionTrue,
-		},
+		Condition().Type(apis.ConditionReady).True(),
 	)
 }
 

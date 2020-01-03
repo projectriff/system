@@ -111,9 +111,13 @@ func (f *adapterKnative) ServiceRef(format string, a ...interface{}) *adapterKna
 	})
 }
 
-func (f *adapterKnative) StatusConditions(conditions ...apis.Condition) *adapterKnative {
+func (f *adapterKnative) StatusConditions(conditions ...*condition) *adapterKnative {
 	return f.Mutate(func(adapter *knativev1alpha1.Adapter) {
-		adapter.Status.Conditions = conditions
+		c := make([]apis.Condition, len(conditions))
+		for i, cg := range conditions {
+			c[i] = cg.Get()
+		}
+		adapter.Status.Conditions = c
 	})
 }
 

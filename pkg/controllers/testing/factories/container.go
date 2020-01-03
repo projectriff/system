@@ -19,8 +19,6 @@ package factories
 import (
 	"fmt"
 
-	corev1 "k8s.io/api/core/v1"
-
 	"github.com/projectriff/system/pkg/apis"
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 )
@@ -79,18 +77,19 @@ func (f *container) Image(format string, a ...interface{}) *container {
 	})
 }
 
-func (f *container) StatusConditions(conditions ...apis.Condition) *container {
+func (f *container) StatusConditions(conditions ...*condition) *container {
 	return f.Mutate(func(con *buildv1alpha1.Container) {
-		con.Status.Conditions = conditions
+		c := make([]apis.Condition, len(conditions))
+		for i, cg := range conditions {
+			c[i] = cg.Get()
+		}
+		con.Status.Conditions = c
 	})
 }
 
 func (f *container) StatusReady() *container {
 	return f.StatusConditions(
-		apis.Condition{
-			Type:   apis.ConditionReady,
-			Status: corev1.ConditionTrue,
-		},
+		Condition().Type(buildv1alpha1.ContainerConditionReady).True(),
 	)
 }
 

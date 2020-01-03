@@ -159,18 +159,19 @@ func (f *kpackImage) BuildCache(quantity string) *kpackImage {
 	})
 }
 
-func (f *kpackImage) StatusConditions(conditions ...apis.Condition) *kpackImage {
+func (f *kpackImage) StatusConditions(conditions ...*condition) *kpackImage {
 	return f.Mutate(func(image *kpackbuildv1alpha1.Image) {
-		image.Status.Conditions = conditions
+		c := make([]apis.Condition, len(conditions))
+		for i, cg := range conditions {
+			c[i] = cg.Get()
+		}
+		image.Status.Conditions = c
 	})
 }
 
 func (f *kpackImage) StatusReady() *kpackImage {
 	return f.StatusConditions(
-		apis.Condition{
-			Type:   apis.ConditionReady,
-			Status: corev1.ConditionTrue,
-		},
+		Condition().Type(apis.ConditionReady).True(),
 	)
 }
 

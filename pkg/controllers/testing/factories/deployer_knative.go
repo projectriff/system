@@ -137,9 +137,13 @@ func (f *deployerKnative) MaxScale(scale int32) *deployerKnative {
 	})
 }
 
-func (f *deployerKnative) StatusConditions(conditions ...apis.Condition) *deployerKnative {
+func (f *deployerKnative) StatusConditions(conditions ...*condition) *deployerKnative {
 	return f.Mutate(func(deployer *knativev1alpha1.Deployer) {
-		deployer.Status.Conditions = conditions
+		c := make([]apis.Condition, len(conditions))
+		for i, cg := range conditions {
+			c[i] = cg.Get()
+		}
+		deployer.Status.Conditions = c
 	})
 }
 

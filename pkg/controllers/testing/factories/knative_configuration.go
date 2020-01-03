@@ -96,10 +96,20 @@ func (f *knativeConfiguration) UserContainer(cb func(*corev1.Container)) *knativ
 	})
 }
 
-func (f *knativeConfiguration) StatusConditions(conditions ...apis.Condition) *knativeConfiguration {
+func (f *knativeConfiguration) StatusConditions(conditions ...*condition) *knativeConfiguration {
 	return f.Mutate(func(configuration *knativeservingv1.Configuration) {
-		configuration.Status.Conditions = conditions
+		c := make([]apis.Condition, len(conditions))
+		for i, cg := range conditions {
+			c[i] = cg.Get()
+		}
+		configuration.Status.Conditions = c
 	})
+}
+
+func (f *knativeConfiguration) StatusReady() *knativeConfiguration {
+	return f.StatusConditions(
+		Condition().Type(knativeservingv1.ConfigurationConditionReady).True(),
+	)
 }
 
 func (f *knativeConfiguration) StatusObservedGeneration(generation int64) *knativeConfiguration {

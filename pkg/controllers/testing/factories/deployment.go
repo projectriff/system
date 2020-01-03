@@ -23,7 +23,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/projectriff/system/pkg/apis"
 	rtesting "github.com/projectriff/system/pkg/controllers/testing"
 )
 
@@ -105,17 +104,18 @@ func (f *deployment) AddSelectorLabel(key, value string) *deployment {
 	})
 }
 
-func (f *deployment) StatusConditions(conditions ...apis.Condition) *deployment {
+func (f *deployment) StatusConditions(conditions ...*condition) *deployment {
 	return f.Mutate(func(deployment *appsv1.Deployment) {
-		depConditions := []appsv1.DeploymentCondition{}
-		for _, c := range conditions {
-			depConditions = append(depConditions, appsv1.DeploymentCondition{
-				Type:    appsv1.DeploymentConditionType(c.Type),
-				Status:  c.Status,
-				Reason:  c.Reason,
-				Message: c.Message,
-			})
+		c := make([]appsv1.DeploymentCondition, len(conditions))
+		for i, cg := range conditions {
+			dc := cg.Get()
+			c[i] = appsv1.DeploymentCondition{
+				Type:    appsv1.DeploymentConditionType(dc.Type),
+				Status:  dc.Status,
+				Reason:  dc.Reason,
+				Message: dc.Message,
+			}
 		}
-		deployment.Status.Conditions = depConditions
+		deployment.Status.Conditions = c
 	})
 }

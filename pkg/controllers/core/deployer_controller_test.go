@@ -31,7 +31,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/projectriff/system/pkg/apis"
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	corev1alpha1 "github.com/projectriff/system/pkg/apis/core/v1alpha1"
 	"github.com/projectriff/system/pkg/controllers/core"
@@ -55,6 +54,11 @@ func TestDeployerReconcile(t *testing.T) {
 	testAddressURL := fmt.Sprintf("http://%s.%s.svc.cluster.local", testName, testNamespace)
 	testLabelKey := "test-label-key"
 	testLabelValue := "test-label-value"
+
+	deployerConditionDeploymentReady := factories.Condition().Type(corev1alpha1.DeployerConditionDeploymentReady)
+	deployerConditionIngressReady := factories.Condition().Type(corev1alpha1.DeployerConditionIngressReady).Info()
+	deployerConditionReady := factories.Condition().Type(corev1alpha1.DeployerConditionReady)
+	deployerConditionServiceReady := factories.Condition().Type(corev1alpha1.DeployerConditionServiceReady)
 
 	scheme := runtime.NewScheme()
 	_ = clientgoscheme.AddToScheme(scheme)
@@ -192,7 +196,12 @@ func TestDeployerReconcile(t *testing.T) {
 		},
 		ExpectStatusUpdates: []runtime.Object{
 			deployerMinimal.
-				StatusConditions(deployerDefaultConditions()...).
+				StatusConditions(
+					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.False().Reason("IngressNotRequired", "Ingress resource is not required."),
+					deployerConditionReady.Unknown(),
+					deployerConditionServiceReady.True(),
+				).
 				StatusLatestImage(testImage).
 				StatusDeploymentRef("%s-deployer-001", deployerMinimal.Get().Name).
 				StatusServiceRef(deployerMinimal.Get().Name).
@@ -215,18 +224,9 @@ func TestDeployerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			deployerMinimal.
 				StatusConditions(
-					apis.Condition{
-						Type:   corev1alpha1.DeployerConditionDeploymentReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   corev1alpha1.DeployerConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   corev1alpha1.DeployerConditionServiceReady,
-						Status: corev1.ConditionUnknown,
-					},
+					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionServiceReady.Unknown(),
 				).
 				Get(),
 		},
@@ -267,7 +267,12 @@ func TestDeployerReconcile(t *testing.T) {
 		},
 		ExpectStatusUpdates: []runtime.Object{
 			deployerMinimal.
-				StatusConditions(deployerDefaultConditions()...).
+				StatusConditions(
+					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.False().Reason("IngressNotRequired", "Ingress resource is not required."),
+					deployerConditionReady.Unknown(),
+					deployerConditionServiceReady.True(),
+				).
 				StatusLatestImage(testImage).
 				StatusDeploymentRef("%s-deployer-001", deployerMinimal.Get().Name).
 				StatusServiceRef(deployerMinimal.Get().Name).
@@ -290,18 +295,9 @@ func TestDeployerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			deployerMinimal.
 				StatusConditions(
-					apis.Condition{
-						Type:   corev1alpha1.DeployerConditionDeploymentReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   corev1alpha1.DeployerConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   corev1alpha1.DeployerConditionServiceReady,
-						Status: corev1.ConditionUnknown,
-					},
+					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionServiceReady.Unknown(),
 				).
 				Get(),
 		},
@@ -342,7 +338,12 @@ func TestDeployerReconcile(t *testing.T) {
 		},
 		ExpectStatusUpdates: []runtime.Object{
 			deployerMinimal.
-				StatusConditions(deployerDefaultConditions()...).
+				StatusConditions(
+					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.False().Reason("IngressNotRequired", "Ingress resource is not required."),
+					deployerConditionReady.Unknown(),
+					deployerConditionServiceReady.True(),
+				).
 				StatusLatestImage(testImage).
 				StatusDeploymentRef("%s-deployer-001", deployerMinimal.Get().Name).
 				StatusServiceRef(deployerMinimal.Get().Name).
@@ -365,18 +366,9 @@ func TestDeployerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			deployerMinimal.
 				StatusConditions(
-					apis.Condition{
-						Type:   corev1alpha1.DeployerConditionDeploymentReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   corev1alpha1.DeployerConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   corev1alpha1.DeployerConditionServiceReady,
-						Status: corev1.ConditionUnknown,
-					},
+					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionServiceReady.Unknown(),
 				).
 				Get(),
 		},
@@ -415,7 +407,12 @@ func TestDeployerReconcile(t *testing.T) {
 		},
 		ExpectStatusUpdates: []runtime.Object{
 			deployerMinimal.
-				StatusConditions(deployerDefaultConditions()...).
+				StatusConditions(
+					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.False().Reason("IngressNotRequired", "Ingress resource is not required."),
+					deployerConditionReady.Unknown(),
+					deployerConditionServiceReady.True(),
+				).
 				StatusLatestImage(testImage).
 				StatusDeploymentRef("%s-deployer-001", deployerMinimal.Get().Name).
 				StatusServiceRef(deployerMinimal.Get().Name).
@@ -444,18 +441,9 @@ func TestDeployerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			deployerMinimal.
 				StatusConditions(
-					apis.Condition{
-						Type:   corev1alpha1.DeployerConditionDeploymentReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   corev1alpha1.DeployerConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   corev1alpha1.DeployerConditionServiceReady,
-						Status: corev1.ConditionUnknown,
-					},
+					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionServiceReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
 				Get(),
@@ -483,18 +471,9 @@ func TestDeployerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			deployerMinimal.
 				StatusConditions(
-					apis.Condition{
-						Type:   corev1alpha1.DeployerConditionDeploymentReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   corev1alpha1.DeployerConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   corev1alpha1.DeployerConditionServiceReady,
-						Status: corev1.ConditionUnknown,
-					},
+					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionServiceReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
 				StatusDeploymentRef("%s-deployer-001", deployerMinimal.Get().Name).
@@ -524,22 +503,9 @@ func TestDeployerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			deployerMinimal.
 				StatusConditions(
-					apis.Condition{
-						Type:   corev1alpha1.DeployerConditionDeploymentReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:    corev1alpha1.DeployerConditionReady,
-						Status:  corev1.ConditionFalse,
-						Reason:  "NotOwned",
-						Message: `There is an existing Service "test-deployer" that the Deployer does not own.`,
-					},
-					apis.Condition{
-						Type:    corev1alpha1.DeployerConditionServiceReady,
-						Status:  corev1.ConditionFalse,
-						Reason:  "NotOwned",
-						Message: `There is an existing Service "test-deployer" that the Deployer does not own.`,
-					},
+					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionReady.False().Reason("NotOwned", `There is an existing Service "test-deployer" that the Deployer does not own.`),
+					deployerConditionServiceReady.False().Reason("NotOwned", `There is an existing Service "test-deployer" that the Deployer does not own.`),
 				).
 				StatusLatestImage(testImage).
 				StatusDeploymentRef("%s-deployer-001", deployerMinimal.Get().Name).
@@ -551,7 +517,12 @@ func TestDeployerReconcile(t *testing.T) {
 		GivenObjects: []runtime.Object{
 			deployerMinimal.
 				Image(testImage).
-				StatusConditions(deployerDefaultConditions()...).
+				StatusConditions(
+					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.False().Reason("IngressNotRequired", "Ingress resource is not required."),
+					deployerConditionReady.Unknown(),
+					deployerConditionServiceReady.True(),
+				).
 				StatusLatestImage(testImage).
 				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
 				StatusServiceRef(deployerMinimal.Get().Name).
@@ -581,7 +552,12 @@ func TestDeployerReconcile(t *testing.T) {
 		GivenObjects: []runtime.Object{
 			deployerMinimal.
 				Image(testImage).
-				StatusConditions(deployerDefaultConditions()...).
+				StatusConditions(
+					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.False().Reason("IngressNotRequired", "Ingress resource is not required."),
+					deployerConditionReady.Unknown(),
+					deployerConditionServiceReady.True(),
+				).
 				StatusLatestImage(testImage).
 				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
 				StatusServiceRef(deployerMinimal.Get().Name).
@@ -612,7 +588,12 @@ func TestDeployerReconcile(t *testing.T) {
 		GivenObjects: []runtime.Object{
 			deployerMinimal.
 				Image(testImage).
-				StatusConditions(deployerDefaultConditions()...).
+				StatusConditions(
+					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.False().Reason("IngressNotRequired", "Ingress resource is not required."),
+					deployerConditionReady.Unknown(),
+					deployerConditionServiceReady.True(),
+				).
 				StatusLatestImage(testImage).
 				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
 				StatusServiceRef(deployerMinimal.Get().Name).
@@ -637,7 +618,12 @@ func TestDeployerReconcile(t *testing.T) {
 		GivenObjects: []runtime.Object{
 			deployerMinimal.
 				Image(testImage).
-				StatusConditions(deployerDefaultConditions()...).
+				StatusConditions(
+					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.False().Reason("IngressNotRequired", "Ingress resource is not required."),
+					deployerConditionReady.Unknown(),
+					deployerConditionServiceReady.True(),
+				).
 				StatusLatestImage(testImage).
 				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
 				StatusServiceRef(deployerMinimal.Get().Name).
@@ -665,7 +651,12 @@ func TestDeployerReconcile(t *testing.T) {
 		GivenObjects: []runtime.Object{
 			deployerMinimal.
 				Image(testImage).
-				StatusConditions(deployerDefaultConditions()...).
+				StatusConditions(
+					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.False().Reason("IngressNotRequired", "Ingress resource is not required."),
+					deployerConditionReady.Unknown(),
+					deployerConditionServiceReady.True(),
+				).
 				StatusLatestImage(testImage).
 				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
 				StatusServiceRef(deployerMinimal.Get().Name).
@@ -694,7 +685,12 @@ func TestDeployerReconcile(t *testing.T) {
 		GivenObjects: []runtime.Object{
 			deployerMinimal.
 				Image(testImage).
-				StatusConditions(deployerDefaultConditions()...).
+				StatusConditions(
+					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.False().Reason("IngressNotRequired", "Ingress resource is not required."),
+					deployerConditionReady.Unknown(),
+					deployerConditionServiceReady.True(),
+				).
 				StatusLatestImage(testImage).
 				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
 				StatusServiceRef(deployerMinimal.Get().Name).
@@ -717,7 +713,12 @@ func TestDeployerReconcile(t *testing.T) {
 		GivenObjects: []runtime.Object{
 			deployerMinimal.
 				Image(testImage).
-				StatusConditions(deployerDefaultConditions()...).
+				StatusConditions(
+					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.False().Reason("IngressNotRequired", "Ingress resource is not required."),
+					deployerConditionReady.Unknown(),
+					deployerConditionServiceReady.True(),
+				).
 				StatusLatestImage(testImage).
 				StatusDeploymentRef("%s-deployer-001", deployerMinimal.Get().Name).
 				StatusServiceRef(deployerMinimal.Get().Name).
@@ -751,7 +752,12 @@ func TestDeployerReconcile(t *testing.T) {
 		GivenObjects: []runtime.Object{
 			deployerMinimal.
 				Image(testImage).
-				StatusConditions(deployerDefaultConditions()...).
+				StatusConditions(
+					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.False().Reason("IngressNotRequired", "Ingress resource is not required."),
+					deployerConditionReady.Unknown(),
+					deployerConditionServiceReady.True(),
+				).
 				StatusLatestImage(testImage).
 				StatusDeploymentRef("%s-deployer-001", deployerMinimal.Get().Name).
 				StatusServiceRef(deployerMinimal.Get().Name).
@@ -779,7 +785,12 @@ func TestDeployerReconcile(t *testing.T) {
 		GivenObjects: []runtime.Object{
 			deployerMinimal.
 				Image(testImage).
-				StatusConditions(deployerDefaultConditions()...).
+				StatusConditions(
+					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.False().Reason("IngressNotRequired", "Ingress resource is not required."),
+					deployerConditionReady.Unknown(),
+					deployerConditionServiceReady.True(),
+				).
 				StatusLatestImage(testImage).
 				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
 				StatusServiceRef(deployerMinimal.Get().Name).
@@ -813,7 +824,12 @@ func TestDeployerReconcile(t *testing.T) {
 		GivenObjects: []runtime.Object{
 			deployerMinimal.
 				Image(testImage).
-				StatusConditions(deployerDefaultConditions()...).
+				StatusConditions(
+					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.False().Reason("IngressNotRequired", "Ingress resource is not required."),
+					deployerConditionReady.Unknown(),
+					deployerConditionServiceReady.True(),
+				).
 				StatusLatestImage(testImage).
 				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
 				StatusServiceRef(deployerMinimal.Get().Name).
@@ -855,15 +871,12 @@ func TestDeployerReconcile(t *testing.T) {
 		},
 		ExpectStatusUpdates: []runtime.Object{
 			deployerMinimal.
-				StatusConditions(deployerDefaultConditions(
-					apis.Condition{
-						Type:     corev1alpha1.DeployerConditionIngressReady,
-						Status:   corev1.ConditionUnknown,
-						Severity: apis.ConditionSeverityInfo,
-						Reason:   "IngressNotConfigured",
-						Message:  "Ingress has not yet been reconciled.",
-					},
-				)...).
+				StatusConditions(
+					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.Unknown().Reason("IngressNotConfigured", "Ingress has not yet been reconciled."),
+					deployerConditionReady.Unknown(),
+					deployerConditionServiceReady.True(),
+				).
 				StatusLatestImage(testImage).
 				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
 				StatusServiceRef(deployerMinimal.Get().Name).
@@ -897,18 +910,9 @@ func TestDeployerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			deployerMinimal.
 				StatusConditions(
-					apis.Condition{
-						Type:   corev1alpha1.DeployerConditionDeploymentReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   corev1alpha1.DeployerConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   corev1alpha1.DeployerConditionServiceReady,
-						Status: corev1.ConditionTrue,
-					},
+					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionServiceReady.True(),
 				).
 				StatusLatestImage(testImage).
 				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
@@ -939,7 +943,12 @@ func TestDeployerReconcile(t *testing.T) {
 		},
 		ExpectStatusUpdates: []runtime.Object{
 			deployerMinimal.
-				StatusConditions(deployerDefaultConditions()...).
+				StatusConditions(
+					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.False().Reason("IngressNotRequired", "Ingress resource is not required."),
+					deployerConditionReady.Unknown(),
+					deployerConditionServiceReady.True(),
+				).
 				StatusLatestImage(testImage).
 				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
 				StatusServiceRef(deployerMinimal.Get().Name).
@@ -974,18 +983,9 @@ func TestDeployerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			deployerMinimal.
 				StatusConditions(
-					apis.Condition{
-						Type:   corev1alpha1.DeployerConditionDeploymentReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   corev1alpha1.DeployerConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   corev1alpha1.DeployerConditionServiceReady,
-						Status: corev1.ConditionTrue,
-					},
+					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionServiceReady.True(),
 				).
 				StatusLatestImage(testImage).
 				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
@@ -1018,15 +1018,12 @@ func TestDeployerReconcile(t *testing.T) {
 		},
 		ExpectStatusUpdates: []runtime.Object{
 			deployerMinimal.
-				StatusConditions(deployerDefaultConditions(
-					apis.Condition{
-						Type:     corev1alpha1.DeployerConditionIngressReady,
-						Status:   corev1.ConditionUnknown,
-						Severity: apis.ConditionSeverityInfo,
-						Reason:   "IngressNotConfigured",
-						Message:  "Ingress has not yet been reconciled.",
-					},
-				)...).
+				StatusConditions(
+					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.Unknown().Reason("IngressNotConfigured", "Ingress has not yet been reconciled."),
+					deployerConditionReady.Unknown(),
+					deployerConditionServiceReady.True(),
+				).
 				StatusLatestImage(testImage).
 				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
 				StatusServiceRef(deployerMinimal.Get().Name).
@@ -1065,18 +1062,9 @@ func TestDeployerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			deployerMinimal.
 				StatusConditions(
-					apis.Condition{
-						Type:   corev1alpha1.DeployerConditionDeploymentReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   corev1alpha1.DeployerConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   corev1alpha1.DeployerConditionServiceReady,
-						Status: corev1.ConditionTrue,
-					},
+					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionServiceReady.True(),
 				).
 				StatusLatestImage(testImage).
 				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
@@ -1114,15 +1102,12 @@ func TestDeployerReconcile(t *testing.T) {
 		},
 		ExpectStatusUpdates: []runtime.Object{
 			deployerMinimal.
-				StatusConditions(deployerDefaultConditions(
-					apis.Condition{
-						Type:     corev1alpha1.DeployerConditionIngressReady,
-						Status:   corev1.ConditionUnknown,
-						Severity: apis.ConditionSeverityInfo,
-						Reason:   "IngressNotConfigured",
-						Message:  "Ingress has not yet been reconciled.",
-					},
-				)...).
+				StatusConditions(
+					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.Unknown().Reason("IngressNotConfigured", "Ingress has not yet been reconciled."),
+					deployerConditionReady.Unknown(),
+					deployerConditionServiceReady.True(),
+				).
 				StatusLatestImage(testImage).
 				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
 				StatusServiceRef(deployerMinimal.Get().Name).
@@ -1159,18 +1144,9 @@ func TestDeployerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			deployerMinimal.
 				StatusConditions(
-					apis.Condition{
-						Type:   corev1alpha1.DeployerConditionDeploymentReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   corev1alpha1.DeployerConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   corev1alpha1.DeployerConditionServiceReady,
-						Status: corev1.ConditionTrue,
-					},
+					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionServiceReady.True(),
 				).
 				StatusLatestImage(testImage).
 				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
@@ -1209,18 +1185,9 @@ func TestDeployerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			deployerMinimal.
 				StatusConditions(
-					apis.Condition{
-						Type:   corev1alpha1.DeployerConditionDeploymentReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   corev1alpha1.DeployerConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   corev1alpha1.DeployerConditionServiceReady,
-						Status: corev1.ConditionTrue,
-					},
+					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionServiceReady.True(),
 				).
 				StatusLatestImage(testImage).
 				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
@@ -1238,15 +1205,12 @@ func TestDeployerReconcile(t *testing.T) {
 				}).
 				IngressPolicy(corev1alpha1.IngressPolicyExternal).
 				Image(testImage).
-				StatusConditions(deployerDefaultConditions(
-					apis.Condition{
-						Type:     corev1alpha1.DeployerConditionIngressReady,
-						Status:   corev1.ConditionUnknown,
-						Severity: apis.ConditionSeverityInfo,
-						Reason:   "IngressNotConfigured",
-						Message:  "Ingress has not yet been reconciled.",
-					},
-				)...).
+				StatusConditions(
+					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.Unknown().Reason("IngressNotConfigured", "Ingress has not yet been reconciled."),
+					deployerConditionReady.Unknown(),
+					deployerConditionServiceReady.True(),
+				).
 				StatusLatestImage(testImage).
 				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
 				StatusServiceRef(deployerMinimal.Get().Name).
@@ -1289,14 +1253,8 @@ func TestDeployerReconcile(t *testing.T) {
 			deployerValid.Get(),
 			deploymentGiven.
 				StatusConditions(
-					apis.Condition{
-						Type:   "Available",
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   "Progressing",
-						Status: corev1.ConditionUnknown,
-					},
+					factories.Condition().Type("Available").True(),
+					factories.Condition().Type("Progressing").Unknown(),
 				).
 				Get(),
 			serviceGiven.Get(),
@@ -1307,16 +1265,12 @@ func TestDeployerReconcile(t *testing.T) {
 		},
 		ExpectStatusUpdates: []runtime.Object{
 			deployerMinimal.
-				StatusConditions(deployerDefaultConditions(
-					apis.Condition{
-						Type:   corev1alpha1.DeployerConditionDeploymentReady,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   corev1alpha1.DeployerConditionReady,
-						Status: corev1.ConditionTrue,
-					},
-				)...).
+				StatusConditions(
+					deployerConditionDeploymentReady.True(),
+					deployerConditionIngressReady.False().Reason("IngressNotRequired", "Ingress resource is not required."),
+					deployerConditionReady.True(),
+					deployerConditionServiceReady.True(),
+				).
 				StatusLatestImage(testImage).
 				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
 				StatusServiceRef(deployerMinimal.Get().Name).
@@ -1332,14 +1286,8 @@ func TestDeployerReconcile(t *testing.T) {
 				Get(),
 			deploymentGiven.
 				StatusConditions(
-					apis.Condition{
-						Type:   "Available",
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   "Progressing",
-						Status: corev1.ConditionUnknown,
-					},
+					factories.Condition().Type("Available").True(),
+					factories.Condition().Type("Progressing").Unknown(),
 				).
 				Get(),
 			serviceGiven.Get(),
@@ -1357,21 +1305,12 @@ func TestDeployerReconcile(t *testing.T) {
 		},
 		ExpectStatusUpdates: []runtime.Object{
 			deployerMinimal.
-				StatusConditions(deployerDefaultConditions(
-					apis.Condition{
-						Type:   corev1alpha1.DeployerConditionDeploymentReady,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:     corev1alpha1.DeployerConditionIngressReady,
-						Status:   corev1.ConditionTrue,
-						Severity: apis.ConditionSeverityInfo,
-					},
-					apis.Condition{
-						Type:   corev1alpha1.DeployerConditionReady,
-						Status: corev1.ConditionTrue,
-					},
-				)...).
+				StatusConditions(
+					deployerConditionDeploymentReady.True(),
+					deployerConditionIngressReady.True(),
+					deployerConditionReady.True(),
+					deployerConditionServiceReady.True(),
+				).
 				StatusLatestImage(testImage).
 				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
 				StatusServiceRef(deployerMinimal.Get().Name).
@@ -1387,16 +1326,8 @@ func TestDeployerReconcile(t *testing.T) {
 			deployerValid.Get(),
 			deploymentGiven.
 				StatusConditions(
-					apis.Condition{
-						Type:    "Available",
-						Status:  corev1.ConditionFalse,
-						Reason:  testConditionReason,
-						Message: testConditionMessage,
-					},
-					apis.Condition{
-						Type:   "Progressing",
-						Status: corev1.ConditionUnknown,
-					},
+					factories.Condition().Type("Available").False().Reason(testConditionReason, testConditionMessage),
+					factories.Condition().Type("Progressing").Unknown(),
 				).
 				Get(),
 			serviceGiven.Get(),
@@ -1407,20 +1338,12 @@ func TestDeployerReconcile(t *testing.T) {
 		},
 		ExpectStatusUpdates: []runtime.Object{
 			deployerMinimal.
-				StatusConditions(deployerDefaultConditions(
-					apis.Condition{
-						Type:    corev1alpha1.DeployerConditionDeploymentReady,
-						Status:  corev1.ConditionFalse,
-						Reason:  testConditionReason,
-						Message: testConditionMessage,
-					},
-					apis.Condition{
-						Type:    corev1alpha1.DeployerConditionReady,
-						Status:  corev1.ConditionFalse,
-						Reason:  testConditionReason,
-						Message: testConditionMessage,
-					},
-				)...).
+				StatusConditions(
+					deployerConditionDeploymentReady.False().Reason(testConditionReason, testConditionMessage),
+					deployerConditionIngressReady.False().Reason("IngressNotRequired", "Ingress resource is not required."),
+					deployerConditionReady.False().Reason(testConditionReason, testConditionMessage),
+					deployerConditionServiceReady.True(),
+				).
 				StatusLatestImage(testImage).
 				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
 				StatusServiceRef(deployerMinimal.Get().Name).
@@ -1445,7 +1368,12 @@ func TestDeployerReconcile(t *testing.T) {
 		},
 		ExpectStatusUpdates: []runtime.Object{
 			deployerMinimal.
-				StatusConditions(deployerDefaultConditions()...).
+				StatusConditions(
+					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.False().Reason("IngressNotRequired", "Ingress resource is not required."),
+					deployerConditionReady.Unknown(),
+					deployerConditionServiceReady.True(),
+				).
 				StatusLatestImage(testImage).
 				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
 				StatusServiceRef(deployerMinimal.Get().Name).
@@ -1465,18 +1393,9 @@ func TestDeployerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			deployerMinimal.
 				StatusConditions(
-					apis.Condition{
-						Type:   corev1alpha1.DeployerConditionDeploymentReady,
-						Status: "Unknown",
-					},
-					apis.Condition{
-						Type:   corev1alpha1.DeployerConditionReady,
-						Status: "Unknown",
-					},
-					apis.Condition{
-						Type:   corev1alpha1.DeployerConditionServiceReady,
-						Status: "Unknown",
-					},
+					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionServiceReady.Unknown(),
 				).
 				Get(),
 		},
@@ -1490,39 +1409,4 @@ func TestDeployerReconcile(t *testing.T) {
 			Tracker: tracker,
 		}
 	})
-}
-
-func deployerDefaultConditions(conditions ...apis.Condition) []apis.Condition {
-	defaults := map[apis.ConditionType]apis.Condition{
-		corev1alpha1.DeployerConditionDeploymentReady: {
-			Type:   corev1alpha1.DeployerConditionDeploymentReady,
-			Status: corev1.ConditionUnknown,
-		},
-		corev1alpha1.DeployerConditionIngressReady: {
-			Type:     corev1alpha1.DeployerConditionIngressReady,
-			Status:   corev1.ConditionFalse,
-			Severity: apis.ConditionSeverityInfo,
-			Reason:   "IngressNotRequired",
-			Message:  "Ingress resource is not required.",
-		},
-		corev1alpha1.DeployerConditionReady: {
-			Type:   corev1alpha1.DeployerConditionReady,
-			Status: corev1.ConditionUnknown,
-		},
-		corev1alpha1.DeployerConditionServiceReady: {
-			Type:   corev1alpha1.DeployerConditionServiceReady,
-			Status: corev1.ConditionTrue,
-		},
-	}
-
-	for _, condition := range conditions {
-		defaults[condition.Type] = condition
-	}
-
-	return []apis.Condition{
-		defaults[corev1alpha1.DeployerConditionDeploymentReady],
-		defaults[corev1alpha1.DeployerConditionIngressReady],
-		defaults[corev1alpha1.DeployerConditionReady],
-		defaults[corev1alpha1.DeployerConditionServiceReady],
-	}
 }
