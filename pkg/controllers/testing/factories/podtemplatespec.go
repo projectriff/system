@@ -22,6 +22,7 @@ import (
 
 type PodTemplateSpec interface {
 	Mutate(m func(*corev1.PodTemplateSpec)) PodTemplateSpec
+	Get() corev1.PodTemplateSpec
 
 	AddLabel(key, value string) PodTemplateSpec
 	AddAnnotation(key, value string) PodTemplateSpec
