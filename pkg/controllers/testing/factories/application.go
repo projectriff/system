@@ -19,7 +19,6 @@ package factories
 import (
 	"fmt"
 
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/projectriff/system/pkg/apis"
@@ -116,18 +115,19 @@ func (f *application) BuildCache(quantity string) *application {
 	})
 }
 
-func (f *application) StatusConditions(conditions ...apis.Condition) *application {
+func (f *application) StatusConditions(conditions ...*condition) *application {
 	return f.Mutate(func(app *buildv1alpha1.Application) {
-		app.Status.Conditions = conditions
+		c := make([]apis.Condition, len(conditions))
+		for i, cg := range conditions {
+			c[i] = cg.Get()
+		}
+		app.Status.Conditions = c
 	})
 }
 
 func (f *application) StatusReady() *application {
 	return f.StatusConditions(
-		apis.Condition{
-			Type:   apis.ConditionReady,
-			Status: corev1.ConditionTrue,
-		},
+		Condition().Type(buildv1alpha1.ApplicationConditionReady).True(),
 	)
 }
 

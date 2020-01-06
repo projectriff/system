@@ -20,7 +20,6 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -49,6 +48,10 @@ func TestApplicationReconcile(t *testing.T) {
 	testLabelKey := "test-label-key"
 	testLabelValue := "test-label-value"
 	testBuildCacheName := "test-build-cache-000"
+
+	applicationConditionImageResolved := factories.Condition().Type(buildv1alpha1.ApplicationConditionImageResolved)
+	applicationConditionKpackImageReady := factories.Condition().Type(buildv1alpha1.ApplicationConditionKpackImageReady)
+	applicationConditionReady := factories.Condition().Type(buildv1alpha1.ApplicationConditionReady)
 
 	scheme := runtime.NewScheme()
 	_ = clientgoscheme.AddToScheme(scheme)
@@ -115,18 +118,9 @@ func TestApplicationReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			appMinimal.
 				StatusConditions(
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionImageResolved,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionKpackImageReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
+					applicationConditionImageResolved.True(),
+					applicationConditionKpackImageReady.Unknown(),
+					applicationConditionReady.Unknown(),
 				).
 				StatusKpackImageRef("%s-application-001", testName).
 				StatusTargetImage("%s/%s", testImagePrefix, testName).
@@ -148,18 +142,9 @@ func TestApplicationReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			appMinimal.
 				StatusConditions(
-					apis.Condition{
-						Type:   buildv1alpha1.FunctionConditionImageResolved,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   buildv1alpha1.FunctionConditionKpackImageReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   buildv1alpha1.FunctionConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
+					applicationConditionImageResolved.True(),
+					applicationConditionKpackImageReady.Unknown(),
+					applicationConditionReady.Unknown(),
 				).
 				StatusKpackImageRef("%s-application-001", testName).
 				StatusTargetImage("%s/%s", testImagePrefix, testName).
@@ -185,18 +170,9 @@ func TestApplicationReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			appMinimal.
 				StatusConditions(
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionImageResolved,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionKpackImageReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
+					applicationConditionImageResolved.True(),
+					applicationConditionKpackImageReady.Unknown(),
+					applicationConditionReady.Unknown(),
 				).
 				StatusKpackImageRef("%s-application-001", testName).
 				StatusTargetImage("%s/%s", testImagePrefix, testName).
@@ -219,18 +195,9 @@ func TestApplicationReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			appMinimal.
 				StatusConditions(
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionImageResolved,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionKpackImageReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
+					applicationConditionImageResolved.True(),
+					applicationConditionKpackImageReady.Unknown(),
+					applicationConditionReady.Unknown(),
 				).
 				StatusKpackImageRef("%s-application-001", testName).
 				StatusTargetImage("%s/%s", testImagePrefix, testName).
@@ -247,22 +214,9 @@ func TestApplicationReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			appMinimal.
 				StatusConditions(
-					apis.Condition{
-						Type:    buildv1alpha1.ApplicationConditionImageResolved,
-						Reason:  "DefaultImagePrefixMissing",
-						Message: "missing default image prefix",
-						Status:  corev1.ConditionFalse,
-					},
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionKpackImageReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:    buildv1alpha1.ApplicationConditionReady,
-						Reason:  "DefaultImagePrefixMissing",
-						Message: "missing default image prefix",
-						Status:  corev1.ConditionFalse,
-					},
+					applicationConditionImageResolved.False().Reason("DefaultImagePrefixMissing", "missing default image prefix"),
+					applicationConditionKpackImageReady.Unknown(),
+					applicationConditionReady.False().Reason("DefaultImagePrefixMissing", "missing default image prefix"),
 				).
 				Get(),
 		},
@@ -279,22 +233,9 @@ func TestApplicationReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			appMinimal.
 				StatusConditions(
-					apis.Condition{
-						Type:    buildv1alpha1.ApplicationConditionImageResolved,
-						Reason:  "DefaultImagePrefixMissing",
-						Message: "missing default image prefix",
-						Status:  corev1.ConditionFalse,
-					},
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionKpackImageReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:    buildv1alpha1.ApplicationConditionReady,
-						Reason:  "DefaultImagePrefixMissing",
-						Message: "missing default image prefix",
-						Status:  corev1.ConditionFalse,
-					},
+					applicationConditionImageResolved.False().Reason("DefaultImagePrefixMissing", "missing default image prefix"),
+					applicationConditionKpackImageReady.Unknown(),
+					applicationConditionReady.False().Reason("DefaultImagePrefixMissing", "missing default image prefix"),
 				).
 				Get(),
 		},
@@ -314,22 +255,9 @@ func TestApplicationReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			appMinimal.
 				StatusConditions(
-					apis.Condition{
-						Type:    buildv1alpha1.ApplicationConditionImageResolved,
-						Reason:  "ImageInvalid",
-						Message: "inducing failure for get ConfigMap",
-						Status:  corev1.ConditionFalse,
-					},
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionKpackImageReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:    buildv1alpha1.ApplicationConditionReady,
-						Reason:  "ImageInvalid",
-						Message: "inducing failure for get ConfigMap",
-						Status:  corev1.ConditionFalse,
-					},
+					applicationConditionImageResolved.False().Reason("ImageInvalid", "inducing failure for get ConfigMap"),
+					applicationConditionKpackImageReady.Unknown(),
+					applicationConditionReady.False().Reason("ImageInvalid", "inducing failure for get ConfigMap"),
 				).
 				Get(),
 		},
@@ -347,18 +275,9 @@ func TestApplicationReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			appMinimal.
 				StatusConditions(
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionImageResolved,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionKpackImageReady,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionReady,
-						Status: corev1.ConditionTrue,
-					},
+					applicationConditionImageResolved.True(),
+					applicationConditionKpackImageReady.True(),
+					applicationConditionReady.True(),
 				).
 				StatusKpackImageRef(kpackImageGiven.Get().Name).
 				StatusTargetImage("%s/%s", testImagePrefix, testName).
@@ -379,18 +298,9 @@ func TestApplicationReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			appMinimal.
 				StatusConditions(
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionImageResolved,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionKpackImageReady,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionReady,
-						Status: corev1.ConditionTrue,
-					},
+					applicationConditionImageResolved.True(),
+					applicationConditionKpackImageReady.True(),
+					applicationConditionReady.True(),
 				).
 				StatusKpackImageRef(kpackImageGiven.Get().Name).
 				StatusBuildCacheRef(testBuildCacheName).
@@ -405,12 +315,7 @@ func TestApplicationReconcile(t *testing.T) {
 			appValid.Get(),
 			kpackImageGiven.
 				StatusConditions(
-					apis.Condition{
-						Type:    apis.ConditionReady,
-						Status:  corev1.ConditionFalse,
-						Reason:  testConditionReason,
-						Message: testConditionMessage,
-					},
+					factories.Condition().Type(apis.ConditionReady).False().Reason(testConditionReason, testConditionMessage),
 				).
 				StatusLatestImage("%s/%s@sha256:%s", testImagePrefix, testName, testSha256).
 				Get(),
@@ -418,22 +323,9 @@ func TestApplicationReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			appMinimal.
 				StatusConditions(
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionImageResolved,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:    buildv1alpha1.ApplicationConditionKpackImageReady,
-						Status:  corev1.ConditionFalse,
-						Reason:  testConditionReason,
-						Message: testConditionMessage,
-					},
-					apis.Condition{
-						Type:    buildv1alpha1.ApplicationConditionReady,
-						Status:  corev1.ConditionFalse,
-						Reason:  testConditionReason,
-						Message: testConditionMessage,
-					},
+					applicationConditionImageResolved.True(),
+					applicationConditionKpackImageReady.False().Reason(testConditionReason, testConditionMessage),
+					applicationConditionReady.False().Reason(testConditionReason, testConditionMessage),
 				).
 				StatusKpackImageRef(kpackImageGiven.Get().Name).
 				StatusTargetImage("%s/%s", testImagePrefix, testName).
@@ -456,18 +348,9 @@ func TestApplicationReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			appValid.
 				StatusConditions(
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionImageResolved,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionKpackImageReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
+					applicationConditionImageResolved.True(),
+					applicationConditionKpackImageReady.Unknown(),
+					applicationConditionReady.Unknown(),
 				).
 				StatusTargetImage("%s/%s", testImagePrefix, testName).
 				Get(),
@@ -487,18 +370,9 @@ func TestApplicationReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			appValid.
 				StatusConditions(
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionImageResolved,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionKpackImageReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
+					applicationConditionImageResolved.True(),
+					applicationConditionKpackImageReady.Unknown(),
+					applicationConditionReady.Unknown(),
 				).
 				StatusKpackImageRef(kpackImageGiven.Get().Name).
 				StatusTargetImage("%s/%s", testImagePrefix, testName).
@@ -525,18 +399,9 @@ func TestApplicationReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			appValid.
 				StatusConditions(
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionImageResolved,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionKpackImageReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
+					applicationConditionImageResolved.True(),
+					applicationConditionKpackImageReady.Unknown(),
+					applicationConditionReady.Unknown(),
 				).
 				StatusKpackImageRef(kpackImageGiven.Get().Name).
 				StatusTargetImage("%s/%s", testImagePrefix, testName).
@@ -561,18 +426,9 @@ func TestApplicationReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			appValid.
 				StatusConditions(
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionImageResolved,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionKpackImageReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
+					applicationConditionImageResolved.True(),
+					applicationConditionKpackImageReady.Unknown(),
+					applicationConditionReady.Unknown(),
 				).
 				StatusTargetImage("%s/%s", testImagePrefix, testName).
 				Get(),
@@ -590,18 +446,9 @@ func TestApplicationReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			appValid.
 				StatusConditions(
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionImageResolved,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionKpackImageReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
+					applicationConditionImageResolved.True(),
+					applicationConditionKpackImageReady.Unknown(),
+					applicationConditionReady.Unknown(),
 				).
 				StatusTargetImage("%s/%s", testImagePrefix, testName).
 				Get(),
@@ -621,18 +468,9 @@ func TestApplicationReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			appMinimal.
 				StatusConditions(
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionImageResolved,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionKpackImageReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
+					applicationConditionImageResolved.True(),
+					applicationConditionKpackImageReady.Unknown(),
+					applicationConditionReady.Unknown(),
 				).
 				StatusKpackImageRef("%s-application-001", testName).
 				StatusTargetImage("%s/%s", testImagePrefix, testName).
@@ -661,18 +499,9 @@ func TestApplicationReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			appMinimal.
 				StatusConditions(
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionImageResolved,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionKpackImageReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
+					applicationConditionImageResolved.True(),
+					applicationConditionKpackImageReady.Unknown(),
+					applicationConditionReady.Unknown(),
 				).
 				StatusKpackImageRef("%s-application-001", testName).
 				StatusTargetImage("%s/%s", testImagePrefix, testName).
@@ -700,18 +529,9 @@ func TestApplicationReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			appMinimal.
 				StatusConditions(
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionImageResolved,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionKpackImageReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
+					applicationConditionImageResolved.True(),
+					applicationConditionKpackImageReady.Unknown(),
+					applicationConditionReady.Unknown(),
 				).
 				StatusTargetImage("%s/%s", testImagePrefix, testName).
 				Get(),
@@ -727,18 +547,9 @@ func TestApplicationReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			appMinimal.
 				StatusConditions(
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionImageResolved,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionKpackImageReady,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionReady,
-						Status: corev1.ConditionTrue,
-					},
+					applicationConditionImageResolved.True(),
+					applicationConditionKpackImageReady.True(),
+					applicationConditionReady.True(),
 				).
 				StatusTargetImage("%s/%s", testImagePrefix, testName).
 				// TODO resolve to a digest
@@ -760,18 +571,9 @@ func TestApplicationReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			appMinimal.
 				StatusConditions(
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionImageResolved,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionKpackImageReady,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionReady,
-						Status: corev1.ConditionTrue,
-					},
+					applicationConditionImageResolved.True(),
+					applicationConditionKpackImageReady.True(),
+					applicationConditionReady.True(),
 				).
 				StatusTargetImage("%s/%s", testImagePrefix, testName).
 				// TODO resolve to a digest
@@ -797,18 +599,9 @@ func TestApplicationReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			appMinimal.
 				StatusConditions(
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionImageResolved,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionKpackImageReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   buildv1alpha1.ApplicationConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
+					applicationConditionImageResolved.True(),
+					applicationConditionKpackImageReady.Unknown(),
+					applicationConditionReady.Unknown(),
 				).
 				StatusTargetImage("%s/%s", testImagePrefix, testName).
 				Get(),

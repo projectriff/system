@@ -129,9 +129,13 @@ func (f *deployerCore) IngressPolicy(policy corev1alpha1.IngressPolicy) *deploye
 	})
 }
 
-func (f *deployerCore) StatusConditions(conditions ...apis.Condition) *deployerCore {
+func (f *deployerCore) StatusConditions(conditions ...*condition) *deployerCore {
 	return f.Mutate(func(deployer *corev1alpha1.Deployer) {
-		deployer.Status.Conditions = conditions
+		c := make([]apis.Condition, len(conditions))
+		for i, cg := range conditions {
+			c[i] = cg.Get()
+		}
+		deployer.Status.Conditions = c
 	})
 }
 

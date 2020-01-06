@@ -28,7 +28,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/projectriff/system/pkg/apis"
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	knativev1alpha1 "github.com/projectriff/system/pkg/apis/knative/v1alpha1"
 	knativeservingv1 "github.com/projectriff/system/pkg/apis/thirdparty/knative/serving/v1"
@@ -45,6 +44,10 @@ func TestAdapterReconcile(t *testing.T) {
 	testImagePrefix := "example.com/repo"
 	testSha256 := "cf8b4c69d5460f88530e1c80b8856a70801f31c50b191c8413043ba9b160a43e"
 	testImage := fmt.Sprintf("%s/%s@sha256:%s", testImagePrefix, testName, testSha256)
+
+	adapterConditionBuildReady := factories.Condition().Type(knativev1alpha1.AdapterConditionBuildReady)
+	adapterConditionReady := factories.Condition().Type(knativev1alpha1.AdapterConditionReady)
+	adapterConditionTargetFound := factories.Condition().Type(knativev1alpha1.AdapterConditionTargetFound)
 
 	scheme := runtime.NewScheme()
 	_ = clientgoscheme.AddToScheme(scheme)
@@ -124,18 +127,9 @@ func TestAdapterReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			testAdapter.
 				StatusConditions(
-					apis.Condition{
-						Type:   knativev1alpha1.AdapterConditionBuildReady,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.AdapterConditionReady,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.AdapterConditionTargetFound,
-						Status: corev1.ConditionTrue,
-					},
+					adapterConditionBuildReady.True(),
+					adapterConditionReady.True(),
+					adapterConditionTargetFound.True(),
 				).
 				StatusLatestImage(testImage).
 				Get(),
@@ -168,18 +162,9 @@ func TestAdapterReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			testAdapter.
 				StatusConditions(
-					apis.Condition{
-						Type:   knativev1alpha1.AdapterConditionBuildReady,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.AdapterConditionReady,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.AdapterConditionTargetFound,
-						Status: corev1.ConditionTrue,
-					},
+					adapterConditionBuildReady.True(),
+					adapterConditionReady.True(),
+					adapterConditionTargetFound.True(),
 				).
 				StatusLatestImage(testImage).
 				Get(),
@@ -215,18 +200,9 @@ func TestAdapterReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			testAdapter.
 				StatusConditions(
-					apis.Condition{
-						Type:   knativev1alpha1.AdapterConditionBuildReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.AdapterConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.AdapterConditionTargetFound,
-						Status: corev1.ConditionUnknown,
-					},
+					adapterConditionBuildReady.Unknown(),
+					adapterConditionReady.Unknown(),
+					adapterConditionTargetFound.Unknown(),
 				).
 				Get(),
 		},
@@ -279,18 +255,9 @@ func TestAdapterReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			testAdapter.
 				StatusConditions(
-					apis.Condition{
-						Type:   knativev1alpha1.AdapterConditionBuildReady,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.AdapterConditionReady,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.AdapterConditionTargetFound,
-						Status: corev1.ConditionTrue,
-					},
+					adapterConditionBuildReady.True(),
+					adapterConditionReady.True(),
+					adapterConditionTargetFound.True(),
 				).
 				StatusLatestImage(testImage).
 				Get(),
@@ -326,18 +293,9 @@ func TestAdapterReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			testAdapter.
 				StatusConditions(
-					apis.Condition{
-						Type:   knativev1alpha1.AdapterConditionBuildReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.AdapterConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.AdapterConditionTargetFound,
-						Status: corev1.ConditionUnknown,
-					},
+					adapterConditionBuildReady.Unknown(),
+					adapterConditionReady.Unknown(),
+					adapterConditionTargetFound.Unknown(),
 				).
 				Get(),
 		},
@@ -390,18 +348,9 @@ func TestAdapterReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			testAdapter.
 				StatusConditions(
-					apis.Condition{
-						Type:   knativev1alpha1.AdapterConditionBuildReady,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.AdapterConditionReady,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.AdapterConditionTargetFound,
-						Status: corev1.ConditionTrue,
-					},
+					adapterConditionBuildReady.True(),
+					adapterConditionReady.True(),
+					adapterConditionTargetFound.True(),
 				).
 				StatusLatestImage(testImage).
 				Get(),
@@ -437,18 +386,9 @@ func TestAdapterReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			testAdapter.
 				StatusConditions(
-					apis.Condition{
-						Type:   knativev1alpha1.AdapterConditionBuildReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.AdapterConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.AdapterConditionTargetFound,
-						Status: corev1.ConditionUnknown,
-					},
+					adapterConditionBuildReady.Unknown(),
+					adapterConditionReady.Unknown(),
+					adapterConditionTargetFound.Unknown(),
 				).
 				Get(),
 		},
@@ -493,22 +433,9 @@ func TestAdapterReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			testAdapter.
 				StatusConditions(
-					apis.Condition{
-						Type:   knativev1alpha1.AdapterConditionBuildReady,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:    knativev1alpha1.AdapterConditionReady,
-						Status:  corev1.ConditionFalse,
-						Reason:  "NotFound",
-						Message: `The service "my-service" was not found.`,
-					},
-					apis.Condition{
-						Type:    knativev1alpha1.AdapterConditionTargetFound,
-						Status:  corev1.ConditionFalse,
-						Reason:  "NotFound",
-						Message: `The service "my-service" was not found.`,
-					},
+					adapterConditionBuildReady.True(),
+					adapterConditionReady.False().Reason("NotFound", `The service "my-service" was not found.`),
+					adapterConditionTargetFound.False().Reason("NotFound", `The service "my-service" was not found.`),
 				).
 				StatusLatestImage(testImage).
 				Get(),
@@ -543,18 +470,9 @@ func TestAdapterReconcile(t *testing.T) {
 				ContainerRef(testContainer.Get().Name).
 				ServiceRef(testService.Get().Name).
 				StatusConditions(
-					apis.Condition{
-						Type:   knativev1alpha1.AdapterConditionBuildReady,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.AdapterConditionReady,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.AdapterConditionTargetFound,
-						Status: corev1.ConditionTrue,
-					},
+					adapterConditionBuildReady.True(),
+					adapterConditionReady.True(),
+					adapterConditionTargetFound.True(),
 				).
 				StatusLatestImage(testImage).
 				Get(),
@@ -629,18 +547,9 @@ func TestAdapterReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			testAdapter.
 				StatusConditions(
-					apis.Condition{
-						Type:   knativev1alpha1.AdapterConditionBuildReady,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.AdapterConditionReady,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.AdapterConditionTargetFound,
-						Status: corev1.ConditionTrue,
-					},
+					adapterConditionBuildReady.True(),
+					adapterConditionReady.True(),
+					adapterConditionTargetFound.True(),
 				).
 				StatusLatestImage(testImage).
 				Get(),
@@ -665,22 +574,9 @@ func TestAdapterReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			testAdapter.
 				StatusConditions(
-					apis.Condition{
-						Type:   knativev1alpha1.AdapterConditionBuildReady,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:    knativev1alpha1.AdapterConditionReady,
-						Status:  corev1.ConditionFalse,
-						Reason:  "NotFound",
-						Message: `The configuration "my-configuration" was not found.`,
-					},
-					apis.Condition{
-						Type:    knativev1alpha1.AdapterConditionTargetFound,
-						Status:  corev1.ConditionFalse,
-						Reason:  "NotFound",
-						Message: `The configuration "my-configuration" was not found.`,
-					},
+					adapterConditionBuildReady.True(),
+					adapterConditionReady.False().Reason("NotFound", `The configuration "my-configuration" was not found.`),
+					adapterConditionTargetFound.False().Reason("NotFound", `The configuration "my-configuration" was not found.`),
 				).
 				StatusLatestImage(testImage).
 				Get(),
@@ -715,18 +611,9 @@ func TestAdapterReconcile(t *testing.T) {
 				ContainerRef(testContainer.Get().Name).
 				ConfigurationRef(testConfiguration.Get().Name).
 				StatusConditions(
-					apis.Condition{
-						Type:   knativev1alpha1.AdapterConditionBuildReady,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.AdapterConditionReady,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   knativev1alpha1.AdapterConditionTargetFound,
-						Status: corev1.ConditionTrue,
-					},
+					adapterConditionBuildReady.True(),
+					adapterConditionReady.True(),
+					adapterConditionTargetFound.True(),
 				).
 				StatusLatestImage(testImage).
 				Get(),

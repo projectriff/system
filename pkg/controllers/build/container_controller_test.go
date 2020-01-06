@@ -20,14 +20,12 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/projectriff/system/pkg/apis"
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	kpackbuildv1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/kpack/build/v1alpha1"
 	"github.com/projectriff/system/pkg/controllers/build"
@@ -42,6 +40,9 @@ func TestContainerReconcile(t *testing.T) {
 	testKey := types.NamespacedName{Namespace: testNamespace, Name: testName}
 	testImagePrefix := "example.com/repo"
 	testSha256 := "cf8b4c69d5460f88530e1c80b8856a70801f31c50b191c8413043ba9b160a43e"
+
+	containerConditionImageResolved := factories.Condition().Type(buildv1alpha1.ContainerConditionImageResolved)
+	containerConditionReady := factories.Condition().Type(buildv1alpha1.ContainerConditionReady)
 
 	scheme := runtime.NewScheme()
 	_ = clientgoscheme.AddToScheme(scheme)
@@ -85,14 +86,8 @@ func TestContainerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			containerMinimal.
 				StatusConditions(
-					apis.Condition{
-						Type:   buildv1alpha1.ContainerConditionImageResolved,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   buildv1alpha1.ContainerConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
+					containerConditionImageResolved.True(),
+					containerConditionReady.Unknown(),
 				).
 				StatusTargetImage("%s/%s", testImagePrefix, testName).
 				StatusLatestImage("%s/%s@sha256:%s", testImagePrefix, testName, testSha256).
@@ -120,14 +115,8 @@ func TestContainerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			containerMinimal.
 				StatusConditions(
-					apis.Condition{
-						Type:   buildv1alpha1.ContainerConditionImageResolved,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   buildv1alpha1.ContainerConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
+					containerConditionImageResolved.True(),
+					containerConditionReady.Unknown(),
 				).
 				StatusTargetImage("%s/%s", testImagePrefix, testName).
 				Get(),
@@ -141,18 +130,8 @@ func TestContainerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			containerMinimal.
 				StatusConditions(
-					apis.Condition{
-						Type:    buildv1alpha1.ContainerConditionImageResolved,
-						Reason:  "DefaultImagePrefixMissing",
-						Message: "missing default image prefix",
-						Status:  corev1.ConditionFalse,
-					},
-					apis.Condition{
-						Type:    buildv1alpha1.ContainerConditionReady,
-						Reason:  "DefaultImagePrefixMissing",
-						Message: "missing default image prefix",
-						Status:  corev1.ConditionFalse,
-					},
+					containerConditionImageResolved.False().Reason("DefaultImagePrefixMissing", "missing default image prefix"),
+					containerConditionReady.False().Reason("DefaultImagePrefixMissing", "missing default image prefix"),
 				).
 				Get(),
 		},
@@ -167,18 +146,8 @@ func TestContainerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			containerMinimal.
 				StatusConditions(
-					apis.Condition{
-						Type:    buildv1alpha1.ContainerConditionImageResolved,
-						Reason:  "DefaultImagePrefixMissing",
-						Message: "missing default image prefix",
-						Status:  corev1.ConditionFalse,
-					},
-					apis.Condition{
-						Type:    buildv1alpha1.ContainerConditionReady,
-						Reason:  "DefaultImagePrefixMissing",
-						Message: "missing default image prefix",
-						Status:  corev1.ConditionFalse,
-					},
+					containerConditionImageResolved.False().Reason("DefaultImagePrefixMissing", "missing default image prefix"),
+					containerConditionReady.False().Reason("DefaultImagePrefixMissing", "missing default image prefix"),
 				).
 				Get(),
 		},
@@ -196,18 +165,8 @@ func TestContainerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			containerMinimal.
 				StatusConditions(
-					apis.Condition{
-						Type:    buildv1alpha1.ContainerConditionImageResolved,
-						Reason:  "ImageInvalid",
-						Message: "inducing failure for get ConfigMap",
-						Status:  corev1.ConditionFalse,
-					},
-					apis.Condition{
-						Type:    buildv1alpha1.ContainerConditionReady,
-						Reason:  "ImageInvalid",
-						Message: "inducing failure for get ConfigMap",
-						Status:  corev1.ConditionFalse,
-					},
+					containerConditionImageResolved.False().Reason("ImageInvalid", "inducing failure for get ConfigMap"),
+					containerConditionReady.False().Reason("ImageInvalid", "inducing failure for get ConfigMap"),
 				).
 				Get(),
 		},
@@ -227,14 +186,8 @@ func TestContainerReconcile(t *testing.T) {
 		ExpectStatusUpdates: []runtime.Object{
 			containerMinimal.
 				StatusConditions(
-					apis.Condition{
-						Type:   buildv1alpha1.ContainerConditionImageResolved,
-						Status: corev1.ConditionTrue,
-					},
-					apis.Condition{
-						Type:   buildv1alpha1.ContainerConditionReady,
-						Status: corev1.ConditionUnknown,
-					},
+					containerConditionImageResolved.True(),
+					containerConditionReady.Unknown(),
 				).
 				StatusTargetImage("%s/%s", testImagePrefix, testName).
 				Get(),
