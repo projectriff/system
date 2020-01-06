@@ -73,6 +73,8 @@ ko apply -f config/riff-${component}.yaml
 
 A common practice is to start with a [standard riff install](https://github.com/projectriff/charts) and then incrementally update riff System from source.
 
+Make sure to install [cert-manager](https://cert-manager.io/docs/installation/kubernetes/) first.
+
 Build:
 
 - [kpack](https://github.com/pivotal/kpack)
