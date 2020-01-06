@@ -39,7 +39,7 @@ import (
 	"github.com/projectriff/system/pkg/tracker"
 )
 
-func TestDeployerReconcile(t *testing.T) {
+func TestDeployerReconciler(t *testing.T) {
 	testNamespace := "test-namespace"
 	testName := "test-deployer"
 	testKey := types.NamespacedName{Namespace: testNamespace, Name: testName}

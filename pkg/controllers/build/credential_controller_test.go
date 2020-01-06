@@ -33,7 +33,7 @@ import (
 	"github.com/projectriff/system/pkg/tracker"
 )
 
-func TestCredentialsReconcile(t *testing.T) {
+func TestCredentialsReconciler(t *testing.T) {
 	testNamespace := "test-namespace"
 	testName := "riff-build"
 	testKey := types.NamespacedName{Namespace: testNamespace, Name: testName}

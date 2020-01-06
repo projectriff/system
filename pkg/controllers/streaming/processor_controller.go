@@ -36,8 +36,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/projectriff/system/pkg/apis"
@@ -737,26 +735,6 @@ func (*ProcessorReconciler) collectInputStartOffsets(bindings []streamingv1alpha
 }
 
 func (r *ProcessorReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	enqueueTrackedResources := func(t runtime.Object) handler.EventHandler {
-		versionKinds, _, err := r.Scheme.ObjectKinds(t)
-		if err != nil {
-			panic(err)
-		}
-		return &handler.EnqueueRequestsFromMapFunc{
-			ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
-				var requests []reconcile.Request
-				key := tracker.NewKey(
-					versionKinds[0],
-					types.NamespacedName{Namespace: a.Meta.GetNamespace(), Name: a.Meta.GetName()},
-				)
-				for _, item := range r.Tracker.Lookup(key) {
-					requests = append(requests, reconcile.Request{NamespacedName: item})
-				}
-				return requests
-			}),
-		}
-	}
-
 	if err := controllers.IndexControllersOfType(mgr, processorDeploymentIndexField, &streamingv1alpha1.Processor{}, &appsv1.Deployment{}); err != nil {
 		return err
 	}
@@ -768,9 +746,9 @@ func (r *ProcessorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&streamingv1alpha1.Processor{}).
 		Owns(&appsv1.Deployment{}).
 		Owns(&kedav1alpha1.ScaledObject{}).
-		Watches(&source.Kind{Type: &buildv1alpha1.Container{}}, enqueueTrackedResources(&buildv1alpha1.Container{})).
-		Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, enqueueTrackedResources(&buildv1alpha1.Function{})).
-		Watches(&source.Kind{Type: &streamingv1alpha1.Stream{}}, enqueueTrackedResources(&streamingv1alpha1.Stream{})).
-		Watches(&source.Kind{Type: &corev1.ConfigMap{}}, enqueueTrackedResources(&v1.ConfigMap{})).
+		Watches(&source.Kind{Type: &buildv1alpha1.Container{}}, controllers.EnqueueTracked(&buildv1alpha1.Container{}, r.Tracker, r.Scheme)).
+		Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, controllers.EnqueueTracked(&buildv1alpha1.Function{}, r.Tracker, r.Scheme)).
+		Watches(&source.Kind{Type: &streamingv1alpha1.Stream{}}, controllers.EnqueueTracked(&streamingv1alpha1.Stream{}, r.Tracker, r.Scheme)).
+		Watches(&source.Kind{Type: &corev1.ConfigMap{}}, controllers.EnqueueTracked(&corev1.ConfigMap{}, r.Tracker, r.Scheme)).
 		Complete(r)
 }

@@ -35,7 +35,7 @@ import (
 	"github.com/projectriff/system/pkg/tracker"
 )
 
-func TestApplicationReconcile(t *testing.T) {
+func TestApplicationReconciler(t *testing.T) {
 	testNamespace := "test-namespace"
 	testName := "test-application"
 	testKey := types.NamespacedName{Namespace: testNamespace, Name: testName}

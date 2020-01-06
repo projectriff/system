@@ -32,8 +32,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	streamingv1alpha1 "github.com/projectriff/system/pkg/apis/streaming/v1alpha1"
@@ -616,22 +614,6 @@ func (r *PulsarProviderReconciler) constructProvisionerLabelsForPulsarProvider(p
 }
 
 func (r *PulsarProviderReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	enqueueTrackedResources := &handler.EnqueueRequestsFromMapFunc{
-		ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
-			requests := []reconcile.Request{}
-			if a.Meta.GetNamespace() == r.Namespace && a.Meta.GetName() == pulsarProviderImages {
-				key := tracker.NewKey(
-					schema.GroupVersionKind{Version: "v1", Kind: "ConfigMap"},
-					types.NamespacedName{Namespace: a.Meta.GetNamespace(), Name: a.Meta.GetName()},
-				)
-				for _, item := range r.Tracker.Lookup(key) {
-					requests = append(requests, reconcile.Request{NamespacedName: item})
-				}
-			}
-			return requests
-		}),
-	}
-
 	if err := controllers.IndexControllersOfType(mgr, pulsarProviderDeploymentIndexField, &streamingv1alpha1.PulsarProvider{}, &appsv1.Deployment{}); err != nil {
 		return err
 	}
@@ -643,6 +625,6 @@ func (r *PulsarProviderReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&streamingv1alpha1.PulsarProvider{}).
 		Owns(&appsv1.Deployment{}).
 		Owns(&corev1.Service{}).
-		Watches(&source.Kind{Type: &corev1.ConfigMap{}}, enqueueTrackedResources).
+		Watches(&source.Kind{Type: &corev1.ConfigMap{}}, controllers.EnqueueTracked(&corev1.ConfigMap{}, r.Tracker, r.Scheme)).
 		Complete(r)
 }
