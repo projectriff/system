@@ -53,27 +53,21 @@ func TestAdapterReconcile(t *testing.T) {
 	_ = knativeservingv1.AddToScheme(scheme)
 
 	testAdapter := factories.AdapterKnative().
-		NamespaceName(testNamespace, testName).
-		Get()
+		NamespaceName(testNamespace, testName)
 
 	testApplication := factories.Application().
-		NamespaceName(testNamespace, "my-application").
-		Get()
+		NamespaceName(testNamespace, "my-application")
 	testFunction := factories.Function().
-		NamespaceName(testNamespace, "my-function").
-		Get()
+		NamespaceName(testNamespace, "my-function")
 	testContainer := factories.Container().
-		NamespaceName(testNamespace, "my-container").
-		Get()
+		NamespaceName(testNamespace, "my-container")
 
 	testConfiguration := factories.KnativeConfiguration().
 		NamespaceName(testNamespace, "my-configuration").
-		UserContainer(nil).
-		Get()
+		UserContainer(nil)
 	testService := factories.KnativeService().
 		NamespaceName(testNamespace, "my-service").
-		UserContainer(nil).
-		Get()
+		UserContainer(nil)
 
 	table := rtesting.Table{{
 		Name: "adapter does not exist",
@@ -82,7 +76,7 @@ func TestAdapterReconcile(t *testing.T) {
 		Name: "ignore deleted adapter",
 		Key:  testKey,
 		GivenObjects: []runtime.Object{
-			factories.AdapterKnative(testAdapter).
+			testAdapter.
 				ObjectMeta(func(om factories.ObjectMeta) {
 					om.Deleted(1)
 				}).
@@ -95,7 +89,7 @@ func TestAdapterReconcile(t *testing.T) {
 			rtesting.InduceFailure("get", "Adapter"),
 		},
 		GivenObjects: []runtime.Object{
-			testAdapter,
+			testAdapter.Get(),
 		},
 		ShouldErr: true,
 	}, {
@@ -105,30 +99,30 @@ func TestAdapterReconcile(t *testing.T) {
 			rtesting.InduceFailure("update", "Adapter"),
 		},
 		GivenObjects: []runtime.Object{
-			factories.AdapterKnative(testAdapter).
-				ApplicationRef(testApplication.Name).
-				ServiceRef(testService.Name).
+			testAdapter.
+				ApplicationRef(testApplication.Get().Name).
+				ServiceRef(testService.Get().Name).
 				Get(),
-			factories.Application(testApplication).
+			testApplication.
 				StatusLatestImage(testImage).
 				StatusReady().
 				Get(),
-			testService,
+			testService.Get(),
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testApplication, testAdapter, scheme),
-			rtesting.NewTrackRequest(testService, testAdapter, scheme),
+			rtesting.NewTrackRequest(testApplication.Get(), testAdapter.Get(), scheme),
+			rtesting.NewTrackRequest(testService.Get(), testAdapter.Get(), scheme),
 		},
 		ExpectUpdates: []runtime.Object{
-			factories.KnativeService(testService).
+			testService.
 				UserContainer(func(uc *corev1.Container) {
 					uc.Image = testImage
 				}).
 				Get(),
 		},
 		ExpectStatusUpdates: []runtime.Object{
-			factories.AdapterKnative(testAdapter).
+			testAdapter.
 				StatusConditions(
 					apis.Condition{
 						Type:   knativev1alpha1.AdapterConditionBuildReady,
@@ -150,29 +144,29 @@ func TestAdapterReconcile(t *testing.T) {
 		Name: "adapt application to service",
 		Key:  testKey,
 		GivenObjects: []runtime.Object{
-			factories.AdapterKnative(testAdapter).
-				ApplicationRef(testApplication.Name).
-				ServiceRef(testService.Name).
+			testAdapter.
+				ApplicationRef(testApplication.Get().Name).
+				ServiceRef(testService.Get().Name).
 				Get(),
-			factories.Application(testApplication).
+			testApplication.
 				StatusLatestImage(testImage).
 				StatusReady().
 				Get(),
-			testService,
+			testService.Get(),
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testApplication, testAdapter, scheme),
-			rtesting.NewTrackRequest(testService, testAdapter, scheme),
+			rtesting.NewTrackRequest(testApplication.Get(), testAdapter.Get(), scheme),
+			rtesting.NewTrackRequest(testService.Get(), testAdapter.Get(), scheme),
 		},
 		ExpectUpdates: []runtime.Object{
-			factories.KnativeService(testService).
+			testService.
 				UserContainer(func(uc *corev1.Container) {
 					uc.Image = testImage
 				}).
 				Get(),
 		},
 		ExpectStatusUpdates: []runtime.Object{
-			factories.AdapterKnative(testAdapter).
+			testAdapter.
 				StatusConditions(
 					apis.Condition{
 						Type:   knativev1alpha1.AdapterConditionBuildReady,
@@ -194,32 +188,32 @@ func TestAdapterReconcile(t *testing.T) {
 		Name: "adapt application to service, application not ready",
 		Key:  testKey,
 		GivenObjects: []runtime.Object{
-			factories.AdapterKnative(testAdapter).
-				ApplicationRef(testApplication.Name).
-				ServiceRef(testService.Name).
+			testAdapter.
+				ApplicationRef(testApplication.Get().Name).
+				ServiceRef(testService.Get().Name).
 				Get(),
-			testApplication,
-			testService,
+			testApplication.Get(),
+			testService.Get(),
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testApplication, testAdapter, scheme),
+			rtesting.NewTrackRequest(testApplication.Get(), testAdapter.Get(), scheme),
 		},
 	}, {
 		Name: "adapt application to service, application not found",
 		Key:  testKey,
 		GivenObjects: []runtime.Object{
-			factories.AdapterKnative(testAdapter).
-				ApplicationRef(testApplication.Name).
-				ServiceRef(testService.Name).
+			testAdapter.
+				ApplicationRef(testApplication.Get().Name).
+				ServiceRef(testService.Get().Name).
 				Get(),
-			testService,
+			testService.Get(),
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testApplication, testAdapter, scheme),
+			rtesting.NewTrackRequest(testApplication.Get(), testAdapter.Get(), scheme),
 		},
 		ExpectStatusUpdates: []runtime.Object{
-			factories.AdapterKnative(testAdapter).
+			testAdapter.
 				StatusConditions(
 					apis.Condition{
 						Type:   knativev1alpha1.AdapterConditionBuildReady,
@@ -243,47 +237,47 @@ func TestAdapterReconcile(t *testing.T) {
 			rtesting.InduceFailure("get", "Application"),
 		},
 		GivenObjects: []runtime.Object{
-			factories.AdapterKnative(testAdapter).
-				ApplicationRef(testApplication.Name).
-				ServiceRef(testService.Name).
+			testAdapter.
+				ApplicationRef(testApplication.Get().Name).
+				ServiceRef(testService.Get().Name).
 				Get(),
-			factories.Application(testApplication).
+			testApplication.
 				StatusLatestImage(testImage).
 				StatusReady().
 				Get(),
-			testService,
+			testService.Get(),
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testApplication, testAdapter, scheme),
+			rtesting.NewTrackRequest(testApplication.Get(), testAdapter.Get(), scheme),
 		},
 	}, {
 		Name: "adapt function to service",
 		Key:  testKey,
 		GivenObjects: []runtime.Object{
-			factories.AdapterKnative(testAdapter).
-				FunctionRef(testFunction.Name).
-				ServiceRef(testService.Name).
+			testAdapter.
+				FunctionRef(testFunction.Get().Name).
+				ServiceRef(testService.Get().Name).
 				Get(),
-			factories.Function(testFunction).
+			testFunction.
 				StatusLatestImage(testImage).
 				StatusReady().
 				Get(),
-			testService,
+			testService.Get(),
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testFunction, testAdapter, scheme),
-			rtesting.NewTrackRequest(testService, testAdapter, scheme),
+			rtesting.NewTrackRequest(testFunction.Get(), testAdapter.Get(), scheme),
+			rtesting.NewTrackRequest(testService.Get(), testAdapter.Get(), scheme),
 		},
 		ExpectUpdates: []runtime.Object{
-			factories.KnativeService(testService).
+			testService.
 				UserContainer(func(uc *corev1.Container) {
 					uc.Image = testImage
 				}).
 				Get(),
 		},
 		ExpectStatusUpdates: []runtime.Object{
-			factories.AdapterKnative(testAdapter).
+			testAdapter.
 				StatusConditions(
 					apis.Condition{
 						Type:   knativev1alpha1.AdapterConditionBuildReady,
@@ -305,32 +299,32 @@ func TestAdapterReconcile(t *testing.T) {
 		Name: "adapt function to service, function not ready",
 		Key:  testKey,
 		GivenObjects: []runtime.Object{
-			factories.AdapterKnative(testAdapter).
-				FunctionRef(testFunction.Name).
-				ServiceRef(testService.Name).
+			testAdapter.
+				FunctionRef(testFunction.Get().Name).
+				ServiceRef(testService.Get().Name).
 				Get(),
-			testFunction,
-			testService,
+			testFunction.Get(),
+			testService.Get(),
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testFunction, testAdapter, scheme),
+			rtesting.NewTrackRequest(testFunction.Get(), testAdapter.Get(), scheme),
 		},
 	}, {
 		Name: "adapt function to service, function not found",
 		Key:  testKey,
 		GivenObjects: []runtime.Object{
-			factories.AdapterKnative(testAdapter).
-				FunctionRef(testFunction.Name).
-				ServiceRef(testService.Name).
+			testAdapter.
+				FunctionRef(testFunction.Get().Name).
+				ServiceRef(testService.Get().Name).
 				Get(),
-			testService,
+			testService.Get(),
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testFunction, testAdapter, scheme),
+			rtesting.NewTrackRequest(testFunction.Get(), testAdapter.Get(), scheme),
 		},
 		ExpectStatusUpdates: []runtime.Object{
-			factories.AdapterKnative(testAdapter).
+			testAdapter.
 				StatusConditions(
 					apis.Condition{
 						Type:   knativev1alpha1.AdapterConditionBuildReady,
@@ -354,47 +348,47 @@ func TestAdapterReconcile(t *testing.T) {
 			rtesting.InduceFailure("get", "function"),
 		},
 		GivenObjects: []runtime.Object{
-			factories.AdapterKnative(testAdapter).
-				FunctionRef(testFunction.Name).
-				ServiceRef(testService.Name).
+			testAdapter.
+				FunctionRef(testFunction.Get().Name).
+				ServiceRef(testService.Get().Name).
 				Get(),
-			factories.Function(testFunction).
+			testFunction.
 				StatusLatestImage(testImage).
 				StatusReady().
 				Get(),
-			testService,
+			testService.Get(),
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testFunction, testAdapter, scheme),
+			rtesting.NewTrackRequest(testFunction.Get(), testAdapter.Get(), scheme),
 		},
 	}, {
 		Name: "adapt container to service",
 		Key:  testKey,
 		GivenObjects: []runtime.Object{
-			factories.AdapterKnative(testAdapter).
-				ContainerRef(testContainer.Name).
-				ServiceRef(testService.Name).
+			testAdapter.
+				ContainerRef(testContainer.Get().Name).
+				ServiceRef(testService.Get().Name).
 				Get(),
-			factories.Container(testContainer).
+			testContainer.
 				StatusLatestImage(testImage).
 				StatusReady().
 				Get(),
-			testService,
+			testService.Get(),
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testContainer, testAdapter, scheme),
-			rtesting.NewTrackRequest(testService, testAdapter, scheme),
+			rtesting.NewTrackRequest(testContainer.Get(), testAdapter.Get(), scheme),
+			rtesting.NewTrackRequest(testService.Get(), testAdapter.Get(), scheme),
 		},
 		ExpectUpdates: []runtime.Object{
-			factories.KnativeService(testService).
+			testService.
 				UserContainer(func(uc *corev1.Container) {
 					uc.Image = testImage
 				}).
 				Get(),
 		},
 		ExpectStatusUpdates: []runtime.Object{
-			factories.AdapterKnative(testAdapter).
+			testAdapter.
 				StatusConditions(
 					apis.Condition{
 						Type:   knativev1alpha1.AdapterConditionBuildReady,
@@ -416,32 +410,32 @@ func TestAdapterReconcile(t *testing.T) {
 		Name: "adapt container to service, container not ready",
 		Key:  testKey,
 		GivenObjects: []runtime.Object{
-			factories.AdapterKnative(testAdapter).
-				ContainerRef(testContainer.Name).
-				ServiceRef(testService.Name).
+			testAdapter.
+				ContainerRef(testContainer.Get().Name).
+				ServiceRef(testService.Get().Name).
 				Get(),
-			testContainer,
-			testService,
+			testContainer.Get(),
+			testService.Get(),
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testContainer, testAdapter, scheme),
+			rtesting.NewTrackRequest(testContainer.Get(), testAdapter.Get(), scheme),
 		},
 	}, {
 		Name: "adapt container to service, container not found",
 		Key:  testKey,
 		GivenObjects: []runtime.Object{
-			factories.AdapterKnative(testAdapter).
-				ContainerRef(testContainer.Name).
-				ServiceRef(testService.Name).
+			testAdapter.
+				ContainerRef(testContainer.Get().Name).
+				ServiceRef(testService.Get().Name).
 				Get(),
-			testService,
+			testService.Get(),
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testContainer, testAdapter, scheme),
+			rtesting.NewTrackRequest(testContainer.Get(), testAdapter.Get(), scheme),
 		},
 		ExpectStatusUpdates: []runtime.Object{
-			factories.AdapterKnative(testAdapter).
+			testAdapter.
 				StatusConditions(
 					apis.Condition{
 						Type:   knativev1alpha1.AdapterConditionBuildReady,
@@ -465,39 +459,39 @@ func TestAdapterReconcile(t *testing.T) {
 			rtesting.InduceFailure("get", "Container"),
 		},
 		GivenObjects: []runtime.Object{
-			factories.AdapterKnative(testAdapter).
-				ContainerRef(testContainer.Name).
-				ServiceRef(testService.Name).
+			testAdapter.
+				ContainerRef(testContainer.Get().Name).
+				ServiceRef(testService.Get().Name).
 				Get(),
-			factories.Container(testContainer).
+			testContainer.
 				StatusLatestImage(testImage).
 				StatusReady().
 				Get(),
-			testService,
+			testService.Get(),
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testContainer, testAdapter, scheme),
+			rtesting.NewTrackRequest(testContainer.Get(), testAdapter.Get(), scheme),
 		},
 	}, {
 		Name: "adapt container to service, service not found",
 		Key:  testKey,
 		GivenObjects: []runtime.Object{
-			factories.AdapterKnative(testAdapter).
-				ContainerRef(testContainer.Name).
-				ServiceRef(testService.Name).
+			testAdapter.
+				ContainerRef(testContainer.Get().Name).
+				ServiceRef(testService.Get().Name).
 				Get(),
-			factories.Container(testContainer).
+			testContainer.
 				StatusLatestImage(testImage).
 				StatusReady().
 				Get(),
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testContainer, testAdapter, scheme),
-			rtesting.NewTrackRequest(testService, testAdapter, scheme),
+			rtesting.NewTrackRequest(testContainer.Get(), testAdapter.Get(), scheme),
+			rtesting.NewTrackRequest(testService.Get(), testAdapter.Get(), scheme),
 		},
 		ExpectStatusUpdates: []runtime.Object{
-			factories.AdapterKnative(testAdapter).
+			testAdapter.
 				StatusConditions(
 					apis.Condition{
 						Type:   knativev1alpha1.AdapterConditionBuildReady,
@@ -526,28 +520,28 @@ func TestAdapterReconcile(t *testing.T) {
 			rtesting.InduceFailure("get", "Service"),
 		},
 		GivenObjects: []runtime.Object{
-			factories.AdapterKnative(testAdapter).
-				ContainerRef(testContainer.Name).
-				ServiceRef(testService.Name).
+			testAdapter.
+				ContainerRef(testContainer.Get().Name).
+				ServiceRef(testService.Get().Name).
 				Get(),
-			factories.Container(testContainer).
+			testContainer.
 				StatusLatestImage(testImage).
 				StatusReady().
 				Get(),
-			testService,
+			testService.Get(),
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testContainer, testAdapter, scheme),
-			rtesting.NewTrackRequest(testService, testAdapter, scheme),
+			rtesting.NewTrackRequest(testContainer.Get(), testAdapter.Get(), scheme),
+			rtesting.NewTrackRequest(testService.Get(), testAdapter.Get(), scheme),
 		},
 	}, {
 		Name: "adapt container to service, service is up to date",
 		Key:  testKey,
 		GivenObjects: []runtime.Object{
-			factories.AdapterKnative(testAdapter).
-				ContainerRef(testContainer.Name).
-				ServiceRef(testService.Name).
+			testAdapter.
+				ContainerRef(testContainer.Get().Name).
+				ServiceRef(testService.Get().Name).
 				StatusConditions(
 					apis.Condition{
 						Type:   knativev1alpha1.AdapterConditionBuildReady,
@@ -564,19 +558,19 @@ func TestAdapterReconcile(t *testing.T) {
 				).
 				StatusLatestImage(testImage).
 				Get(),
-			factories.Container(testContainer).
+			testContainer.
 				StatusLatestImage(testImage).
 				StatusReady().
 				Get(),
-			factories.KnativeService(testService).
+			testService.
 				UserContainer(func(uc *corev1.Container) {
 					uc.Image = testImage
 				}).
 				Get(),
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testContainer, testAdapter, scheme),
-			rtesting.NewTrackRequest(testService, testAdapter, scheme),
+			rtesting.NewTrackRequest(testContainer.Get(), testAdapter.Get(), scheme),
+			rtesting.NewTrackRequest(testService.Get(), testAdapter.Get(), scheme),
 		},
 	}, {
 		Name: "adapt container to service, update service failed",
@@ -585,23 +579,23 @@ func TestAdapterReconcile(t *testing.T) {
 			rtesting.InduceFailure("update", "Service"),
 		},
 		GivenObjects: []runtime.Object{
-			factories.AdapterKnative(testAdapter).
-				ContainerRef(testContainer.Name).
-				ServiceRef(testService.Name).
+			testAdapter.
+				ContainerRef(testContainer.Get().Name).
+				ServiceRef(testService.Get().Name).
 				Get(),
-			factories.Container(testContainer).
+			testContainer.
 				StatusLatestImage(testImage).
 				StatusReady().
 				Get(),
-			testService,
+			testService.Get(),
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testContainer, testAdapter, scheme),
-			rtesting.NewTrackRequest(testService, testAdapter, scheme),
+			rtesting.NewTrackRequest(testContainer.Get(), testAdapter.Get(), scheme),
+			rtesting.NewTrackRequest(testService.Get(), testAdapter.Get(), scheme),
 		},
 		ExpectUpdates: []runtime.Object{
-			factories.KnativeService(testService).
+			testService.
 				UserContainer(func(uc *corev1.Container) {
 					uc.Image = testImage
 				}).
@@ -611,29 +605,29 @@ func TestAdapterReconcile(t *testing.T) {
 		Name: "adapt container to configuration",
 		Key:  testKey,
 		GivenObjects: []runtime.Object{
-			factories.AdapterKnative(testAdapter).
-				ContainerRef(testContainer.Name).
-				ConfigurationRef(testConfiguration.Name).
+			testAdapter.
+				ContainerRef(testContainer.Get().Name).
+				ConfigurationRef(testConfiguration.Get().Name).
 				Get(),
-			factories.Container(testContainer).
+			testContainer.
 				StatusLatestImage(testImage).
 				StatusReady().
 				Get(),
-			testConfiguration,
+			testConfiguration.Get(),
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testContainer, testAdapter, scheme),
-			rtesting.NewTrackRequest(testConfiguration, testAdapter, scheme),
+			rtesting.NewTrackRequest(testContainer.Get(), testAdapter.Get(), scheme),
+			rtesting.NewTrackRequest(testConfiguration.Get(), testAdapter.Get(), scheme),
 		},
 		ExpectUpdates: []runtime.Object{
-			factories.KnativeConfiguration(testConfiguration).
+			testConfiguration.
 				UserContainer(func(uc *corev1.Container) {
 					uc.Image = testImage
 				}).
 				Get(),
 		},
 		ExpectStatusUpdates: []runtime.Object{
-			factories.AdapterKnative(testAdapter).
+			testAdapter.
 				StatusConditions(
 					apis.Condition{
 						Type:   knativev1alpha1.AdapterConditionBuildReady,
@@ -655,21 +649,21 @@ func TestAdapterReconcile(t *testing.T) {
 		Name: "adapt container to configuration, configuration not found",
 		Key:  testKey,
 		GivenObjects: []runtime.Object{
-			factories.AdapterKnative(testAdapter).
-				ContainerRef(testContainer.Name).
-				ConfigurationRef(testConfiguration.Name).
+			testAdapter.
+				ContainerRef(testContainer.Get().Name).
+				ConfigurationRef(testConfiguration.Get().Name).
 				Get(),
-			factories.Container(testContainer).
+			testContainer.
 				StatusLatestImage(testImage).
 				StatusReady().
 				Get(),
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testContainer, testAdapter, scheme),
-			rtesting.NewTrackRequest(testConfiguration, testAdapter, scheme),
+			rtesting.NewTrackRequest(testContainer.Get(), testAdapter.Get(), scheme),
+			rtesting.NewTrackRequest(testConfiguration.Get(), testAdapter.Get(), scheme),
 		},
 		ExpectStatusUpdates: []runtime.Object{
-			factories.AdapterKnative(testAdapter).
+			testAdapter.
 				StatusConditions(
 					apis.Condition{
 						Type:   knativev1alpha1.AdapterConditionBuildReady,
@@ -698,28 +692,28 @@ func TestAdapterReconcile(t *testing.T) {
 			rtesting.InduceFailure("get", "Configuration"),
 		},
 		GivenObjects: []runtime.Object{
-			factories.AdapterKnative(testAdapter).
-				ContainerRef(testContainer.Name).
-				ConfigurationRef(testConfiguration.Name).
+			testAdapter.
+				ContainerRef(testContainer.Get().Name).
+				ConfigurationRef(testConfiguration.Get().Name).
 				Get(),
-			factories.Container(testContainer).
+			testContainer.
 				StatusLatestImage(testImage).
 				StatusReady().
 				Get(),
-			testConfiguration,
+			testConfiguration.Get(),
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testContainer, testAdapter, scheme),
-			rtesting.NewTrackRequest(testConfiguration, testAdapter, scheme),
+			rtesting.NewTrackRequest(testContainer.Get(), testAdapter.Get(), scheme),
+			rtesting.NewTrackRequest(testConfiguration.Get(), testAdapter.Get(), scheme),
 		},
 	}, {
 		Name: "adapt container to configuration, configuration is up to date",
 		Key:  testKey,
 		GivenObjects: []runtime.Object{
-			factories.AdapterKnative(testAdapter).
-				ContainerRef(testContainer.Name).
-				ConfigurationRef(testConfiguration.Name).
+			testAdapter.
+				ContainerRef(testContainer.Get().Name).
+				ConfigurationRef(testConfiguration.Get().Name).
 				StatusConditions(
 					apis.Condition{
 						Type:   knativev1alpha1.AdapterConditionBuildReady,
@@ -736,19 +730,19 @@ func TestAdapterReconcile(t *testing.T) {
 				).
 				StatusLatestImage(testImage).
 				Get(),
-			factories.Container(testContainer).
+			testContainer.
 				StatusLatestImage(testImage).
 				StatusReady().
 				Get(),
-			factories.KnativeConfiguration(testConfiguration).
+			testConfiguration.
 				UserContainer(func(uc *corev1.Container) {
 					uc.Image = testImage
 				}).
 				Get(),
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testContainer, testAdapter, scheme),
-			rtesting.NewTrackRequest(testConfiguration, testAdapter, scheme),
+			rtesting.NewTrackRequest(testContainer.Get(), testAdapter.Get(), scheme),
+			rtesting.NewTrackRequest(testConfiguration.Get(), testAdapter.Get(), scheme),
 		},
 	}, {
 		Name: "adapt container to configuration, update configuration failed",
@@ -757,23 +751,23 @@ func TestAdapterReconcile(t *testing.T) {
 			rtesting.InduceFailure("update", "Configuration"),
 		},
 		GivenObjects: []runtime.Object{
-			factories.AdapterKnative(testAdapter).
-				ContainerRef(testContainer.Name).
-				ConfigurationRef(testConfiguration.Name).
+			testAdapter.
+				ContainerRef(testContainer.Get().Name).
+				ConfigurationRef(testConfiguration.Get().Name).
 				Get(),
-			factories.Container(testContainer).
+			testContainer.
 				StatusLatestImage(testImage).
 				StatusReady().
 				Get(),
-			testConfiguration,
+			testConfiguration.Get(),
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testContainer, testAdapter, scheme),
-			rtesting.NewTrackRequest(testConfiguration, testAdapter, scheme),
+			rtesting.NewTrackRequest(testContainer.Get(), testAdapter.Get(), scheme),
+			rtesting.NewTrackRequest(testConfiguration.Get(), testAdapter.Get(), scheme),
 		},
 		ExpectUpdates: []runtime.Object{
-			factories.KnativeConfiguration(testConfiguration).
+			testConfiguration.
 				UserContainer(func(uc *corev1.Container) {
 					uc.Image = testImage
 				}).

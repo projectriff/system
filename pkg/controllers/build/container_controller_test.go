@@ -49,20 +49,16 @@ func TestContainerReconcile(t *testing.T) {
 	_ = buildv1alpha1.AddToScheme(scheme)
 
 	containerMinimal := factories.Container().
-		NamespaceName(testNamespace, testName).
-		Get()
-	containerValid := factories.Container(containerMinimal).
-		Image("%s/%s", testImagePrefix, testName).
-		Get()
+		NamespaceName(testNamespace, testName)
+	containerValid := containerMinimal.
+		Image("%s/%s", testImagePrefix, testName)
 
 	cmImagePrefix := factories.ConfigMap().
 		NamespaceName(testNamespace, "riff-build").
-		AddData("default-image-prefix", "").
-		Get()
+		AddData("default-image-prefix", "")
 
 	serviceAccount := factories.ServiceAccount().
-		NamespaceName(testNamespace, "riff-build").
-		Get()
+		NamespaceName(testNamespace, "riff-build")
 
 	table := rtesting.Table{{
 		Name: "container does not exist",
@@ -71,7 +67,7 @@ func TestContainerReconcile(t *testing.T) {
 		Name: "ignore deleted container",
 		Key:  testKey,
 		GivenObjects: []runtime.Object{
-			factories.Container(containerValid).
+			containerValid.
 				ObjectMeta(func(om factories.ObjectMeta) {
 					om.Deleted(1)
 				}).
@@ -83,11 +79,11 @@ func TestContainerReconcile(t *testing.T) {
 		Name: "resolve images digest",
 		Key:  testKey,
 		GivenObjects: []runtime.Object{
-			containerValid,
-			serviceAccount,
+			containerValid.Get(),
+			serviceAccount.Get(),
 		},
 		ExpectStatusUpdates: []runtime.Object{
-			factories.Container(containerMinimal).
+			containerMinimal.
 				StatusConditions(
 					apis.Condition{
 						Type:   buildv1alpha1.ContainerConditionImageResolved,
@@ -115,14 +111,14 @@ func TestContainerReconcile(t *testing.T) {
 		Name: "default image",
 		Key:  testKey,
 		GivenObjects: []runtime.Object{
-			factories.ConfigMap(cmImagePrefix).
+			cmImagePrefix.
 				AddData("default-image-prefix", testImagePrefix).
 				Get(),
-			containerMinimal,
-			serviceAccount,
+			containerMinimal.Get(),
+			serviceAccount.Get(),
 		},
 		ExpectStatusUpdates: []runtime.Object{
-			factories.Container(containerMinimal).
+			containerMinimal.
 				StatusConditions(
 					apis.Condition{
 						Type:   buildv1alpha1.ContainerConditionImageResolved,
@@ -140,10 +136,10 @@ func TestContainerReconcile(t *testing.T) {
 		Name: "default image, missing",
 		Key:  testKey,
 		GivenObjects: []runtime.Object{
-			containerMinimal,
+			containerMinimal.Get(),
 		},
 		ExpectStatusUpdates: []runtime.Object{
-			factories.Container(containerMinimal).
+			containerMinimal.
 				StatusConditions(
 					apis.Condition{
 						Type:    buildv1alpha1.ContainerConditionImageResolved,
@@ -165,11 +161,11 @@ func TestContainerReconcile(t *testing.T) {
 		Name: "default image, undefined",
 		Key:  testKey,
 		GivenObjects: []runtime.Object{
-			cmImagePrefix,
-			containerMinimal,
+			cmImagePrefix.Get(),
+			containerMinimal.Get(),
 		},
 		ExpectStatusUpdates: []runtime.Object{
-			factories.Container(containerMinimal).
+			containerMinimal.
 				StatusConditions(
 					apis.Condition{
 						Type:    buildv1alpha1.ContainerConditionImageResolved,
@@ -194,11 +190,11 @@ func TestContainerReconcile(t *testing.T) {
 			rtesting.InduceFailure("get", "ConfigMap"),
 		},
 		GivenObjects: []runtime.Object{
-			cmImagePrefix,
-			containerMinimal,
+			cmImagePrefix.Get(),
+			containerMinimal.Get(),
 		},
 		ExpectStatusUpdates: []runtime.Object{
-			factories.Container(containerMinimal).
+			containerMinimal.
 				StatusConditions(
 					apis.Condition{
 						Type:    buildv1alpha1.ContainerConditionImageResolved,
@@ -225,11 +221,11 @@ func TestContainerReconcile(t *testing.T) {
 			rtesting.InduceFailure("update", "Container"),
 		},
 		GivenObjects: []runtime.Object{
-			containerValid,
-			serviceAccount,
+			containerValid.Get(),
+			serviceAccount.Get(),
 		},
 		ExpectStatusUpdates: []runtime.Object{
-			factories.Container(containerMinimal).
+			containerMinimal.
 				StatusConditions(
 					apis.Condition{
 						Type:   buildv1alpha1.ContainerConditionImageResolved,

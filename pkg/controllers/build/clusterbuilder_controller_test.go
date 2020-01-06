@@ -46,78 +46,73 @@ func TestClusterBuildersReconcile(t *testing.T) {
 
 	testApplicationBuilder := factories.KpackClusterBuilder().
 		NamespaceName("", "riff-application").
-		Image(testApplicationImage).
-		Get()
-	testApplicationBuilderReady := factories.KpackClusterBuilder(testApplicationBuilder).
+		Image(testApplicationImage)
+	testApplicationBuilderReady := testApplicationBuilder.
 		StatusReady().
-		StatusLatestImage(testApplicationImage).
-		Get()
+		StatusLatestImage(testApplicationImage)
 	testFunctionBuilder := factories.KpackClusterBuilder().
 		NamespaceName("", "riff-function").
-		Image(testFunctionImage).
-		Get()
-	testFunctionBuilderReady := factories.KpackClusterBuilder(testFunctionBuilder).
+		Image(testFunctionImage)
+	testFunctionBuilderReady := testFunctionBuilder.
 		StatusReady().
-		StatusLatestImage(testFunctionImage).
-		Get()
+		StatusLatestImage(testFunctionImage)
 
 	testBuilders := factories.ConfigMap().
-		NamespaceName(testNamespace, testName).
-		Get()
+		NamespaceName(testNamespace, testName)
 
 	table := rtesting.Table{{
 		Name: "builders configmap does not exist",
 		Key:  testKey,
 		ExpectCreates: []runtime.Object{
-			testBuilders,
+			testBuilders.Get(),
 		},
 	}, {
 		Name: "builders configmap unchanged",
 		Key:  testKey,
 		GivenObjects: []runtime.Object{
-			testBuilders,
+			testBuilders.Get(),
 		},
 	}, {
 		Name: "ignore deleted builders configmap",
 		Key:  testKey,
 		GivenObjects: []runtime.Object{
-			factories.ConfigMap(testBuilders).
+			testBuilders.
 				ObjectMeta(func(om factories.ObjectMeta) {
 					om.Deleted(1)
 				}).
 				Get(),
-			testApplicationBuilder,
-			testFunctionBuilder,
+			testApplicationBuilder.Get(),
+			testFunctionBuilder.Get(),
 		},
 	}, {
 		Name: "ignore other configmaps in the correct namespace",
 		Key:  types.NamespacedName{Namespace: testNamespace, Name: "not-builders"},
 		GivenObjects: []runtime.Object{
-			factories.ConfigMap(testBuilders).
+			testBuilders.
 				NamespaceName(testNamespace, "not-builders").
 				Get(),
-			testApplicationBuilder,
-			testFunctionBuilder,
+			testApplicationBuilder.Get(),
+			testFunctionBuilder.Get(),
 		},
 	}, {
 		Name: "ignore other configmaps in the wrong namespace",
 		Key:  types.NamespacedName{Namespace: "not-riff-system", Name: testName},
 		GivenObjects: []runtime.Object{
-			factories.ConfigMap(testBuilders).
+			testBuilders.
 				NamespaceName("not-riff-system", testName).
 				Get(),
-			testApplicationBuilder,
-			testFunctionBuilder,
+			testApplicationBuilder.Get(),
+			testFunctionBuilder.Get(),
 		},
 	}, {
 		Name: "create builders configmap, not ready",
 		Key:  testKey,
 		GivenObjects: []runtime.Object{
-			testApplicationBuilder,
-			testFunctionBuilder,
+			testApplicationBuilder.Get(),
+			testFunctionBuilder.Get(),
 		},
 		ExpectCreates: []runtime.Object{
-			factories.ConfigMap(testBuilders).
+			testBuilders.
 				AddData("riff-application", "").
 				AddData("riff-function", "").
 				Get(),
@@ -126,11 +121,11 @@ func TestClusterBuildersReconcile(t *testing.T) {
 		Name: "create builders configmap, ready",
 		Key:  testKey,
 		GivenObjects: []runtime.Object{
-			testApplicationBuilderReady,
-			testFunctionBuilderReady,
+			testApplicationBuilderReady.Get(),
+			testFunctionBuilderReady.Get(),
 		},
 		ExpectCreates: []runtime.Object{
-			factories.ConfigMap(testBuilders).
+			testBuilders.
 				AddData("riff-application", testApplicationImage).
 				AddData("riff-function", testFunctionImage).
 				Get(),
@@ -142,12 +137,12 @@ func TestClusterBuildersReconcile(t *testing.T) {
 			rtesting.InduceFailure("create", "ConfigMap"),
 		},
 		GivenObjects: []runtime.Object{
-			testApplicationBuilder,
-			testFunctionBuilder,
+			testApplicationBuilder.Get(),
+			testFunctionBuilder.Get(),
 		},
 		ShouldErr: true,
 		ExpectCreates: []runtime.Object{
-			factories.ConfigMap(testBuilders).
+			testBuilders.
 				AddData("riff-application", "").
 				AddData("riff-function", "").
 				Get(),
@@ -156,12 +151,12 @@ func TestClusterBuildersReconcile(t *testing.T) {
 		Name: "update builders configmap",
 		Key:  testKey,
 		GivenObjects: []runtime.Object{
-			testBuilders,
-			testApplicationBuilderReady,
-			testFunctionBuilderReady,
+			testBuilders.Get(),
+			testApplicationBuilderReady.Get(),
+			testFunctionBuilderReady.Get(),
 		},
 		ExpectUpdates: []runtime.Object{
-			factories.ConfigMap(testBuilders).
+			testBuilders.
 				AddData("riff-application", testApplicationImage).
 				AddData("riff-function", testFunctionImage).
 				Get(),
@@ -173,13 +168,13 @@ func TestClusterBuildersReconcile(t *testing.T) {
 			rtesting.InduceFailure("update", "ConfigMap"),
 		},
 		GivenObjects: []runtime.Object{
-			testBuilders,
-			testApplicationBuilderReady,
-			testFunctionBuilderReady,
+			testBuilders.Get(),
+			testApplicationBuilderReady.Get(),
+			testFunctionBuilderReady.Get(),
 		},
 		ShouldErr: true,
 		ExpectUpdates: []runtime.Object{
-			factories.ConfigMap(testBuilders).
+			testBuilders.
 				AddData("riff-application", testApplicationImage).
 				AddData("riff-function", testFunctionImage).
 				Get(),
@@ -191,9 +186,9 @@ func TestClusterBuildersReconcile(t *testing.T) {
 			rtesting.InduceFailure("get", "ConfigMap"),
 		},
 		GivenObjects: []runtime.Object{
-			testBuilders,
-			testApplicationBuilder,
-			testFunctionBuilder,
+			testBuilders.Get(),
+			testApplicationBuilder.Get(),
+			testFunctionBuilder.Get(),
 		},
 		ShouldErr: true,
 	}, {
@@ -203,9 +198,9 @@ func TestClusterBuildersReconcile(t *testing.T) {
 			rtesting.InduceFailure("list", "ClusterBuilderList"),
 		},
 		GivenObjects: []runtime.Object{
-			testBuilders,
-			testApplicationBuilder,
-			testFunctionBuilder,
+			testBuilders.Get(),
+			testApplicationBuilder.Get(),
+			testFunctionBuilder.Get(),
 		},
 		ShouldErr: true,
 	}}

@@ -43,24 +43,19 @@ func TestCredentialsReconcile(t *testing.T) {
 	_ = buildv1alpha1.AddToScheme(scheme)
 
 	testServiceAccount := factories.ServiceAccount().
-		NamespaceName(testNamespace, testName).
-		Get()
+		NamespaceName(testNamespace, testName)
 	testCredential := factories.Secret().
 		ObjectMeta(func(om factories.ObjectMeta) {
 			om.AddLabel(buildv1alpha1.CredentialLabelKey, "docker-hub")
 		}).
-		NamespaceName(testNamespace, "my-credential").
-		Get()
+		NamespaceName(testNamespace, "my-credential")
 
 	testApplication := factories.Application().
-		NamespaceName(testNamespace, "my-application").
-		Get()
+		NamespaceName(testNamespace, "my-application")
 	testFunction := factories.Function().
-		NamespaceName(testNamespace, "my-function").
-		Get()
+		NamespaceName(testNamespace, "my-function")
 	testContainer := factories.Container().
-		NamespaceName(testNamespace, "my-container").
-		Get()
+		NamespaceName(testNamespace, "my-container")
 
 	table := rtesting.Table{{
 		Name: "service account does not exist",
@@ -69,7 +64,7 @@ func TestCredentialsReconcile(t *testing.T) {
 		Name: "ignore deleted service account",
 		Key:  testKey,
 		GivenObjects: []runtime.Object{
-			factories.ServiceAccount(testServiceAccount).
+			testServiceAccount.
 				ObjectMeta(func(om factories.ObjectMeta) {
 					om.Deleted(1)
 				}).
@@ -79,7 +74,7 @@ func TestCredentialsReconcile(t *testing.T) {
 		Name: "ignore non-build service accounts",
 		Key:  types.NamespacedName{Namespace: testNamespace, Name: "not-riff-build"},
 		GivenObjects: []runtime.Object{
-			factories.ServiceAccount(testServiceAccount).
+			testServiceAccount.
 				NamespaceName(testNamespace, "not-riff-build").
 				Get(),
 		},
@@ -90,17 +85,17 @@ func TestCredentialsReconcile(t *testing.T) {
 			rtesting.InduceFailure("get", "ServiceAccount"),
 		},
 		GivenObjects: []runtime.Object{
-			testServiceAccount,
+			testServiceAccount.Get(),
 		},
 		ShouldErr: true,
 	}, {
 		Name: "create service account for application",
 		Key:  testKey,
 		GivenObjects: []runtime.Object{
-			testApplication,
+			testApplication.Get(),
 		},
 		ExpectCreates: []runtime.Object{
-			factories.ServiceAccount(testServiceAccount).
+			testServiceAccount.
 				ObjectMeta(func(om factories.ObjectMeta) {
 					om.AddAnnotation("build.projectriff.io/credentials", "")
 				}).
@@ -113,17 +108,17 @@ func TestCredentialsReconcile(t *testing.T) {
 			rtesting.InduceFailure("list", "ApplicationList"),
 		},
 		GivenObjects: []runtime.Object{
-			testApplication,
+			testApplication.Get(),
 		},
 		ShouldErr: true,
 	}, {
 		Name: "create service account for function",
 		Key:  testKey,
 		GivenObjects: []runtime.Object{
-			testFunction,
+			testFunction.Get(),
 		},
 		ExpectCreates: []runtime.Object{
-			factories.ServiceAccount(testServiceAccount).
+			testServiceAccount.
 				ObjectMeta(func(om factories.ObjectMeta) {
 					om.AddAnnotation("build.projectriff.io/credentials", "")
 				}).
@@ -136,17 +131,17 @@ func TestCredentialsReconcile(t *testing.T) {
 			rtesting.InduceFailure("list", "FunctionList"),
 		},
 		GivenObjects: []runtime.Object{
-			testFunction,
+			testFunction.Get(),
 		},
 		ShouldErr: true,
 	}, {
 		Name: "create service account for container",
 		Key:  testKey,
 		GivenObjects: []runtime.Object{
-			testContainer,
+			testContainer.Get(),
 		},
 		ExpectCreates: []runtime.Object{
-			factories.ServiceAccount(testServiceAccount).
+			testServiceAccount.
 				ObjectMeta(func(om factories.ObjectMeta) {
 					om.AddAnnotation("build.projectriff.io/credentials", "")
 				}).
@@ -159,21 +154,21 @@ func TestCredentialsReconcile(t *testing.T) {
 			rtesting.InduceFailure("list", "ContainerList"),
 		},
 		GivenObjects: []runtime.Object{
-			testContainer,
+			testContainer.Get(),
 		},
 		ShouldErr: true,
 	}, {
 		Name: "create service account for credential",
 		Key:  testKey,
 		GivenObjects: []runtime.Object{
-			testCredential,
+			testCredential.Get(),
 		},
 		ExpectCreates: []runtime.Object{
-			factories.ServiceAccount(testServiceAccount).
+			testServiceAccount.
 				ObjectMeta(func(om factories.ObjectMeta) {
-					om.AddAnnotation("build.projectriff.io/credentials", testCredential.Name)
+					om.AddAnnotation("build.projectriff.io/credentials", testCredential.Get().Name)
 				}).
-				Secrets(testCredential.Name).
+				Secrets(testCredential.Get().Name).
 				Get(),
 		},
 	}, {
@@ -183,7 +178,7 @@ func TestCredentialsReconcile(t *testing.T) {
 			rtesting.InduceFailure("list", "SecretList"),
 		},
 		GivenObjects: []runtime.Object{
-			testCredential,
+			testCredential.Get(),
 		},
 		ShouldErr: true,
 	}, {
@@ -193,46 +188,46 @@ func TestCredentialsReconcile(t *testing.T) {
 			rtesting.InduceFailure("create", "ServiceAccount"),
 		},
 		GivenObjects: []runtime.Object{
-			testCredential,
+			testCredential.Get(),
 		},
 		ShouldErr: true,
 		ExpectCreates: []runtime.Object{
-			factories.ServiceAccount(testServiceAccount).
+			testServiceAccount.
 				ObjectMeta(func(om factories.ObjectMeta) {
-					om.AddAnnotation("build.projectriff.io/credentials", testCredential.Name)
+					om.AddAnnotation("build.projectriff.io/credentials", testCredential.Get().Name)
 				}).
-				Secrets(testCredential.Name).
+				Secrets(testCredential.Get().Name).
 				Get(),
 		},
 	}, {
 		Name: "add credential to service account",
 		Key:  testKey,
 		GivenObjects: []runtime.Object{
-			testServiceAccount,
-			testCredential,
+			testServiceAccount.Get(),
+			testCredential.Get(),
 		},
 		ExpectUpdates: []runtime.Object{
-			factories.ServiceAccount(testServiceAccount).
+			testServiceAccount.
 				ObjectMeta(func(om factories.ObjectMeta) {
-					om.AddAnnotation("build.projectriff.io/credentials", testCredential.Name)
+					om.AddAnnotation("build.projectriff.io/credentials", testCredential.Get().Name)
 				}).
-				Secrets(testCredential.Name).
+				Secrets(testCredential.Get().Name).
 				Get(),
 		},
 	}, {
 		Name: "add credentials to service account",
 		Key:  testKey,
 		GivenObjects: []runtime.Object{
-			testServiceAccount,
-			factories.Secret(testCredential).
+			testServiceAccount.Get(),
+			testCredential.
 				NamespaceName(testNamespace, "cred-1").
 				Get(),
-			factories.Secret(testCredential).
+			testCredential.
 				NamespaceName(testNamespace, "cred-2").
 				Get(),
 		},
 		ExpectUpdates: []runtime.Object{
-			factories.ServiceAccount(testServiceAccount).
+			testServiceAccount.
 				ObjectMeta(func(om factories.ObjectMeta) {
 					om.AddAnnotation("build.projectriff.io/credentials", "cred-1,cred-2")
 				}).
@@ -246,8 +241,8 @@ func TestCredentialsReconcile(t *testing.T) {
 			rtesting.InduceFailure("list", "SecretList"),
 		},
 		GivenObjects: []runtime.Object{
-			testServiceAccount,
-			testCredential,
+			testServiceAccount.Get(),
+			testCredential.Get(),
 		},
 		ShouldErr: true,
 	}, {
@@ -257,34 +252,34 @@ func TestCredentialsReconcile(t *testing.T) {
 			rtesting.InduceFailure("update", "ServiceAccount"),
 		},
 		GivenObjects: []runtime.Object{
-			testServiceAccount,
-			testCredential,
+			testServiceAccount.Get(),
+			testCredential.Get(),
 		},
 		ShouldErr: true,
 		ExpectUpdates: []runtime.Object{
-			factories.ServiceAccount(testServiceAccount).
+			testServiceAccount.
 				ObjectMeta(func(om factories.ObjectMeta) {
-					om.AddAnnotation("build.projectriff.io/credentials", testCredential.Name)
+					om.AddAnnotation("build.projectriff.io/credentials", testCredential.Get().Name)
 				}).
-				Secrets(testCredential.Name).
+				Secrets(testCredential.Get().Name).
 				Get(),
 		},
 	}, {
 		Name: "add credentials to service account, preserving non-credential bound secrets",
 		Key:  testKey,
 		GivenObjects: []runtime.Object{
-			factories.ServiceAccount(testServiceAccount).
+			testServiceAccount.
 				Secrets("keep-me").
 				Get(),
-			factories.Secret(testCredential).
+			testCredential.
 				NamespaceName(testNamespace, "cred-1").
 				Get(),
-			factories.Secret(testCredential).
+			testCredential.
 				NamespaceName(testNamespace, "cred-2").
 				Get(),
 		},
 		ExpectUpdates: []runtime.Object{
-			factories.ServiceAccount(testServiceAccount).
+			testServiceAccount.
 				ObjectMeta(func(om factories.ObjectMeta) {
 					om.AddAnnotation("build.projectriff.io/credentials", "cred-1,cred-2")
 				}).
@@ -295,7 +290,7 @@ func TestCredentialsReconcile(t *testing.T) {
 		Name: "ignore non-credential secrets for service account",
 		Key:  testKey,
 		GivenObjects: []runtime.Object{
-			factories.ServiceAccount(testServiceAccount).
+			testServiceAccount.
 				ObjectMeta(func(om factories.ObjectMeta) {
 					om.AddAnnotation("build.projectriff.io/credentials", "")
 				}).
@@ -309,37 +304,39 @@ func TestCredentialsReconcile(t *testing.T) {
 		Name: "remove credential from service account",
 		Key:  testKey,
 		GivenObjects: []runtime.Object{
-			factories.ServiceAccount(testServiceAccount).
+			testServiceAccount.
 				ObjectMeta(func(om factories.ObjectMeta) {
 					om.AddAnnotation("build.projectriff.io/credentials", "cred-1,cred-2")
 				}).
 				Secrets("cred-1", "cred-2").
 				Get(),
 		},
-		ExpectUpdates: []runtime.Object{factories.ServiceAccount(testServiceAccount).
-			ObjectMeta(func(om factories.ObjectMeta) {
-				om.AddAnnotation("build.projectriff.io/credentials", "")
-			}).
-			Secrets().
-			Get(),
+		ExpectUpdates: []runtime.Object{
+			testServiceAccount.
+				ObjectMeta(func(om factories.ObjectMeta) {
+					om.AddAnnotation("build.projectriff.io/credentials", "")
+				}).
+				Secrets().
+				Get(),
 		},
 	}, {
 		Name: "remove credential from service account, preserving non-credential bound secrets",
 		Key:  testKey,
 		GivenObjects: []runtime.Object{
-			factories.ServiceAccount(testServiceAccount).
+			testServiceAccount.
 				ObjectMeta(func(om factories.ObjectMeta) {
 					om.AddAnnotation("build.projectriff.io/credentials", "cred-1,cred-2")
 				}).
 				Secrets("keep-me", "cred-1", "cred-2").
 				Get(),
 		},
-		ExpectUpdates: []runtime.Object{factories.ServiceAccount(testServiceAccount).
-			ObjectMeta(func(om factories.ObjectMeta) {
-				om.AddAnnotation("build.projectriff.io/credentials", "")
-			}).
-			Secrets("keep-me").
-			Get(),
+		ExpectUpdates: []runtime.Object{
+			testServiceAccount.
+				ObjectMeta(func(om factories.ObjectMeta) {
+					om.AddAnnotation("build.projectriff.io/credentials", "")
+				}).
+				Secrets("keep-me").
+				Get(),
 		},
 	}}
 
