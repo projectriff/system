@@ -397,21 +397,6 @@ func (in *ProcessorSpec) DeepCopy() *ProcessorSpec {
 func (in *ProcessorStatus) DeepCopyInto(out *ProcessorStatus) {
 	*out = *in
 	in.Status.DeepCopyInto(&out.Status)
-	if in.DeprecatedInputAddresses != nil {
-		in, out := &in.DeprecatedInputAddresses, &out.DeprecatedInputAddresses
-		*out = make([]string, len(*in))
-		copy(*out, *in)
-	}
-	if in.DeprecatedOutputAddresses != nil {
-		in, out := &in.DeprecatedOutputAddresses, &out.DeprecatedOutputAddresses
-		*out = make([]string, len(*in))
-		copy(*out, *in)
-	}
-	if in.DeprecatedOutputContentTypes != nil {
-		in, out := &in.DeprecatedOutputContentTypes, &out.DeprecatedOutputContentTypes
-		*out = make([]string, len(*in))
-		copy(*out, *in)
-	}
 	if in.DeploymentRef != nil {
 		in, out := &in.DeploymentRef, &out.DeploymentRef
 		*out = (*in).DeepCopy()

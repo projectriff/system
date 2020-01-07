@@ -2991,23 +2991,11 @@ spec:
               - kind
               - name
               type: object
-            inputAddresses:
-              items:
-                type: string
-              type: array
             latestImage:
               type: string
             observedGeneration:
               format: int64
               type: integer
-            outputAddresses:
-              items:
-                type: string
-              type: array
-            outputContentTypes:
-              items:
-                type: string
-              type: array
             scaledObjectRef:
               properties:
                 apiGroup:

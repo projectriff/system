@@ -18,7 +18,6 @@ package streaming
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
@@ -39,15 +38,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/projectriff/system/pkg/apis"
+	"github.com/projectriff/system/pkg/apis/build/v1alpha1"
+	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
+	streamingv1alpha1 "github.com/projectriff/system/pkg/apis/streaming/v1alpha1"
 	kedav1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/keda/v1alpha1"
 	"github.com/projectriff/system/pkg/controllers"
 	"github.com/projectriff/system/pkg/refs"
-
-	"github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	"github.com/projectriff/system/pkg/tracker"
-
-	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
-	streamingv1alpha1 "github.com/projectriff/system/pkg/apis/streaming/v1alpha1"
 )
 
 const (
@@ -184,21 +181,12 @@ func (r *ProcessorReconciler) reconcile(ctx context.Context, logger logr.Logger,
 	if err != nil {
 		return ctrl.Result{Requeue: true}, err
 	}
-	processor.Status.DeprecatedInputAddresses, err = r.collectStreamAddresses(ctx, inputStreams)
-	if err != nil {
-		return ctrl.Result{Requeue: true}, err
-	}
 
 	// Resolve output addresses
 	outputStreams, err := r.resolveOutputStreams(ctx, processorNSName, processor.Spec.Outputs)
 	if err != nil {
 		return ctrl.Result{Requeue: true}, err
 	}
-	processor.Status.DeprecatedOutputAddresses, err = r.collectStreamAddresses(ctx, outputStreams)
-	if err != nil {
-		return ctrl.Result{Requeue: true}, err
-	}
-	processor.Status.DeprecatedOutputContentTypes = r.collectStreamContentTypes(outputStreams)
 
 	// Reconcile deployment for processor
 	deployment, err := r.reconcileProcessorDeployment(ctx, logger, processor, inputStreams, outputStreams, &cm)
@@ -225,7 +213,7 @@ func (r *ProcessorReconciler) reconcile(ctx context.Context, logger logr.Logger,
 	}
 
 	// Reconcile scaledObject for processor
-	scaledObject, err := r.reconcileProcessorScaledObject(ctx, logger, processor, deployment)
+	scaledObject, err := r.reconcileProcessorScaledObject(ctx, logger, processor, deployment, inputStreams)
 	if err != nil {
 		logger.Error(err, "unable to reconcile scaledObject")
 		return ctrl.Result{}, err
@@ -238,7 +226,7 @@ func (r *ProcessorReconciler) reconcile(ctx context.Context, logger logr.Logger,
 	return ctrl.Result{}, nil
 }
 
-func (r *ProcessorReconciler) reconcileProcessorScaledObject(ctx context.Context, log logr.Logger, processor *streamingv1alpha1.Processor, deployment *appsv1.Deployment) (*kedav1alpha1.ScaledObject, error) {
+func (r *ProcessorReconciler) reconcileProcessorScaledObject(ctx context.Context, log logr.Logger, processor *streamingv1alpha1.Processor, deployment *appsv1.Deployment, inputStreams []streamingv1alpha1.Stream) (*kedav1alpha1.ScaledObject, error) {
 	var actualScaledObject kedav1alpha1.ScaledObject
 	var childScaledObjects kedav1alpha1.ScaledObjectList
 	if err := r.List(ctx, &childScaledObjects, client.InNamespace(processor.Namespace), client.MatchingField(processorScaledObjectIndexField, processor.Name)); err != nil {
@@ -257,7 +245,7 @@ func (r *ProcessorReconciler) reconcileProcessorScaledObject(ctx context.Context
 		}
 	}
 
-	desiredScaledObject, err := r.constructScaledObjectForProcessor(processor, deployment)
+	desiredScaledObject, err := r.constructScaledObjectForProcessor(processor, deployment, inputStreams)
 	if err != nil {
 		return nil, err
 	}
@@ -300,7 +288,7 @@ func (r *ProcessorReconciler) reconcileProcessorScaledObject(ctx context.Context
 	return scaledObject, nil
 }
 
-func (r *ProcessorReconciler) constructScaledObjectForProcessor(processor *streamingv1alpha1.Processor, deployment *appsv1.Deployment) (*kedav1alpha1.ScaledObject, error) {
+func (r *ProcessorReconciler) constructScaledObjectForProcessor(processor *streamingv1alpha1.Processor, deployment *appsv1.Deployment, inputStreams []streamingv1alpha1.Stream) (*kedav1alpha1.ScaledObject, error) {
 	labels := r.constructLabelsForProcessor(processor)
 
 	zero := int32(0)
@@ -315,6 +303,10 @@ func (r *ProcessorReconciler) constructScaledObjectForProcessor(processor *strea
 		maxReplicas = zero
 	}
 
+	triggers, err := r.triggers(processor, inputStreams)
+	if err != nil {
+		return nil, err
+	}
 	scaledObject := &kedav1alpha1.ScaledObject{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: fmt.Sprintf("%s-processor-", processor.Name),
@@ -327,7 +319,7 @@ func (r *ProcessorReconciler) constructScaledObjectForProcessor(processor *strea
 			},
 			PollingInterval: &one,
 			CooldownPeriod:  &thirty,
-			Triggers:        triggers(processor),
+			Triggers:        triggers,
 			MinReplicaCount: &one,
 			MaxReplicaCount: &maxReplicas,
 		},
@@ -340,9 +332,13 @@ func (r *ProcessorReconciler) constructScaledObjectForProcessor(processor *strea
 	return scaledObject, nil
 }
 
-func triggers(proc *streamingv1alpha1.Processor) []kedav1alpha1.ScaleTriggers {
-	result := make([]kedav1alpha1.ScaleTriggers, len(proc.Status.DeprecatedInputAddresses))
-	for i, topic := range proc.Status.DeprecatedInputAddresses {
+func (r *ProcessorReconciler) triggers(proc *streamingv1alpha1.Processor, inputStreams []streamingv1alpha1.Stream) ([]kedav1alpha1.ScaleTriggers, error) {
+	addresses, err := r.collectStreamAddresses(nil, inputStreams)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]kedav1alpha1.ScaleTriggers, len(addresses))
+	for i, topic := range addresses {
 		result[i].Type = "liiklus"
 		result[i].Metadata = map[string]string{
 			"address": strings.SplitN(topic, "/", 2)[0],
@@ -350,7 +346,7 @@ func triggers(proc *streamingv1alpha1.Processor) []kedav1alpha1.ScaleTriggers {
 			"topic":   strings.SplitN(topic, "/", 2)[1],
 		}
 	}
-	return result
+	return result, nil
 }
 
 func (r *ProcessorReconciler) scaledObjectSemanticEquals(desiredDeployment, deployment *kedav1alpha1.ScaledObject) bool {
@@ -660,10 +656,6 @@ func (r *ProcessorReconciler) collectStreamContentTypes(streams []streamingv1alp
 }
 
 func (r *ProcessorReconciler) computeEnvironmentVariables(processor *streamingv1alpha1.Processor) ([]v1.EnvVar, error) {
-	contentTypesJson, err := json.Marshal(processor.Status.DeprecatedOutputContentTypes)
-	if err != nil {
-		return nil, err
-	}
 	inputsNames := r.collectInputAliases(processor.Spec.Inputs)
 	inputStartOffsets := r.collectInputStartOffsets(processor.Spec.Inputs)
 	outputsNames := r.collectOutputAliases(processor.Spec.Outputs)
@@ -671,16 +663,6 @@ func (r *ProcessorReconciler) computeEnvironmentVariables(processor *streamingv1
 		{
 			Name:  "CNB_BINDINGS",
 			Value: bindingsRootPath,
-		},
-		{
-			// TODO remove once the processor images consumes bindings
-			Name:  "INPUTS",
-			Value: strings.Join(processor.Status.DeprecatedInputAddresses, ","),
-		},
-		{
-			// TODO remove once the processor images consumes bindings
-			Name:  "OUTPUTS",
-			Value: strings.Join(processor.Status.DeprecatedOutputAddresses, ","),
 		},
 		{
 			Name:  "INPUT_START_OFFSETS",
@@ -701,11 +683,6 @@ func (r *ProcessorReconciler) computeEnvironmentVariables(processor *streamingv1
 		{
 			Name:  "FUNCTION",
 			Value: "localhost:8081",
-		},
-		{
-			// TODO remove once the processor images consumes bindings
-			Name:  "OUTPUT_CONTENT_TYPES",
-			Value: string(contentTypesJson),
 		},
 	}, nil
 }

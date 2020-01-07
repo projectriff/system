@@ -99,12 +99,9 @@ type ProcessorStatus struct {
 
 	apis.Status `json:",inline"`
 
-	DeprecatedInputAddresses     []string                        `json:"inputAddresses,omitempty"`
-	DeprecatedOutputAddresses    []string                        `json:"outputAddresses,omitempty"`
-	DeprecatedOutputContentTypes []string                        `json:"outputContentTypes,omitempty"`
-	DeploymentRef                *refs.TypedLocalObjectReference `json:"deploymentRef,omitempty"`
-	ScaledObjectRef              *refs.TypedLocalObjectReference `json:"scaledObjectRef,omitempty"`
-	LatestImage                  string                          `json:"latestImage,omitempty"`
+	DeploymentRef   *refs.TypedLocalObjectReference `json:"deploymentRef,omitempty"`
+	ScaledObjectRef *refs.TypedLocalObjectReference `json:"scaledObjectRef,omitempty"`
+	LatestImage     string                          `json:"latestImage,omitempty"`
 }
 
 // +kubebuilder:object:root=true
