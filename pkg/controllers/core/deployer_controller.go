@@ -361,15 +361,6 @@ func (r *DeployerReconciler) constructPodTemplateSpecForDeployer(deployer *corev
 		Name:  "PORT",
 		Value: fmt.Sprintf("%d", targetPort.ContainerPort),
 	})
-	if template.Spec.Containers[0].LivenessProbe == nil {
-		template.Spec.Containers[0].LivenessProbe = &corev1.Probe{
-			Handler: corev1.Handler{
-				TCPSocket: &corev1.TCPSocketAction{
-					Port: intstr.FromInt(int(targetPort.ContainerPort)),
-				},
-			},
-		}
-	}
 	if template.Spec.Containers[0].ReadinessProbe == nil {
 		template.Spec.Containers[0].ReadinessProbe = &corev1.Probe{
 			Handler: corev1.Handler{
