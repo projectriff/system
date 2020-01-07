@@ -87,13 +87,6 @@ func TestDeployerReconcile(t *testing.T) {
 			container.Env = []corev1.EnvVar{
 				{Name: "PORT", Value: "8080"},
 			}
-			container.LivenessProbe = &corev1.Probe{
-				Handler: corev1.Handler{
-					TCPSocket: &corev1.TCPSocketAction{
-						Port: intstr.FromInt(8080),
-					},
-				},
-			}
 			container.ReadinessProbe = &corev1.Probe{
 				Handler: corev1.Handler{
 					TCPSocket: &corev1.TCPSocketAction{
