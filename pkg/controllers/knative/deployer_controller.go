@@ -29,11 +29,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	"github.com/projectriff/system/pkg/apis"
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	knativev1alpha1 "github.com/projectriff/system/pkg/apis/knative/v1alpha1"
 	servingv1 "github.com/projectriff/system/pkg/apis/thirdparty/knative/serving/v1"
@@ -455,22 +452,6 @@ func (r *DeployerReconciler) constructAnnotationsForDeployer(deployer *knativev1
 }
 
 func (r *DeployerReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	enqueueTrackedResources := func(t apis.Resource) handler.EventHandler {
-		return &handler.EnqueueRequestsFromMapFunc{
-			ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
-				requests := []reconcile.Request{}
-				key := tracker.NewKey(
-					t.GetGroupVersionKind(),
-					types.NamespacedName{Namespace: a.Meta.GetNamespace(), Name: a.Meta.GetName()},
-				)
-				for _, item := range r.Tracker.Lookup(key) {
-					requests = append(requests, reconcile.Request{NamespacedName: item})
-				}
-				return requests
-			}),
-		}
-	}
-
 	if err := controllers.IndexControllersOfType(mgr, configurationIndexField, &knativev1alpha1.Deployer{}, &servingv1.Configuration{}); err != nil {
 		return err
 	}
@@ -483,8 +464,8 @@ func (r *DeployerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&servingv1.Configuration{}).
 		Owns(&servingv1.Route{}).
 		// watch for build mutations to update dependent deployers
-		Watches(&source.Kind{Type: &buildv1alpha1.Application{}}, enqueueTrackedResources(&buildv1alpha1.Application{})).
-		Watches(&source.Kind{Type: &buildv1alpha1.Container{}}, enqueueTrackedResources(&buildv1alpha1.Container{})).
-		Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, enqueueTrackedResources(&buildv1alpha1.Function{})).
+		Watches(&source.Kind{Type: &buildv1alpha1.Application{}}, controllers.EnqueueTracked(&buildv1alpha1.Application{}, r.Tracker, r.Scheme)).
+		Watches(&source.Kind{Type: &buildv1alpha1.Container{}}, controllers.EnqueueTracked(&buildv1alpha1.Container{}, r.Tracker, r.Scheme)).
+		Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, controllers.EnqueueTracked(&buildv1alpha1.Function{}, r.Tracker, r.Scheme)).
 		Complete(r)
 }

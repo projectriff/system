@@ -33,7 +33,7 @@ import (
 	"github.com/projectriff/system/pkg/tracker"
 )
 
-func TestClusterBuildersReconcile(t *testing.T) {
+func TestClusterBuildersReconciler(t *testing.T) {
 	testNamespace := "riff-system"
 	testName := "builders"
 	testKey := types.NamespacedName{Namespace: testNamespace, Name: testName}
