@@ -106,7 +106,7 @@ func (r *StreamReconciler) reconcile(ctx context.Context, log logr.Logger, strea
 	address, err := r.StreamProvisionerClient.ProvisionStream(stream)
 	if err != nil {
 		stream.Status.MarkStreamProvisionFailed(err.Error())
-		return ctrl.Result{Requeue: true}, err
+		return ctrl.Result{}, err
 	}
 	stream.Status.MarkStreamProvisioned()
 
