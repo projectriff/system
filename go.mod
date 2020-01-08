@@ -6,7 +6,7 @@ require (
 	github.com/go-logr/logr v0.1.0
 	github.com/google/go-cmp v0.3.1
 	github.com/google/go-containerregistry v0.0.0-20191002200252-ff1ac7f97758
-	k8s.io/api v0.16.4
+	k8s.io/api v0.17.0
 	k8s.io/apimachinery v0.16.4
 	k8s.io/client-go v0.16.4
 	k8s.io/code-generator v0.16.4
