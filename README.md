@@ -1,4 +1,6 @@
-![](https://github.com/projectriff/system/workflows/CI/badge.svg)
+![CI](https://github.com/projectriff/system/workflows/CI/badge.svg)
+[![codecov](https://codecov.io/gh/projectriff/system/branch/master/graph/badge.svg)](https://codecov.io/gh/projectriff/system) 
+[![Go Report Card](https://goreportcard.com/badge/github.com/projectriff/system)](https://goreportcard.com/report/github.com/projectriff/system)
 
 # riff System
 
