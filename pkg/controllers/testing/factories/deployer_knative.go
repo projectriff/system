@@ -31,6 +31,10 @@ type deployerKnative struct {
 	target *knativev1alpha1.Deployer
 }
 
+var (
+	_ rtesting.Factory = (*deployerKnative)(nil)
+)
+
 func DeployerKnative(seed ...*knativev1alpha1.Deployer) *deployerKnative {
 	var target *knativev1alpha1.Deployer
 	switch len(seed) {
@@ -50,7 +54,7 @@ func (f *deployerKnative) deepCopy() *deployerKnative {
 	return DeployerKnative(f.target.DeepCopy())
 }
 
-func (f *deployerKnative) Get() *knativev1alpha1.Deployer {
+func (f *deployerKnative) Get() apis.Object {
 	return f.deepCopy().target
 }
 

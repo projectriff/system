@@ -24,7 +24,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/projectriff/system/pkg/apis"
 	"github.com/projectriff/system/pkg/tracker"
 )
 
@@ -51,7 +50,8 @@ func CreateTrackRequest(trackedObjGroup, trackedObjKind, trackedObjNamespace, tr
 	}
 }
 
-func NewTrackRequest(tracked, by apis.Object, scheme *runtime.Scheme) TrackRequest {
+func NewTrackRequest(t, b Factory, scheme *runtime.Scheme) TrackRequest {
+	tracked, by := t.Get(), b.Get()
 	gvks, _, err := scheme.ObjectKinds(tracked)
 	if err != nil {
 		panic(err)

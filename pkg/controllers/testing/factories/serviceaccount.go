@@ -20,11 +20,18 @@ import (
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
+
+	"github.com/projectriff/system/pkg/apis"
+	rtesting "github.com/projectriff/system/pkg/controllers/testing"
 )
 
 type serviceAccount struct {
 	target *corev1.ServiceAccount
 }
+
+var (
+	_ rtesting.Factory = (*serviceAccount)(nil)
+)
 
 func ServiceAccount(seed ...*corev1.ServiceAccount) *serviceAccount {
 	var target *corev1.ServiceAccount
@@ -45,7 +52,7 @@ func (f *serviceAccount) deepCopy() *serviceAccount {
 	return ServiceAccount(f.target.DeepCopy())
 }
 
-func (f *serviceAccount) Get() *corev1.ServiceAccount {
+func (f *serviceAccount) Get() apis.Object {
 	return f.deepCopy().target
 }
 

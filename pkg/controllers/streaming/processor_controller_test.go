@@ -74,7 +74,7 @@ func TestReconcile(t *testing.T) {
 			om.Namespace(testNamespace)
 			om.GenerateName("%s-processor-", testName)
 			om.AddLabel("streaming.projectriff.io/processor", testName)
-			om.ControlledBy(processorGiven.Get(), scheme)
+			om.ControlledBy(processorGiven, scheme)
 		}).
 		Replicas(1).
 		AddSelectorLabel("streaming.projectriff.io/processor", testName).
@@ -87,7 +87,7 @@ func TestReconcile(t *testing.T) {
 			om.GenerateName("%s-processor-", testName)
 			om.AddLabel("streaming.projectriff.io/processor", testName)
 			om.AddLabel("deploymentName", testName+"-processor-001") // TODO: this label looks bogus
-			om.ControlledBy(processorGiven.Get(), scheme)
+			om.ControlledBy(processorGiven, scheme)
 		}).
 		ScaleTargetRefDeployment("%s-processor-001", testName).
 		PollingInterval(1).
@@ -137,72 +137,68 @@ func TestReconcile(t *testing.T) {
 	}, {
 		Name: "configMap does not exist",
 		Key:  types.NamespacedName{Namespace: testNamespace, Name: testName},
-		GivenObjects: []runtime.Object{
-			processorGiven.Get(),
+		GivenObjects: []rtesting.Factory{
+			processorGiven,
 		},
 		ShouldErr: true,
 		Verify:    rtesting.AssertErrorMessagef("configmaps %q not found", processorImages),
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(imageNamesConfigMapGiven.Get(), processorGiven.Get(), scheme),
+			rtesting.NewTrackRequest(imageNamesConfigMapGiven, processorGiven, scheme),
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			processorGiven.
 				StatusConditions(
 					processorConditionDeploymentReady.Unknown(),
 					processorConditionReady.Unknown(),
 					processorConditionScaledObjectReady.Unknown(),
 					processorConditionStreamsReady.Unknown(),
-				).
-				Get(),
+				),
 		},
 	}, {
 		Name: "processor is marked for deletion",
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			processorGiven.
 				ObjectMeta(func(meta factories.ObjectMeta) {
 					meta.Deleted(1)
-				}).
-				Get(),
+				}),
 		},
 		Key: types.NamespacedName{Namespace: testNamespace, Name: testName},
 	}, {
 		Name: "getting configMap fails",
 		Key:  types.NamespacedName{Namespace: testNamespace, Name: testName},
-		GivenObjects: []runtime.Object{
-			processorGiven.Get(),
+		GivenObjects: []rtesting.Factory{
+			processorGiven,
 		},
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("get", "ConfigMap"),
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(imageNamesConfigMapGiven.Get(), processorGiven.Get(), scheme),
+			rtesting.NewTrackRequest(imageNamesConfigMapGiven, processorGiven, scheme),
 		},
 		ShouldErr: true,
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			processorGiven.
 				StatusConditions(
 					processorConditionDeploymentReady.Unknown(),
 					processorConditionReady.Unknown(),
 					processorConditionScaledObjectReady.Unknown(),
 					processorConditionStreamsReady.Unknown(),
-				).
-				Get(),
+				),
 		},
 	}, {
 		Name: "processor sidecar image not present in configMap",
 		Key:  types.NamespacedName{Namespace: testNamespace, Name: testName},
-		GivenObjects: []runtime.Object{
-			processorGiven.Get(),
+		GivenObjects: []rtesting.Factory{
+			processorGiven,
 			factories.ConfigMap().
-				NamespaceName(testNamespace, processorImages).
-				Get(),
+				NamespaceName(testNamespace, processorImages),
 		},
 		ShouldErr: true,
 		Verify:    rtesting.AssertErrorMessagef("missing processor image configuration"),
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(imageNamesConfigMapGiven.Get(), processorGiven.Get(), scheme),
+			rtesting.NewTrackRequest(imageNamesConfigMapGiven, processorGiven, scheme),
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			processorGiven.
 				StatusConditions(
 					processorConditionDeploymentReady.Unknown(),
@@ -210,53 +206,49 @@ func TestReconcile(t *testing.T) {
 					processorConditionScaledObjectReady.Unknown(),
 					processorConditionStreamsReady.Unknown(),
 				).
-				StatusLatestImage(testDefaultImage).
-				Get(),
+				StatusLatestImage(testDefaultImage),
 		},
 	}, {
 		Name: "default application image not set",
 		Key:  types.NamespacedName{Namespace: testNamespace, Name: testName},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			factories.Processor().
-				NamespaceName(testNamespace, testName).
-				Get(),
-			imageNamesConfigMapGiven.Get(),
+				NamespaceName(testNamespace, testName),
+			imageNamesConfigMapGiven,
 		},
 		ShouldErr: true,
 		Verify:    rtesting.AssertErrorMessagef("could not resolve an image"),
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(imageNamesConfigMapGiven.Get(), processorGiven.Get(), scheme),
+			rtesting.NewTrackRequest(imageNamesConfigMapGiven, processorGiven, scheme),
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			processorGiven.
 				StatusConditions(
 					processorConditionDeploymentReady.Unknown(),
 					processorConditionReady.Unknown(),
 					processorConditionScaledObjectReady.Unknown(),
 					processorConditionStreamsReady.Unknown(),
-				).
-				Get(),
+				),
 		},
 	}, {
 		Name: "successful reconciliation",
 		Key:  types.NamespacedName{Namespace: testNamespace, Name: testName},
-		GivenObjects: []runtime.Object{
-			processorGiven.Get(),
-			imageNamesConfigMapGiven.Get(),
+		GivenObjects: []rtesting.Factory{
+			processorGiven,
+			imageNamesConfigMapGiven,
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(imageNamesConfigMapGiven.Get(), processorGiven.Get(), scheme),
+			rtesting.NewTrackRequest(imageNamesConfigMapGiven, processorGiven, scheme),
 		},
-		ExpectCreates: []runtime.Object{
+		ExpectCreates: []rtesting.Factory{
 			deploymentCreate.
 				PodTemplateSpec(func(pts factories.PodTemplateSpec) {
 					pts.ContainerNamed(testContainer, testCoreContainer(testDefaultImage))
 					pts.ContainerNamed("processor", processorCoreContainer)
-				}).
-				Get(),
-			scaledObjectCreate.Get(),
+				}),
+			scaledObjectCreate,
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			processorGiven.
 				StatusConditions(
 					processorConditionDeploymentReady.Unknown(),
@@ -266,32 +258,30 @@ func TestReconcile(t *testing.T) {
 				).
 				StatusLatestImage(testDefaultImage).
 				StatusDeploymentRef(testName + "-processor-001").
-				StatusScaledObjectRef(testName + "-processor-002").
-				Get(),
+				StatusScaledObjectRef(testName + "-processor-002"),
 		},
 	}, {
 		Name: "deployment creation fails",
 		Key:  types.NamespacedName{Namespace: testNamespace, Name: testName},
-		GivenObjects: []runtime.Object{
-			processorGiven.Get(),
-			imageNamesConfigMapGiven.Get(),
+		GivenObjects: []rtesting.Factory{
+			processorGiven,
+			imageNamesConfigMapGiven,
 		},
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("create", "Deployment"),
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(imageNamesConfigMapGiven.Get(), processorGiven.Get(), scheme),
+			rtesting.NewTrackRequest(imageNamesConfigMapGiven, processorGiven, scheme),
 		},
-		ExpectCreates: []runtime.Object{
+		ExpectCreates: []rtesting.Factory{
 			deploymentCreate.
 				PodTemplateSpec(func(pts factories.PodTemplateSpec) {
 					pts.ContainerNamed(testContainer, testCoreContainer(testDefaultImage))
 					pts.ContainerNamed("processor", processorCoreContainer)
-				}).
-				Get(),
+				}),
 		},
 		ShouldErr: true,
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			processorGiven.
 				StatusConditions(
 					processorConditionDeploymentReady.Unknown(),
@@ -299,33 +289,31 @@ func TestReconcile(t *testing.T) {
 					processorConditionScaledObjectReady.Unknown(),
 					processorConditionStreamsReady.Unknown(),
 				).
-				StatusLatestImage(testDefaultImage).
-				Get(),
+				StatusLatestImage(testDefaultImage),
 		},
 	}, {
 		Name: "scaled object creation fails",
 		Key:  types.NamespacedName{Namespace: testNamespace, Name: testName},
-		GivenObjects: []runtime.Object{
-			processorGiven.Get(),
-			imageNamesConfigMapGiven.Get(),
+		GivenObjects: []rtesting.Factory{
+			processorGiven,
+			imageNamesConfigMapGiven,
 		},
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("create", "ScaledObject"),
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(imageNamesConfigMapGiven.Get(), processorGiven.Get(), scheme),
+			rtesting.NewTrackRequest(imageNamesConfigMapGiven, processorGiven, scheme),
 		},
-		ExpectCreates: []runtime.Object{
+		ExpectCreates: []rtesting.Factory{
 			deploymentCreate.
 				PodTemplateSpec(func(pts factories.PodTemplateSpec) {
 					pts.ContainerNamed(testContainer, testCoreContainer(testDefaultImage))
 					pts.ContainerNamed("processor", processorCoreContainer)
-				}).
-				Get(),
-			scaledObjectCreate.Get(),
+				}),
+			scaledObjectCreate,
 		},
 		ShouldErr: true,
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			processorGiven.
 				StatusConditions(
 					processorConditionDeploymentReady.Unknown(),
@@ -334,76 +322,69 @@ func TestReconcile(t *testing.T) {
 					processorConditionStreamsReady.True(),
 				).
 				StatusLatestImage(testDefaultImage).
-				StatusDeploymentRef(testName + "-processor-001").
-				Get(),
+				StatusDeploymentRef(testName + "-processor-001"),
 		},
 	}, {
 		Name: "successful reconciliation with unsatisfied function reference",
 		Key:  types.NamespacedName{Namespace: testNamespace, Name: testName},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			processorGiven.
-				SpecBuildFunctionRef(testFunction).
-				Get(),
-			imageNamesConfigMapGiven.Get(),
+				SpecBuildFunctionRef(testFunction),
+			imageNamesConfigMapGiven,
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(imageNamesConfigMapGiven.Get(), processorGiven.Get(), scheme),
-			rtesting.NewTrackRequest(functionGiven.Get(), processorGiven.Get(), scheme),
+			rtesting.NewTrackRequest(imageNamesConfigMapGiven, processorGiven, scheme),
+			rtesting.NewTrackRequest(functionGiven, processorGiven, scheme),
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			processorGiven.
 				StatusConditions(
 					processorConditionDeploymentReady.Unknown(),
 					processorConditionReady.Unknown(),
 					processorConditionScaledObjectReady.Unknown(),
 					processorConditionStreamsReady.Unknown(),
-				).
-				Get(),
+				),
 		},
 	}, {
 		Name: "get function fails",
 		Key:  types.NamespacedName{Namespace: testNamespace, Name: testName},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			processorGiven.
-				SpecBuildFunctionRef(testFunction).
-				Get(),
-			imageNamesConfigMapGiven.Get(),
-			functionGiven.Get(),
+				SpecBuildFunctionRef(testFunction),
+			imageNamesConfigMapGiven,
+			functionGiven,
 		},
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("get", "Function"),
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(imageNamesConfigMapGiven.Get(), processorGiven.Get(), scheme),
-			rtesting.NewTrackRequest(functionGiven.Get(), processorGiven.Get(), scheme),
+			rtesting.NewTrackRequest(imageNamesConfigMapGiven, processorGiven, scheme),
+			rtesting.NewTrackRequest(functionGiven, processorGiven, scheme),
 		},
 		ShouldErr: true,
 	}, {
 		Name: "successful reconciliation with satisfied function reference",
 		Key:  types.NamespacedName{Namespace: testNamespace, Name: testName},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			processorGiven.
-				SpecBuildFunctionRef(testFunction).
-				Get(),
-			imageNamesConfigMapGiven.Get(),
+				SpecBuildFunctionRef(testFunction),
+			imageNamesConfigMapGiven,
 			functionGiven.
-				StatusLatestImage(testFunctionImage).
-				Get(),
+				StatusLatestImage(testFunctionImage),
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(imageNamesConfigMapGiven.Get(), processorGiven.Get(), scheme),
-			rtesting.NewTrackRequest(functionGiven.Get(), processorGiven.Get(), scheme),
+			rtesting.NewTrackRequest(imageNamesConfigMapGiven, processorGiven, scheme),
+			rtesting.NewTrackRequest(functionGiven, processorGiven, scheme),
 		},
-		ExpectCreates: []runtime.Object{
+		ExpectCreates: []rtesting.Factory{
 			deploymentCreate.
 				PodTemplateSpec(func(pts factories.PodTemplateSpec) {
 					pts.ContainerNamed(testContainer, testCoreContainer(testFunctionImage))
 					pts.ContainerNamed("processor", processorCoreContainer)
-				}).
-				Get(),
-			scaledObjectCreate.Get(),
+				}),
+			scaledObjectCreate,
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			processorGiven.
 				StatusConditions(
 					processorConditionDeploymentReady.Unknown(),
@@ -413,44 +394,40 @@ func TestReconcile(t *testing.T) {
 				).
 				StatusLatestImage(testFunctionImage).
 				StatusDeploymentRef(testName + "-processor-001").
-				StatusScaledObjectRef(testName + "-processor-002").
-				Get(),
+				StatusScaledObjectRef(testName + "-processor-002"),
 		},
 	}, {
 		Name: "successful reconciliation with unsatisfied container reference",
 		Key:  types.NamespacedName{Namespace: testNamespace, Name: testName},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			processorGiven.
-				SpecBuildContainerRef(testContainer).
-				Get(),
-			imageNamesConfigMapGiven.Get(),
+				SpecBuildContainerRef(testContainer),
+			imageNamesConfigMapGiven,
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(imageNamesConfigMapGiven.Get(), processorGiven.Get(), scheme),
-			rtesting.NewTrackRequest(containerGiven.Get(), processorGiven.Get(), scheme),
+			rtesting.NewTrackRequest(imageNamesConfigMapGiven, processorGiven, scheme),
+			rtesting.NewTrackRequest(containerGiven, processorGiven, scheme),
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			processorGiven.
 				StatusConditions(
 					processorConditionDeploymentReady.Unknown(),
 					processorConditionReady.Unknown(),
 					processorConditionScaledObjectReady.Unknown(),
 					processorConditionStreamsReady.Unknown(),
-				).
-				Get(),
+				),
 		},
 	}, {
 		Name: "get container fails",
 		Key:  types.NamespacedName{Namespace: testNamespace, Name: testName},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			processorGiven.
-				SpecBuildContainerRef(testContainer).
-				Get(),
-			imageNamesConfigMapGiven.Get(),
+				SpecBuildContainerRef(testContainer),
+			imageNamesConfigMapGiven,
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(imageNamesConfigMapGiven.Get(), processorGiven.Get(), scheme),
-			rtesting.NewTrackRequest(containerGiven.Get(), processorGiven.Get(), scheme),
+			rtesting.NewTrackRequest(imageNamesConfigMapGiven, processorGiven, scheme),
+			rtesting.NewTrackRequest(containerGiven, processorGiven, scheme),
 		},
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("get", "Container"),
@@ -459,27 +436,25 @@ func TestReconcile(t *testing.T) {
 	}, {
 		Name: "successful reconciliation with satisfied container reference",
 		Key:  types.NamespacedName{Namespace: testNamespace, Name: testName},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			processorGiven.
-				SpecBuildContainerRef(testContainer).
-				Get(),
-			imageNamesConfigMapGiven.Get(),
-			containerGiven.Get(),
+				SpecBuildContainerRef(testContainer),
+			imageNamesConfigMapGiven,
+			containerGiven,
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(imageNamesConfigMapGiven.Get(), processorGiven.Get(), scheme),
-			rtesting.NewTrackRequest(containerGiven.Get(), processorGiven.Get(), scheme),
+			rtesting.NewTrackRequest(imageNamesConfigMapGiven, processorGiven, scheme),
+			rtesting.NewTrackRequest(containerGiven, processorGiven, scheme),
 		},
-		ExpectCreates: []runtime.Object{
+		ExpectCreates: []rtesting.Factory{
 			deploymentCreate.
 				PodTemplateSpec(func(pts factories.PodTemplateSpec) {
 					pts.ContainerNamed(testContainer, testCoreContainer(testContainerImage))
 					pts.ContainerNamed("processor", processorCoreContainer)
-				}).
-				Get(),
-			scaledObjectCreate.Get(),
+				}),
+			scaledObjectCreate,
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			processorGiven.
 				StatusConditions(
 					processorConditionDeploymentReady.Unknown(),
@@ -489,8 +464,7 @@ func TestReconcile(t *testing.T) {
 				).
 				StatusLatestImage(testContainerImage).
 				StatusDeploymentRef(testName + "-processor-001").
-				StatusScaledObjectRef(testName + "-processor-002").
-				Get(),
+				StatusScaledObjectRef(testName + "-processor-002"),
 		},
 	}}
 

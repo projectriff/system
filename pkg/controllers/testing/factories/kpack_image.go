@@ -25,11 +25,16 @@ import (
 
 	"github.com/projectriff/system/pkg/apis"
 	kpackbuildv1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/kpack/build/v1alpha1"
+	rtesting "github.com/projectriff/system/pkg/controllers/testing"
 )
 
 type kpackImage struct {
 	target *kpackbuildv1alpha1.Image
 }
+
+var (
+	_ rtesting.Factory = (*kpackImage)(nil)
+)
 
 func KpackImage(seed ...*kpackbuildv1alpha1.Image) *kpackImage {
 	var target *kpackbuildv1alpha1.Image
@@ -50,7 +55,7 @@ func (f *kpackImage) deepCopy() *kpackImage {
 	return KpackImage(f.target.DeepCopy())
 }
 
-func (f *kpackImage) Get() *kpackbuildv1alpha1.Image {
+func (f *kpackImage) Get() apis.Object {
 	return f.deepCopy().target
 }
 

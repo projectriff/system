@@ -49,19 +49,19 @@ type Testcase struct {
 	// WithReactors installs each ReactionFunc into each fake clientset. ReactionFuncs intercept
 	// each call to the clientset providing the ability to mutate the resource or inject an error.
 	WithReactors []ReactionFunc
-	// GivenObjects holds the kubernetes objects which are present at the onset of reconciliation
-	GivenObjects []runtime.Object
+	// GivenObjects build the kubernetes objects which are present at the onset of reconciliation
+	GivenObjects []Factory
 
 	// ExpectTracks holds the ordered list of Track calls expected during reconciliation
 	ExpectTracks []TrackRequest
-	// ExpectCreates holds the ordered list of objects expected to be created during reconciliation
-	ExpectCreates []runtime.Object
-	// ExpectUpdates holds the ordered list of objects expected to be updated during reconciliation
-	ExpectUpdates []runtime.Object
+	// ExpectCreates builds the ordered list of objects expected to be created during reconciliation
+	ExpectCreates []Factory
+	// ExpectUpdates builds the ordered list of objects expected to be updated during reconciliation
+	ExpectUpdates []Factory
 	// ExpectDeletes holds the ordered list of objects expected to be deleted during reconciliation
 	ExpectDeletes []DeleteRef
-	// ExpectStatusUpdates holds the ordered list of objects whose status is updated during reconciliation
-	ExpectStatusUpdates []runtime.Object
+	// ExpectStatusUpdates builds the ordered list of objects whose status is updated during reconciliation
+	ExpectStatusUpdates []Factory
 
 	// ShouldErr is true if and only if reconciliation is expected to return an error
 	ShouldErr bool
@@ -78,12 +78,22 @@ type VerifyFunc func(t *testing.T, result controllerruntime.Result, err error)
 type Table []Testcase
 
 // Test executes the test for a table row.
-func (tc *Testcase) Test(t *testing.T, scheme *runtime.Scheme, factory Factory) {
+func (tc *Testcase) Test(t *testing.T, scheme *runtime.Scheme, factory ReconcilerFactory) {
 	t.Helper()
 	if tc.Skip {
 		t.SkipNow()
 	}
-	clientWrapper := newClientWrapperWithScheme(scheme, tc.GivenObjects...)
+
+	// Record the given objects
+	givenObjects := make([]runtime.Object, 0, len(tc.GivenObjects))
+	originalGivenObjects := make([]runtime.Object, 0, len(tc.GivenObjects))
+	for _, f := range tc.GivenObjects {
+		object := f.Get()
+		givenObjects = append(givenObjects, object.DeepCopyObject())
+		originalGivenObjects = append(originalGivenObjects, object.DeepCopyObject())
+	}
+
+	clientWrapper := newClientWrapperWithScheme(scheme, givenObjects...)
 	for i := range tc.WithReactors {
 		// in reverse order since we prepend
 		reactor := tc.WithReactors[len(tc.WithReactors)-1-i]
@@ -131,12 +141,12 @@ func (tc *Testcase) Test(t *testing.T, scheme *runtime.Scheme, factory Factory) 
 
 	for i, exp := range tc.ExpectCreates {
 		if i >= len(clientWrapper.createActions) {
-			t.Errorf("Missing create: %#v", exp)
+			t.Errorf("Missing create: %#v", exp.Get())
 			continue
 		}
 		actual := clientWrapper.createActions[i].GetObject()
 
-		if diff := cmp.Diff(exp, actual, ignoreLastTransitionTime, safeDeployDiff, ignoreTypeMeta, cmpopts.EquateEmpty()); diff != "" {
+		if diff := cmp.Diff(exp.Get(), actual, ignoreLastTransitionTime, safeDeployDiff, ignoreTypeMeta, cmpopts.EquateEmpty()); diff != "" {
 			t.Errorf("Unexpected create (-expected, +actual): %s", diff)
 		}
 	}
@@ -148,12 +158,12 @@ func (tc *Testcase) Test(t *testing.T, scheme *runtime.Scheme, factory Factory) 
 
 	for i, exp := range tc.ExpectUpdates {
 		if i >= len(clientWrapper.updateActions) {
-			t.Errorf("Missing update: %#v", exp)
+			t.Errorf("Missing update: %#v", exp.Get())
 			continue
 		}
 		actual := clientWrapper.updateActions[i].GetObject()
 
-		if diff := cmp.Diff(exp, actual, ignoreLastTransitionTime, safeDeployDiff, ignoreTypeMeta, cmpopts.EquateEmpty()); diff != "" {
+		if diff := cmp.Diff(exp.Get(), actual, ignoreLastTransitionTime, safeDeployDiff, ignoreTypeMeta, cmpopts.EquateEmpty()); diff != "" {
 			t.Errorf("Unexpected update (-expected, +actual): %s", diff)
 		}
 	}
@@ -182,12 +192,12 @@ func (tc *Testcase) Test(t *testing.T, scheme *runtime.Scheme, factory Factory) 
 
 	for i, exp := range tc.ExpectStatusUpdates {
 		if i >= len(clientWrapper.statusUpdateActions) {
-			t.Errorf("Missing status update: %#v", exp)
+			t.Errorf("Missing status update: %#v", exp.Get())
 			continue
 		}
 		actual := clientWrapper.statusUpdateActions[i].GetObject()
 
-		if diff := cmp.Diff(exp, actual, statusSubresourceOnly, ignoreLastTransitionTime, safeDeployDiff, cmpopts.EquateEmpty()); diff != "" {
+		if diff := cmp.Diff(exp.Get(), actual, statusSubresourceOnly, ignoreLastTransitionTime, safeDeployDiff, cmpopts.EquateEmpty()); diff != "" {
 			t.Errorf("Unexpected status update (-expected, +actual): %s", diff)
 		}
 	}
@@ -195,6 +205,11 @@ func (tc *Testcase) Test(t *testing.T, scheme *runtime.Scheme, factory Factory) 
 		for _, extra := range clientWrapper.statusUpdateActions[expected:] {
 			t.Errorf("Extra status update: %#v", extra)
 		}
+	}
+
+	// Validate the given objects are not mutated by reconciliation
+	if diff := cmp.Diff(originalGivenObjects, givenObjects, safeDeployDiff, cmpopts.EquateEmpty()); diff != "" {
+		t.Errorf("Given objects mutated by test %s (-expected, +actual): %v", tc.Name, diff)
 	}
 }
 
@@ -215,7 +230,7 @@ var (
 )
 
 // Test executes the whole suite of the table tests.
-func (tb Table) Test(t *testing.T, scheme *runtime.Scheme, factory Factory) {
+func (tb Table) Test(t *testing.T, scheme *runtime.Scheme, factory ReconcilerFactory) {
 	t.Helper()
 	focussed := Table{}
 	for _, test := range tb {
@@ -229,31 +244,20 @@ func (tb Table) Test(t *testing.T, scheme *runtime.Scheme, factory Factory) {
 		testsToExecute = focussed
 	}
 	for _, test := range testsToExecute {
-		// Record the given objects
-		givenObjects := make([]runtime.Object, 0, len(test.GivenObjects))
-		for _, obj := range test.GivenObjects {
-			givenObjects = append(givenObjects, obj.DeepCopyObject())
-		}
-
 		t.Run(test.Name, func(t *testing.T) {
 			t.Helper()
 			test.Test(t, scheme, factory)
 		})
-
-		// Validate the given objects are not mutated by reconciliation
-		if diff := cmp.Diff(givenObjects, test.GivenObjects, safeDeployDiff, cmpopts.EquateEmpty()); diff != "" {
-			t.Errorf("Given objects mutated by test %s (-expected, +actual): %v", test.Name, diff)
-		}
 	}
 	if len(focussed) > 0 {
 		t.Errorf("%d tests out of %d are still focussed, so the table test fails", len(focussed), len(tb))
 	}
 }
 
-// Factory returns a Reconciler.Interface to perform reconciliation in table test,
+// ReconcilerFactory returns a Reconciler.Interface to perform reconciliation in table test,
 // ActionRecorderList/EventList to capture k8s actions/events produced during reconciliation
 // and FakeStatsReporter to capture stats.
-type Factory func(t *testing.T, row *Testcase, client client.Client, tracker tracker.Tracker, log logr.Logger) reconcile.Reconciler
+type ReconcilerFactory func(t *testing.T, row *Testcase, client client.Client, tracker tracker.Tracker, log logr.Logger) reconcile.Reconciler
 
 type DeleteRef struct {
 	Group     string

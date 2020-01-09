@@ -21,11 +21,16 @@ import (
 
 	"github.com/projectriff/system/pkg/apis"
 	kpackbuildv1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/kpack/build/v1alpha1"
+	rtesting "github.com/projectriff/system/pkg/controllers/testing"
 )
 
 type kpackClusterBuilder struct {
 	target *kpackbuildv1alpha1.ClusterBuilder
 }
+
+var (
+	_ rtesting.Factory = (*kpackClusterBuilder)(nil)
+)
 
 func KpackClusterBuilder(seed ...*kpackbuildv1alpha1.ClusterBuilder) *kpackClusterBuilder {
 	var target *kpackbuildv1alpha1.ClusterBuilder
@@ -46,7 +51,7 @@ func (f *kpackClusterBuilder) deepCopy() *kpackClusterBuilder {
 	return KpackClusterBuilder(f.target.DeepCopy())
 }
 
-func (f *kpackClusterBuilder) Get() *kpackbuildv1alpha1.ClusterBuilder {
+func (f *kpackClusterBuilder) Get() apis.Object {
 	return f.deepCopy().target
 }
 

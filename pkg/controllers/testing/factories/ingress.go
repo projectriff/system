@@ -22,11 +22,18 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+
+	"github.com/projectriff/system/pkg/apis"
+	rtesting "github.com/projectriff/system/pkg/controllers/testing"
 )
 
 type ingress struct {
 	target *networkingv1beta1.Ingress
 }
+
+var (
+	_ rtesting.Factory = (*ingress)(nil)
+)
 
 func Ingress(seed ...*networkingv1beta1.Ingress) *ingress {
 	var target *networkingv1beta1.Ingress
@@ -47,7 +54,7 @@ func (f *ingress) deepCopy() *ingress {
 	return Ingress(f.target.DeepCopy())
 }
 
-func (f *ingress) Get() *networkingv1beta1.Ingress {
+func (f *ingress) Get() apis.Object {
 	return f.deepCopy().target
 }
 

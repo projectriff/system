@@ -31,6 +31,10 @@ type function struct {
 	target *buildv1alpha1.Function
 }
 
+var (
+	_ rtesting.Factory = (*function)(nil)
+)
+
 func Function(seed ...*buildv1alpha1.Function) *function {
 	var target *buildv1alpha1.Function
 	switch len(seed) {
@@ -50,7 +54,7 @@ func (f *function) deepCopy() *function {
 	return Function(f.target.DeepCopy())
 }
 
-func (f *function) Get() *buildv1alpha1.Function {
+func (f *function) Get() apis.Object {
 	return f.deepCopy().target
 }
 

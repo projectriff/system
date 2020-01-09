@@ -31,6 +31,10 @@ type application struct {
 	target *buildv1alpha1.Application
 }
 
+var (
+	_ rtesting.Factory = (*application)(nil)
+)
+
 func Application(seed ...*buildv1alpha1.Application) *application {
 	var target *buildv1alpha1.Application
 	switch len(seed) {
@@ -50,7 +54,7 @@ func (f *application) deepCopy() *application {
 	return Application(f.target.DeepCopy())
 }
 
-func (f *application) Get() *buildv1alpha1.Application {
+func (f *application) Get() apis.Object {
 	return f.deepCopy().target
 }
 

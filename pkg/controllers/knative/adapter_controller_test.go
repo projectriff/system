@@ -78,12 +78,11 @@ func TestAdapterReconciler(t *testing.T) {
 	}, {
 		Name: "ignore deleted adapter",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testAdapter.
 				ObjectMeta(func(om factories.ObjectMeta) {
 					om.Deleted(1)
-				}).
-				Get(),
+				}),
 		},
 	}, {
 		Name: "error fetching adapter",
@@ -91,8 +90,8 @@ func TestAdapterReconciler(t *testing.T) {
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("get", "Adapter"),
 		},
-		GivenObjects: []runtime.Object{
-			testAdapter.Get(),
+		GivenObjects: []rtesting.Factory{
+			testAdapter,
 		},
 		ShouldErr: true,
 	}, {
@@ -101,110 +100,99 @@ func TestAdapterReconciler(t *testing.T) {
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("update", "Adapter"),
 		},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				ApplicationRef(testApplication.Get().Name).
-				ServiceRef(testService.Get().Name).
-				Get(),
+				ApplicationRef(testApplication.Get().GetName()).
+				ServiceRef(testService.Get().GetName()),
 			testApplication.
 				StatusLatestImage(testImage).
-				StatusReady().
-				Get(),
-			testService.Get(),
+				StatusReady(),
+			testService,
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testApplication.Get(), testAdapter.Get(), scheme),
-			rtesting.NewTrackRequest(testService.Get(), testAdapter.Get(), scheme),
+			rtesting.NewTrackRequest(testApplication, testAdapter, scheme),
+			rtesting.NewTrackRequest(testService, testAdapter, scheme),
 		},
-		ExpectUpdates: []runtime.Object{
+		ExpectUpdates: []rtesting.Factory{
 			testService.
 				UserContainer(func(uc *corev1.Container) {
 					uc.Image = testImage
-				}).
-				Get(),
+				}),
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			testAdapter.
 				StatusConditions(
 					adapterConditionBuildReady.True(),
 					adapterConditionReady.True(),
 					adapterConditionTargetFound.True(),
 				).
-				StatusLatestImage(testImage).
-				Get(),
+				StatusLatestImage(testImage),
 		},
 	}, {
 		Name: "adapt application to service",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				ApplicationRef(testApplication.Get().Name).
-				ServiceRef(testService.Get().Name).
-				Get(),
+				ApplicationRef(testApplication.Get().GetName()).
+				ServiceRef(testService.Get().GetName()),
 			testApplication.
 				StatusLatestImage(testImage).
-				StatusReady().
-				Get(),
-			testService.Get(),
+				StatusReady(),
+			testService,
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testApplication.Get(), testAdapter.Get(), scheme),
-			rtesting.NewTrackRequest(testService.Get(), testAdapter.Get(), scheme),
+			rtesting.NewTrackRequest(testApplication, testAdapter, scheme),
+			rtesting.NewTrackRequest(testService, testAdapter, scheme),
 		},
-		ExpectUpdates: []runtime.Object{
+		ExpectUpdates: []rtesting.Factory{
 			testService.
 				UserContainer(func(uc *corev1.Container) {
 					uc.Image = testImage
-				}).
-				Get(),
+				}),
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			testAdapter.
 				StatusConditions(
 					adapterConditionBuildReady.True(),
 					adapterConditionReady.True(),
 					adapterConditionTargetFound.True(),
 				).
-				StatusLatestImage(testImage).
-				Get(),
+				StatusLatestImage(testImage),
 		},
 	}, {
 		Name: "adapt application to service, application not ready",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				ApplicationRef(testApplication.Get().Name).
-				ServiceRef(testService.Get().Name).
-				Get(),
-			testApplication.Get(),
-			testService.Get(),
+				ApplicationRef(testApplication.Get().GetName()).
+				ServiceRef(testService.Get().GetName()),
+			testApplication,
+			testService,
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testApplication.Get(), testAdapter.Get(), scheme),
+			rtesting.NewTrackRequest(testApplication, testAdapter, scheme),
 		},
 	}, {
 		Name: "adapt application to service, application not found",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				ApplicationRef(testApplication.Get().Name).
-				ServiceRef(testService.Get().Name).
-				Get(),
-			testService.Get(),
+				ApplicationRef(testApplication.Get().GetName()).
+				ServiceRef(testService.Get().GetName()),
+			testService,
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testApplication.Get(), testAdapter.Get(), scheme),
+			rtesting.NewTrackRequest(testApplication, testAdapter, scheme),
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			testAdapter.
 				StatusConditions(
 					adapterConditionBuildReady.Unknown(),
 					adapterConditionReady.Unknown(),
 					adapterConditionTargetFound.Unknown(),
-				).
-				Get(),
+				),
 		},
 	}, {
 		Name: "adapt application to service, application get failed",
@@ -212,92 +200,83 @@ func TestAdapterReconciler(t *testing.T) {
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("get", "Application"),
 		},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				ApplicationRef(testApplication.Get().Name).
-				ServiceRef(testService.Get().Name).
-				Get(),
+				ApplicationRef(testApplication.Get().GetName()).
+				ServiceRef(testService.Get().GetName()),
 			testApplication.
 				StatusLatestImage(testImage).
-				StatusReady().
-				Get(),
-			testService.Get(),
+				StatusReady(),
+			testService,
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testApplication.Get(), testAdapter.Get(), scheme),
+			rtesting.NewTrackRequest(testApplication, testAdapter, scheme),
 		},
 	}, {
 		Name: "adapt function to service",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				FunctionRef(testFunction.Get().Name).
-				ServiceRef(testService.Get().Name).
-				Get(),
+				FunctionRef(testFunction.Get().GetName()).
+				ServiceRef(testService.Get().GetName()),
 			testFunction.
 				StatusLatestImage(testImage).
-				StatusReady().
-				Get(),
-			testService.Get(),
+				StatusReady(),
+			testService,
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testFunction.Get(), testAdapter.Get(), scheme),
-			rtesting.NewTrackRequest(testService.Get(), testAdapter.Get(), scheme),
+			rtesting.NewTrackRequest(testFunction, testAdapter, scheme),
+			rtesting.NewTrackRequest(testService, testAdapter, scheme),
 		},
-		ExpectUpdates: []runtime.Object{
+		ExpectUpdates: []rtesting.Factory{
 			testService.
 				UserContainer(func(uc *corev1.Container) {
 					uc.Image = testImage
-				}).
-				Get(),
+				}),
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			testAdapter.
 				StatusConditions(
 					adapterConditionBuildReady.True(),
 					adapterConditionReady.True(),
 					adapterConditionTargetFound.True(),
 				).
-				StatusLatestImage(testImage).
-				Get(),
+				StatusLatestImage(testImage),
 		},
 	}, {
 		Name: "adapt function to service, function not ready",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				FunctionRef(testFunction.Get().Name).
-				ServiceRef(testService.Get().Name).
-				Get(),
-			testFunction.Get(),
-			testService.Get(),
+				FunctionRef(testFunction.Get().GetName()).
+				ServiceRef(testService.Get().GetName()),
+			testFunction,
+			testService,
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testFunction.Get(), testAdapter.Get(), scheme),
+			rtesting.NewTrackRequest(testFunction, testAdapter, scheme),
 		},
 	}, {
 		Name: "adapt function to service, function not found",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				FunctionRef(testFunction.Get().Name).
-				ServiceRef(testService.Get().Name).
-				Get(),
-			testService.Get(),
+				FunctionRef(testFunction.Get().GetName()).
+				ServiceRef(testService.Get().GetName()),
+			testService,
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testFunction.Get(), testAdapter.Get(), scheme),
+			rtesting.NewTrackRequest(testFunction, testAdapter, scheme),
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			testAdapter.
 				StatusConditions(
 					adapterConditionBuildReady.Unknown(),
 					adapterConditionReady.Unknown(),
 					adapterConditionTargetFound.Unknown(),
-				).
-				Get(),
+				),
 		},
 	}, {
 		Name: "adapt function to service, get function failed",
@@ -305,92 +284,83 @@ func TestAdapterReconciler(t *testing.T) {
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("get", "function"),
 		},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				FunctionRef(testFunction.Get().Name).
-				ServiceRef(testService.Get().Name).
-				Get(),
+				FunctionRef(testFunction.Get().GetName()).
+				ServiceRef(testService.Get().GetName()),
 			testFunction.
 				StatusLatestImage(testImage).
-				StatusReady().
-				Get(),
-			testService.Get(),
+				StatusReady(),
+			testService,
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testFunction.Get(), testAdapter.Get(), scheme),
+			rtesting.NewTrackRequest(testFunction, testAdapter, scheme),
 		},
 	}, {
 		Name: "adapt container to service",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				ContainerRef(testContainer.Get().Name).
-				ServiceRef(testService.Get().Name).
-				Get(),
+				ContainerRef(testContainer.Get().GetName()).
+				ServiceRef(testService.Get().GetName()),
 			testContainer.
 				StatusLatestImage(testImage).
-				StatusReady().
-				Get(),
-			testService.Get(),
+				StatusReady(),
+			testService,
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testContainer.Get(), testAdapter.Get(), scheme),
-			rtesting.NewTrackRequest(testService.Get(), testAdapter.Get(), scheme),
+			rtesting.NewTrackRequest(testContainer, testAdapter, scheme),
+			rtesting.NewTrackRequest(testService, testAdapter, scheme),
 		},
-		ExpectUpdates: []runtime.Object{
+		ExpectUpdates: []rtesting.Factory{
 			testService.
 				UserContainer(func(uc *corev1.Container) {
 					uc.Image = testImage
-				}).
-				Get(),
+				}),
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			testAdapter.
 				StatusConditions(
 					adapterConditionBuildReady.True(),
 					adapterConditionReady.True(),
 					adapterConditionTargetFound.True(),
 				).
-				StatusLatestImage(testImage).
-				Get(),
+				StatusLatestImage(testImage),
 		},
 	}, {
 		Name: "adapt container to service, container not ready",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				ContainerRef(testContainer.Get().Name).
-				ServiceRef(testService.Get().Name).
-				Get(),
-			testContainer.Get(),
-			testService.Get(),
+				ContainerRef(testContainer.Get().GetName()).
+				ServiceRef(testService.Get().GetName()),
+			testContainer,
+			testService,
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testContainer.Get(), testAdapter.Get(), scheme),
+			rtesting.NewTrackRequest(testContainer, testAdapter, scheme),
 		},
 	}, {
 		Name: "adapt container to service, container not found",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				ContainerRef(testContainer.Get().Name).
-				ServiceRef(testService.Get().Name).
-				Get(),
-			testService.Get(),
+				ContainerRef(testContainer.Get().GetName()).
+				ServiceRef(testService.Get().GetName()),
+			testService,
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testContainer.Get(), testAdapter.Get(), scheme),
+			rtesting.NewTrackRequest(testContainer, testAdapter, scheme),
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			testAdapter.
 				StatusConditions(
 					adapterConditionBuildReady.Unknown(),
 					adapterConditionReady.Unknown(),
 					adapterConditionTargetFound.Unknown(),
-				).
-				Get(),
+				),
 		},
 	}, {
 		Name: "adapt container to service, get container failed",
@@ -398,47 +368,42 @@ func TestAdapterReconciler(t *testing.T) {
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("get", "Container"),
 		},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				ContainerRef(testContainer.Get().Name).
-				ServiceRef(testService.Get().Name).
-				Get(),
+				ContainerRef(testContainer.Get().GetName()).
+				ServiceRef(testService.Get().GetName()),
 			testContainer.
 				StatusLatestImage(testImage).
-				StatusReady().
-				Get(),
-			testService.Get(),
+				StatusReady(),
+			testService,
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testContainer.Get(), testAdapter.Get(), scheme),
+			rtesting.NewTrackRequest(testContainer, testAdapter, scheme),
 		},
 	}, {
 		Name: "adapt container to service, service not found",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				ContainerRef(testContainer.Get().Name).
-				ServiceRef(testService.Get().Name).
-				Get(),
+				ContainerRef(testContainer.Get().GetName()).
+				ServiceRef(testService.Get().GetName()),
 			testContainer.
 				StatusLatestImage(testImage).
-				StatusReady().
-				Get(),
+				StatusReady(),
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testContainer.Get(), testAdapter.Get(), scheme),
-			rtesting.NewTrackRequest(testService.Get(), testAdapter.Get(), scheme),
+			rtesting.NewTrackRequest(testContainer, testAdapter, scheme),
+			rtesting.NewTrackRequest(testService, testAdapter, scheme),
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			testAdapter.
 				StatusConditions(
 					adapterConditionBuildReady.True(),
 					adapterConditionReady.False().Reason("NotFound", `The service "my-service" was not found.`),
 					adapterConditionTargetFound.False().Reason("NotFound", `The service "my-service" was not found.`),
 				).
-				StatusLatestImage(testImage).
-				Get(),
+				StatusLatestImage(testImage),
 		},
 	}, {
 		Name: "adapt container to service, get service failed",
@@ -446,49 +411,44 @@ func TestAdapterReconciler(t *testing.T) {
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("get", "Service"),
 		},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				ContainerRef(testContainer.Get().Name).
-				ServiceRef(testService.Get().Name).
-				Get(),
+				ContainerRef(testContainer.Get().GetName()).
+				ServiceRef(testService.Get().GetName()),
 			testContainer.
 				StatusLatestImage(testImage).
-				StatusReady().
-				Get(),
-			testService.Get(),
+				StatusReady(),
+			testService,
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testContainer.Get(), testAdapter.Get(), scheme),
-			rtesting.NewTrackRequest(testService.Get(), testAdapter.Get(), scheme),
+			rtesting.NewTrackRequest(testContainer, testAdapter, scheme),
+			rtesting.NewTrackRequest(testService, testAdapter, scheme),
 		},
 	}, {
 		Name: "adapt container to service, service is up to date",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				ContainerRef(testContainer.Get().Name).
-				ServiceRef(testService.Get().Name).
+				ContainerRef(testContainer.Get().GetName()).
+				ServiceRef(testService.Get().GetName()).
 				StatusConditions(
 					adapterConditionBuildReady.True(),
 					adapterConditionReady.True(),
 					adapterConditionTargetFound.True(),
 				).
-				StatusLatestImage(testImage).
-				Get(),
+				StatusLatestImage(testImage),
 			testContainer.
 				StatusLatestImage(testImage).
-				StatusReady().
-				Get(),
+				StatusReady(),
 			testService.
 				UserContainer(func(uc *corev1.Container) {
 					uc.Image = testImage
-				}).
-				Get(),
+				}),
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testContainer.Get(), testAdapter.Get(), scheme),
-			rtesting.NewTrackRequest(testService.Get(), testAdapter.Get(), scheme),
+			rtesting.NewTrackRequest(testContainer, testAdapter, scheme),
+			rtesting.NewTrackRequest(testService, testAdapter, scheme),
 		},
 	}, {
 		Name: "adapt container to service, update service failed",
@@ -496,90 +456,80 @@ func TestAdapterReconciler(t *testing.T) {
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("update", "Service"),
 		},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				ContainerRef(testContainer.Get().Name).
-				ServiceRef(testService.Get().Name).
-				Get(),
+				ContainerRef(testContainer.Get().GetName()).
+				ServiceRef(testService.Get().GetName()),
 			testContainer.
 				StatusLatestImage(testImage).
-				StatusReady().
-				Get(),
-			testService.Get(),
+				StatusReady(),
+			testService,
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testContainer.Get(), testAdapter.Get(), scheme),
-			rtesting.NewTrackRequest(testService.Get(), testAdapter.Get(), scheme),
+			rtesting.NewTrackRequest(testContainer, testAdapter, scheme),
+			rtesting.NewTrackRequest(testService, testAdapter, scheme),
 		},
-		ExpectUpdates: []runtime.Object{
+		ExpectUpdates: []rtesting.Factory{
 			testService.
 				UserContainer(func(uc *corev1.Container) {
 					uc.Image = testImage
-				}).
-				Get(),
+				}),
 		},
 	}, {
 		Name: "adapt container to configuration",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				ContainerRef(testContainer.Get().Name).
-				ConfigurationRef(testConfiguration.Get().Name).
-				Get(),
+				ContainerRef(testContainer.Get().GetName()).
+				ConfigurationRef(testConfiguration.Get().GetName()),
 			testContainer.
 				StatusLatestImage(testImage).
-				StatusReady().
-				Get(),
-			testConfiguration.Get(),
+				StatusReady(),
+			testConfiguration,
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testContainer.Get(), testAdapter.Get(), scheme),
-			rtesting.NewTrackRequest(testConfiguration.Get(), testAdapter.Get(), scheme),
+			rtesting.NewTrackRequest(testContainer, testAdapter, scheme),
+			rtesting.NewTrackRequest(testConfiguration, testAdapter, scheme),
 		},
-		ExpectUpdates: []runtime.Object{
+		ExpectUpdates: []rtesting.Factory{
 			testConfiguration.
 				UserContainer(func(uc *corev1.Container) {
 					uc.Image = testImage
-				}).
-				Get(),
+				}),
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			testAdapter.
 				StatusConditions(
 					adapterConditionBuildReady.True(),
 					adapterConditionReady.True(),
 					adapterConditionTargetFound.True(),
 				).
-				StatusLatestImage(testImage).
-				Get(),
+				StatusLatestImage(testImage),
 		},
 	}, {
 		Name: "adapt container to configuration, configuration not found",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				ContainerRef(testContainer.Get().Name).
-				ConfigurationRef(testConfiguration.Get().Name).
-				Get(),
+				ContainerRef(testContainer.Get().GetName()).
+				ConfigurationRef(testConfiguration.Get().GetName()),
 			testContainer.
 				StatusLatestImage(testImage).
-				StatusReady().
-				Get(),
+				StatusReady(),
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testContainer.Get(), testAdapter.Get(), scheme),
-			rtesting.NewTrackRequest(testConfiguration.Get(), testAdapter.Get(), scheme),
+			rtesting.NewTrackRequest(testContainer, testAdapter, scheme),
+			rtesting.NewTrackRequest(testConfiguration, testAdapter, scheme),
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			testAdapter.
 				StatusConditions(
 					adapterConditionBuildReady.True(),
 					adapterConditionReady.False().Reason("NotFound", `The configuration "my-configuration" was not found.`),
 					adapterConditionTargetFound.False().Reason("NotFound", `The configuration "my-configuration" was not found.`),
 				).
-				StatusLatestImage(testImage).
-				Get(),
+				StatusLatestImage(testImage),
 		},
 	}, {
 		Name: "adapt container to configuration, get configuration failed",
@@ -587,49 +537,44 @@ func TestAdapterReconciler(t *testing.T) {
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("get", "Configuration"),
 		},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				ContainerRef(testContainer.Get().Name).
-				ConfigurationRef(testConfiguration.Get().Name).
-				Get(),
+				ContainerRef(testContainer.Get().GetName()).
+				ConfigurationRef(testConfiguration.Get().GetName()),
 			testContainer.
 				StatusLatestImage(testImage).
-				StatusReady().
-				Get(),
-			testConfiguration.Get(),
+				StatusReady(),
+			testConfiguration,
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testContainer.Get(), testAdapter.Get(), scheme),
-			rtesting.NewTrackRequest(testConfiguration.Get(), testAdapter.Get(), scheme),
+			rtesting.NewTrackRequest(testContainer, testAdapter, scheme),
+			rtesting.NewTrackRequest(testConfiguration, testAdapter, scheme),
 		},
 	}, {
 		Name: "adapt container to configuration, configuration is up to date",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				ContainerRef(testContainer.Get().Name).
-				ConfigurationRef(testConfiguration.Get().Name).
+				ContainerRef(testContainer.Get().GetName()).
+				ConfigurationRef(testConfiguration.Get().GetName()).
 				StatusConditions(
 					adapterConditionBuildReady.True(),
 					adapterConditionReady.True(),
 					adapterConditionTargetFound.True(),
 				).
-				StatusLatestImage(testImage).
-				Get(),
+				StatusLatestImage(testImage),
 			testContainer.
 				StatusLatestImage(testImage).
-				StatusReady().
-				Get(),
+				StatusReady(),
 			testConfiguration.
 				UserContainer(func(uc *corev1.Container) {
 					uc.Image = testImage
-				}).
-				Get(),
+				}),
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testContainer.Get(), testAdapter.Get(), scheme),
-			rtesting.NewTrackRequest(testConfiguration.Get(), testAdapter.Get(), scheme),
+			rtesting.NewTrackRequest(testContainer, testAdapter, scheme),
+			rtesting.NewTrackRequest(testConfiguration, testAdapter, scheme),
 		},
 	}, {
 		Name: "adapt container to configuration, update configuration failed",
@@ -637,28 +582,25 @@ func TestAdapterReconciler(t *testing.T) {
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("update", "Configuration"),
 		},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				ContainerRef(testContainer.Get().Name).
-				ConfigurationRef(testConfiguration.Get().Name).
-				Get(),
+				ContainerRef(testContainer.Get().GetName()).
+				ConfigurationRef(testConfiguration.Get().GetName()),
 			testContainer.
 				StatusLatestImage(testImage).
-				StatusReady().
-				Get(),
-			testConfiguration.Get(),
+				StatusReady(),
+			testConfiguration,
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testContainer.Get(), testAdapter.Get(), scheme),
-			rtesting.NewTrackRequest(testConfiguration.Get(), testAdapter.Get(), scheme),
+			rtesting.NewTrackRequest(testContainer, testAdapter, scheme),
+			rtesting.NewTrackRequest(testConfiguration, testAdapter, scheme),
 		},
-		ExpectUpdates: []runtime.Object{
+		ExpectUpdates: []rtesting.Factory{
 			testConfiguration.
 				UserContainer(func(uc *corev1.Container) {
 					uc.Image = testImage
-				}).
-				Get(),
+				}),
 		},
 	}}
 

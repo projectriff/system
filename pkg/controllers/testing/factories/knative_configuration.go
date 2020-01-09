@@ -23,11 +23,16 @@ import (
 
 	"github.com/projectriff/system/pkg/apis"
 	knativeservingv1 "github.com/projectriff/system/pkg/apis/thirdparty/knative/serving/v1"
+	rtesting "github.com/projectriff/system/pkg/controllers/testing"
 )
 
 type knativeConfiguration struct {
 	target *knativeservingv1.Configuration
 }
+
+var (
+	_ rtesting.Factory = (*knativeConfiguration)(nil)
+)
 
 func KnativeConfiguration(seed ...*knativeservingv1.Configuration) *knativeConfiguration {
 	var target *knativeservingv1.Configuration
@@ -48,7 +53,7 @@ func (f *knativeConfiguration) deepCopy() *knativeConfiguration {
 	return KnativeConfiguration(f.target.DeepCopy())
 }
 
-func (f *knativeConfiguration) Get() *knativeservingv1.Configuration {
+func (f *knativeConfiguration) Get() apis.Object {
 	return f.deepCopy().target
 }
 

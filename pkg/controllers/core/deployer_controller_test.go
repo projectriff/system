@@ -74,11 +74,11 @@ func TestDeployerReconciler(t *testing.T) {
 	deploymentCreate := factories.Deployment().
 		ObjectMeta(func(om factories.ObjectMeta) {
 			om.Namespace(testNamespace)
-			om.GenerateName("%s-deployer-", deployerMinimal.Get().Name)
-			om.AddLabel(corev1alpha1.DeployerLabelKey, deployerMinimal.Get().Name)
-			om.ControlledBy(deployerMinimal.Get(), scheme)
+			om.GenerateName("%s-deployer-", deployerMinimal.Get().GetName())
+			om.AddLabel(corev1alpha1.DeployerLabelKey, deployerMinimal.Get().GetName())
+			om.ControlledBy(deployerMinimal, scheme)
 		}).
-		AddSelectorLabel(corev1alpha1.DeployerLabelKey, deployerMinimal.Get().Name).
+		AddSelectorLabel(corev1alpha1.DeployerLabelKey, deployerMinimal.Get().GetName()).
 		HandlerContainer(func(container *corev1.Container) {
 			container.Image = testImage
 			container.Ports = []corev1.ContainerPort{
@@ -104,10 +104,10 @@ func TestDeployerReconciler(t *testing.T) {
 	serviceCreate := factories.Service().
 		NamespaceName(testNamespace, testName).
 		ObjectMeta(func(om factories.ObjectMeta) {
-			om.AddLabel(corev1alpha1.DeployerLabelKey, deployerMinimal.Get().Name)
-			om.ControlledBy(deployerMinimal.Get(), scheme)
+			om.AddLabel(corev1alpha1.DeployerLabelKey, deployerMinimal.Get().GetName())
+			om.ControlledBy(deployerMinimal, scheme)
 		}).
-		AddSelectorLabel(corev1alpha1.DeployerLabelKey, deployerMinimal.Get().Name).
+		AddSelectorLabel(corev1alpha1.DeployerLabelKey, deployerMinimal.Get().GetName()).
 		Ports(
 			corev1.ServicePort{
 				Name:       "http",
@@ -118,17 +118,17 @@ func TestDeployerReconciler(t *testing.T) {
 	serviceGiven := serviceCreate.
 		ObjectMeta(func(om factories.ObjectMeta) {
 			om.Created(1)
-			om.ControlledBy(deployerMinimal.Get(), scheme)
+			om.ControlledBy(deployerMinimal, scheme)
 		})
 
 	ingressCreate := factories.Ingress().
 		ObjectMeta(func(om factories.ObjectMeta) {
 			om.Namespace(testNamespace)
-			om.GenerateName("%s-deployer-", deployerMinimal.Get().Name)
-			om.AddLabel(corev1alpha1.DeployerLabelKey, deployerMinimal.Get().Name)
-			om.ControlledBy(deployerMinimal.Get(), scheme)
+			om.GenerateName("%s-deployer-", deployerMinimal.Get().GetName())
+			om.AddLabel(corev1alpha1.DeployerLabelKey, deployerMinimal.Get().GetName())
+			om.ControlledBy(deployerMinimal, scheme)
 		}).
-		HostToService(testHost, serviceGiven.Get().Name)
+		HostToService(testHost, serviceGiven.Get().GetName())
 	ingressGiven := ingressCreate.
 		ObjectMeta(func(om factories.ObjectMeta) {
 			om.Name("%s%s", om.Get().GenerateName, "000")
@@ -155,12 +155,11 @@ func TestDeployerReconciler(t *testing.T) {
 	}, {
 		Name: "ignore deleted deployer",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			deployerValid.
 				ObjectMeta(func(om factories.ObjectMeta) {
 					om.Deleted(1)
-				}).
-				Get(),
+				}),
 		},
 	}, {
 		Name: "deployer get error",
@@ -172,22 +171,21 @@ func TestDeployerReconciler(t *testing.T) {
 	}, {
 		Name: "create resources, from application",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			deployerMinimal.
-				ApplicationRef(testApplication.Get().Name).
-				Get(),
-			testApplication.Get(),
-			testSettings.Get(),
+				ApplicationRef(testApplication.Get().GetName()),
+			testApplication,
+			testSettings,
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testSettings.Get(), deployerMinimal.Get(), scheme),
-			rtesting.NewTrackRequest(testApplication.Get(), deployerMinimal.Get(), scheme),
+			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
+			rtesting.NewTrackRequest(testApplication, deployerMinimal, scheme),
 		},
-		ExpectCreates: []runtime.Object{
-			deploymentCreate.Get(),
-			serviceCreate.Get(),
+		ExpectCreates: []rtesting.Factory{
+			deploymentCreate,
+			serviceCreate,
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
@@ -196,69 +194,63 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionServiceReady.True(),
 				).
 				StatusLatestImage(testImage).
-				StatusDeploymentRef("%s-deployer-001", deployerMinimal.Get().Name).
-				StatusServiceRef(deployerMinimal.Get().Name).
-				StatusAddressURL("http://%s.%s.svc.cluster.local", serviceCreate.Get().Name, serviceCreate.Get().Namespace).
-				Get(),
+				StatusDeploymentRef("%s-deployer-001", deployerMinimal.Get().GetName()).
+				StatusServiceRef(deployerMinimal.Get().GetName()).
+				StatusAddressURL("http://%s.%s.svc.cluster.local", serviceCreate.Get().GetName(), serviceCreate.Get().GetNamespace()),
 		},
 	}, {
 		Name: "create resources, from application, application not found",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			deployerMinimal.
-				ApplicationRef(testApplication.Get().Name).
-				Get(),
-			testSettings.Get(),
+				ApplicationRef(testApplication.Get().GetName()),
+			testSettings,
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testSettings.Get(), deployerMinimal.Get(), scheme),
-			rtesting.NewTrackRequest(testApplication.Get(), deployerMinimal.Get(), scheme),
+			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
+			rtesting.NewTrackRequest(testApplication, deployerMinimal, scheme),
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.Unknown(),
-				).
-				Get(),
+				),
 		},
 	}, {
 		Name: "create resources, from application, no latest image",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			deployerMinimal.
-				ApplicationRef(testApplication.Get().Name).
-				Get(),
+				ApplicationRef(testApplication.Get().GetName()),
 			testApplication.
-				StatusLatestImage("").
-				Get(),
-			testSettings.Get(),
+				StatusLatestImage(""),
+			testSettings,
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testSettings.Get(), deployerMinimal.Get(), scheme),
-			rtesting.NewTrackRequest(testApplication.Get(), deployerMinimal.Get(), scheme),
+			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
+			rtesting.NewTrackRequest(testApplication, deployerMinimal, scheme),
 		},
 	}, {
 		Name: "create resources, from function",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			deployerMinimal.
-				FunctionRef(testFunction.Get().Name).
-				Get(),
-			testFunction.Get(),
-			testSettings.Get(),
+				FunctionRef(testFunction.Get().GetName()),
+			testFunction,
+			testSettings,
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testSettings.Get(), deployerMinimal.Get(), scheme),
-			rtesting.NewTrackRequest(testFunction.Get(), deployerMinimal.Get(), scheme),
+			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
+			rtesting.NewTrackRequest(testFunction, deployerMinimal, scheme),
 		},
-		ExpectCreates: []runtime.Object{
-			deploymentCreate.Get(),
-			serviceCreate.Get(),
+		ExpectCreates: []rtesting.Factory{
+			deploymentCreate,
+			serviceCreate,
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
@@ -267,69 +259,63 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionServiceReady.True(),
 				).
 				StatusLatestImage(testImage).
-				StatusDeploymentRef("%s-deployer-001", deployerMinimal.Get().Name).
-				StatusServiceRef(deployerMinimal.Get().Name).
-				StatusAddressURL("http://%s.%s.svc.cluster.local", serviceCreate.Get().Name, serviceCreate.Get().Namespace).
-				Get(),
+				StatusDeploymentRef("%s-deployer-001", deployerMinimal.Get().GetName()).
+				StatusServiceRef(deployerMinimal.Get().GetName()).
+				StatusAddressURL("http://%s.%s.svc.cluster.local", serviceCreate.Get().GetName(), serviceCreate.Get().GetNamespace()),
 		},
 	}, {
 		Name: "create resources, from function, function not found",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			deployerMinimal.
-				FunctionRef(testFunction.Get().Name).
-				Get(),
-			testSettings.Get(),
+				FunctionRef(testFunction.Get().GetName()),
+			testSettings,
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testSettings.Get(), deployerMinimal.Get(), scheme),
-			rtesting.NewTrackRequest(testFunction.Get(), deployerMinimal.Get(), scheme),
+			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
+			rtesting.NewTrackRequest(testFunction, deployerMinimal, scheme),
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.Unknown(),
-				).
-				Get(),
+				),
 		},
 	}, {
 		Name: "create resources, from function, no latest image",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			deployerMinimal.
-				FunctionRef(testFunction.Get().Name).
-				Get(),
+				FunctionRef(testFunction.Get().GetName()),
 			testFunction.
-				StatusLatestImage("").
-				Get(),
-			testSettings.Get(),
+				StatusLatestImage(""),
+			testSettings,
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testSettings.Get(), deployerMinimal.Get(), scheme),
-			rtesting.NewTrackRequest(testFunction.Get(), deployerMinimal.Get(), scheme),
+			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
+			rtesting.NewTrackRequest(testFunction, deployerMinimal, scheme),
 		},
 	}, {
 		Name: "create resources, from container",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			deployerMinimal.
-				ContainerRef(testContainer.Get().Name).
-				Get(),
-			testContainer.Get(),
-			testSettings.Get(),
+				ContainerRef(testContainer.Get().GetName()),
+			testContainer,
+			testSettings,
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testSettings.Get(), deployerMinimal.Get(), scheme),
-			rtesting.NewTrackRequest(testContainer.Get(), deployerMinimal.Get(), scheme),
+			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
+			rtesting.NewTrackRequest(testContainer, deployerMinimal, scheme),
 		},
-		ExpectCreates: []runtime.Object{
-			deploymentCreate.Get(),
-			serviceCreate.Get(),
+		ExpectCreates: []rtesting.Factory{
+			deploymentCreate,
+			serviceCreate,
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
@@ -338,67 +324,61 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionServiceReady.True(),
 				).
 				StatusLatestImage(testImage).
-				StatusDeploymentRef("%s-deployer-001", deployerMinimal.Get().Name).
-				StatusServiceRef(deployerMinimal.Get().Name).
-				StatusAddressURL("http://%s.%s.svc.cluster.local", serviceCreate.Get().Name, serviceCreate.Get().Namespace).
-				Get(),
+				StatusDeploymentRef("%s-deployer-001", deployerMinimal.Get().GetName()).
+				StatusServiceRef(deployerMinimal.Get().GetName()).
+				StatusAddressURL("http://%s.%s.svc.cluster.local", serviceCreate.Get().GetName(), serviceCreate.Get().GetNamespace()),
 		},
 	}, {
 		Name: "create resources, from container, container not found",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			deployerMinimal.
-				ContainerRef(testContainer.Get().Name).
-				Get(),
-			testSettings.Get(),
+				ContainerRef(testContainer.Get().GetName()),
+			testSettings,
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testSettings.Get(), deployerMinimal.Get(), scheme),
-			rtesting.NewTrackRequest(testContainer.Get(), deployerMinimal.Get(), scheme),
+			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
+			rtesting.NewTrackRequest(testContainer, deployerMinimal, scheme),
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.Unknown(),
-				).
-				Get(),
+				),
 		},
 	}, {
 		Name: "create resources, from container, no latest image",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			deployerMinimal.
-				ContainerRef(testContainer.Get().Name).
-				Get(),
+				ContainerRef(testContainer.Get().GetName()),
 			testContainer.
-				StatusLatestImage("").
-				Get(),
-			testSettings.Get(),
+				StatusLatestImage(""),
+			testSettings,
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testSettings.Get(), deployerMinimal.Get(), scheme),
-			rtesting.NewTrackRequest(testContainer.Get(), deployerMinimal.Get(), scheme),
+			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
+			rtesting.NewTrackRequest(testContainer, deployerMinimal, scheme),
 		},
 	}, {
 		Name: "create resources, from image",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			deployerMinimal.
-				Image(testImage).
-				Get(),
-			testSettings.Get(),
+				Image(testImage),
+			testSettings,
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testSettings.Get(), deployerMinimal.Get(), scheme),
+			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
-		ExpectCreates: []runtime.Object{
-			deploymentCreate.Get(),
-			serviceCreate.Get(),
+		ExpectCreates: []rtesting.Factory{
+			deploymentCreate,
+			serviceCreate,
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
@@ -407,10 +387,9 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionServiceReady.True(),
 				).
 				StatusLatestImage(testImage).
-				StatusDeploymentRef("%s-deployer-001", deployerMinimal.Get().Name).
-				StatusServiceRef(deployerMinimal.Get().Name).
-				StatusAddressURL("http://%s.%s.svc.cluster.local", serviceCreate.Get().Name, serviceCreate.Get().Namespace).
-				Get(),
+				StatusDeploymentRef("%s-deployer-001", deployerMinimal.Get().GetName()).
+				StatusServiceRef(deployerMinimal.Get().GetName()).
+				StatusAddressURL("http://%s.%s.svc.cluster.local", serviceCreate.Get().GetName(), serviceCreate.Get().GetNamespace()),
 		},
 	}, {
 		Name: "create deployment, error",
@@ -418,28 +397,26 @@ func TestDeployerReconciler(t *testing.T) {
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("create", "Deployment"),
 		},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			deployerMinimal.
-				Image(testImage).
-				Get(),
-			testSettings.Get(),
+				Image(testImage),
+			testSettings,
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testSettings.Get(), deployerMinimal.Get(), scheme),
+			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
-		ExpectCreates: []runtime.Object{
-			deploymentCreate.Get(),
+		ExpectCreates: []rtesting.Factory{
+			deploymentCreate,
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.Unknown(),
 				).
-				StatusLatestImage(testImage).
-				Get(),
+				StatusLatestImage(testImage),
 		},
 	}, {
 		Name: "create service, error",
@@ -447,21 +424,20 @@ func TestDeployerReconciler(t *testing.T) {
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("create", "Service"),
 		},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			deployerMinimal.
-				Image(testImage).
-				Get(),
-			testSettings.Get(),
+				Image(testImage),
+			testSettings,
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testSettings.Get(), deployerMinimal.Get(), scheme),
+			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
-		ExpectCreates: []runtime.Object{
-			deploymentCreate.Get(),
-			serviceCreate.Get(),
+		ExpectCreates: []rtesting.Factory{
+			deploymentCreate,
+			serviceCreate,
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
@@ -469,8 +445,7 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionServiceReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
-				StatusDeploymentRef("%s-deployer-001", deployerMinimal.Get().Name).
-				Get(),
+				StatusDeploymentRef("%s-deployer-001", deployerMinimal.Get().GetName()),
 		},
 	}, {
 		Name: "create service, conflicted",
@@ -480,20 +455,19 @@ func TestDeployerReconciler(t *testing.T) {
 				Error: apierrs.NewAlreadyExists(schema.GroupResource{}, testName),
 			}),
 		},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			deployerMinimal.
-				Image(testImage).
-				Get(),
-			testSettings.Get(),
+				Image(testImage),
+			testSettings,
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testSettings.Get(), deployerMinimal.Get(), scheme),
+			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
-		ExpectCreates: []runtime.Object{
-			deploymentCreate.Get(),
-			serviceCreate.Get(),
+		ExpectCreates: []rtesting.Factory{
+			deploymentCreate,
+			serviceCreate,
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
@@ -501,13 +475,12 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionServiceReady.False().Reason("NotOwned", `There is an existing Service "test-deployer" that the Deployer does not own.`),
 				).
 				StatusLatestImage(testImage).
-				StatusDeploymentRef("%s-deployer-001", deployerMinimal.Get().Name).
-				Get(),
+				StatusDeploymentRef("%s-deployer-001", deployerMinimal.Get().GetName()),
 		},
 	}, {
 		Name: "update deployment",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			deployerMinimal.
 				Image(testImage).
 				StatusConditions(
@@ -517,24 +490,22 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionServiceReady.True(),
 				).
 				StatusLatestImage(testImage).
-				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
-				StatusServiceRef(deployerMinimal.Get().Name).
-				StatusAddressURL("http://%s.%s.svc.cluster.local", serviceCreate.Get().Name, serviceCreate.Get().Namespace).
-				Get(),
+				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().GetName()).
+				StatusServiceRef(deployerMinimal.Get().GetName()).
+				StatusAddressURL("http://%s.%s.svc.cluster.local", serviceCreate.Get().GetName(), serviceCreate.Get().GetNamespace()),
 			deploymentGiven.
 				HandlerContainer(func(container *corev1.Container) {
 					// change to reverse
 					container.Env = nil
-				}).
-				Get(),
-			serviceGiven.Get(),
-			testSettings.Get(),
+				}),
+			serviceGiven,
+			testSettings,
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testSettings.Get(), deployerMinimal.Get(), scheme),
+			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
-		ExpectUpdates: []runtime.Object{
-			deploymentGiven.Get(),
+		ExpectUpdates: []rtesting.Factory{
+			deploymentGiven,
 		},
 	}, {
 		Name: "update deployment, update error",
@@ -542,7 +513,7 @@ func TestDeployerReconciler(t *testing.T) {
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("update", "Deployment"),
 		},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			deployerMinimal.
 				Image(testImage).
 				StatusConditions(
@@ -552,25 +523,23 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionServiceReady.True(),
 				).
 				StatusLatestImage(testImage).
-				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
-				StatusServiceRef(deployerMinimal.Get().Name).
-				StatusAddressURL("http://%s.%s.svc.cluster.local", serviceCreate.Get().Name, serviceCreate.Get().Namespace).
-				Get(),
+				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().GetName()).
+				StatusServiceRef(deployerMinimal.Get().GetName()).
+				StatusAddressURL("http://%s.%s.svc.cluster.local", serviceCreate.Get().GetName(), serviceCreate.Get().GetNamespace()),
 			deploymentGiven.
 				HandlerContainer(func(container *corev1.Container) {
 					// change to reverse
 					container.Env = nil
-				}).
-				Get(),
-			serviceGiven.Get(),
-			testSettings.Get(),
+				}),
+			serviceGiven,
+			testSettings,
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testSettings.Get(), deployerMinimal.Get(), scheme),
+			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
-		ExpectUpdates: []runtime.Object{
-			deploymentGiven.Get(),
+		ExpectUpdates: []rtesting.Factory{
+			deploymentGiven,
 		},
 	}, {
 		Name: "update deployment, list deployments failed",
@@ -578,7 +547,7 @@ func TestDeployerReconciler(t *testing.T) {
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("list", "DeploymentList"),
 		},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			deployerMinimal.
 				Image(testImage).
 				StatusConditions(
@@ -588,27 +557,25 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionServiceReady.True(),
 				).
 				StatusLatestImage(testImage).
-				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
-				StatusServiceRef(deployerMinimal.Get().Name).
-				StatusAddressURL("http://%s.%s.svc.cluster.local", serviceCreate.Get().Name, serviceCreate.Get().Namespace).
-				Get(),
+				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().GetName()).
+				StatusServiceRef(deployerMinimal.Get().GetName()).
+				StatusAddressURL("http://%s.%s.svc.cluster.local", serviceCreate.Get().GetName(), serviceCreate.Get().GetNamespace()),
 			deploymentGiven.
 				HandlerContainer(func(container *corev1.Container) {
 					// change to reverse
 					container.Env = nil
-				}).
-				Get(),
-			serviceGiven.Get(),
-			testSettings.Get(),
+				}),
+			serviceGiven,
+			testSettings,
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testSettings.Get(), deployerMinimal.Get(), scheme),
+			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
 	}, {
 		Name: "update service",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			deployerMinimal.
 				Image(testImage).
 				StatusConditions(
@@ -618,22 +585,20 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionServiceReady.True(),
 				).
 				StatusLatestImage(testImage).
-				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
-				StatusServiceRef(deployerMinimal.Get().Name).
-				StatusAddressURL("http://%s.%s.svc.cluster.local", serviceCreate.Get().Name, serviceCreate.Get().Namespace).
-				Get(),
-			deploymentGiven.Get(),
+				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().GetName()).
+				StatusServiceRef(deployerMinimal.Get().GetName()).
+				StatusAddressURL("http://%s.%s.svc.cluster.local", serviceCreate.Get().GetName(), serviceCreate.Get().GetNamespace()),
+			deploymentGiven,
 			serviceGiven.
 				// change to reverse
-				Ports().
-				Get(),
-			testSettings.Get(),
+				Ports(),
+			testSettings,
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testSettings.Get(), deployerMinimal.Get(), scheme),
+			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
-		ExpectUpdates: []runtime.Object{
-			serviceGiven.Get(),
+		ExpectUpdates: []rtesting.Factory{
+			serviceGiven,
 		},
 	}, {
 		Name: "update service, update error",
@@ -641,7 +606,7 @@ func TestDeployerReconciler(t *testing.T) {
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("update", "Service"),
 		},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			deployerMinimal.
 				Image(testImage).
 				StatusConditions(
@@ -651,23 +616,21 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionServiceReady.True(),
 				).
 				StatusLatestImage(testImage).
-				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
-				StatusServiceRef(deployerMinimal.Get().Name).
-				StatusAddressURL("http://%s.%s.svc.cluster.local", serviceCreate.Get().Name, serviceCreate.Get().Namespace).
-				Get(),
-			deploymentGiven.Get(),
+				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().GetName()).
+				StatusServiceRef(deployerMinimal.Get().GetName()).
+				StatusAddressURL("http://%s.%s.svc.cluster.local", serviceCreate.Get().GetName(), serviceCreate.Get().GetNamespace()),
+			deploymentGiven,
 			serviceGiven.
 				// change to reverse
-				Ports().
-				Get(),
-			testSettings.Get(),
+				Ports(),
+			testSettings,
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testSettings.Get(), deployerMinimal.Get(), scheme),
+			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
-		ExpectUpdates: []runtime.Object{
-			serviceGiven.Get(),
+		ExpectUpdates: []rtesting.Factory{
+			serviceGiven,
 		},
 	}, {
 		Name: "update service, list services failed",
@@ -675,7 +638,7 @@ func TestDeployerReconciler(t *testing.T) {
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("list", "ServiceList"),
 		},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			deployerMinimal.
 				Image(testImage).
 				StatusConditions(
@@ -685,25 +648,23 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionServiceReady.True(),
 				).
 				StatusLatestImage(testImage).
-				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
-				StatusServiceRef(deployerMinimal.Get().Name).
-				StatusAddressURL("http://%s.%s.svc.cluster.local", serviceCreate.Get().Name, serviceCreate.Get().Namespace).
-				Get(),
-			deploymentGiven.Get(),
+				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().GetName()).
+				StatusServiceRef(deployerMinimal.Get().GetName()).
+				StatusAddressURL("http://%s.%s.svc.cluster.local", serviceCreate.Get().GetName(), serviceCreate.Get().GetNamespace()),
+			deploymentGiven,
 			serviceGiven.
 				// change to reverse
-				Ports().
-				Get(),
-			testSettings.Get(),
+				Ports(),
+			testSettings,
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testSettings.Get(), deployerMinimal.Get(), scheme),
+			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
 	}, {
 		Name: "cleanup extra deployments",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			deployerMinimal.
 				Image(testImage).
 				StatusConditions(
@@ -713,28 +674,25 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionServiceReady.True(),
 				).
 				StatusLatestImage(testImage).
-				StatusDeploymentRef("%s-deployer-001", deployerMinimal.Get().Name).
-				StatusServiceRef(deployerMinimal.Get().Name).
-				StatusAddressURL("http://%s.%s.svc.cluster.local", serviceCreate.Get().Name, serviceCreate.Get().Namespace).
-				Get(),
+				StatusDeploymentRef("%s-deployer-001", deployerMinimal.Get().GetName()).
+				StatusServiceRef(deployerMinimal.Get().GetName()).
+				StatusAddressURL("http://%s.%s.svc.cluster.local", serviceCreate.Get().GetName(), serviceCreate.Get().GetNamespace()),
 			deploymentGiven.
-				NamespaceName(testNamespace, "extra-deployment-1").
-				Get(),
+				NamespaceName(testNamespace, "extra-deployment-1"),
 			deploymentGiven.
-				NamespaceName(testNamespace, "extra-deployment-2").
-				Get(),
-			serviceGiven.Get(),
-			testSettings.Get(),
+				NamespaceName(testNamespace, "extra-deployment-2"),
+			serviceGiven,
+			testSettings,
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testSettings.Get(), deployerMinimal.Get(), scheme),
+			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
 		ExpectDeletes: []rtesting.DeleteRef{
 			{Group: "apps", Kind: "Deployment", Namespace: testNamespace, Name: "extra-deployment-1"},
 			{Group: "apps", Kind: "Deployment", Namespace: testNamespace, Name: "extra-deployment-2"},
 		},
-		ExpectCreates: []runtime.Object{
-			deploymentCreate.Get(),
+		ExpectCreates: []rtesting.Factory{
+			deploymentCreate,
 		},
 	}, {
 		Name: "cleanup extra deployments, delete deployment failed",
@@ -742,7 +700,7 @@ func TestDeployerReconciler(t *testing.T) {
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("delete", "Deployment"),
 		},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			deployerMinimal.
 				Image(testImage).
 				StatusConditions(
@@ -752,22 +710,19 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionServiceReady.True(),
 				).
 				StatusLatestImage(testImage).
-				StatusDeploymentRef("%s-deployer-001", deployerMinimal.Get().Name).
-				StatusServiceRef(deployerMinimal.Get().Name).
-				StatusAddressURL("http://%s.%s.svc.cluster.local", serviceCreate.Get().Name, serviceCreate.Get().Namespace).
-				Get(),
+				StatusDeploymentRef("%s-deployer-001", deployerMinimal.Get().GetName()).
+				StatusServiceRef(deployerMinimal.Get().GetName()).
+				StatusAddressURL("http://%s.%s.svc.cluster.local", serviceCreate.Get().GetName(), serviceCreate.Get().GetNamespace()),
 			deploymentGiven.
-				NamespaceName(testNamespace, "extra-deployment-1").
-				Get(),
+				NamespaceName(testNamespace, "extra-deployment-1"),
 			deploymentGiven.
-				NamespaceName(testNamespace, "extra-deployment-2").
-				Get(),
-			serviceGiven.Get(),
-			testSettings.Get(),
+				NamespaceName(testNamespace, "extra-deployment-2"),
+			serviceGiven,
+			testSettings,
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testSettings.Get(), deployerMinimal.Get(), scheme),
+			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
 		ExpectDeletes: []rtesting.DeleteRef{
 			{Group: "apps", Kind: "Deployment", Namespace: testNamespace, Name: "extra-deployment-1"},
@@ -775,7 +730,7 @@ func TestDeployerReconciler(t *testing.T) {
 	}, {
 		Name: "cleanup extra services",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			deployerMinimal.
 				Image(testImage).
 				StatusConditions(
@@ -785,28 +740,25 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionServiceReady.True(),
 				).
 				StatusLatestImage(testImage).
-				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
-				StatusServiceRef(deployerMinimal.Get().Name).
-				StatusAddressURL("http://%s.%s.svc.cluster.local", serviceCreate.Get().Name, serviceCreate.Get().Namespace).
-				Get(),
-			deploymentGiven.Get(),
+				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().GetName()).
+				StatusServiceRef(deployerMinimal.Get().GetName()).
+				StatusAddressURL("http://%s.%s.svc.cluster.local", serviceCreate.Get().GetName(), serviceCreate.Get().GetNamespace()),
+			deploymentGiven,
 			serviceGiven.
-				NamespaceName(testNamespace, "extra-service-1").
-				Get(),
+				NamespaceName(testNamespace, "extra-service-1"),
 			serviceGiven.
-				NamespaceName(testNamespace, "extra-service-2").
-				Get(),
-			testSettings.Get(),
+				NamespaceName(testNamespace, "extra-service-2"),
+			testSettings,
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testSettings.Get(), deployerMinimal.Get(), scheme),
+			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
 		ExpectDeletes: []rtesting.DeleteRef{
 			{Kind: "Service", Namespace: testNamespace, Name: "extra-service-1"},
 			{Kind: "Service", Namespace: testNamespace, Name: "extra-service-2"},
 		},
-		ExpectCreates: []runtime.Object{
-			serviceCreate.Get(),
+		ExpectCreates: []rtesting.Factory{
+			serviceCreate,
 		},
 	}, {
 		Name: "cleanup extra services, delete service failed",
@@ -814,7 +766,7 @@ func TestDeployerReconciler(t *testing.T) {
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("delete", "Service"),
 		},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			deployerMinimal.
 				Image(testImage).
 				StatusConditions(
@@ -824,22 +776,19 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionServiceReady.True(),
 				).
 				StatusLatestImage(testImage).
-				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
-				StatusServiceRef(deployerMinimal.Get().Name).
-				StatusAddressURL("http://%s.%s.svc.cluster.local", serviceCreate.Get().Name, serviceCreate.Get().Namespace).
-				Get(),
-			deploymentGiven.Get(),
+				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().GetName()).
+				StatusServiceRef(deployerMinimal.Get().GetName()).
+				StatusAddressURL("http://%s.%s.svc.cluster.local", serviceCreate.Get().GetName(), serviceCreate.Get().GetNamespace()),
+			deploymentGiven,
 			serviceGiven.
-				NamespaceName(testNamespace, "extra-service-1").
-				Get(),
+				NamespaceName(testNamespace, "extra-service-1"),
 			serviceGiven.
-				NamespaceName(testNamespace, "extra-service-2").
-				Get(),
-			testSettings.Get(),
+				NamespaceName(testNamespace, "extra-service-2"),
+			testSettings,
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testSettings.Get(), deployerMinimal.Get(), scheme),
+			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
 		ExpectDeletes: []rtesting.DeleteRef{
 			{Kind: "Service", Namespace: testNamespace, Name: "extra-service-1"},
@@ -847,22 +796,21 @@ func TestDeployerReconciler(t *testing.T) {
 	}, {
 		Name: "create ingress",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			deployerMinimal.
 				Image(testImage).
-				IngressPolicy(corev1alpha1.IngressPolicyExternal).
-				Get(),
-			deploymentGiven.Get(),
-			serviceGiven.Get(),
-			testSettings.Get(),
+				IngressPolicy(corev1alpha1.IngressPolicyExternal),
+			deploymentGiven,
+			serviceGiven,
+			testSettings,
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testSettings.Get(), deployerMinimal.Get(), scheme),
+			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
-		ExpectCreates: []runtime.Object{
-			ingressCreate.Get(),
+		ExpectCreates: []rtesting.Factory{
+			ingressCreate,
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
@@ -871,12 +819,11 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionServiceReady.True(),
 				).
 				StatusLatestImage(testImage).
-				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
-				StatusServiceRef(deployerMinimal.Get().Name).
+				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().GetName()).
+				StatusServiceRef(deployerMinimal.Get().GetName()).
 				StatusIngressRef("%s-deployer-001", testName).
 				StatusAddressURL(testAddressURL).
-				StatusURL(testURL).
-				Get(),
+				StatusURL(testURL),
 		},
 	}, {
 		Name: "create ingress, create failed",
@@ -884,23 +831,22 @@ func TestDeployerReconciler(t *testing.T) {
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("create", "Ingress"),
 		},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			deployerMinimal.
 				Image(testImage).
-				IngressPolicy(corev1alpha1.IngressPolicyExternal).
-				Get(),
-			deploymentGiven.Get(),
-			serviceGiven.Get(),
-			testSettings.Get(),
+				IngressPolicy(corev1alpha1.IngressPolicyExternal),
+			deploymentGiven,
+			serviceGiven,
+			testSettings,
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testSettings.Get(), deployerMinimal.Get(), scheme),
+			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
-		ExpectCreates: []runtime.Object{
-			ingressCreate.Get(),
+		ExpectCreates: []rtesting.Factory{
+			ingressCreate,
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
@@ -908,33 +854,30 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionServiceReady.True(),
 				).
 				StatusLatestImage(testImage).
-				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
-				StatusServiceRef(deployerMinimal.Get().Name).
-				StatusAddressURL(testAddressURL).
-				Get(),
+				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().GetName()).
+				StatusServiceRef(deployerMinimal.Get().GetName()).
+				StatusAddressURL(testAddressURL),
 		},
 	}, {
 		Name: "delete ingress",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			deployerMinimal.
 				Image(testImage).
-				IngressPolicy(corev1alpha1.IngressPolicyClusterLocal).
-				Get(),
-			deploymentGiven.Get(),
-			serviceGiven.Get(),
-			ingressGiven.Get(),
+				IngressPolicy(corev1alpha1.IngressPolicyClusterLocal),
+			deploymentGiven,
+			serviceGiven,
+			ingressGiven,
 			testSettings.
-				AddData("defaultDomain", "not.example.com").
-				Get(),
+				AddData("defaultDomain", "not.example.com"),
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testSettings.Get(), deployerMinimal.Get(), scheme),
+			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
 		ExpectDeletes: []rtesting.DeleteRef{
-			{Group: "networking.k8s.io", Kind: "Ingress", Namespace: testNamespace, Name: ingressGiven.Get().Name},
+			{Group: "networking.k8s.io", Kind: "Ingress", Namespace: testNamespace, Name: ingressGiven.Get().GetName()},
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
@@ -943,10 +886,9 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionServiceReady.True(),
 				).
 				StatusLatestImage(testImage).
-				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
-				StatusServiceRef(deployerMinimal.Get().Name).
-				StatusAddressURL(testAddressURL).
-				Get(),
+				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().GetName()).
+				StatusServiceRef(deployerMinimal.Get().GetName()).
+				StatusAddressURL(testAddressURL),
 		},
 	}, {
 		Name: "delete ingress, delete failed",
@@ -954,26 +896,24 @@ func TestDeployerReconciler(t *testing.T) {
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("delete", "Ingress"),
 		},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			deployerMinimal.
 				Image(testImage).
-				IngressPolicy(corev1alpha1.IngressPolicyClusterLocal).
-				Get(),
-			deploymentGiven.Get(),
-			serviceGiven.Get(),
-			ingressGiven.Get(),
+				IngressPolicy(corev1alpha1.IngressPolicyClusterLocal),
+			deploymentGiven,
+			serviceGiven,
+			ingressGiven,
 			testSettings.
-				AddData("defaultDomain", "not.example.com").
-				Get(),
+				AddData("defaultDomain", "not.example.com"),
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testSettings.Get(), deployerMinimal.Get(), scheme),
+			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
 		ExpectDeletes: []rtesting.DeleteRef{
-			{Group: "networking.k8s.io", Kind: "Ingress", Namespace: testNamespace, Name: ingressGiven.Get().Name},
+			{Group: "networking.k8s.io", Kind: "Ingress", Namespace: testNamespace, Name: ingressGiven.Get().GetName()},
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
@@ -981,35 +921,31 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionServiceReady.True(),
 				).
 				StatusLatestImage(testImage).
-				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
-				StatusServiceRef(deployerMinimal.Get().Name).
-				StatusAddressURL(testAddressURL).
-				Get(),
+				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().GetName()).
+				StatusServiceRef(deployerMinimal.Get().GetName()).
+				StatusAddressURL(testAddressURL),
 		},
 	}, {
 		Name: "update ingress",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			deployerMinimal.
 				Image(testImage).
-				IngressPolicy(corev1alpha1.IngressPolicyExternal).
-				Get(),
-			deploymentGiven.Get(),
-			serviceGiven.Get(),
-			ingressGiven.Get(),
+				IngressPolicy(corev1alpha1.IngressPolicyExternal),
+			deploymentGiven,
+			serviceGiven,
+			ingressGiven,
 			testSettings.
-				AddData("defaultDomain", "not.example.com").
-				Get(),
+				AddData("defaultDomain", "not.example.com"),
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testSettings.Get(), deployerMinimal.Get(), scheme),
+			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
-		ExpectUpdates: []runtime.Object{
+		ExpectUpdates: []rtesting.Factory{
 			ingressGiven.
-				HostToService(fmt.Sprintf("%s.%s.%s", testName, testNamespace, "not.example.com"), serviceGiven.Get().Name).
-				Get(),
+				HostToService(fmt.Sprintf("%s.%s.%s", testName, testNamespace, "not.example.com"), serviceGiven.Get().GetName()),
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
@@ -1018,12 +954,11 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionServiceReady.True(),
 				).
 				StatusLatestImage(testImage).
-				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
-				StatusServiceRef(deployerMinimal.Get().Name).
+				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().GetName()).
+				StatusServiceRef(deployerMinimal.Get().GetName()).
 				StatusIngressRef("%s-deployer-000", testName).
 				StatusAddressURL(testAddressURL).
-				StatusURL("http://%s.%s.%s", testName, testNamespace, "not.example.com").
-				Get(),
+				StatusURL("http://%s.%s.%s", testName, testNamespace, "not.example.com"),
 		},
 	}, {
 		Name: "update ingress, update failed",
@@ -1031,28 +966,25 @@ func TestDeployerReconciler(t *testing.T) {
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("update", "Ingress"),
 		},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			deployerMinimal.
 				Image(testImage).
-				IngressPolicy(corev1alpha1.IngressPolicyExternal).
-				Get(),
-			deploymentGiven.Get(),
-			serviceGiven.Get(),
-			ingressGiven.Get(),
+				IngressPolicy(corev1alpha1.IngressPolicyExternal),
+			deploymentGiven,
+			serviceGiven,
+			ingressGiven,
 			testSettings.
-				AddData("defaultDomain", "not.example.com").
-				Get(),
+				AddData("defaultDomain", "not.example.com"),
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testSettings.Get(), deployerMinimal.Get(), scheme),
+			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
-		ExpectUpdates: []runtime.Object{
+		ExpectUpdates: []rtesting.Factory{
 			ingressGiven.
-				HostToService(fmt.Sprintf("%s.%s.%s", testName, testNamespace, "not.example.com"), serviceGiven.Get().Name).
-				Get(),
+				HostToService(fmt.Sprintf("%s.%s.%s", testName, testNamespace, "not.example.com"), serviceGiven.Get().GetName()),
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
@@ -1060,40 +992,36 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionServiceReady.True(),
 				).
 				StatusLatestImage(testImage).
-				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
-				StatusServiceRef(deployerMinimal.Get().Name).
-				StatusAddressURL(testAddressURL).
-				Get(),
+				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().GetName()).
+				StatusServiceRef(deployerMinimal.Get().GetName()).
+				StatusAddressURL(testAddressURL),
 		},
 	}, {
 		Name: "remove extra ingress",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			deployerMinimal.
 				Image(testImage).
-				IngressPolicy(corev1alpha1.IngressPolicyExternal).
-				Get(),
-			deploymentGiven.Get(),
-			serviceGiven.Get(),
+				IngressPolicy(corev1alpha1.IngressPolicyExternal),
+			deploymentGiven,
+			serviceGiven,
 			ingressGiven.
-				NamespaceName(testNamespace, "extra-ingress-1").
-				Get(),
+				NamespaceName(testNamespace, "extra-ingress-1"),
 			ingressGiven.
-				NamespaceName(testNamespace, "extra-ingress-2").
-				Get(),
-			testSettings.Get(),
+				NamespaceName(testNamespace, "extra-ingress-2"),
+			testSettings,
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testSettings.Get(), deployerMinimal.Get(), scheme),
+			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
 		ExpectDeletes: []rtesting.DeleteRef{
 			{Group: "networking.k8s.io", Kind: "Ingress", Namespace: testNamespace, Name: "extra-ingress-1"},
 			{Group: "networking.k8s.io", Kind: "Ingress", Namespace: testNamespace, Name: "extra-ingress-2"},
 		},
-		ExpectCreates: []runtime.Object{
-			ingressCreate.Get(),
+		ExpectCreates: []rtesting.Factory{
+			ingressCreate,
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
@@ -1102,12 +1030,11 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionServiceReady.True(),
 				).
 				StatusLatestImage(testImage).
-				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
-				StatusServiceRef(deployerMinimal.Get().Name).
+				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().GetName()).
+				StatusServiceRef(deployerMinimal.Get().GetName()).
 				StatusIngressRef("%s-deployer-001", testName).
 				StatusAddressURL(testAddressURL).
-				StatusURL(testURL).
-				Get(),
+				StatusURL(testURL),
 		},
 	}, {
 		Name: "remove extra ingress, listing failed",
@@ -1115,26 +1042,23 @@ func TestDeployerReconciler(t *testing.T) {
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("list", "IngressList"),
 		},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			deployerMinimal.
 				Image(testImage).
-				IngressPolicy(corev1alpha1.IngressPolicyExternal).
-				Get(),
-			deploymentGiven.Get(),
-			serviceGiven.Get(),
+				IngressPolicy(corev1alpha1.IngressPolicyExternal),
+			deploymentGiven,
+			serviceGiven,
 			ingressGiven.
-				NamespaceName(testNamespace, "extra-ingress-1").
-				Get(),
+				NamespaceName(testNamespace, "extra-ingress-1"),
 			ingressGiven.
-				NamespaceName(testNamespace, "extra-ingress-2").
-				Get(),
-			testSettings.Get(),
+				NamespaceName(testNamespace, "extra-ingress-2"),
+			testSettings,
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testSettings.Get(), deployerMinimal.Get(), scheme),
+			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
@@ -1142,10 +1066,9 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionServiceReady.True(),
 				).
 				StatusLatestImage(testImage).
-				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
-				StatusServiceRef(deployerMinimal.Get().Name).
-				StatusAddressURL("http://%s.%s.svc.cluster.local", serviceCreate.Get().Name, serviceCreate.Get().Namespace).
-				Get(),
+				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().GetName()).
+				StatusServiceRef(deployerMinimal.Get().GetName()).
+				StatusAddressURL("http://%s.%s.svc.cluster.local", serviceCreate.Get().GetName(), serviceCreate.Get().GetNamespace()),
 		},
 	}, {
 		Name: "remove extra ingress, delete failed",
@@ -1153,29 +1076,26 @@ func TestDeployerReconciler(t *testing.T) {
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("delete", "Ingress"),
 		},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			deployerMinimal.
 				Image(testImage).
-				IngressPolicy(corev1alpha1.IngressPolicyExternal).
-				Get(),
-			deploymentGiven.Get(),
-			serviceGiven.Get(),
+				IngressPolicy(corev1alpha1.IngressPolicyExternal),
+			deploymentGiven,
+			serviceGiven,
 			ingressGiven.
-				NamespaceName(testNamespace, "extra-ingress-1").
-				Get(),
+				NamespaceName(testNamespace, "extra-ingress-1"),
 			ingressGiven.
-				NamespaceName(testNamespace, "extra-ingress-2").
-				Get(),
-			testSettings.Get(),
+				NamespaceName(testNamespace, "extra-ingress-2"),
+			testSettings,
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testSettings.Get(), deployerMinimal.Get(), scheme),
+			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
 		ExpectDeletes: []rtesting.DeleteRef{
 			{Group: "networking.k8s.io", Kind: "Ingress", Namespace: testNamespace, Name: "extra-ingress-1"},
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
@@ -1183,15 +1103,14 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionServiceReady.True(),
 				).
 				StatusLatestImage(testImage).
-				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
-				StatusServiceRef(deployerMinimal.Get().Name).
-				StatusAddressURL("http://%s.%s.svc.cluster.local", serviceCreate.Get().Name, serviceCreate.Get().Namespace).
-				Get(),
+				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().GetName()).
+				StatusServiceRef(deployerMinimal.Get().GetName()).
+				StatusAddressURL("http://%s.%s.svc.cluster.local", serviceCreate.Get().GetName(), serviceCreate.Get().GetNamespace()),
 		},
 	}, {
 		Name: "propagate labels",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			deployerMinimal.
 				ObjectMeta(func(om factories.ObjectMeta) {
 					om.AddLabel(testLabelKey, testLabelValue)
@@ -1205,58 +1124,53 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionServiceReady.True(),
 				).
 				StatusLatestImage(testImage).
-				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
-				StatusServiceRef(deployerMinimal.Get().Name).
-				StatusIngressRef(ingressGiven.Get().Name).
-				StatusAddressURL("http://%s.%s.svc.cluster.local", serviceCreate.Get().Name, serviceCreate.Get().Namespace).
-				StatusURL(testURL).
-				Get(),
-			deploymentGiven.Get(),
-			serviceGiven.Get(),
-			ingressGiven.Get(),
-			testSettings.Get(),
+				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().GetName()).
+				StatusServiceRef(deployerMinimal.Get().GetName()).
+				StatusIngressRef(ingressGiven.Get().GetName()).
+				StatusAddressURL("http://%s.%s.svc.cluster.local", serviceCreate.Get().GetName(), serviceCreate.Get().GetNamespace()).
+				StatusURL(testURL),
+			deploymentGiven,
+			serviceGiven,
+			ingressGiven,
+			testSettings,
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testSettings.Get(), deployerMinimal.Get(), scheme),
+			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
-		ExpectUpdates: []runtime.Object{
+		ExpectUpdates: []rtesting.Factory{
 			deploymentGiven.
 				ObjectMeta(func(om factories.ObjectMeta) {
 					om.AddLabel(testLabelKey, testLabelValue)
 				}).
 				PodTemplateSpec(func(pts factories.PodTemplateSpec) {
 					pts.AddLabel(testLabelKey, testLabelValue)
-				}).
-				Get(),
+				}),
 			serviceGiven.
 				ObjectMeta(func(om factories.ObjectMeta) {
 					om.AddLabel(testLabelKey, testLabelValue)
-				}).
-				Get(),
+				}),
 			ingressGiven.
 				ObjectMeta(func(om factories.ObjectMeta) {
 					om.AddLabel(testLabelKey, testLabelValue)
-				}).
-				Get(),
+				}),
 		},
 	}, {
 		Name: "ready",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
-			deployerValid.Get(),
+		GivenObjects: []rtesting.Factory{
+			deployerValid,
 			deploymentGiven.
 				StatusConditions(
 					factories.Condition().Type("Available").True(),
 					factories.Condition().Type("Progressing").Unknown(),
-				).
-				Get(),
-			serviceGiven.Get(),
-			testSettings.Get(),
+				),
+			serviceGiven,
+			testSettings,
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testSettings.Get(), deployerMinimal.Get(), scheme),
+			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.True(),
@@ -1265,38 +1179,34 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionServiceReady.True(),
 				).
 				StatusLatestImage(testImage).
-				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
-				StatusServiceRef(deployerMinimal.Get().Name).
-				StatusAddressURL("http://%s.%s.svc.cluster.local", serviceCreate.Get().Name, serviceCreate.Get().Namespace).
-				Get(),
+				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().GetName()).
+				StatusServiceRef(deployerMinimal.Get().GetName()).
+				StatusAddressURL("http://%s.%s.svc.cluster.local", serviceCreate.Get().GetName(), serviceCreate.Get().GetNamespace()),
 		},
 	}, {
 		Name: "ready, with ingress",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			deployerValid.
-				IngressPolicy(corev1alpha1.IngressPolicyExternal).
-				Get(),
+				IngressPolicy(corev1alpha1.IngressPolicyExternal),
 			deploymentGiven.
 				StatusConditions(
 					factories.Condition().Type("Available").True(),
 					factories.Condition().Type("Progressing").Unknown(),
-				).
-				Get(),
-			serviceGiven.Get(),
+				),
+			serviceGiven,
 			ingressGiven.
 				StatusLoadBalancer(
 					corev1.LoadBalancerIngress{
 						Hostname: testHost,
 					},
-				).
-				Get(),
-			testSettings.Get(),
+				),
+			testSettings,
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testSettings.Get(), deployerMinimal.Get(), scheme),
+			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.True(),
@@ -1305,31 +1215,29 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionServiceReady.True(),
 				).
 				StatusLatestImage(testImage).
-				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
-				StatusServiceRef(deployerMinimal.Get().Name).
-				StatusIngressRef("%s-deployer-000", deployerMinimal.Get().Name).
+				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().GetName()).
+				StatusServiceRef(deployerMinimal.Get().GetName()).
+				StatusIngressRef("%s-deployer-000", deployerMinimal.Get().GetName()).
 				StatusAddressURL(testAddressURL).
-				StatusURL(testURL).
-				Get(),
+				StatusURL(testURL),
 		},
 	}, {
 		Name: "not ready",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
-			deployerValid.Get(),
+		GivenObjects: []rtesting.Factory{
+			deployerValid,
 			deploymentGiven.
 				StatusConditions(
 					factories.Condition().Type("Available").False().Reason(testConditionReason, testConditionMessage),
 					factories.Condition().Type("Progressing").Unknown(),
-				).
-				Get(),
-			serviceGiven.Get(),
-			testSettings.Get(),
+				),
+			serviceGiven,
+			testSettings,
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testSettings.Get(), deployerMinimal.Get(), scheme),
+			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.False().Reason(testConditionReason, testConditionMessage),
@@ -1338,10 +1246,9 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionServiceReady.True(),
 				).
 				StatusLatestImage(testImage).
-				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
-				StatusServiceRef(deployerMinimal.Get().Name).
-				StatusAddressURL("http://%s.%s.svc.cluster.local", serviceCreate.Get().Name, serviceCreate.Get().Namespace).
-				Get(),
+				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().GetName()).
+				StatusServiceRef(deployerMinimal.Get().GetName()).
+				StatusAddressURL("http://%s.%s.svc.cluster.local", serviceCreate.Get().GetName(), serviceCreate.Get().GetNamespace()),
 		},
 	}, {
 		Name: "update status error",
@@ -1349,17 +1256,17 @@ func TestDeployerReconciler(t *testing.T) {
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("update", "Deployer"),
 		},
-		GivenObjects: []runtime.Object{
-			deployerValid.Get(),
-			deploymentGiven.Get(),
-			serviceGiven.Get(),
-			testSettings.Get(),
+		GivenObjects: []rtesting.Factory{
+			deployerValid,
+			deploymentGiven,
+			serviceGiven,
+			testSettings,
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testSettings.Get(), deployerMinimal.Get(), scheme),
+			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
@@ -1368,29 +1275,27 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionServiceReady.True(),
 				).
 				StatusLatestImage(testImage).
-				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().Name).
-				StatusServiceRef(deployerMinimal.Get().Name).
-				StatusAddressURL("http://%s.%s.svc.cluster.local", serviceCreate.Get().Name, serviceCreate.Get().Namespace).
-				Get(),
+				StatusDeploymentRef("%s-deployer-000", deployerMinimal.Get().GetName()).
+				StatusServiceRef(deployerMinimal.Get().GetName()).
+				StatusAddressURL("http://%s.%s.svc.cluster.local", serviceCreate.Get().GetName(), serviceCreate.Get().GetNamespace()),
 		},
 	}, {
 		Name: "settings not found",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
-			deployerMinimal.Get(),
+		GivenObjects: []rtesting.Factory{
+			deployerMinimal,
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testSettings.Get(), deployerMinimal.Get(), scheme),
+			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.Unknown(),
-				).
-				Get(),
+				),
 		},
 	}}
 

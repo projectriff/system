@@ -21,11 +21,16 @@ import (
 
 	"github.com/projectriff/system/pkg/apis"
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
+	rtesting "github.com/projectriff/system/pkg/controllers/testing"
 )
 
 type container struct {
 	target *buildv1alpha1.Container
 }
+
+var (
+	_ rtesting.Factory = (*container)(nil)
+)
 
 func Container(seed ...*buildv1alpha1.Container) *container {
 	var target *buildv1alpha1.Container
@@ -46,7 +51,7 @@ func (f *container) deepCopy() *container {
 	return Container(f.target.DeepCopy())
 }
 
-func (f *container) Get() *buildv1alpha1.Container {
+func (f *container) Get() apis.Object {
 	return f.deepCopy().target
 }
 

@@ -21,11 +21,16 @@ import (
 
 	"github.com/projectriff/system/pkg/apis"
 	knativev1alpha1 "github.com/projectriff/system/pkg/apis/knative/v1alpha1"
+	rtesting "github.com/projectriff/system/pkg/controllers/testing"
 )
 
 type adapterKnative struct {
 	target *knativev1alpha1.Adapter
 }
+
+var (
+	_ rtesting.Factory = (*adapterKnative)(nil)
+)
 
 func AdapterKnative(seed ...*knativev1alpha1.Adapter) *adapterKnative {
 	var target *knativev1alpha1.Adapter
@@ -46,7 +51,7 @@ func (f *adapterKnative) deepCopy() *adapterKnative {
 	return AdapterKnative(f.target.DeepCopy())
 }
 
-func (f *adapterKnative) Get() *knativev1alpha1.Adapter {
+func (f *adapterKnative) Get() apis.Object {
 	return f.deepCopy().target
 }
 

@@ -76,7 +76,7 @@ func TestDeployerReconciler(t *testing.T) {
 		ObjectMeta(func(om factories.ObjectMeta) {
 			om.Namespace(testNamespace)
 			om.GenerateName("%s-deployer-", testName)
-			om.ControlledBy(testDeployer.Get(), scheme)
+			om.ControlledBy(testDeployer, scheme)
 			om.AddLabel(knativev1alpha1.DeployerLabelKey, testName)
 			om.AddLabel("serving.knative.dev/visibility", "cluster-local")
 		}).
@@ -99,7 +99,7 @@ func TestDeployerReconciler(t *testing.T) {
 		ObjectMeta(func(om factories.ObjectMeta) {
 			om.Namespace(testNamespace)
 			om.Name(testName)
-			om.ControlledBy(testDeployer.Get(), scheme)
+			om.ControlledBy(testDeployer, scheme)
 			om.AddLabel(knativev1alpha1.DeployerLabelKey, testName)
 			om.AddLabel("serving.knative.dev/visibility", "cluster-local")
 		}).
@@ -121,12 +121,11 @@ func TestDeployerReconciler(t *testing.T) {
 	}, {
 		Name: "ignore deleted deployer",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testDeployer.
 				ObjectMeta(func(om factories.ObjectMeta) {
 					om.Deleted(1)
-				}).
-				Get(),
+				}),
 		},
 	}, {
 		Name: "get deployer failed",
@@ -134,31 +133,29 @@ func TestDeployerReconciler(t *testing.T) {
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("get", "Deployer"),
 		},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testDeployer.
 				ObjectMeta(func(om factories.ObjectMeta) {
 					om.Deleted(1)
-				}).
-				Get(),
+				}),
 		},
 		ShouldErr: true,
 	}, {
 		Name: "create knative resources, from application",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testDeployer.
-				ApplicationRef(testApplication.Get().Name).
-				Get(),
-			testApplication.Get(),
+				ApplicationRef(testApplication.Get().GetName()),
+			testApplication,
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testApplication.Get(), testDeployer.Get(), scheme),
+			rtesting.NewTrackRequest(testApplication, testDeployer, scheme),
 		},
-		ExpectCreates: []runtime.Object{
-			testConfigurationCreate.Get(),
-			testRouteCreate.Get(),
+		ExpectCreates: []rtesting.Factory{
+			testConfigurationCreate,
+			testRouteCreate,
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			testDeployer.
 				StatusConditions(
 					deployerConditionConfigurationReady.Unknown(),
@@ -166,29 +163,26 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
-				StatusConfigurationRef(testConfigurationGiven.Get().Name).
-				StatusRouteRef(testRouteGiven.Get().Name).
-				Get(),
+				StatusConfigurationRef(testConfigurationGiven.Get().GetName()).
+				StatusRouteRef(testRouteGiven.Get().GetName()),
 		},
 	}, {
 		Name: "create knative resources, from application, application not found",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testDeployer.
-				ApplicationRef(testApplication.Get().Name).
-				Get(),
+				ApplicationRef(testApplication.Get().GetName()),
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testApplication.Get(), testDeployer.Get(), scheme),
+			rtesting.NewTrackRequest(testApplication, testDeployer, scheme),
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			testDeployer.
 				StatusConditions(
 					deployerConditionConfigurationReady.Unknown(),
 					deployerConditionReady.Unknown(),
 					deployerConditionRouteReady.Unknown(),
-				).
-				Get(),
+				),
 		},
 	}, {
 		Name: "create knative resources, from application, get application failed",
@@ -196,47 +190,43 @@ func TestDeployerReconciler(t *testing.T) {
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("get", "Application"),
 		},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testDeployer.
-				ApplicationRef(testApplication.Get().Name).
-				Get(),
+				ApplicationRef(testApplication.Get().GetName()),
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testApplication.Get(), testDeployer.Get(), scheme),
+			rtesting.NewTrackRequest(testApplication, testDeployer, scheme),
 		},
 	}, {
 		Name: "create knative resources, from application, no latest",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testDeployer.
-				ApplicationRef(testApplication.Get().Name).
-				Get(),
+				ApplicationRef(testApplication.Get().GetName()),
 			testApplication.
-				StatusLatestImage("").
-				Get(),
+				StatusLatestImage(""),
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testApplication.Get(), testDeployer.Get(), scheme),
+			rtesting.NewTrackRequest(testApplication, testDeployer, scheme),
 		},
 	}, {
 		Name: "create knative resources, from function",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testDeployer.
-				FunctionRef(testFunction.Get().Name).
-				Get(),
-			testFunction.Get(),
+				FunctionRef(testFunction.Get().GetName()),
+			testFunction,
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testFunction.Get(), testDeployer.Get(), scheme),
+			rtesting.NewTrackRequest(testFunction, testDeployer, scheme),
 		},
-		ExpectCreates: []runtime.Object{
-			testConfigurationCreate.Get(),
-			testRouteCreate.Get(),
+		ExpectCreates: []rtesting.Factory{
+			testConfigurationCreate,
+			testRouteCreate,
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			testDeployer.
 				StatusConditions(
 					deployerConditionConfigurationReady.Unknown(),
@@ -244,29 +234,26 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
-				StatusConfigurationRef(testConfigurationGiven.Get().Name).
-				StatusRouteRef(testRouteGiven.Get().Name).
-				Get(),
+				StatusConfigurationRef(testConfigurationGiven.Get().GetName()).
+				StatusRouteRef(testRouteGiven.Get().GetName()),
 		},
 	}, {
 		Name: "create knative resources, from function, function not found",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testDeployer.
-				FunctionRef(testFunction.Get().Name).
-				Get(),
+				FunctionRef(testFunction.Get().GetName()),
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testFunction.Get(), testDeployer.Get(), scheme),
+			rtesting.NewTrackRequest(testFunction, testDeployer, scheme),
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			testDeployer.
 				StatusConditions(
 					deployerConditionConfigurationReady.Unknown(),
 					deployerConditionReady.Unknown(),
 					deployerConditionRouteReady.Unknown(),
-				).
-				Get(),
+				),
 		},
 	}, {
 		Name: "create knative resources, from function, get function failed",
@@ -274,47 +261,43 @@ func TestDeployerReconciler(t *testing.T) {
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("get", "Function"),
 		},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testDeployer.
-				FunctionRef(testFunction.Get().Name).
-				Get(),
+				FunctionRef(testFunction.Get().GetName()),
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testFunction.Get(), testDeployer.Get(), scheme),
+			rtesting.NewTrackRequest(testFunction, testDeployer, scheme),
 		},
 	}, {
 		Name: "create knative resources, from function, no latest",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testDeployer.
-				FunctionRef(testFunction.Get().Name).
-				Get(),
+				FunctionRef(testFunction.Get().GetName()),
 			testFunction.
-				StatusLatestImage("").
-				Get(),
+				StatusLatestImage(""),
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testFunction.Get(), testDeployer.Get(), scheme),
+			rtesting.NewTrackRequest(testFunction, testDeployer, scheme),
 		},
 	}, {
 		Name: "create knative resources, from container",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testDeployer.
-				ContainerRef(testContainer.Get().Name).
-				Get(),
-			testContainer.Get(),
+				ContainerRef(testContainer.Get().GetName()),
+			testContainer,
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testContainer.Get(), testDeployer.Get(), scheme),
+			rtesting.NewTrackRequest(testContainer, testDeployer, scheme),
 		},
-		ExpectCreates: []runtime.Object{
-			testConfigurationCreate.Get(),
-			testRouteCreate.Get(),
+		ExpectCreates: []rtesting.Factory{
+			testConfigurationCreate,
+			testRouteCreate,
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			testDeployer.
 				StatusConditions(
 					deployerConditionConfigurationReady.Unknown(),
@@ -322,29 +305,26 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
-				StatusConfigurationRef(testConfigurationGiven.Get().Name).
-				StatusRouteRef(testRouteGiven.Get().Name).
-				Get(),
+				StatusConfigurationRef(testConfigurationGiven.Get().GetName()).
+				StatusRouteRef(testRouteGiven.Get().GetName()),
 		},
 	}, {
 		Name: "create knative resources, from container, container not found",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testDeployer.
-				ContainerRef(testContainer.Get().Name).
-				Get(),
+				ContainerRef(testContainer.Get().GetName()),
 		},
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testContainer.Get(), testDeployer.Get(), scheme),
+			rtesting.NewTrackRequest(testContainer, testDeployer, scheme),
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			testDeployer.
 				StatusConditions(
 					deployerConditionConfigurationReady.Unknown(),
 					deployerConditionReady.Unknown(),
 					deployerConditionRouteReady.Unknown(),
-				).
-				Get(),
+				),
 		},
 	}, {
 		Name: "create knative resources, from container, get container failed",
@@ -352,43 +332,39 @@ func TestDeployerReconciler(t *testing.T) {
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("get", "Container"),
 		},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testDeployer.
-				ContainerRef(testContainer.Get().Name).
-				Get(),
+				ContainerRef(testContainer.Get().GetName()),
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testContainer.Get(), testDeployer.Get(), scheme),
+			rtesting.NewTrackRequest(testContainer, testDeployer, scheme),
 		},
 	}, {
 		Name: "create knative resources, from container, no latest",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testDeployer.
-				ContainerRef(testContainer.Get().Name).
-				Get(),
+				ContainerRef(testContainer.Get().GetName()),
 			testContainer.
-				StatusLatestImage("").
-				Get(),
+				StatusLatestImage(""),
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(testContainer.Get(), testDeployer.Get(), scheme),
+			rtesting.NewTrackRequest(testContainer, testDeployer, scheme),
 		},
 	}, {
 		Name: "create knative resources, from image",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testDeployer.
-				Image(testImage).
-				Get(),
+				Image(testImage),
 		},
-		ExpectCreates: []runtime.Object{
-			testConfigurationCreate.Get(),
-			testRouteCreate.Get(),
+		ExpectCreates: []rtesting.Factory{
+			testConfigurationCreate,
+			testRouteCreate,
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			testDeployer.
 				StatusConditions(
 					deployerConditionConfigurationReady.Unknown(),
@@ -396,9 +372,8 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
-				StatusConfigurationRef(testConfigurationGiven.Get().Name).
-				StatusRouteRef(testRouteGiven.Get().Name).
-				Get(),
+				StatusConfigurationRef(testConfigurationGiven.Get().GetName()).
+				StatusRouteRef(testRouteGiven.Get().GetName()),
 		},
 	}, {
 		Name: "create knative resources, create configuration failed",
@@ -406,24 +381,22 @@ func TestDeployerReconciler(t *testing.T) {
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("create", "Configuration"),
 		},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testDeployer.
-				Image(testImage).
-				Get(),
+				Image(testImage),
 		},
 		ShouldErr: true,
-		ExpectCreates: []runtime.Object{
-			testConfigurationCreate.Get(),
+		ExpectCreates: []rtesting.Factory{
+			testConfigurationCreate,
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			testDeployer.
 				StatusConditions(
 					deployerConditionConfigurationReady.Unknown(),
 					deployerConditionReady.Unknown(),
 					deployerConditionRouteReady.Unknown(),
 				).
-				StatusLatestImage(testImage).
-				Get(),
+				StatusLatestImage(testImage),
 		},
 	}, {
 		Name: "create knative resources, create route failed",
@@ -431,17 +404,16 @@ func TestDeployerReconciler(t *testing.T) {
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("create", "Route"),
 		},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testDeployer.
-				Image(testImage).
-				Get(),
+				Image(testImage),
 		},
 		ShouldErr: true,
-		ExpectCreates: []runtime.Object{
-			testConfigurationCreate.Get(),
-			testRouteCreate.Get(),
+		ExpectCreates: []rtesting.Factory{
+			testConfigurationCreate,
+			testRouteCreate,
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			testDeployer.
 				StatusConditions(
 					deployerConditionConfigurationReady.Unknown(),
@@ -449,8 +421,7 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
-				StatusConfigurationRef(testConfigurationGiven.Get().Name).
-				Get(),
+				StatusConfigurationRef(testConfigurationGiven.Get().GetName()),
 		},
 	}, {
 		Name: "create knative resources, route exists",
@@ -460,16 +431,15 @@ func TestDeployerReconciler(t *testing.T) {
 				Error: apierrs.NewAlreadyExists(schema.GroupResource{}, testName),
 			}),
 		},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testDeployer.
-				Image(testImage).
-				Get(),
+				Image(testImage),
 		},
-		ExpectCreates: []runtime.Object{
-			testConfigurationCreate.Get(),
-			testRouteCreate.Get(),
+		ExpectCreates: []rtesting.Factory{
+			testConfigurationCreate,
+			testRouteCreate,
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			testDeployer.
 				StatusConditions(
 					deployerConditionConfigurationReady.Unknown(),
@@ -477,32 +447,28 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionRouteReady.False().Reason("NotOwned", `There is an existing Route "test-deployer" that the Deployer does not own.`),
 				).
 				StatusLatestImage(testImage).
-				StatusConfigurationRef(testConfigurationGiven.Get().Name).
-				Get(),
+				StatusConfigurationRef(testConfigurationGiven.Get().GetName()),
 		},
 	}, {
 		Name: "create knative resources, delete extra configurations",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testDeployer.
-				Image(testImage).
-				Get(),
+				Image(testImage),
 			testConfigurationGiven.
-				NamespaceName(testNamespace, "extra-configuration-1").
-				Get(),
+				NamespaceName(testNamespace, "extra-configuration-1"),
 			testConfigurationGiven.
-				NamespaceName(testNamespace, "extra-configuration-2").
-				Get(),
+				NamespaceName(testNamespace, "extra-configuration-2"),
 		},
-		ExpectCreates: []runtime.Object{
-			testConfigurationCreate.Get(),
-			testRouteCreate.Get(),
+		ExpectCreates: []rtesting.Factory{
+			testConfigurationCreate,
+			testRouteCreate,
 		},
 		ExpectDeletes: []rtesting.DeleteRef{
 			{Group: "serving.knative.dev", Kind: "Configuration", Namespace: testNamespace, Name: "extra-configuration-1"},
 			{Group: "serving.knative.dev", Kind: "Configuration", Namespace: testNamespace, Name: "extra-configuration-2"},
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			testDeployer.
 				StatusConditions(
 					deployerConditionConfigurationReady.Unknown(),
@@ -510,9 +476,8 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
-				StatusConfigurationRef(testConfigurationGiven.Get().Name).
-				StatusRouteRef(testRouteGiven.Get().Name).
-				Get(),
+				StatusConfigurationRef(testConfigurationGiven.Get().GetName()).
+				StatusRouteRef(testRouteGiven.Get().GetName()),
 		},
 	}, {
 		Name: "create knative resources, delete extra configurations, delete failed",
@@ -520,54 +485,47 @@ func TestDeployerReconciler(t *testing.T) {
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("delete", "Configuration"),
 		},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testDeployer.
-				Image(testImage).
-				Get(),
+				Image(testImage),
 			testConfigurationGiven.
-				NamespaceName(testNamespace, "extra-configuration-1").
-				Get(),
+				NamespaceName(testNamespace, "extra-configuration-1"),
 			testConfigurationGiven.
-				NamespaceName(testNamespace, "extra-configuration-2").
-				Get(),
+				NamespaceName(testNamespace, "extra-configuration-2"),
 		},
 		ShouldErr: true,
 		ExpectDeletes: []rtesting.DeleteRef{
 			{Group: "serving.knative.dev", Kind: "Configuration", Namespace: testNamespace, Name: "extra-configuration-1"},
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			testDeployer.
 				StatusConditions(
 					deployerConditionConfigurationReady.Unknown(),
 					deployerConditionReady.Unknown(),
 					deployerConditionRouteReady.Unknown(),
 				).
-				StatusLatestImage(testImage).
-				Get(),
+				StatusLatestImage(testImage),
 		},
 	}, {
 		Name: "create knative resources, delete extra routes",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testDeployer.
-				Image(testImage).
-				Get(),
+				Image(testImage),
 			testRouteGiven.
-				NamespaceName(testNamespace, "extra-route-1").
-				Get(),
+				NamespaceName(testNamespace, "extra-route-1"),
 			testRouteGiven.
-				NamespaceName(testNamespace, "extra-route-2").
-				Get(),
+				NamespaceName(testNamespace, "extra-route-2"),
 		},
-		ExpectCreates: []runtime.Object{
-			testConfigurationCreate.Get(),
-			testRouteCreate.Get(),
+		ExpectCreates: []rtesting.Factory{
+			testConfigurationCreate,
+			testRouteCreate,
 		},
 		ExpectDeletes: []rtesting.DeleteRef{
 			{Group: "serving.knative.dev", Kind: "Route", Namespace: testNamespace, Name: "extra-route-1"},
 			{Group: "serving.knative.dev", Kind: "Route", Namespace: testNamespace, Name: "extra-route-2"},
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			testDeployer.
 				StatusConditions(
 					deployerConditionConfigurationReady.Unknown(),
@@ -575,9 +533,8 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
-				StatusConfigurationRef(testConfigurationGiven.Get().Name).
-				StatusRouteRef(testRouteGiven.Get().Name).
-				Get(),
+				StatusConfigurationRef(testConfigurationGiven.Get().GetName()).
+				StatusRouteRef(testRouteGiven.Get().GetName()),
 		},
 	}, {
 		Name: "create knative resources, delete extra routes, delete failed",
@@ -585,25 +542,22 @@ func TestDeployerReconciler(t *testing.T) {
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("delete", "Route"),
 		},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testDeployer.
-				Image(testImage).
-				Get(),
+				Image(testImage),
 			testRouteGiven.
-				NamespaceName(testNamespace, "extra-route-1").
-				Get(),
+				NamespaceName(testNamespace, "extra-route-1"),
 			testRouteGiven.
-				NamespaceName(testNamespace, "extra-route-2").
-				Get(),
+				NamespaceName(testNamespace, "extra-route-2"),
 		},
 		ShouldErr: true,
-		ExpectCreates: []runtime.Object{
-			testConfigurationCreate.Get(),
+		ExpectCreates: []rtesting.Factory{
+			testConfigurationCreate,
 		},
 		ExpectDeletes: []rtesting.DeleteRef{
 			{Group: "serving.knative.dev", Kind: "Route", Namespace: testNamespace, Name: "extra-route-1"},
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			testDeployer.
 				StatusConditions(
 					deployerConditionConfigurationReady.Unknown(),
@@ -611,27 +565,24 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
-				StatusConfigurationRef(testConfigurationGiven.Get().Name).
-				Get(),
+				StatusConfigurationRef(testConfigurationGiven.Get().GetName()),
 		},
 	}, {
 		Name: "update configuration",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testDeployer.
-				Image(testImage).
-				Get(),
+				Image(testImage),
 			testConfigurationGiven.
 				UserContainer(func(container *corev1.Container) {
 					container.Image = "bogus"
-				}).
-				Get(),
-			testRouteGiven.Get(),
+				}),
+			testRouteGiven,
 		},
-		ExpectUpdates: []runtime.Object{
-			testConfigurationGiven.Get(),
+		ExpectUpdates: []rtesting.Factory{
+			testConfigurationGiven,
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			testDeployer.
 				StatusConditions(
 					deployerConditionConfigurationReady.Unknown(),
@@ -639,9 +590,8 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
-				StatusConfigurationRef(testConfigurationGiven.Get().Name).
-				StatusRouteRef(testRouteGiven.Get().Name).
-				Get(),
+				StatusConfigurationRef(testConfigurationGiven.Get().GetName()).
+				StatusRouteRef(testRouteGiven.Get().GetName()),
 		},
 	}, {
 		Name: "update configuration, listing failed",
@@ -649,27 +599,24 @@ func TestDeployerReconciler(t *testing.T) {
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("list", "ConfigurationList"),
 		},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testDeployer.
-				Image(testImage).
-				Get(),
+				Image(testImage),
 			testConfigurationGiven.
 				UserContainer(func(container *corev1.Container) {
 					container.Image = "bogus"
-				}).
-				Get(),
-			testRouteGiven.Get(),
+				}),
+			testRouteGiven,
 		},
 		ShouldErr: true,
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			testDeployer.
 				StatusConditions(
 					deployerConditionConfigurationReady.Unknown(),
 					deployerConditionReady.Unknown(),
 					deployerConditionRouteReady.Unknown(),
 				).
-				StatusLatestImage(testImage).
-				Get(),
+				StatusLatestImage(testImage),
 		},
 	}, {
 		Name: "update configuration, update failed",
@@ -677,47 +624,42 @@ func TestDeployerReconciler(t *testing.T) {
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("update", "Configuration"),
 		},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testDeployer.
-				Image(testImage).
-				Get(),
+				Image(testImage),
 			testConfigurationGiven.
 				UserContainer(func(container *corev1.Container) {
 					container.Image = "bogus"
-				}).
-				Get(),
-			testRouteGiven.Get(),
+				}),
+			testRouteGiven,
 		},
 		ShouldErr: true,
-		ExpectUpdates: []runtime.Object{
-			testConfigurationGiven.Get(),
+		ExpectUpdates: []rtesting.Factory{
+			testConfigurationGiven,
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			testDeployer.
 				StatusConditions(
 					deployerConditionConfigurationReady.Unknown(),
 					deployerConditionReady.Unknown(),
 					deployerConditionRouteReady.Unknown(),
 				).
-				StatusLatestImage(testImage).
-				Get(),
+				StatusLatestImage(testImage),
 		},
 	}, {
 		Name: "update route",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testDeployer.
-				Image(testImage).
-				Get(),
-			testConfigurationGiven.Get(),
+				Image(testImage),
+			testConfigurationGiven,
 			testRouteGiven.
-				Traffic().
-				Get(),
+				Traffic(),
 		},
-		ExpectUpdates: []runtime.Object{
-			testRouteGiven.Get(),
+		ExpectUpdates: []rtesting.Factory{
+			testRouteGiven,
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			testDeployer.
 				StatusConditions(
 					deployerConditionConfigurationReady.Unknown(),
@@ -725,9 +667,8 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
-				StatusConfigurationRef(testConfigurationGiven.Get().Name).
-				StatusRouteRef(testRouteGiven.Get().Name).
-				Get(),
+				StatusConfigurationRef(testConfigurationGiven.Get().GetName()).
+				StatusRouteRef(testRouteGiven.Get().GetName()),
 		},
 	}, {
 		Name: "update route, listing failed",
@@ -735,17 +676,15 @@ func TestDeployerReconciler(t *testing.T) {
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("list", "RouteList"),
 		},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testDeployer.
-				Image(testImage).
-				Get(),
-			testConfigurationGiven.Get(),
+				Image(testImage),
+			testConfigurationGiven,
 			testRouteGiven.
-				Traffic().
-				Get(),
+				Traffic(),
 		},
 		ShouldErr: true,
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			testDeployer.
 				StatusConditions(
 					deployerConditionConfigurationReady.Unknown(),
@@ -753,8 +692,7 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
-				StatusConfigurationRef(testConfigurationGiven.Get().Name).
-				Get(),
+				StatusConfigurationRef(testConfigurationGiven.Get().GetName()),
 		},
 	}, {
 		Name: "update route, update failed",
@@ -762,20 +700,18 @@ func TestDeployerReconciler(t *testing.T) {
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("update", "Route"),
 		},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testDeployer.
-				Image(testImage).
-				Get(),
-			testConfigurationGiven.Get(),
+				Image(testImage),
+			testConfigurationGiven,
 			testRouteGiven.
-				Traffic().
-				Get(),
+				Traffic(),
 		},
 		ShouldErr: true,
-		ExpectUpdates: []runtime.Object{
-			testRouteGiven.Get(),
+		ExpectUpdates: []rtesting.Factory{
+			testRouteGiven,
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			testDeployer.
 				StatusConditions(
 					deployerConditionConfigurationReady.Unknown(),
@@ -783,8 +719,7 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
-				StatusConfigurationRef(testConfigurationGiven.Get().Name).
-				Get(),
+				StatusConfigurationRef(testConfigurationGiven.Get().GetName()),
 		},
 	}, {
 		Name: "update status failed",
@@ -792,15 +727,14 @@ func TestDeployerReconciler(t *testing.T) {
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("update", "Deployer"),
 		},
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testDeployer.
-				Image(testImage).
-				Get(),
-			testConfigurationGiven.Get(),
-			testRouteGiven.Get(),
+				Image(testImage),
+			testConfigurationGiven,
+			testRouteGiven,
 		},
 		ShouldErr: true,
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			testDeployer.
 				StatusConditions(
 					deployerConditionConfigurationReady.Unknown(),
@@ -808,14 +742,13 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
-				StatusConfigurationRef(testConfigurationGiven.Get().Name).
-				StatusRouteRef(testRouteGiven.Get().Name).
-				Get(),
+				StatusConfigurationRef(testConfigurationGiven.Get().GetName()).
+				StatusRouteRef(testRouteGiven.Get().GetName()),
 		},
 	}, {
 		Name: "update knative resources, copy annotations and labels",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testDeployer.
 				ObjectMeta(func(om factories.ObjectMeta) {
 					om.AddAnnotation("test-annotation", "test-annotation-value")
@@ -825,12 +758,11 @@ func TestDeployerReconciler(t *testing.T) {
 					pts.AddAnnotation("test-annotation-pts", "test-annotation-value")
 					pts.AddLabel("test-label-pts", "test-label-value")
 				}).
-				Image(testImage).
-				Get(),
-			testConfigurationGiven.Get(),
-			testRouteGiven.Get(),
+				Image(testImage),
+			testConfigurationGiven,
+			testRouteGiven,
 		},
-		ExpectUpdates: []runtime.Object{
+		ExpectUpdates: []rtesting.Factory{
 			testConfigurationGiven.
 				ObjectMeta(func(om factories.ObjectMeta) {
 					om.AddAnnotation("test-annotation", "test-annotation-value")
@@ -839,15 +771,13 @@ func TestDeployerReconciler(t *testing.T) {
 				PodTemplateSpec(func(pts factories.PodTemplateSpec) {
 					pts.AddAnnotation("test-annotation", "test-annotation-value")
 					pts.AddLabel("test-label", "test-label-value")
-				}).
-				Get(),
+				}),
 			testRouteGiven.
 				ObjectMeta(func(om factories.ObjectMeta) {
 					om.AddLabel("test-label", "test-label-value")
-				}).
-				Get(),
+				}),
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			testDeployer.
 				StatusConditions(
 					deployerConditionConfigurationReady.Unknown(),
@@ -855,23 +785,21 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
-				StatusConfigurationRef(testConfigurationGiven.Get().Name).
-				StatusRouteRef(testRouteGiven.Get().Name).
-				Get(),
+				StatusConfigurationRef(testConfigurationGiven.Get().GetName()).
+				StatusRouteRef(testRouteGiven.Get().GetName()),
 		},
 	}, {
 		Name: "update knative resources, with scale",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testDeployer.
 				Image(testImage).
 				MinScale(1).
-				MaxScale(2).
-				Get(),
-			testConfigurationGiven.Get(),
-			testRouteGiven.Get(),
+				MaxScale(2),
+			testConfigurationGiven,
+			testRouteGiven,
 		},
-		ExpectUpdates: []runtime.Object{
+		ExpectUpdates: []rtesting.Factory{
 			testConfigurationGiven.
 				// TODO figure out which annotation is actually impactful
 				ObjectMeta(func(om factories.ObjectMeta) {
@@ -881,10 +809,9 @@ func TestDeployerReconciler(t *testing.T) {
 				PodTemplateSpec(func(pts factories.PodTemplateSpec) {
 					pts.AddAnnotation("autoscaling.knative.dev/minScale", "1")
 					pts.AddAnnotation("autoscaling.knative.dev/maxScale", "2")
-				}).
-				Get(),
+				}),
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			testDeployer.
 				StatusConditions(
 					deployerConditionConfigurationReady.Unknown(),
@@ -892,31 +819,27 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
-				StatusConfigurationRef(testConfigurationGiven.Get().Name).
-				StatusRouteRef(testRouteGiven.Get().Name).
-				Get(),
+				StatusConfigurationRef(testConfigurationGiven.Get().GetName()).
+				StatusRouteRef(testRouteGiven.Get().GetName()),
 		},
 	}, {
 		Name: "ready",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testDeployer.
-				Image(testImage).
-				Get(),
+				Image(testImage),
 			testConfigurationGiven.
 				StatusConditions(
 					factories.Condition().Type(knativeservingv1.ConfigurationConditionReady).True(),
-				).
-				Get(),
+				),
 			testRouteGiven.
 				StatusConditions(
 					factories.Condition().Type(knativeservingv1.RouteConditionReady).True(),
 				).
 				StatusAddressURL(testAddressURL).
-				StatusURL(testURL).
-				Get(),
+				StatusURL(testURL),
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			testDeployer.
 				StatusConditions(
 					deployerConditionConfigurationReady.True(),
@@ -924,31 +847,27 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionRouteReady.True(),
 				).
 				StatusLatestImage(testImage).
-				StatusConfigurationRef(testConfigurationGiven.Get().Name).
-				StatusRouteRef(testRouteGiven.Get().Name).
+				StatusConfigurationRef(testConfigurationGiven.Get().GetName()).
+				StatusRouteRef(testRouteGiven.Get().GetName()).
 				StatusAddressURL(testAddressURL).
-				StatusURL(testURL).
-				Get(),
+				StatusURL(testURL),
 		},
 	}, {
 		Name: "not ready, configuration",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testDeployer.
-				Image(testImage).
-				Get(),
+				Image(testImage),
 			testConfigurationGiven.
 				StatusConditions(
 					factories.Condition().Type(knativeservingv1.ConfigurationConditionReady).False().Reason("TestReason", "a human readable message"),
-				).
-				Get(),
+				),
 			testRouteGiven.
 				StatusReady().
 				StatusAddressURL(testAddressURL).
-				StatusURL(testURL).
-				Get(),
+				StatusURL(testURL),
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			testDeployer.
 				StatusConditions(
 					deployerConditionConfigurationReady.False().Reason("TestReason", "a human readable message"),
@@ -956,31 +875,27 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionRouteReady.True(),
 				).
 				StatusLatestImage(testImage).
-				StatusConfigurationRef(testConfigurationGiven.Get().Name).
-				StatusRouteRef(testRouteGiven.Get().Name).
+				StatusConfigurationRef(testConfigurationGiven.Get().GetName()).
+				StatusRouteRef(testRouteGiven.Get().GetName()).
 				StatusAddressURL(testAddressURL).
-				StatusURL(testURL).
-				Get(),
+				StatusURL(testURL),
 		},
 	}, {
 		Name: "not ready, route",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			testDeployer.
-				Image(testImage).
-				Get(),
+				Image(testImage),
 			testConfigurationGiven.
-				StatusReady().
-				Get(),
+				StatusReady(),
 			testRouteGiven.
 				StatusConditions(
 					factories.Condition().Type(knativeservingv1.RouteConditionReady).False().Reason("TestReason", "a human readable message"),
 				).
 				StatusAddressURL(testAddressURL).
-				StatusURL(testURL).
-				Get(),
+				StatusURL(testURL),
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			testDeployer.
 				StatusConditions(
 					deployerConditionConfigurationReady.True(),
@@ -988,11 +903,10 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionRouteReady.False().Reason("TestReason", "a human readable message"),
 				).
 				StatusLatestImage(testImage).
-				StatusConfigurationRef(testConfigurationGiven.Get().Name).
-				StatusRouteRef(testRouteGiven.Get().Name).
+				StatusConfigurationRef(testConfigurationGiven.Get().GetName()).
+				StatusRouteRef(testRouteGiven.Get().GetName()).
 				StatusAddressURL(testAddressURL).
-				StatusURL(testURL).
-				Get(),
+				StatusURL(testURL),
 		},
 	}}
 

@@ -21,11 +21,18 @@ import (
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
+
+	"github.com/projectriff/system/pkg/apis"
+	rtesting "github.com/projectriff/system/pkg/controllers/testing"
 )
 
 type secret struct {
 	target *corev1.Secret
 }
+
+var (
+	_ rtesting.Factory = (*secret)(nil)
+)
 
 func Secret(seed ...*corev1.Secret) *secret {
 	var target *corev1.Secret
@@ -46,7 +53,7 @@ func (f *secret) deepCopy() *secret {
 	return Secret(f.target.DeepCopy())
 }
 
-func (f *secret) Get() *corev1.Secret {
+func (f *secret) Get() apis.Object {
 	return f.deepCopy().target
 }
 

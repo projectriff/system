@@ -21,11 +21,16 @@ import (
 
 	"github.com/projectriff/system/pkg/apis"
 	knativeservingv1 "github.com/projectriff/system/pkg/apis/thirdparty/knative/serving/v1"
+	rtesting "github.com/projectriff/system/pkg/controllers/testing"
 )
 
 type knativeRoute struct {
 	target *knativeservingv1.Route
 }
+
+var (
+	_ rtesting.Factory = (*knativeRoute)(nil)
+)
 
 func KnativeRoute(seed ...*knativeservingv1.Route) *knativeRoute {
 	var target *knativeservingv1.Route
@@ -46,7 +51,7 @@ func (f *knativeRoute) deepCopy() *knativeRoute {
 	return KnativeRoute(f.target.DeepCopy())
 }
 
-func (f *knativeRoute) Get() *knativeservingv1.Route {
+func (f *knativeRoute) Get() apis.Object {
 	return f.deepCopy().target
 }
 

@@ -31,6 +31,10 @@ type processor struct {
 	target *streamingv1alpha1.Processor
 }
 
+var (
+	_ rtesting.Factory = (*processor)(nil)
+)
+
 func Processor(seed ...*streamingv1alpha1.Processor) *processor {
 	var target *streamingv1alpha1.Processor
 	switch len(seed) {
@@ -50,7 +54,7 @@ func (f *processor) deepCopy() *processor {
 	return Processor(f.target.DeepCopy())
 }
 
-func (f *processor) Get() *streamingv1alpha1.Processor {
+func (f *processor) Get() apis.Object {
 	return f.deepCopy().target
 }
 

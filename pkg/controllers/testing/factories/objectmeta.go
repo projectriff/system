@@ -22,6 +22,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
+
+	"github.com/projectriff/system/pkg/controllers/testing"
 )
 
 type ObjectMeta interface {
@@ -34,7 +36,7 @@ type ObjectMeta interface {
 	AddLabel(key, value string) ObjectMeta
 	AddAnnotation(key, value string) ObjectMeta
 	Generation(generation int64) ObjectMeta
-	ControlledBy(owner metav1.Object, scheme *runtime.Scheme) ObjectMeta
+	ControlledBy(owner testing.Factory, scheme *runtime.Scheme) ObjectMeta
 	Created(sec int64) ObjectMeta
 	Deleted(sec int64) ObjectMeta
 }
@@ -100,9 +102,9 @@ func (f *objectMetaImpl) Generation(generation int64) ObjectMeta {
 	})
 }
 
-func (f *objectMetaImpl) ControlledBy(owner metav1.Object, scheme *runtime.Scheme) ObjectMeta {
+func (f *objectMetaImpl) ControlledBy(owner testing.Factory, scheme *runtime.Scheme) ObjectMeta {
 	return f.mutate(func(om *metav1.ObjectMeta) {
-		err := ctrl.SetControllerReference(owner, om, scheme)
+		err := ctrl.SetControllerReference(owner.Get(), om, scheme)
 		if err != nil {
 			panic(err)
 		}

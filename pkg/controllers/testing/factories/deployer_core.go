@@ -31,6 +31,10 @@ type deployerCore struct {
 	target *corev1alpha1.Deployer
 }
 
+var (
+	_ rtesting.Factory = (*deployerCore)(nil)
+)
+
 func DeployerCore(seed ...*corev1alpha1.Deployer) *deployerCore {
 	var target *corev1alpha1.Deployer
 	switch len(seed) {
@@ -50,7 +54,7 @@ func (f *deployerCore) deepCopy() *deployerCore {
 	return DeployerCore(f.target.DeepCopy())
 }
 
-func (f *deployerCore) Get() *corev1alpha1.Deployer {
+func (f *deployerCore) Get() apis.Object {
 	return f.deepCopy().target
 }
 

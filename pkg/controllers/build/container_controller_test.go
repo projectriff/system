@@ -67,31 +67,29 @@ func TestContainerReconciler(t *testing.T) {
 	}, {
 		Name: "ignore deleted container",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			containerValid.
 				ObjectMeta(func(om factories.ObjectMeta) {
 					om.Deleted(1)
-				}).
-				Get(),
+				}),
 		},
 	}, {
 		// TODO mock image digest resolution
 		Skip: true,
 		Name: "resolve images digest",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
-			containerValid.Get(),
-			serviceAccount.Get(),
+		GivenObjects: []rtesting.Factory{
+			containerValid,
+			serviceAccount,
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			containerMinimal.
 				StatusConditions(
 					containerConditionImageResolved.True(),
 					containerConditionReady.Unknown(),
 				).
 				StatusTargetImage("%s/%s", testImagePrefix, testName).
-				StatusLatestImage("%s/%s@sha256:%s", testImagePrefix, testName, testSha256).
-				Get(),
+				StatusLatestImage("%s/%s@sha256:%s", testImagePrefix, testName, testSha256),
 		},
 	}, {
 		Name: "container get error",
@@ -105,51 +103,47 @@ func TestContainerReconciler(t *testing.T) {
 		Skip: true,
 		Name: "default image",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
+		GivenObjects: []rtesting.Factory{
 			cmImagePrefix.
-				AddData("default-image-prefix", testImagePrefix).
-				Get(),
-			containerMinimal.Get(),
-			serviceAccount.Get(),
+				AddData("default-image-prefix", testImagePrefix),
+			containerMinimal,
+			serviceAccount,
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			containerMinimal.
 				StatusConditions(
 					containerConditionImageResolved.True(),
 					containerConditionReady.Unknown(),
 				).
-				StatusTargetImage("%s/%s", testImagePrefix, testName).
-				Get(),
+				StatusTargetImage("%s/%s", testImagePrefix, testName),
 		},
 	}, {
 		Name: "default image, missing",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
-			containerMinimal.Get(),
+		GivenObjects: []rtesting.Factory{
+			containerMinimal,
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			containerMinimal.
 				StatusConditions(
 					containerConditionImageResolved.False().Reason("DefaultImagePrefixMissing", "missing default image prefix"),
 					containerConditionReady.False().Reason("DefaultImagePrefixMissing", "missing default image prefix"),
-				).
-				Get(),
+				),
 		},
 		ShouldErr: true,
 	}, {
 		Name: "default image, undefined",
 		Key:  testKey,
-		GivenObjects: []runtime.Object{
-			cmImagePrefix.Get(),
-			containerMinimal.Get(),
+		GivenObjects: []rtesting.Factory{
+			cmImagePrefix,
+			containerMinimal,
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			containerMinimal.
 				StatusConditions(
 					containerConditionImageResolved.False().Reason("DefaultImagePrefixMissing", "missing default image prefix"),
 					containerConditionReady.False().Reason("DefaultImagePrefixMissing", "missing default image prefix"),
-				).
-				Get(),
+				),
 		},
 		ShouldErr: true,
 	}, {
@@ -158,17 +152,16 @@ func TestContainerReconciler(t *testing.T) {
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("get", "ConfigMap"),
 		},
-		GivenObjects: []runtime.Object{
-			cmImagePrefix.Get(),
-			containerMinimal.Get(),
+		GivenObjects: []rtesting.Factory{
+			cmImagePrefix,
+			containerMinimal,
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			containerMinimal.
 				StatusConditions(
 					containerConditionImageResolved.False().Reason("ImageInvalid", "inducing failure for get ConfigMap"),
 					containerConditionReady.False().Reason("ImageInvalid", "inducing failure for get ConfigMap"),
-				).
-				Get(),
+				),
 		},
 		ShouldErr: true,
 	}, {
@@ -179,18 +172,17 @@ func TestContainerReconciler(t *testing.T) {
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("update", "Container"),
 		},
-		GivenObjects: []runtime.Object{
-			containerValid.Get(),
-			serviceAccount.Get(),
+		GivenObjects: []rtesting.Factory{
+			containerValid,
+			serviceAccount,
 		},
-		ExpectStatusUpdates: []runtime.Object{
+		ExpectStatusUpdates: []rtesting.Factory{
 			containerMinimal.
 				StatusConditions(
 					containerConditionImageResolved.True(),
 					containerConditionReady.Unknown(),
 				).
-				StatusTargetImage("%s/%s", testImagePrefix, testName).
-				Get(),
+				StatusTargetImage("%s/%s", testImagePrefix, testName),
 		},
 		ShouldErr: true,
 	}}
