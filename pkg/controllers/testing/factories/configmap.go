@@ -49,21 +49,21 @@ func (f *configMap) Get() *corev1.ConfigMap {
 	return f.deepCopy().target
 }
 
-func (f *configMap) Mutate(m func(*corev1.ConfigMap)) *configMap {
+func (f *configMap) mutation(m func(*corev1.ConfigMap)) *configMap {
 	f = f.deepCopy()
 	m(f.target)
 	return f
 }
 
 func (f *configMap) NamespaceName(namespace, name string) *configMap {
-	return f.Mutate(func(cm *corev1.ConfigMap) {
+	return f.mutation(func(cm *corev1.ConfigMap) {
 		cm.ObjectMeta.Namespace = namespace
 		cm.ObjectMeta.Name = name
 	})
 }
 
 func (f *configMap) ObjectMeta(nf func(ObjectMeta)) *configMap {
-	return f.Mutate(func(cm *corev1.ConfigMap) {
+	return f.mutation(func(cm *corev1.ConfigMap) {
 		omf := objectMeta(cm.ObjectMeta)
 		nf(omf)
 		cm.ObjectMeta = omf.Get()
@@ -71,7 +71,7 @@ func (f *configMap) ObjectMeta(nf func(ObjectMeta)) *configMap {
 }
 
 func (f *configMap) AddData(key, value string) *configMap {
-	return f.Mutate(func(cm *corev1.ConfigMap) {
+	return f.mutation(func(cm *corev1.ConfigMap) {
 		if cm.Data == nil {
 			cm.Data = map[string]string{}
 		}

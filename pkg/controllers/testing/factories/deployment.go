@@ -53,21 +53,21 @@ func (f *deployment) Get() *appsv1.Deployment {
 	return f.deepCopy().target
 }
 
-func (f *deployment) Mutate(m func(*appsv1.Deployment)) *deployment {
+func (f *deployment) mutation(m func(*appsv1.Deployment)) *deployment {
 	f = f.deepCopy()
 	m(f.target)
 	return f
 }
 
 func (f *deployment) NamespaceName(namespace, name string) *deployment {
-	return f.Mutate(func(sa *appsv1.Deployment) {
+	return f.mutation(func(sa *appsv1.Deployment) {
 		sa.ObjectMeta.Namespace = namespace
 		sa.ObjectMeta.Name = name
 	})
 }
 
 func (f *deployment) ObjectMeta(nf func(ObjectMeta)) *deployment {
-	return f.Mutate(func(sa *appsv1.Deployment) {
+	return f.mutation(func(sa *appsv1.Deployment) {
 		omf := objectMeta(sa.ObjectMeta)
 		nf(omf)
 		sa.ObjectMeta = omf.Get()
@@ -75,7 +75,7 @@ func (f *deployment) ObjectMeta(nf func(ObjectMeta)) *deployment {
 }
 
 func (f *deployment) PodTemplateSpec(nf func(PodTemplateSpec)) *deployment {
-	return f.Mutate(func(deployment *appsv1.Deployment) {
+	return f.mutation(func(deployment *appsv1.Deployment) {
 		ptsf := podTemplateSpec(deployment.Spec.Template)
 		nf(ptsf)
 		deployment.Spec.Template = ptsf.Get()
@@ -89,13 +89,13 @@ func (f *deployment) HandlerContainer(cb func(*corev1.Container)) *deployment {
 }
 
 func (f *deployment) Replicas(replicas int32) *deployment {
-	return f.Mutate(func(deployment *appsv1.Deployment) {
+	return f.mutation(func(deployment *appsv1.Deployment) {
 		deployment.Spec.Replicas = rtesting.Int32Ptr(replicas)
 	})
 }
 
 func (f *deployment) AddSelectorLabel(key, value string) *deployment {
-	return f.Mutate(func(deployment *appsv1.Deployment) {
+	return f.mutation(func(deployment *appsv1.Deployment) {
 		if deployment.Spec.Selector == nil {
 			deployment.Spec.Selector = &metav1.LabelSelector{}
 		}
@@ -105,7 +105,7 @@ func (f *deployment) AddSelectorLabel(key, value string) *deployment {
 }
 
 func (f *deployment) StatusConditions(conditions ...*condition) *deployment {
-	return f.Mutate(func(deployment *appsv1.Deployment) {
+	return f.mutation(func(deployment *appsv1.Deployment) {
 		c := make([]appsv1.DeploymentCondition, len(conditions))
 		for i, cg := range conditions {
 			dc := cg.Get()

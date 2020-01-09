@@ -50,21 +50,21 @@ func (f *kpackClusterBuilder) Get() *kpackbuildv1alpha1.ClusterBuilder {
 	return f.deepCopy().target
 }
 
-func (f *kpackClusterBuilder) Mutate(m func(*kpackbuildv1alpha1.ClusterBuilder)) *kpackClusterBuilder {
+func (f *kpackClusterBuilder) mutation(m func(*kpackbuildv1alpha1.ClusterBuilder)) *kpackClusterBuilder {
 	f = f.deepCopy()
 	m(f.target)
 	return f
 }
 
 func (f *kpackClusterBuilder) NamespaceName(namespace, name string) *kpackClusterBuilder {
-	return f.Mutate(func(cb *kpackbuildv1alpha1.ClusterBuilder) {
+	return f.mutation(func(cb *kpackbuildv1alpha1.ClusterBuilder) {
 		cb.ObjectMeta.Namespace = namespace
 		cb.ObjectMeta.Name = name
 	})
 }
 
 func (f *kpackClusterBuilder) ObjectMeta(nf func(ObjectMeta)) *kpackClusterBuilder {
-	return f.Mutate(func(cb *kpackbuildv1alpha1.ClusterBuilder) {
+	return f.mutation(func(cb *kpackbuildv1alpha1.ClusterBuilder) {
 		omf := objectMeta(cb.ObjectMeta)
 		nf(omf)
 		cb.ObjectMeta = omf.Get()
@@ -72,13 +72,13 @@ func (f *kpackClusterBuilder) ObjectMeta(nf func(ObjectMeta)) *kpackClusterBuild
 }
 
 func (f *kpackClusterBuilder) Image(format string, a ...interface{}) *kpackClusterBuilder {
-	return f.Mutate(func(cb *kpackbuildv1alpha1.ClusterBuilder) {
+	return f.mutation(func(cb *kpackbuildv1alpha1.ClusterBuilder) {
 		cb.Spec.Image = fmt.Sprintf(format, a...)
 	})
 }
 
 func (f *kpackClusterBuilder) StatusConditions(conditions ...*condition) *kpackClusterBuilder {
-	return f.Mutate(func(cb *kpackbuildv1alpha1.ClusterBuilder) {
+	return f.mutation(func(cb *kpackbuildv1alpha1.ClusterBuilder) {
 		c := make([]apis.Condition, len(conditions))
 		for i, cg := range conditions {
 			c[i] = cg.Get()
@@ -94,13 +94,13 @@ func (f *kpackClusterBuilder) StatusReady() *kpackClusterBuilder {
 }
 
 func (f *kpackClusterBuilder) StatusObservedGeneration(generation int64) *kpackClusterBuilder {
-	return f.Mutate(func(cb *kpackbuildv1alpha1.ClusterBuilder) {
+	return f.mutation(func(cb *kpackbuildv1alpha1.ClusterBuilder) {
 		cb.Status.ObservedGeneration = generation
 	})
 }
 
 func (f *kpackClusterBuilder) StatusLatestImage(format string, a ...interface{}) *kpackClusterBuilder {
-	return f.Mutate(func(cb *kpackbuildv1alpha1.ClusterBuilder) {
+	return f.mutation(func(cb *kpackbuildv1alpha1.ClusterBuilder) {
 		cb.Status.LatestImage = fmt.Sprintf(format, a...)
 	})
 }

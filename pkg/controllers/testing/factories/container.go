@@ -50,21 +50,21 @@ func (f *container) Get() *buildv1alpha1.Container {
 	return f.deepCopy().target
 }
 
-func (f *container) Mutate(m func(*buildv1alpha1.Container)) *container {
+func (f *container) mutation(m func(*buildv1alpha1.Container)) *container {
 	f = f.deepCopy()
 	m(f.target)
 	return f
 }
 
 func (f *container) NamespaceName(namespace, name string) *container {
-	return f.Mutate(func(con *buildv1alpha1.Container) {
+	return f.mutation(func(con *buildv1alpha1.Container) {
 		con.ObjectMeta.Namespace = namespace
 		con.ObjectMeta.Name = name
 	})
 }
 
 func (f *container) ObjectMeta(nf func(ObjectMeta)) *container {
-	return f.Mutate(func(con *buildv1alpha1.Container) {
+	return f.mutation(func(con *buildv1alpha1.Container) {
 		omf := objectMeta(con.ObjectMeta)
 		nf(omf)
 		con.ObjectMeta = omf.Get()
@@ -72,13 +72,13 @@ func (f *container) ObjectMeta(nf func(ObjectMeta)) *container {
 }
 
 func (f *container) Image(format string, a ...interface{}) *container {
-	return f.Mutate(func(con *buildv1alpha1.Container) {
+	return f.mutation(func(con *buildv1alpha1.Container) {
 		con.Spec.Image = fmt.Sprintf(format, a...)
 	})
 }
 
 func (f *container) StatusConditions(conditions ...*condition) *container {
-	return f.Mutate(func(con *buildv1alpha1.Container) {
+	return f.mutation(func(con *buildv1alpha1.Container) {
 		c := make([]apis.Condition, len(conditions))
 		for i, cg := range conditions {
 			c[i] = cg.Get()
@@ -94,19 +94,19 @@ func (f *container) StatusReady() *container {
 }
 
 func (f *container) StatusObservedGeneration(generation int64) *container {
-	return f.Mutate(func(con *buildv1alpha1.Container) {
+	return f.mutation(func(con *buildv1alpha1.Container) {
 		con.Status.ObservedGeneration = generation
 	})
 }
 
 func (f *container) StatusTargetImage(format string, a ...interface{}) *container {
-	return f.Mutate(func(con *buildv1alpha1.Container) {
+	return f.mutation(func(con *buildv1alpha1.Container) {
 		con.Status.TargetImage = fmt.Sprintf(format, a...)
 	})
 }
 
 func (f *container) StatusLatestImage(format string, a ...interface{}) *container {
-	return f.Mutate(func(con *buildv1alpha1.Container) {
+	return f.mutation(func(con *buildv1alpha1.Container) {
 		con.Status.LatestImage = fmt.Sprintf(format, a...)
 	})
 }

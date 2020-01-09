@@ -54,21 +54,21 @@ func (f *application) Get() *buildv1alpha1.Application {
 	return f.deepCopy().target
 }
 
-func (f *application) Mutate(m func(*buildv1alpha1.Application)) *application {
+func (f *application) mutation(m func(*buildv1alpha1.Application)) *application {
 	f = f.deepCopy()
 	m(f.target)
 	return f
 }
 
 func (f *application) NamespaceName(namespace, name string) *application {
-	return f.Mutate(func(app *buildv1alpha1.Application) {
+	return f.mutation(func(app *buildv1alpha1.Application) {
 		app.ObjectMeta.Namespace = namespace
 		app.ObjectMeta.Name = name
 	})
 }
 
 func (f *application) ObjectMeta(nf func(ObjectMeta)) *application {
-	return f.Mutate(func(app *buildv1alpha1.Application) {
+	return f.mutation(func(app *buildv1alpha1.Application) {
 		omf := objectMeta(app.ObjectMeta)
 		nf(omf)
 		app.ObjectMeta = omf.Get()
@@ -76,13 +76,13 @@ func (f *application) ObjectMeta(nf func(ObjectMeta)) *application {
 }
 
 func (f *application) Image(format string, a ...interface{}) *application {
-	return f.Mutate(func(app *buildv1alpha1.Application) {
+	return f.mutation(func(app *buildv1alpha1.Application) {
 		app.Spec.Image = fmt.Sprintf(format, a...)
 	})
 }
 
 func (f *application) SourceGit(url string, revision string) *application {
-	return f.Mutate(func(app *buildv1alpha1.Application) {
+	return f.mutation(func(app *buildv1alpha1.Application) {
 		if app.Spec.Source == nil {
 			app.Spec.Source = &buildv1alpha1.Source{}
 		}
@@ -97,7 +97,7 @@ func (f *application) SourceGit(url string, revision string) *application {
 }
 
 func (f *application) SourceSubPath(subpath string) *application {
-	return f.Mutate(func(app *buildv1alpha1.Application) {
+	return f.mutation(func(app *buildv1alpha1.Application) {
 		if app.Spec.Source == nil {
 			app.Spec.Source = &buildv1alpha1.Source{}
 		}
@@ -106,7 +106,7 @@ func (f *application) SourceSubPath(subpath string) *application {
 }
 
 func (f *application) BuildCache(quantity string) *application {
-	return f.Mutate(func(app *buildv1alpha1.Application) {
+	return f.mutation(func(app *buildv1alpha1.Application) {
 		size, err := resource.ParseQuantity(quantity)
 		if err != nil {
 			panic(err)
@@ -116,7 +116,7 @@ func (f *application) BuildCache(quantity string) *application {
 }
 
 func (f *application) StatusConditions(conditions ...*condition) *application {
-	return f.Mutate(func(app *buildv1alpha1.Application) {
+	return f.mutation(func(app *buildv1alpha1.Application) {
 		c := make([]apis.Condition, len(conditions))
 		for i, cg := range conditions {
 			c[i] = cg.Get()
@@ -132,13 +132,13 @@ func (f *application) StatusReady() *application {
 }
 
 func (f *application) StatusObservedGeneration(generation int64) *application {
-	return f.Mutate(func(app *buildv1alpha1.Application) {
+	return f.mutation(func(app *buildv1alpha1.Application) {
 		app.Status.ObservedGeneration = generation
 	})
 }
 
 func (f *application) StatusKpackImageRef(format string, a ...interface{}) *application {
-	return f.Mutate(func(app *buildv1alpha1.Application) {
+	return f.mutation(func(app *buildv1alpha1.Application) {
 		app.Status.KpackImageRef = &refs.TypedLocalObjectReference{
 			APIGroup: rtesting.StringPtr("build.pivotal.io"),
 			Kind:     "Image",
@@ -148,7 +148,7 @@ func (f *application) StatusKpackImageRef(format string, a ...interface{}) *appl
 }
 
 func (f *application) StatusBuildCacheRef(format string, a ...interface{}) *application {
-	return f.Mutate(func(app *buildv1alpha1.Application) {
+	return f.mutation(func(app *buildv1alpha1.Application) {
 		app.Status.BuildCacheRef = &refs.TypedLocalObjectReference{
 			Kind: "PersistentVolumeClaim",
 			Name: fmt.Sprintf(format, a...),
@@ -157,13 +157,13 @@ func (f *application) StatusBuildCacheRef(format string, a ...interface{}) *appl
 }
 
 func (f *application) StatusTargetImage(format string, a ...interface{}) *application {
-	return f.Mutate(func(app *buildv1alpha1.Application) {
+	return f.mutation(func(app *buildv1alpha1.Application) {
 		app.Status.TargetImage = fmt.Sprintf(format, a...)
 	})
 }
 
 func (f *application) StatusLatestImage(format string, a ...interface{}) *application {
-	return f.Mutate(func(app *buildv1alpha1.Application) {
+	return f.mutation(func(app *buildv1alpha1.Application) {
 		app.Status.LatestImage = fmt.Sprintf(format, a...)
 	})
 }

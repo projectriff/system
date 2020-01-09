@@ -49,21 +49,21 @@ func (f *serviceAccount) Get() *corev1.ServiceAccount {
 	return f.deepCopy().target
 }
 
-func (f *serviceAccount) Mutate(m func(*corev1.ServiceAccount)) *serviceAccount {
+func (f *serviceAccount) mutation(m func(*corev1.ServiceAccount)) *serviceAccount {
 	f = f.deepCopy()
 	m(f.target)
 	return f
 }
 
 func (f *serviceAccount) NamespaceName(namespace, name string) *serviceAccount {
-	return f.Mutate(func(sa *corev1.ServiceAccount) {
+	return f.mutation(func(sa *corev1.ServiceAccount) {
 		sa.ObjectMeta.Namespace = namespace
 		sa.ObjectMeta.Name = name
 	})
 }
 
 func (f *serviceAccount) ObjectMeta(nf func(ObjectMeta)) *serviceAccount {
-	return f.Mutate(func(sa *corev1.ServiceAccount) {
+	return f.mutation(func(sa *corev1.ServiceAccount) {
 		omf := objectMeta(sa.ObjectMeta)
 		nf(omf)
 		sa.ObjectMeta = omf.Get()
@@ -71,7 +71,7 @@ func (f *serviceAccount) ObjectMeta(nf func(ObjectMeta)) *serviceAccount {
 }
 
 func (f *serviceAccount) Secrets(secrets ...string) *serviceAccount {
-	return f.Mutate(func(sa *corev1.ServiceAccount) {
+	return f.mutation(func(sa *corev1.ServiceAccount) {
 		sa.Secrets = make([]corev1.ObjectReference, len(secrets))
 		for i, secret := range secrets {
 			sa.Secrets[i] = corev1.ObjectReference{Name: secret}

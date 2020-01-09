@@ -21,7 +21,7 @@ import (
 )
 
 type PodTemplateSpec interface {
-	Mutate(m func(*corev1.PodTemplateSpec)) PodTemplateSpec
+	mutate(m func(*corev1.PodTemplateSpec)) PodTemplateSpec
 	Get() corev1.PodTemplateSpec
 
 	AddLabel(key, value string) PodTemplateSpec
@@ -43,13 +43,13 @@ func (f *podTemplateSpecImpl) Get() corev1.PodTemplateSpec {
 	return *(f.target.DeepCopy())
 }
 
-func (f *podTemplateSpecImpl) Mutate(m func(*corev1.PodTemplateSpec)) PodTemplateSpec {
+func (f *podTemplateSpecImpl) mutate(m func(*corev1.PodTemplateSpec)) PodTemplateSpec {
 	m(f.target)
 	return f
 }
 
 func (f *podTemplateSpecImpl) AddLabel(key, value string) PodTemplateSpec {
-	return f.Mutate(func(pts *corev1.PodTemplateSpec) {
+	return f.mutate(func(pts *corev1.PodTemplateSpec) {
 		if pts.Labels == nil {
 			pts.Labels = map[string]string{}
 		}
@@ -58,7 +58,7 @@ func (f *podTemplateSpecImpl) AddLabel(key, value string) PodTemplateSpec {
 }
 
 func (f *podTemplateSpecImpl) AddAnnotation(key, value string) PodTemplateSpec {
-	return f.Mutate(func(pts *corev1.PodTemplateSpec) {
+	return f.mutate(func(pts *corev1.PodTemplateSpec) {
 		if pts.Annotations == nil {
 			pts.Annotations = map[string]string{}
 		}
@@ -67,7 +67,7 @@ func (f *podTemplateSpecImpl) AddAnnotation(key, value string) PodTemplateSpec {
 }
 
 func (f *podTemplateSpecImpl) ContainerNamed(name string, cb func(*corev1.Container)) PodTemplateSpec {
-	return f.Mutate(func(pts *corev1.PodTemplateSpec) {
+	return f.mutate(func(pts *corev1.PodTemplateSpec) {
 		found := false
 		// check for existing container
 		for i, container := range pts.Spec.Containers {

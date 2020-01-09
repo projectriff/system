@@ -54,21 +54,21 @@ func (f *deployerKnative) Get() *knativev1alpha1.Deployer {
 	return f.deepCopy().target
 }
 
-func (f *deployerKnative) Mutate(m func(*knativev1alpha1.Deployer)) *deployerKnative {
+func (f *deployerKnative) mutation(m func(*knativev1alpha1.Deployer)) *deployerKnative {
 	f = f.deepCopy()
 	m(f.target)
 	return f
 }
 
 func (f *deployerKnative) NamespaceName(namespace, name string) *deployerKnative {
-	return f.Mutate(func(deployer *knativev1alpha1.Deployer) {
+	return f.mutation(func(deployer *knativev1alpha1.Deployer) {
 		deployer.ObjectMeta.Namespace = namespace
 		deployer.ObjectMeta.Name = name
 	})
 }
 
 func (f *deployerKnative) ObjectMeta(nf func(ObjectMeta)) *deployerKnative {
-	return f.Mutate(func(deployer *knativev1alpha1.Deployer) {
+	return f.mutation(func(deployer *knativev1alpha1.Deployer) {
 		omf := objectMeta(deployer.ObjectMeta)
 		nf(omf)
 		deployer.ObjectMeta = omf.Get()
@@ -76,7 +76,7 @@ func (f *deployerKnative) ObjectMeta(nf func(ObjectMeta)) *deployerKnative {
 }
 
 func (f *deployerKnative) PodTemplateSpec(nf func(PodTemplateSpec)) *deployerKnative {
-	return f.Mutate(func(deployer *knativev1alpha1.Deployer) {
+	return f.mutation(func(deployer *knativev1alpha1.Deployer) {
 		if deployer.Spec.Template == nil {
 			deployer.Spec.Template = &corev1.PodTemplateSpec{}
 		}
@@ -88,7 +88,7 @@ func (f *deployerKnative) PodTemplateSpec(nf func(PodTemplateSpec)) *deployerKna
 }
 
 func (f *deployerKnative) ApplicationRef(format string, a ...interface{}) *deployerKnative {
-	return f.Mutate(func(deployer *knativev1alpha1.Deployer) {
+	return f.mutation(func(deployer *knativev1alpha1.Deployer) {
 		deployer.Spec.Build = &knativev1alpha1.Build{
 			ApplicationRef: fmt.Sprintf(format, a...),
 		}
@@ -96,7 +96,7 @@ func (f *deployerKnative) ApplicationRef(format string, a ...interface{}) *deplo
 }
 
 func (f *deployerKnative) ContainerRef(format string, a ...interface{}) *deployerKnative {
-	return f.Mutate(func(deployer *knativev1alpha1.Deployer) {
+	return f.mutation(func(deployer *knativev1alpha1.Deployer) {
 		deployer.Spec.Build = &knativev1alpha1.Build{
 			ContainerRef: fmt.Sprintf(format, a...),
 		}
@@ -104,7 +104,7 @@ func (f *deployerKnative) ContainerRef(format string, a ...interface{}) *deploye
 }
 
 func (f *deployerKnative) FunctionRef(format string, a ...interface{}) *deployerKnative {
-	return f.Mutate(func(deployer *knativev1alpha1.Deployer) {
+	return f.mutation(func(deployer *knativev1alpha1.Deployer) {
 		deployer.Spec.Build = &knativev1alpha1.Build{
 			FunctionRef: fmt.Sprintf(format, a...),
 		}
@@ -120,25 +120,25 @@ func (f *deployerKnative) Image(format string, a ...interface{}) *deployerKnativ
 }
 
 func (f *deployerKnative) IngressPolicy(policy knativev1alpha1.IngressPolicy) *deployerKnative {
-	return f.Mutate(func(deployer *knativev1alpha1.Deployer) {
+	return f.mutation(func(deployer *knativev1alpha1.Deployer) {
 		deployer.Spec.IngressPolicy = policy
 	})
 }
 
 func (f *deployerKnative) MinScale(scale int32) *deployerKnative {
-	return f.Mutate(func(deployer *knativev1alpha1.Deployer) {
+	return f.mutation(func(deployer *knativev1alpha1.Deployer) {
 		deployer.Spec.Scale.Min = &scale
 	})
 }
 
 func (f *deployerKnative) MaxScale(scale int32) *deployerKnative {
-	return f.Mutate(func(deployer *knativev1alpha1.Deployer) {
+	return f.mutation(func(deployer *knativev1alpha1.Deployer) {
 		deployer.Spec.Scale.Max = &scale
 	})
 }
 
 func (f *deployerKnative) StatusConditions(conditions ...*condition) *deployerKnative {
-	return f.Mutate(func(deployer *knativev1alpha1.Deployer) {
+	return f.mutation(func(deployer *knativev1alpha1.Deployer) {
 		c := make([]apis.Condition, len(conditions))
 		for i, cg := range conditions {
 			c[i] = cg.Get()
@@ -148,19 +148,19 @@ func (f *deployerKnative) StatusConditions(conditions ...*condition) *deployerKn
 }
 
 func (f *deployerKnative) StatusObservedGeneration(generation int64) *deployerKnative {
-	return f.Mutate(func(deployer *knativev1alpha1.Deployer) {
+	return f.mutation(func(deployer *knativev1alpha1.Deployer) {
 		deployer.Status.ObservedGeneration = generation
 	})
 }
 
 func (f *deployerKnative) StatusLatestImage(format string, a ...interface{}) *deployerKnative {
-	return f.Mutate(func(deployer *knativev1alpha1.Deployer) {
+	return f.mutation(func(deployer *knativev1alpha1.Deployer) {
 		deployer.Status.LatestImage = fmt.Sprintf(format, a...)
 	})
 }
 
 func (f *deployerKnative) StatusConfigurationRef(format string, a ...interface{}) *deployerKnative {
-	return f.Mutate(func(deployer *knativev1alpha1.Deployer) {
+	return f.mutation(func(deployer *knativev1alpha1.Deployer) {
 		deployer.Status.ConfigurationRef = &refs.TypedLocalObjectReference{
 			APIGroup: rtesting.StringPtr("serving.knative.dev"),
 			Kind:     "Configuration",
@@ -170,7 +170,7 @@ func (f *deployerKnative) StatusConfigurationRef(format string, a ...interface{}
 }
 
 func (f *deployerKnative) StatusRouteRef(format string, a ...interface{}) *deployerKnative {
-	return f.Mutate(func(deployer *knativev1alpha1.Deployer) {
+	return f.mutation(func(deployer *knativev1alpha1.Deployer) {
 		deployer.Status.RouteRef = &refs.TypedLocalObjectReference{
 			APIGroup: rtesting.StringPtr("serving.knative.dev"),
 			Kind:     "Route",
@@ -180,7 +180,7 @@ func (f *deployerKnative) StatusRouteRef(format string, a ...interface{}) *deplo
 }
 
 func (f *deployerKnative) StatusAddressURL(url string) *deployerKnative {
-	return f.Mutate(func(deployer *knativev1alpha1.Deployer) {
+	return f.mutation(func(deployer *knativev1alpha1.Deployer) {
 		deployer.Status.Address = &apis.Addressable{
 			URL: url,
 		}
@@ -188,7 +188,7 @@ func (f *deployerKnative) StatusAddressURL(url string) *deployerKnative {
 }
 
 func (f *deployerKnative) StatusURL(url string) *deployerKnative {
-	return f.Mutate(func(deployer *knativev1alpha1.Deployer) {
+	return f.mutation(func(deployer *knativev1alpha1.Deployer) {
 		deployer.Status.URL = url
 	})
 }

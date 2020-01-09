@@ -54,21 +54,21 @@ func (f *kpackImage) Get() *kpackbuildv1alpha1.Image {
 	return f.deepCopy().target
 }
 
-func (f *kpackImage) Mutate(m func(*kpackbuildv1alpha1.Image)) *kpackImage {
+func (f *kpackImage) mutation(m func(*kpackbuildv1alpha1.Image)) *kpackImage {
 	f = f.deepCopy()
 	m(f.target)
 	return f
 }
 
 func (f *kpackImage) NamespaceName(namespace, name string) *kpackImage {
-	return f.Mutate(func(image *kpackbuildv1alpha1.Image) {
+	return f.mutation(func(image *kpackbuildv1alpha1.Image) {
 		image.ObjectMeta.Namespace = namespace
 		image.ObjectMeta.Name = name
 	})
 }
 
 func (f *kpackImage) ObjectMeta(nf func(ObjectMeta)) *kpackImage {
-	return f.Mutate(func(image *kpackbuildv1alpha1.Image) {
+	return f.mutation(func(image *kpackbuildv1alpha1.Image) {
 		omf := objectMeta(image.ObjectMeta)
 		nf(omf)
 		image.ObjectMeta = omf.Get()
@@ -76,7 +76,7 @@ func (f *kpackImage) ObjectMeta(nf func(ObjectMeta)) *kpackImage {
 }
 
 func (f *kpackImage) ApplicationBuilder() *kpackImage {
-	return f.Mutate(func(image *kpackbuildv1alpha1.Image) {
+	return f.mutation(func(image *kpackbuildv1alpha1.Image) {
 		image.Spec.Builder = kpackbuildv1alpha1.ImageBuilder{
 			TypeMeta: metav1.TypeMeta{
 				Kind: "ClusterBuilder",
@@ -88,7 +88,7 @@ func (f *kpackImage) ApplicationBuilder() *kpackImage {
 }
 
 func (f *kpackImage) FunctionBuilder(artifact, handler, invoker string) *kpackImage {
-	return f.Mutate(func(image *kpackbuildv1alpha1.Image) {
+	return f.mutation(func(image *kpackbuildv1alpha1.Image) {
 		image.Spec.Builder = kpackbuildv1alpha1.ImageBuilder{
 			TypeMeta: metav1.TypeMeta{
 				Kind: "ClusterBuilder",
@@ -126,13 +126,13 @@ func (f *kpackImage) FunctionBuilder(artifact, handler, invoker string) *kpackIm
 }
 
 func (f *kpackImage) Tag(format string, a ...interface{}) *kpackImage {
-	return f.Mutate(func(image *kpackbuildv1alpha1.Image) {
+	return f.mutation(func(image *kpackbuildv1alpha1.Image) {
 		image.Spec.Tag = fmt.Sprintf(format, a...)
 	})
 }
 
 func (f *kpackImage) SourceGit(url string, revision string) *kpackImage {
-	return f.Mutate(func(image *kpackbuildv1alpha1.Image) {
+	return f.mutation(func(image *kpackbuildv1alpha1.Image) {
 		image.Spec.Source = kpackbuildv1alpha1.SourceConfig{
 			Git: &kpackbuildv1alpha1.Git{
 				URL:      url,
@@ -144,13 +144,13 @@ func (f *kpackImage) SourceGit(url string, revision string) *kpackImage {
 }
 
 func (f *kpackImage) SourceSubPath(subpath string) *kpackImage {
-	return f.Mutate(func(image *kpackbuildv1alpha1.Image) {
+	return f.mutation(func(image *kpackbuildv1alpha1.Image) {
 		image.Spec.Source.SubPath = subpath
 	})
 }
 
 func (f *kpackImage) BuildCache(quantity string) *kpackImage {
-	return f.Mutate(func(image *kpackbuildv1alpha1.Image) {
+	return f.mutation(func(image *kpackbuildv1alpha1.Image) {
 		size, err := resource.ParseQuantity(quantity)
 		if err != nil {
 			panic(err)
@@ -160,7 +160,7 @@ func (f *kpackImage) BuildCache(quantity string) *kpackImage {
 }
 
 func (f *kpackImage) StatusConditions(conditions ...*condition) *kpackImage {
-	return f.Mutate(func(image *kpackbuildv1alpha1.Image) {
+	return f.mutation(func(image *kpackbuildv1alpha1.Image) {
 		c := make([]apis.Condition, len(conditions))
 		for i, cg := range conditions {
 			c[i] = cg.Get()
@@ -176,19 +176,19 @@ func (f *kpackImage) StatusReady() *kpackImage {
 }
 
 func (f *kpackImage) StatusObservedGeneration(generation int64) *kpackImage {
-	return f.Mutate(func(image *kpackbuildv1alpha1.Image) {
+	return f.mutation(func(image *kpackbuildv1alpha1.Image) {
 		image.Status.ObservedGeneration = generation
 	})
 }
 
 func (f *kpackImage) StatusLatestImage(format string, a ...interface{}) *kpackImage {
-	return f.Mutate(func(image *kpackbuildv1alpha1.Image) {
+	return f.mutation(func(image *kpackbuildv1alpha1.Image) {
 		image.Status.LatestImage = fmt.Sprintf(format, a...)
 	})
 }
 
 func (f *kpackImage) StatusBuildCacheName(format string, a ...interface{}) *kpackImage {
-	return f.Mutate(func(image *kpackbuildv1alpha1.Image) {
+	return f.mutation(func(image *kpackbuildv1alpha1.Image) {
 		image.Status.BuildCacheName = fmt.Sprintf(format, a...)
 	})
 }

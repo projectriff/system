@@ -51,26 +51,26 @@ func (f *condition) Get() apis.Condition {
 	return *f.deepCopy().target
 }
 
-func (f *condition) Mutate(m func(*apis.Condition)) *condition {
+func (f *condition) mutation(m func(*apis.Condition)) *condition {
 	f = f.deepCopy()
 	m(f.target)
 	return f
 }
 
 func (f *condition) Type(t apis.ConditionType) *condition {
-	return f.Mutate(func(c *apis.Condition) {
+	return f.mutation(func(c *apis.Condition) {
 		c.Type = t
 	})
 }
 
 func (f *condition) Unknown() *condition {
-	return f.Mutate(func(c *apis.Condition) {
+	return f.mutation(func(c *apis.Condition) {
 		c.Status = corev1.ConditionUnknown
 	})
 }
 
 func (f *condition) True() *condition {
-	return f.Mutate(func(c *apis.Condition) {
+	return f.mutation(func(c *apis.Condition) {
 		c.Status = corev1.ConditionTrue
 		c.Reason = ""
 		c.Message = ""
@@ -78,32 +78,32 @@ func (f *condition) True() *condition {
 }
 
 func (f *condition) False() *condition {
-	return f.Mutate(func(c *apis.Condition) {
+	return f.mutation(func(c *apis.Condition) {
 		c.Status = corev1.ConditionFalse
 	})
 }
 
 func (f *condition) Reason(reason, message string) *condition {
-	return f.Mutate(func(c *apis.Condition) {
+	return f.mutation(func(c *apis.Condition) {
 		c.Reason = reason
 		c.Message = message
 	})
 }
 
 func (f *condition) Info() *condition {
-	return f.Mutate(func(c *apis.Condition) {
+	return f.mutation(func(c *apis.Condition) {
 		c.Severity = apis.ConditionSeverityInfo
 	})
 }
 
 func (f *condition) Warning() *condition {
-	return f.Mutate(func(c *apis.Condition) {
+	return f.mutation(func(c *apis.Condition) {
 		c.Severity = apis.ConditionSeverityWarning
 	})
 }
 
 func (f *condition) Error() *condition {
-	return f.Mutate(func(c *apis.Condition) {
+	return f.mutation(func(c *apis.Condition) {
 		c.Severity = apis.ConditionSeverityError
 	})
 }

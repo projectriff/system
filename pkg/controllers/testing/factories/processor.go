@@ -54,21 +54,21 @@ func (f *processor) Get() *streamingv1alpha1.Processor {
 	return f.deepCopy().target
 }
 
-func (f *processor) Mutate(m func(*streamingv1alpha1.Processor)) *processor {
+func (f *processor) mutation(m func(*streamingv1alpha1.Processor)) *processor {
 	f = f.deepCopy()
 	m(f.target)
 	return f
 }
 
 func (f *processor) NamespaceName(namespace, name string) *processor {
-	return f.Mutate(func(p *streamingv1alpha1.Processor) {
+	return f.mutation(func(p *streamingv1alpha1.Processor) {
 		p.ObjectMeta.Namespace = namespace
 		p.ObjectMeta.Name = name
 	})
 }
 
 func (f *processor) ObjectMeta(nf func(ObjectMeta)) *processor {
-	return f.Mutate(func(s *streamingv1alpha1.Processor) {
+	return f.mutation(func(s *streamingv1alpha1.Processor) {
 		omf := objectMeta(s.ObjectMeta)
 		nf(omf)
 		s.ObjectMeta = omf.Get()
@@ -76,7 +76,7 @@ func (f *processor) ObjectMeta(nf func(ObjectMeta)) *processor {
 }
 
 func (f *processor) PodTemplateSpec(nf func(PodTemplateSpec)) *processor {
-	return f.Mutate(func(processor *streamingv1alpha1.Processor) {
+	return f.mutation(func(processor *streamingv1alpha1.Processor) {
 		var ptsf *podTemplateSpecImpl
 		if processor.Spec.Template != nil {
 			ptsf = podTemplateSpec(*processor.Spec.Template)
@@ -90,7 +90,7 @@ func (f *processor) PodTemplateSpec(nf func(PodTemplateSpec)) *processor {
 }
 
 func (f *processor) StatusConditions(conditions ...*condition) *processor {
-	return f.Mutate(func(processor *streamingv1alpha1.Processor) {
+	return f.mutation(func(processor *streamingv1alpha1.Processor) {
 		c := make([]apis.Condition, len(conditions))
 		for i, cg := range conditions {
 			dc := cg.Get()
@@ -106,13 +106,13 @@ func (f *processor) StatusConditions(conditions ...*condition) *processor {
 }
 
 func (f *processor) StatusLatestImage(image string) *processor {
-	return f.Mutate(func(proc *streamingv1alpha1.Processor) {
+	return f.mutation(func(proc *streamingv1alpha1.Processor) {
 		proc.Status.LatestImage = image
 	})
 }
 
 func (f *processor) StatusDeploymentRef(deploymentName string) *processor {
-	return f.Mutate(func(proc *streamingv1alpha1.Processor) {
+	return f.mutation(func(proc *streamingv1alpha1.Processor) {
 		proc.Status.DeploymentRef = &refs.TypedLocalObjectReference{
 			APIGroup: rtesting.StringPtr("apps"),
 			Kind:     "Deployment",
@@ -122,7 +122,7 @@ func (f *processor) StatusDeploymentRef(deploymentName string) *processor {
 }
 
 func (f *processor) SpecBuildFunctionRef(functionName string) *processor {
-	return f.Mutate(func(proc *streamingv1alpha1.Processor) {
+	return f.mutation(func(proc *streamingv1alpha1.Processor) {
 		proc.Spec.Build = &streamingv1alpha1.Build{
 			FunctionRef: functionName,
 		}
@@ -130,7 +130,7 @@ func (f *processor) SpecBuildFunctionRef(functionName string) *processor {
 }
 
 func (f *processor) SpecBuildContainerRef(containerName string) *processor {
-	return f.Mutate(func(proc *streamingv1alpha1.Processor) {
+	return f.mutation(func(proc *streamingv1alpha1.Processor) {
 		proc.Spec.Build = &streamingv1alpha1.Build{
 			ContainerRef: containerName,
 		}
@@ -138,7 +138,7 @@ func (f *processor) SpecBuildContainerRef(containerName string) *processor {
 }
 
 func (f *processor) StatusScaledObjectRef(deploymentName string) *processor {
-	return f.Mutate(func(proc *streamingv1alpha1.Processor) {
+	return f.mutation(func(proc *streamingv1alpha1.Processor) {
 		proc.Status.ScaledObjectRef = &refs.TypedLocalObjectReference{
 			APIGroup: rtesting.StringPtr("keda.k8s.io"),
 			Kind:     "ScaledObject",

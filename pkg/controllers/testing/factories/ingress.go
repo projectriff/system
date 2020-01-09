@@ -51,21 +51,21 @@ func (f *ingress) Get() *networkingv1beta1.Ingress {
 	return f.deepCopy().target
 }
 
-func (f *ingress) Mutate(m func(*networkingv1beta1.Ingress)) *ingress {
+func (f *ingress) mutation(m func(*networkingv1beta1.Ingress)) *ingress {
 	f = f.deepCopy()
 	m(f.target)
 	return f
 }
 
 func (f *ingress) NamespaceName(namespace, name string) *ingress {
-	return f.Mutate(func(sa *networkingv1beta1.Ingress) {
+	return f.mutation(func(sa *networkingv1beta1.Ingress) {
 		sa.ObjectMeta.Namespace = namespace
 		sa.ObjectMeta.Name = name
 	})
 }
 
 func (f *ingress) ObjectMeta(nf func(ObjectMeta)) *ingress {
-	return f.Mutate(func(sa *networkingv1beta1.Ingress) {
+	return f.mutation(func(sa *networkingv1beta1.Ingress) {
 		omf := objectMeta(sa.ObjectMeta)
 		nf(omf)
 		sa.ObjectMeta = omf.Get()
@@ -73,7 +73,7 @@ func (f *ingress) ObjectMeta(nf func(ObjectMeta)) *ingress {
 }
 
 func (f *ingress) HostToService(host, serviceName string) *ingress {
-	return f.Mutate(func(i *networkingv1beta1.Ingress) {
+	return f.mutation(func(i *networkingv1beta1.Ingress) {
 		i.Spec = networkingv1beta1.IngressSpec{
 			Rules: []networkingv1beta1.IngressRule{{
 				Host: host,
@@ -94,7 +94,7 @@ func (f *ingress) HostToService(host, serviceName string) *ingress {
 }
 
 func (f *ingress) StatusLoadBalancer(ingress ...corev1.LoadBalancerIngress) *ingress {
-	return f.Mutate(func(i *networkingv1beta1.Ingress) {
+	return f.mutation(func(i *networkingv1beta1.Ingress) {
 		i.Status.LoadBalancer.Ingress = ingress
 	})
 }

@@ -50,21 +50,21 @@ func (f *knativeRoute) Get() *knativeservingv1.Route {
 	return f.deepCopy().target
 }
 
-func (f *knativeRoute) Mutate(m func(*knativeservingv1.Route)) *knativeRoute {
+func (f *knativeRoute) mutation(m func(*knativeservingv1.Route)) *knativeRoute {
 	f = f.deepCopy()
 	m(f.target)
 	return f
 }
 
 func (f *knativeRoute) NamespaceName(namespace, name string) *knativeRoute {
-	return f.Mutate(func(route *knativeservingv1.Route) {
+	return f.mutation(func(route *knativeservingv1.Route) {
 		route.ObjectMeta.Namespace = namespace
 		route.ObjectMeta.Name = name
 	})
 }
 
 func (f *knativeRoute) ObjectMeta(nf func(ObjectMeta)) *knativeRoute {
-	return f.Mutate(func(route *knativeservingv1.Route) {
+	return f.mutation(func(route *knativeservingv1.Route) {
 		omf := objectMeta(route.ObjectMeta)
 		nf(omf)
 		route.ObjectMeta = omf.Get()
@@ -72,13 +72,13 @@ func (f *knativeRoute) ObjectMeta(nf func(ObjectMeta)) *knativeRoute {
 }
 
 func (f *knativeRoute) Traffic(traffic ...knativeservingv1.TrafficTarget) *knativeRoute {
-	return f.Mutate(func(route *knativeservingv1.Route) {
+	return f.mutation(func(route *knativeservingv1.Route) {
 		route.Spec.Traffic = traffic
 	})
 }
 
 func (f *knativeRoute) StatusConditions(conditions ...*condition) *knativeRoute {
-	return f.Mutate(func(route *knativeservingv1.Route) {
+	return f.mutation(func(route *knativeservingv1.Route) {
 		c := make([]apis.Condition, len(conditions))
 		for i, cg := range conditions {
 			c[i] = cg.Get()
@@ -94,13 +94,13 @@ func (f *knativeRoute) StatusReady() *knativeRoute {
 }
 
 func (f *knativeRoute) StatusObservedGeneration(generation int64) *knativeRoute {
-	return f.Mutate(func(route *knativeservingv1.Route) {
+	return f.mutation(func(route *knativeservingv1.Route) {
 		route.Status.ObservedGeneration = generation
 	})
 }
 
 func (f *knativeRoute) StatusAddressURL(url string) *knativeRoute {
-	return f.Mutate(func(route *knativeservingv1.Route) {
+	return f.mutation(func(route *knativeservingv1.Route) {
 		route.Status.Address = &apis.Addressable{
 			URL: url,
 		}
@@ -108,7 +108,7 @@ func (f *knativeRoute) StatusAddressURL(url string) *knativeRoute {
 }
 
 func (f *knativeRoute) StatusURL(url string) *knativeRoute {
-	return f.Mutate(func(route *knativeservingv1.Route) {
+	return f.mutation(func(route *knativeservingv1.Route) {
 		route.Status.URL = url
 	})
 }

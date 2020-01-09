@@ -50,21 +50,21 @@ func (f *adapterKnative) Get() *knativev1alpha1.Adapter {
 	return f.deepCopy().target
 }
 
-func (f *adapterKnative) Mutate(m func(*knativev1alpha1.Adapter)) *adapterKnative {
+func (f *adapterKnative) mutation(m func(*knativev1alpha1.Adapter)) *adapterKnative {
 	f = f.deepCopy()
 	m(f.target)
 	return f
 }
 
 func (f *adapterKnative) NamespaceName(namespace, name string) *adapterKnative {
-	return f.Mutate(func(adapter *knativev1alpha1.Adapter) {
+	return f.mutation(func(adapter *knativev1alpha1.Adapter) {
 		adapter.ObjectMeta.Namespace = namespace
 		adapter.ObjectMeta.Name = name
 	})
 }
 
 func (f *adapterKnative) ObjectMeta(nf func(ObjectMeta)) *adapterKnative {
-	return f.Mutate(func(adapter *knativev1alpha1.Adapter) {
+	return f.mutation(func(adapter *knativev1alpha1.Adapter) {
 		omf := objectMeta(adapter.ObjectMeta)
 		nf(omf)
 		adapter.ObjectMeta = omf.Get()
@@ -72,7 +72,7 @@ func (f *adapterKnative) ObjectMeta(nf func(ObjectMeta)) *adapterKnative {
 }
 
 func (f *adapterKnative) ApplicationRef(format string, a ...interface{}) *adapterKnative {
-	return f.Mutate(func(adapter *knativev1alpha1.Adapter) {
+	return f.mutation(func(adapter *knativev1alpha1.Adapter) {
 		adapter.Spec.Build = knativev1alpha1.Build{
 			ApplicationRef: fmt.Sprintf(format, a...),
 		}
@@ -80,7 +80,7 @@ func (f *adapterKnative) ApplicationRef(format string, a ...interface{}) *adapte
 }
 
 func (f *adapterKnative) ContainerRef(format string, a ...interface{}) *adapterKnative {
-	return f.Mutate(func(adapter *knativev1alpha1.Adapter) {
+	return f.mutation(func(adapter *knativev1alpha1.Adapter) {
 		adapter.Spec.Build = knativev1alpha1.Build{
 			ContainerRef: fmt.Sprintf(format, a...),
 		}
@@ -88,7 +88,7 @@ func (f *adapterKnative) ContainerRef(format string, a ...interface{}) *adapterK
 }
 
 func (f *adapterKnative) FunctionRef(format string, a ...interface{}) *adapterKnative {
-	return f.Mutate(func(adapter *knativev1alpha1.Adapter) {
+	return f.mutation(func(adapter *knativev1alpha1.Adapter) {
 		adapter.Spec.Build = knativev1alpha1.Build{
 			FunctionRef: fmt.Sprintf(format, a...),
 		}
@@ -96,7 +96,7 @@ func (f *adapterKnative) FunctionRef(format string, a ...interface{}) *adapterKn
 }
 
 func (f *adapterKnative) ConfigurationRef(format string, a ...interface{}) *adapterKnative {
-	return f.Mutate(func(adapter *knativev1alpha1.Adapter) {
+	return f.mutation(func(adapter *knativev1alpha1.Adapter) {
 		adapter.Spec.Target = knativev1alpha1.AdapterTarget{
 			ConfigurationRef: fmt.Sprintf(format, a...),
 		}
@@ -104,7 +104,7 @@ func (f *adapterKnative) ConfigurationRef(format string, a ...interface{}) *adap
 }
 
 func (f *adapterKnative) ServiceRef(format string, a ...interface{}) *adapterKnative {
-	return f.Mutate(func(adapter *knativev1alpha1.Adapter) {
+	return f.mutation(func(adapter *knativev1alpha1.Adapter) {
 		adapter.Spec.Target = knativev1alpha1.AdapterTarget{
 			ServiceRef: fmt.Sprintf(format, a...),
 		}
@@ -112,7 +112,7 @@ func (f *adapterKnative) ServiceRef(format string, a ...interface{}) *adapterKna
 }
 
 func (f *adapterKnative) StatusConditions(conditions ...*condition) *adapterKnative {
-	return f.Mutate(func(adapter *knativev1alpha1.Adapter) {
+	return f.mutation(func(adapter *knativev1alpha1.Adapter) {
 		c := make([]apis.Condition, len(conditions))
 		for i, cg := range conditions {
 			c[i] = cg.Get()
@@ -122,13 +122,13 @@ func (f *adapterKnative) StatusConditions(conditions ...*condition) *adapterKnat
 }
 
 func (f *adapterKnative) StatusObservedGeneration(generation int64) *adapterKnative {
-	return f.Mutate(func(adapter *knativev1alpha1.Adapter) {
+	return f.mutation(func(adapter *knativev1alpha1.Adapter) {
 		adapter.Status.ObservedGeneration = generation
 	})
 }
 
 func (f *adapterKnative) StatusLatestImage(format string, a ...interface{}) *adapterKnative {
-	return f.Mutate(func(adapter *knativev1alpha1.Adapter) {
+	return f.mutation(func(adapter *knativev1alpha1.Adapter) {
 		adapter.Status.LatestImage = fmt.Sprintf(format, a...)
 	})
 }

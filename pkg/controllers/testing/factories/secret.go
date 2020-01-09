@@ -50,21 +50,21 @@ func (f *secret) Get() *corev1.Secret {
 	return f.deepCopy().target
 }
 
-func (f *secret) Mutate(m func(*corev1.Secret)) *secret {
+func (f *secret) mutation(m func(*corev1.Secret)) *secret {
 	f = f.deepCopy()
 	m(f.target)
 	return f
 }
 
 func (f *secret) NamespaceName(namespace, name string) *secret {
-	return f.Mutate(func(s *corev1.Secret) {
+	return f.mutation(func(s *corev1.Secret) {
 		s.ObjectMeta.Namespace = namespace
 		s.ObjectMeta.Name = name
 	})
 }
 
 func (f *secret) ObjectMeta(nf func(ObjectMeta)) *secret {
-	return f.Mutate(func(s *corev1.Secret) {
+	return f.mutation(func(s *corev1.Secret) {
 		omf := objectMeta(s.ObjectMeta)
 		nf(omf)
 		s.ObjectMeta = omf.Get()
@@ -72,13 +72,13 @@ func (f *secret) ObjectMeta(nf func(ObjectMeta)) *secret {
 }
 
 func (f *secret) Type(t corev1.SecretType) *secret {
-	return f.Mutate(func(s *corev1.Secret) {
+	return f.mutation(func(s *corev1.Secret) {
 		s.Type = t
 	})
 }
 
 func (f *secret) AddData(key, value string) *secret {
-	return f.Mutate(func(s *corev1.Secret) {
+	return f.mutation(func(s *corev1.Secret) {
 		if s.Data == nil {
 			s.Data = map[string][]byte{}
 		}
