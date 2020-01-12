@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -145,6 +146,10 @@ func TestReconcile(t *testing.T) {
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(imageNamesConfigMapGiven, processorGiven, scheme),
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(processorGiven, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			processorGiven.
 				StatusConditions(
@@ -172,10 +177,14 @@ func TestReconcile(t *testing.T) {
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("get", "ConfigMap"),
 		},
+		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(imageNamesConfigMapGiven, processorGiven, scheme),
 		},
-		ShouldErr: true,
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(processorGiven, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			processorGiven.
 				StatusConditions(
@@ -197,6 +206,10 @@ func TestReconcile(t *testing.T) {
 		Verify:    rtesting.AssertErrorMessagef("missing processor image configuration"),
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(imageNamesConfigMapGiven, processorGiven, scheme),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(processorGiven, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
 		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			processorGiven.
@@ -221,6 +234,10 @@ func TestReconcile(t *testing.T) {
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(imageNamesConfigMapGiven, processorGiven, scheme),
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(processorGiven, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			processorGiven.
 				StatusConditions(
@@ -239,6 +256,14 @@ func TestReconcile(t *testing.T) {
 		},
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(imageNamesConfigMapGiven, processorGiven, scheme),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(processorGiven, scheme, corev1.EventTypeNormal, "Created",
+				`Created Deployment "%s-processor-001"`, testName),
+			rtesting.NewEvent(processorGiven, scheme, corev1.EventTypeNormal, "Created",
+				`Created ScaledObject "%s-processor-002"`, testName),
+			rtesting.NewEvent(processorGiven, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
 		},
 		ExpectCreates: []rtesting.Factory{
 			deploymentCreate.
@@ -270,8 +295,15 @@ func TestReconcile(t *testing.T) {
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("create", "Deployment"),
 		},
+		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(imageNamesConfigMapGiven, processorGiven, scheme),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(processorGiven, scheme, corev1.EventTypeWarning, "CreationFailed",
+				`Failed to create Deployment "": inducing failure for create Deployment`),
+			rtesting.NewEvent(processorGiven, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
 		},
 		ExpectCreates: []rtesting.Factory{
 			deploymentCreate.
@@ -280,7 +312,6 @@ func TestReconcile(t *testing.T) {
 					pts.ContainerNamed("processor", processorCoreContainer)
 				}),
 		},
-		ShouldErr: true,
 		ExpectStatusUpdates: []rtesting.Factory{
 			processorGiven.
 				StatusConditions(
@@ -301,8 +332,17 @@ func TestReconcile(t *testing.T) {
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("create", "ScaledObject"),
 		},
+		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(imageNamesConfigMapGiven, processorGiven, scheme),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(processorGiven, scheme, corev1.EventTypeNormal, "Created",
+				`Created Deployment "%s-processor-001"`, testName),
+			rtesting.NewEvent(processorGiven, scheme, corev1.EventTypeWarning, "CreationFailed",
+				`Failed to create ScaledObject "": inducing failure for create ScaledObject`),
+			rtesting.NewEvent(processorGiven, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
 		},
 		ExpectCreates: []rtesting.Factory{
 			deploymentCreate.
@@ -312,7 +352,6 @@ func TestReconcile(t *testing.T) {
 				}),
 			scaledObjectCreate,
 		},
-		ShouldErr: true,
 		ExpectStatusUpdates: []rtesting.Factory{
 			processorGiven.
 				StatusConditions(
@@ -336,6 +375,10 @@ func TestReconcile(t *testing.T) {
 			rtesting.NewTrackRequest(imageNamesConfigMapGiven, processorGiven, scheme),
 			rtesting.NewTrackRequest(functionGiven, processorGiven, scheme),
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(processorGiven, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			processorGiven.
 				StatusConditions(
@@ -357,11 +400,11 @@ func TestReconcile(t *testing.T) {
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("get", "Function"),
 		},
+		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(imageNamesConfigMapGiven, processorGiven, scheme),
 			rtesting.NewTrackRequest(functionGiven, processorGiven, scheme),
 		},
-		ShouldErr: true,
 	}, {
 		Name: "successful reconciliation with satisfied function reference",
 		Key:  types.NamespacedName{Namespace: testNamespace, Name: testName},
@@ -375,6 +418,14 @@ func TestReconcile(t *testing.T) {
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(imageNamesConfigMapGiven, processorGiven, scheme),
 			rtesting.NewTrackRequest(functionGiven, processorGiven, scheme),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(processorGiven, scheme, corev1.EventTypeNormal, "Created",
+				`Created Deployment "%s-processor-001"`, testName),
+			rtesting.NewEvent(processorGiven, scheme, corev1.EventTypeNormal, "Created",
+				`Created ScaledObject "%s-processor-002"`, testName),
+			rtesting.NewEvent(processorGiven, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
 		},
 		ExpectCreates: []rtesting.Factory{
 			deploymentCreate.
@@ -408,6 +459,10 @@ func TestReconcile(t *testing.T) {
 			rtesting.NewTrackRequest(imageNamesConfigMapGiven, processorGiven, scheme),
 			rtesting.NewTrackRequest(containerGiven, processorGiven, scheme),
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(processorGiven, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			processorGiven.
 				StatusConditions(
@@ -425,14 +480,14 @@ func TestReconcile(t *testing.T) {
 				SpecBuildContainerRef(testContainer),
 			imageNamesConfigMapGiven,
 		},
-		ExpectTracks: []rtesting.TrackRequest{
-			rtesting.NewTrackRequest(imageNamesConfigMapGiven, processorGiven, scheme),
-			rtesting.NewTrackRequest(containerGiven, processorGiven, scheme),
-		},
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("get", "Container"),
 		},
 		ShouldErr: true,
+		ExpectTracks: []rtesting.TrackRequest{
+			rtesting.NewTrackRequest(imageNamesConfigMapGiven, processorGiven, scheme),
+			rtesting.NewTrackRequest(containerGiven, processorGiven, scheme),
+		},
 	}, {
 		Name: "successful reconciliation with satisfied container reference",
 		Key:  types.NamespacedName{Namespace: testNamespace, Name: testName},
@@ -445,6 +500,14 @@ func TestReconcile(t *testing.T) {
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(imageNamesConfigMapGiven, processorGiven, scheme),
 			rtesting.NewTrackRequest(containerGiven, processorGiven, scheme),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(processorGiven, scheme, corev1.EventTypeNormal, "Created",
+				`Created Deployment "%s-processor-001"`, testName),
+			rtesting.NewEvent(processorGiven, scheme, corev1.EventTypeNormal, "Created",
+				`Created ScaledObject "%s-processor-002"`, testName),
+			rtesting.NewEvent(processorGiven, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
 		},
 		ExpectCreates: []rtesting.Factory{
 			deploymentCreate.
@@ -468,9 +531,10 @@ func TestReconcile(t *testing.T) {
 		},
 	}}
 
-	table.Test(t, scheme, func(t *testing.T, row *rtesting.Testcase, client client.Client, tracker tracker.Tracker, log logr.Logger) reconcile.Reconciler {
+	table.Test(t, scheme, func(t *testing.T, row *rtesting.Testcase, client client.Client, tracker tracker.Tracker, recorder record.EventRecorder, log logr.Logger) reconcile.Reconciler {
 		return &ProcessorReconciler{
 			Client:    client,
+			Recorder:  recorder,
 			Log:       log,
 			Scheme:    scheme,
 			Tracker:   tracker,

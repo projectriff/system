@@ -22,11 +22,13 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/source"
@@ -47,15 +49,17 @@ const (
 // DeployerReconciler reconciles a Deployer object
 type DeployerReconciler struct {
 	client.Client
-	Log     logr.Logger
-	Scheme  *runtime.Scheme
-	Tracker tracker.Tracker
+	Recorder record.EventRecorder
+	Log      logr.Logger
+	Scheme   *runtime.Scheme
+	Tracker  tracker.Tracker
 }
 
 // +kubebuilder:rbac:groups=knative.projectriff.io,resources=deployers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=knative.projectriff.io,resources=deployers/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=build.projectriff.io,resources=applications;containers;functions,verbs=get;list;watch
 // +kubebuilder:rbac:groups=serving.knative.dev,resources=configurations;routes,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=core,resources=events,verbs=get;list;watch;create;update;patch;delete
 
 func (r *DeployerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
@@ -85,8 +89,12 @@ func (r *DeployerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		log.Info("updating deployer status", "diff", cmp.Diff(originalDeployer.Status, deployer.Status))
 		if updateErr := r.Status().Update(ctx, &deployer); updateErr != nil {
 			log.Error(updateErr, "unable to update Deployer status", "deployer", deployer)
+			r.Recorder.Eventf(&deployer, corev1.EventTypeWarning, "StatusUpdateFailed",
+				"Failed to update status: %v", updateErr)
 			return ctrl.Result{Requeue: true}, updateErr
 		}
+		r.Recorder.Eventf(&deployer, corev1.EventTypeNormal, "StatusUpdated",
+			"Updated status")
 	}
 
 	// return original reconcile result
@@ -219,8 +227,12 @@ func (r *DeployerReconciler) reconcileChildConfiguration(ctx context.Context, lo
 		for _, extraConfiguration := range childConfigurations.Items {
 			log.Info("deleting extra configuration", "configuration", extraConfiguration)
 			if err := r.Delete(ctx, &extraConfiguration); err != nil {
+				r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "DeleteFailed",
+					"Failed to delete Configuration %q: %v", extraConfiguration.Name, err)
 				return nil, err
 			}
+			r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Deleted",
+				"Deleted Configuration %q", extraConfiguration.Name)
 		}
 	}
 
@@ -234,8 +246,12 @@ func (r *DeployerReconciler) reconcileChildConfiguration(ctx context.Context, lo
 		log.Info("deleting configuration", "configuration", actualConfiguration)
 		if err := r.Delete(ctx, &actualConfiguration); err != nil {
 			log.Error(err, "unable to delete Configuration for Deployer", "configuration", actualConfiguration)
+			r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "DeleteFailed",
+				"Failed to delete Configuration %q: %v", actualConfiguration.Name, err)
 			return nil, err
 		}
+		r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Deleted",
+			"Deleted Configuration %q", actualConfiguration.Name)
 		return nil, nil
 	}
 
@@ -244,8 +260,12 @@ func (r *DeployerReconciler) reconcileChildConfiguration(ctx context.Context, lo
 		log.Info("creating configuration", "spec", desiredConfiguration.Spec)
 		if err := r.Create(ctx, desiredConfiguration); err != nil {
 			log.Error(err, "unable to create Configuration for Deployer", "configuration", desiredConfiguration)
+			r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "CreationFailed",
+				"Failed to create Configuration %q: %v", desiredConfiguration.Name, err)
 			return nil, err
 		}
+		r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Created",
+			"Created Configuration %q", desiredConfiguration.Name)
 		return desiredConfiguration, nil
 	}
 
@@ -262,8 +282,12 @@ func (r *DeployerReconciler) reconcileChildConfiguration(ctx context.Context, lo
 	log.Info("reconciling configuration", "diff", cmp.Diff(actualConfiguration.Spec, configuration.Spec))
 	if err := r.Update(ctx, configuration); err != nil {
 		log.Error(err, "unable to update Configuration for Deployer", "configuration", configuration)
+		r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "UpdateFailed",
+			"Failed to update Configuration %q: %v", configuration.Name, err)
 		return nil, err
 	}
+	r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Updated",
+		"Updated Configuration %q", configuration.Name)
 
 	return configuration, nil
 }
@@ -332,8 +356,12 @@ func (r *DeployerReconciler) reconcileChildRoute(ctx context.Context, log logr.L
 		for _, extraRoute := range childRoutes.Items {
 			log.Info("deleting extra route", "route", extraRoute)
 			if err := r.Delete(ctx, &extraRoute); err != nil {
+				r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "DeleteFailed",
+					"Failed to delete Route %q: %v", extraRoute.Name, err)
 				return nil, err
 			}
+			r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Deleted",
+				"Deleted Route %q", extraRoute.Name)
 		}
 	}
 
@@ -347,8 +375,12 @@ func (r *DeployerReconciler) reconcileChildRoute(ctx context.Context, log logr.L
 		log.Info("deleting route", "route", actualRoute)
 		if err := r.Delete(ctx, &actualRoute); err != nil {
 			log.Error(err, "unable to delete Route for Deployer", "route", actualRoute)
+			r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "DeleteFailed",
+				"Failed to delete Route %q: %v", actualRoute.Name, err)
 			return nil, err
 		}
+		r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Deleted",
+			"Deleted Route %q", actualRoute.Name)
 		return nil, nil
 	}
 
@@ -357,8 +389,12 @@ func (r *DeployerReconciler) reconcileChildRoute(ctx context.Context, log logr.L
 		log.Info("creating route", "spec", desiredRoute.Spec)
 		if err := r.Create(ctx, desiredRoute); err != nil {
 			log.Error(err, "unable to create Route for Deployer", "route", desiredRoute)
+			r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "CreationFailed",
+				"Failed to create Route %q: %v", desiredRoute.Name, err)
 			return nil, err
 		}
+		r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Created",
+			"Created Route %q", desiredRoute.Name)
 		return desiredRoute, nil
 	}
 
@@ -374,8 +410,12 @@ func (r *DeployerReconciler) reconcileChildRoute(ctx context.Context, log logr.L
 	log.Info("reconciling route", "diff", cmp.Diff(actualRoute.Spec, route.Spec))
 	if err := r.Update(ctx, route); err != nil {
 		log.Error(err, "unable to update Route for Deployer", "configuration", route)
+		r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "UpdateFailed",
+			"Failed to update Route %q: %v", route.Name, err)
 		return nil, err
 	}
+	r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Updated",
+		"Updated Route %q", route.Name)
 
 	return route, nil
 }

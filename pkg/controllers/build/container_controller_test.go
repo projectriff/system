@@ -20,9 +20,11 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -82,6 +84,10 @@ func TestContainerReconciler(t *testing.T) {
 			containerValid,
 			serviceAccount,
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(containerValid, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			containerMinimal.
 				StatusConditions(
@@ -109,6 +115,10 @@ func TestContainerReconciler(t *testing.T) {
 			containerMinimal,
 			serviceAccount,
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(containerValid, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			containerMinimal.
 				StatusConditions(
@@ -123,6 +133,11 @@ func TestContainerReconciler(t *testing.T) {
 		GivenObjects: []rtesting.Factory{
 			containerMinimal,
 		},
+		ShouldErr: true,
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(containerValid, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			containerMinimal.
 				StatusConditions(
@@ -130,7 +145,6 @@ func TestContainerReconciler(t *testing.T) {
 					containerConditionReady.False().Reason("DefaultImagePrefixMissing", "missing default image prefix"),
 				),
 		},
-		ShouldErr: true,
 	}, {
 		Name: "default image, undefined",
 		Key:  testKey,
@@ -138,6 +152,11 @@ func TestContainerReconciler(t *testing.T) {
 			cmImagePrefix,
 			containerMinimal,
 		},
+		ShouldErr: true,
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(containerValid, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			containerMinimal.
 				StatusConditions(
@@ -145,7 +164,6 @@ func TestContainerReconciler(t *testing.T) {
 					containerConditionReady.False().Reason("DefaultImagePrefixMissing", "missing default image prefix"),
 				),
 		},
-		ShouldErr: true,
 	}, {
 		Name: "default image, error",
 		Key:  testKey,
@@ -156,6 +174,11 @@ func TestContainerReconciler(t *testing.T) {
 			cmImagePrefix,
 			containerMinimal,
 		},
+		ShouldErr: true,
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(containerValid, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			containerMinimal.
 				StatusConditions(
@@ -163,7 +186,6 @@ func TestContainerReconciler(t *testing.T) {
 					containerConditionReady.False().Reason("ImageInvalid", "inducing failure for get ConfigMap"),
 				),
 		},
-		ShouldErr: true,
 	}, {
 		// TODO mock image digest resolution
 		Skip: true,
@@ -176,6 +198,11 @@ func TestContainerReconciler(t *testing.T) {
 			containerValid,
 			serviceAccount,
 		},
+		ShouldErr: true,
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(containerValid, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			containerMinimal.
 				StatusConditions(
@@ -184,14 +211,14 @@ func TestContainerReconciler(t *testing.T) {
 				).
 				StatusTargetImage("%s/%s", testImagePrefix, testName),
 		},
-		ShouldErr: true,
 	}}
 
-	table.Test(t, scheme, func(t *testing.T, row *rtesting.Testcase, client client.Client, tracker tracker.Tracker, log logr.Logger) reconcile.Reconciler {
+	table.Test(t, scheme, func(t *testing.T, row *rtesting.Testcase, client client.Client, tracker tracker.Tracker, recorder record.EventRecorder, log logr.Logger) reconcile.Reconciler {
 		return &build.ContainerReconciler{
-			Client: client,
-			Scheme: scheme,
-			Log:    log,
+			Client:   client,
+			Recorder: recorder,
+			Scheme:   scheme,
+			Log:      log,
 		}
 	})
 }

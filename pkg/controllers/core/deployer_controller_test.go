@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -181,6 +182,14 @@ func TestDeployerReconciler(t *testing.T) {
 			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 			rtesting.NewTrackRequest(testApplication, deployerMinimal, scheme),
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Created",
+				`Created Deployment "%s-deployer-001"`, testName),
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Created",
+				`Created Service "%s"`, testName),
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectCreates: []rtesting.Factory{
 			deploymentCreate,
 			serviceCreate,
@@ -205,6 +214,10 @@ func TestDeployerReconciler(t *testing.T) {
 			deployerMinimal.
 				ApplicationRef(testApplication.Get().GetName()),
 			testSettings,
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
 		},
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
@@ -246,6 +259,14 @@ func TestDeployerReconciler(t *testing.T) {
 			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 			rtesting.NewTrackRequest(testFunction, deployerMinimal, scheme),
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Created",
+				`Created Deployment "%s-deployer-001"`, testName),
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Created",
+				`Created Service "%s"`, testName),
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectCreates: []rtesting.Factory{
 			deploymentCreate,
 			serviceCreate,
@@ -270,6 +291,10 @@ func TestDeployerReconciler(t *testing.T) {
 			deployerMinimal.
 				FunctionRef(testFunction.Get().GetName()),
 			testSettings,
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
 		},
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
@@ -311,6 +336,14 @@ func TestDeployerReconciler(t *testing.T) {
 			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 			rtesting.NewTrackRequest(testContainer, deployerMinimal, scheme),
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Created",
+				`Created Deployment "%s-deployer-001"`, testName),
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Created",
+				`Created Service "%s"`, testName),
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectCreates: []rtesting.Factory{
 			deploymentCreate,
 			serviceCreate,
@@ -339,6 +372,10 @@ func TestDeployerReconciler(t *testing.T) {
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 			rtesting.NewTrackRequest(testContainer, deployerMinimal, scheme),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
 		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			deployerMinimal.
@@ -374,6 +411,14 @@ func TestDeployerReconciler(t *testing.T) {
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Created",
+				`Created Deployment "%s-deployer-001"`, testName),
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Created",
+				`Created Service "%s"`, testName),
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectCreates: []rtesting.Factory{
 			deploymentCreate,
 			serviceCreate,
@@ -406,6 +451,12 @@ func TestDeployerReconciler(t *testing.T) {
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeWarning, "CreationFailed",
+				`Failed to create Deployment "": inducing failure for create Deployment`),
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectCreates: []rtesting.Factory{
 			deploymentCreate,
 		},
@@ -432,6 +483,14 @@ func TestDeployerReconciler(t *testing.T) {
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Created",
+				`Created Deployment "%s-deployer-001"`, testName),
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeWarning, "CreationFailed",
+				`Failed to create Service "%s": inducing failure for create Service`, testName),
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
 		},
 		ExpectCreates: []rtesting.Factory{
 			deploymentCreate,
@@ -462,6 +521,14 @@ func TestDeployerReconciler(t *testing.T) {
 		},
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Created",
+				`Created Deployment "%s-deployer-001"`, testName),
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeWarning, "CreationFailed",
+				`Failed to create Service "%s":  "%s" already exists`, testName, testName),
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
 		},
 		ExpectCreates: []rtesting.Factory{
 			deploymentCreate,
@@ -504,6 +571,10 @@ func TestDeployerReconciler(t *testing.T) {
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Updated",
+				`Updated Deployment "%s"`, deploymentGiven.Get().GetName()),
+		},
 		ExpectUpdates: []rtesting.Factory{
 			deploymentGiven,
 		},
@@ -537,6 +608,10 @@ func TestDeployerReconciler(t *testing.T) {
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeWarning, "UpdateFailed",
+				`Failed to update Deployment "%s": inducing failure for update Deployment`, deploymentGiven.Get().GetName()),
 		},
 		ExpectUpdates: []rtesting.Factory{
 			deploymentGiven,
@@ -597,6 +672,10 @@ func TestDeployerReconciler(t *testing.T) {
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Updated",
+				`Updated Service "%s"`, serviceGiven.Get().GetName()),
+		},
 		ExpectUpdates: []rtesting.Factory{
 			serviceGiven,
 		},
@@ -628,6 +707,10 @@ func TestDeployerReconciler(t *testing.T) {
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeWarning, "UpdateFailed",
+				`Failed to update Service "%s": inducing failure for update Service`, serviceGiven.Get().GetName()),
 		},
 		ExpectUpdates: []rtesting.Factory{
 			serviceGiven,
@@ -684,6 +767,14 @@ func TestDeployerReconciler(t *testing.T) {
 			serviceGiven,
 			testSettings,
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Deleted",
+				`Deleted Deployment "%s"`, "extra-deployment-1"),
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Deleted",
+				`Deleted Deployment "%s"`, "extra-deployment-2"),
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Created",
+				`Created Deployment "%s-deployer-001"`, testName),
+		},
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
@@ -721,6 +812,10 @@ func TestDeployerReconciler(t *testing.T) {
 			testSettings,
 		},
 		ShouldErr: true,
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeWarning, "DeleteFailed",
+				`Failed to delete Deployment "%s": inducing failure for delete Deployment`, "extra-deployment-1"),
+		},
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
@@ -749,6 +844,14 @@ func TestDeployerReconciler(t *testing.T) {
 			serviceGiven.
 				NamespaceName(testNamespace, "extra-service-2"),
 			testSettings,
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Deleted",
+				`Deleted Service "%s"`, "extra-service-1"),
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Deleted",
+				`Deleted Service "%s"`, "extra-service-2"),
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Created",
+				`Created Service "%s"`, testName),
 		},
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
@@ -787,6 +890,10 @@ func TestDeployerReconciler(t *testing.T) {
 			testSettings,
 		},
 		ShouldErr: true,
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeWarning, "DeleteFailed",
+				`Failed to delete Service "%s": inducing failure for delete Service`, "extra-service-1"),
+		},
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
@@ -806,6 +913,12 @@ func TestDeployerReconciler(t *testing.T) {
 		},
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Created",
+				`Created Ingress "%s-deployer-001"`, testName),
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
 		},
 		ExpectCreates: []rtesting.Factory{
 			ingressCreate,
@@ -843,6 +956,12 @@ func TestDeployerReconciler(t *testing.T) {
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeWarning, "CreationFailed",
+				`Failed to create Ingress "": inducing failure for create Ingress`),
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectCreates: []rtesting.Factory{
 			ingressCreate,
 		},
@@ -870,6 +989,12 @@ func TestDeployerReconciler(t *testing.T) {
 			ingressGiven,
 			testSettings.
 				AddData("defaultDomain", "not.example.com"),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Deleted",
+				`Deleted Ingress "%s"`, ingressGiven.Get().GetName()),
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
 		},
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
@@ -907,6 +1032,12 @@ func TestDeployerReconciler(t *testing.T) {
 				AddData("defaultDomain", "not.example.com"),
 		},
 		ShouldErr: true,
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeWarning, "DeleteFailed",
+				`Failed to delete Ingress "%s": inducing failure for delete Ingress`, ingressGiven.Get().GetName()),
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
@@ -940,6 +1071,12 @@ func TestDeployerReconciler(t *testing.T) {
 		},
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Updated",
+				`Updated Ingress "%s"`, ingressGiven.Get().GetName()),
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
 		},
 		ExpectUpdates: []rtesting.Factory{
 			ingressGiven.
@@ -980,6 +1117,12 @@ func TestDeployerReconciler(t *testing.T) {
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeWarning, "UpdateFailed",
+				`Failed to update Ingress "%s": inducing failure for update Ingress`, ingressGiven.Get().GetName()),
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectUpdates: []rtesting.Factory{
 			ingressGiven.
 				HostToService(fmt.Sprintf("%s.%s.%s", testName, testNamespace, "not.example.com"), serviceGiven.Get().GetName()),
@@ -1010,6 +1153,16 @@ func TestDeployerReconciler(t *testing.T) {
 			ingressGiven.
 				NamespaceName(testNamespace, "extra-ingress-2"),
 			testSettings,
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Deleted",
+				`Deleted Ingress "%s"`, "extra-ingress-1"),
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Deleted",
+				`Deleted Ingress "%s"`, "extra-ingress-2"),
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Created",
+				`Created Ingress "%s-deployer-001"`, testName),
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
 		},
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
@@ -1058,6 +1211,10 @@ func TestDeployerReconciler(t *testing.T) {
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			deployerMinimal.
 				StatusConditions(
@@ -1089,6 +1246,12 @@ func TestDeployerReconciler(t *testing.T) {
 			testSettings,
 		},
 		ShouldErr: true,
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeWarning, "DeleteFailed",
+				`Failed to delete Ingress "%s": inducing failure for delete Ingress`, "extra-ingress-1"),
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
@@ -1137,6 +1300,14 @@ func TestDeployerReconciler(t *testing.T) {
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Updated",
+				`Updated Deployment "%s"`, deploymentGiven.Get().GetName()),
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Updated",
+				`Updated Service "%s"`, serviceGiven.Get().GetName()),
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Updated",
+				`Updated Ingress "%s"`, ingressGiven.Get().GetName()),
+		},
 		ExpectUpdates: []rtesting.Factory{
 			deploymentGiven.
 				ObjectMeta(func(om factories.ObjectMeta) {
@@ -1169,6 +1340,10 @@ func TestDeployerReconciler(t *testing.T) {
 		},
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
 		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			deployerMinimal.
@@ -1206,6 +1381,10 @@ func TestDeployerReconciler(t *testing.T) {
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			deployerMinimal.
 				StatusConditions(
@@ -1237,6 +1416,10 @@ func TestDeployerReconciler(t *testing.T) {
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			deployerMinimal.
 				StatusConditions(
@@ -1266,6 +1449,10 @@ func TestDeployerReconciler(t *testing.T) {
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeWarning, "StatusUpdateFailed",
+				`Failed to update status: inducing failure for update Deployer`),
+		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			deployerMinimal.
 				StatusConditions(
@@ -1289,6 +1476,10 @@ func TestDeployerReconciler(t *testing.T) {
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			deployerMinimal.
 				StatusConditions(
@@ -1299,12 +1490,13 @@ func TestDeployerReconciler(t *testing.T) {
 		},
 	}}
 
-	table.Test(t, scheme, func(t *testing.T, row *rtesting.Testcase, client client.Client, tracker tracker.Tracker, log logr.Logger) reconcile.Reconciler {
+	table.Test(t, scheme, func(t *testing.T, row *rtesting.Testcase, client client.Client, tracker tracker.Tracker, recorder record.EventRecorder, log logr.Logger) reconcile.Reconciler {
 		return &core.DeployerReconciler{
-			Client:  client,
-			Scheme:  scheme,
-			Log:     log,
-			Tracker: tracker,
+			Client:   client,
+			Recorder: recorder,
+			Scheme:   scheme,
+			Log:      log,
+			Tracker:  tracker,
 		}
 	})
 }

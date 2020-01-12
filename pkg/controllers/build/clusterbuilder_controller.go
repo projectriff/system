@@ -27,6 +27,7 @@ import (
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -43,12 +44,14 @@ const buildersConfigMap = "builders"
 // ClusterBuilderReconciler reconciles a ClusterBuilder object
 type ClusterBuilderReconciler struct {
 	client.Client
+	Recorder  record.EventRecorder
 	Log       logr.Logger
 	Namespace string
 }
 
 // +kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=build.pivotal.io,resources=clusterbuilders,verbs=get;list;watch
+// +kubebuilder:rbac:groups=core,resources=events,verbs=get;list;watch;create;update;patch;delete
 
 func (r *ClusterBuilderReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()

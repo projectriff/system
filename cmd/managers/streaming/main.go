@@ -80,6 +80,7 @@ func main() {
 
 	if err = (&controllers.KafkaProviderReconciler{
 		Client:    mgr.GetClient(),
+		Recorder:  mgr.GetEventRecorderFor("KafkaProvider"),
 		Log:       ctrl.Log.WithName("controllers").WithName("KafkaProvider"),
 		Scheme:    mgr.GetScheme(),
 		Tracker:   tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("KafkaProvider").WithName("tracker")),
@@ -94,6 +95,7 @@ func main() {
 	}
 	if err = (&controllers.PulsarProviderReconciler{
 		Client:    mgr.GetClient(),
+		Recorder:  mgr.GetEventRecorderFor("PulsarProvider"),
 		Log:       ctrl.Log.WithName("controllers").WithName("PulsarProvider"),
 		Scheme:    mgr.GetScheme(),
 		Tracker:   tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("PulsarProvider").WithName("tracker")),
@@ -108,6 +110,7 @@ func main() {
 	}
 	if err = (&controllers.InMemoryProviderReconciler{
 		Client:    mgr.GetClient(),
+		Recorder:  mgr.GetEventRecorderFor("InMemoryProvider"),
 		Log:       ctrl.Log.WithName("controllers").WithName("InMemoryProvider"),
 		Scheme:    mgr.GetScheme(),
 		Tracker:   tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("InMemoryProvider").WithName("tracker")),
@@ -123,6 +126,7 @@ func main() {
 	streamControllerLogger := ctrl.Log.WithName("controllers").WithName("Stream")
 	if err = (&controllers.StreamReconciler{
 		Client:                  mgr.GetClient(),
+		Recorder:                mgr.GetEventRecorderFor("Stream"),
 		Log:                     streamControllerLogger,
 		Scheme:                  mgr.GetScheme(),
 		StreamProvisionerClient: controllers.NewStreamProvisionerClient(http.DefaultClient, streamControllerLogger),
@@ -136,6 +140,7 @@ func main() {
 	}
 	if err = (&controllers.ProcessorReconciler{
 		Client:    mgr.GetClient(),
+		Recorder:  mgr.GetEventRecorderFor("Processor"),
 		Log:       ctrl.Log.WithName("controllers").WithName("Processor"),
 		Scheme:    mgr.GetScheme(),
 		Tracker:   tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("Processor").WithName("tracker")),

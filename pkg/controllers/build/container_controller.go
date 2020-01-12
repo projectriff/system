@@ -32,6 +32,7 @@ import (
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -44,8 +45,9 @@ import (
 // ContainerReconciler reconciles a Container object
 type ContainerReconciler struct {
 	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
+	Recorder record.EventRecorder
+	Log      logr.Logger
+	Scheme   *runtime.Scheme
 }
 
 var containerPollingInterval = 1 * time.Minute
@@ -55,6 +57,7 @@ var containerPollingInterval = 1 * time.Minute
 // +kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch
 // +kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch
 // +kubebuilder:rbac:groups=core,resources=serviceaccounts,verbs=get;list;watch
+// +kubebuilder:rbac:groups=core,resources=events,verbs=get;list;watch;create;update;patch;delete
 
 func (r *ContainerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
@@ -84,8 +87,12 @@ func (r *ContainerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		log.Info("updating container status", "diff", cmp.Diff(originalContainer.Status, container.Status))
 		if updateErr := r.Status().Update(ctx, &container); updateErr != nil {
 			log.Error(updateErr, "unable to update Container status", "container", container)
+			r.Recorder.Eventf(&container, corev1.EventTypeWarning, "StatusUpdateFailed",
+				"Failed to update status: %v", updateErr)
 			return ctrl.Result{Requeue: true}, updateErr
 		}
+		r.Recorder.Eventf(&container, corev1.EventTypeNormal, "StatusUpdated",
+			"Updated status")
 	}
 
 	// return original reconcile result

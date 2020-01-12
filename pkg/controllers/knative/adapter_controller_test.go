@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -114,6 +115,10 @@ func TestAdapterReconciler(t *testing.T) {
 			rtesting.NewTrackRequest(testApplication, testAdapter, scheme),
 			rtesting.NewTrackRequest(testService, testAdapter, scheme),
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testAdapter, scheme, corev1.EventTypeWarning, "StatusUpdateFailed",
+				`Failed to update status: inducing failure for update Adapter`),
+		},
 		ExpectUpdates: []rtesting.Factory{
 			testService.
 				UserContainer(func(uc *corev1.Container) {
@@ -144,6 +149,10 @@ func TestAdapterReconciler(t *testing.T) {
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testApplication, testAdapter, scheme),
 			rtesting.NewTrackRequest(testService, testAdapter, scheme),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testAdapter, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
 		},
 		ExpectUpdates: []rtesting.Factory{
 			testService.
@@ -185,6 +194,10 @@ func TestAdapterReconciler(t *testing.T) {
 		},
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testApplication, testAdapter, scheme),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testAdapter, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
 		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			testAdapter.
@@ -229,6 +242,10 @@ func TestAdapterReconciler(t *testing.T) {
 			rtesting.NewTrackRequest(testFunction, testAdapter, scheme),
 			rtesting.NewTrackRequest(testService, testAdapter, scheme),
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testAdapter, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectUpdates: []rtesting.Factory{
 			testService.
 				UserContainer(func(uc *corev1.Container) {
@@ -269,6 +286,10 @@ func TestAdapterReconciler(t *testing.T) {
 		},
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testFunction, testAdapter, scheme),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testAdapter, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
 		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			testAdapter.
@@ -313,6 +334,10 @@ func TestAdapterReconciler(t *testing.T) {
 			rtesting.NewTrackRequest(testContainer, testAdapter, scheme),
 			rtesting.NewTrackRequest(testService, testAdapter, scheme),
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testAdapter, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectUpdates: []rtesting.Factory{
 			testService.
 				UserContainer(func(uc *corev1.Container) {
@@ -353,6 +378,10 @@ func TestAdapterReconciler(t *testing.T) {
 		},
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testContainer, testAdapter, scheme),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testAdapter, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
 		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			testAdapter.
@@ -395,6 +424,10 @@ func TestAdapterReconciler(t *testing.T) {
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testContainer, testAdapter, scheme),
 			rtesting.NewTrackRequest(testService, testAdapter, scheme),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testAdapter, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
 		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			testAdapter.
@@ -492,6 +525,10 @@ func TestAdapterReconciler(t *testing.T) {
 			rtesting.NewTrackRequest(testContainer, testAdapter, scheme),
 			rtesting.NewTrackRequest(testConfiguration, testAdapter, scheme),
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testAdapter, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectUpdates: []rtesting.Factory{
 			testConfiguration.
 				UserContainer(func(uc *corev1.Container) {
@@ -521,6 +558,10 @@ func TestAdapterReconciler(t *testing.T) {
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testContainer, testAdapter, scheme),
 			rtesting.NewTrackRequest(testConfiguration, testAdapter, scheme),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testAdapter, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
 		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			testAdapter.
@@ -604,12 +645,13 @@ func TestAdapterReconciler(t *testing.T) {
 		},
 	}}
 
-	table.Test(t, scheme, func(t *testing.T, row *rtesting.Testcase, client client.Client, tracker tracker.Tracker, log logr.Logger) reconcile.Reconciler {
+	table.Test(t, scheme, func(t *testing.T, row *rtesting.Testcase, client client.Client, tracker tracker.Tracker, recorder record.EventRecorder, log logr.Logger) reconcile.Reconciler {
 		return &knative.AdapterReconciler{
-			Client:  client,
-			Log:     log,
-			Scheme:  scheme,
-			Tracker: tracker,
+			Client:   client,
+			Recorder: recorder,
+			Log:      log,
+			Scheme:   scheme,
+			Tracker:  tracker,
 		}
 	})
 }

@@ -75,10 +75,11 @@ func main() {
 	}
 
 	if err = (&controllers.DeployerReconciler{
-		Client:  mgr.GetClient(),
-		Log:     ctrl.Log.WithName("controllers").WithName("Deployer"),
-		Scheme:  mgr.GetScheme(),
-		Tracker: tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("Deployer").WithName("tracker")),
+		Client:   mgr.GetClient(),
+		Recorder: mgr.GetEventRecorderFor("Deployer"),
+		Log:      ctrl.Log.WithName("controllers").WithName("Deployer"),
+		Scheme:   mgr.GetScheme(),
+		Tracker:  tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("Deployer").WithName("tracker")),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Deployer")
 		os.Exit(1)

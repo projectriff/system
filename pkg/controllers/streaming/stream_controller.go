@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -41,6 +42,7 @@ const (
 // StreamReconciler reconciles a Stream object
 type StreamReconciler struct {
 	client.Client
+	Recorder                record.EventRecorder
 	Log                     logr.Logger
 	Scheme                  *runtime.Scheme
 	StreamProvisionerClient StreamProvisionerClient
@@ -52,6 +54,7 @@ type StreamReconciler struct {
 // Owns
 // +kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=core,resources=events,verbs=get;list;watch;create;update;patch;delete
 
 func (r *StreamReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
@@ -75,8 +78,12 @@ func (r *StreamReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		log.Info("updating stream status", "diff", cmp.Diff(original.Status, stream.Status))
 		if updateErr := r.Status().Update(ctx, stream); updateErr != nil {
 			log.Error(updateErr, "unable to update Stream status", "stream", stream)
+			r.Recorder.Eventf(stream, corev1.EventTypeWarning, "StatusUpdateFailed",
+				"Failed to update status: %v", updateErr)
 			return ctrl.Result{Requeue: true}, updateErr
 		}
+		r.Recorder.Eventf(stream, corev1.EventTypeNormal, "StatusUpdated",
+			"Updated status")
 	}
 	return result, err
 }
@@ -152,8 +159,12 @@ func (r *StreamReconciler) reconcileChildBindingMetadata(ctx context.Context, lo
 		for _, extraBindingMetadata := range childBindingMetadatas.Items {
 			log.Info("deleting extra binding metadata", "metadata", extraBindingMetadata)
 			if err := r.Delete(ctx, &extraBindingMetadata); err != nil {
+				r.Recorder.Eventf(stream, corev1.EventTypeWarning, "DeleteFailed",
+					"Failed to delete binding ConfigMap %q: %v", extraBindingMetadata.Name, err)
 				return nil, err
 			}
+			r.Recorder.Eventf(stream, corev1.EventTypeNormal, "Deleted",
+				"Deleted binding ConfigMap %q", extraBindingMetadata.Name)
 		}
 	}
 
@@ -167,8 +178,12 @@ func (r *StreamReconciler) reconcileChildBindingMetadata(ctx context.Context, lo
 		log.Info("deleting binding metadata", "metadata", actualBindingMetadata)
 		if err := r.Delete(ctx, &actualBindingMetadata); err != nil {
 			log.Error(err, "unable to delete binding metadata ConfigMap for Stream", "metadata", actualBindingMetadata)
+			r.Recorder.Eventf(stream, corev1.EventTypeWarning, "DeleteFailed",
+				"Failed to delete binding ConfigMap %q: %v", actualBindingMetadata.Name, err)
 			return nil, err
 		}
+		r.Recorder.Eventf(stream, corev1.EventTypeNormal, "Deleted",
+			"Deleted binding ConfigMap %q", actualBindingMetadata.Name)
 		return nil, nil
 	}
 
@@ -177,8 +192,12 @@ func (r *StreamReconciler) reconcileChildBindingMetadata(ctx context.Context, lo
 		log.Info("creating binding metadata", "data", desiredBindingMetadata.Data)
 		if err := r.Create(ctx, desiredBindingMetadata); err != nil {
 			log.Error(err, "unable to create binding metadata ConfigMap for Stream", "metadata", desiredBindingMetadata)
+			r.Recorder.Eventf(stream, corev1.EventTypeWarning, "CreationFailed",
+				"Failed to create ConfigMap %q: %v", desiredBindingMetadata.Name, err)
 			return nil, err
 		}
+		r.Recorder.Eventf(stream, corev1.EventTypeNormal, "Created",
+			"Created binding ConfigMap %q", desiredBindingMetadata.Name)
 		return desiredBindingMetadata, nil
 	}
 
@@ -194,8 +213,12 @@ func (r *StreamReconciler) reconcileChildBindingMetadata(ctx context.Context, lo
 	log.Info("reconciling binding metadata", "diff", cmp.Diff(actualBindingMetadata.Data, bindingMetadata.Data))
 	if err := r.Update(ctx, bindingMetadata); err != nil {
 		log.Error(err, "unable to update binding metadata ConfigMap for Stream", "metadata", bindingMetadata)
+		r.Recorder.Eventf(stream, corev1.EventTypeWarning, "UpdateFailed",
+			"Failed to update binding ConfigMap %q: %v", bindingMetadata.Name, err)
 		return nil, err
 	}
+	r.Recorder.Eventf(stream, corev1.EventTypeNormal, "Updated",
+		"Updated binding ConfigMap %q", bindingMetadata.Name)
 
 	return bindingMetadata, nil
 }
@@ -246,8 +269,12 @@ func (r *StreamReconciler) reconcileChildBindingSecret(ctx context.Context, log 
 		for _, extraBindingSecret := range childBindingSecrets.Items {
 			log.Info("deleting extra binding secret", "secret", extraBindingSecret.Name)
 			if err := r.Delete(ctx, &extraBindingSecret); err != nil {
+				r.Recorder.Eventf(stream, corev1.EventTypeWarning, "DeleteFailed",
+					"Failed to delete binding Secret %q: %v", extraBindingSecret.Name, err)
 				return nil, err
 			}
+			r.Recorder.Eventf(stream, corev1.EventTypeNormal, "Deleted",
+				"Deleted binding Secret %q", extraBindingSecret.Name)
 		}
 	}
 
@@ -261,8 +288,12 @@ func (r *StreamReconciler) reconcileChildBindingSecret(ctx context.Context, log 
 		log.Info("deleting binding secret", "secret", actualBindingSecret.Name)
 		if err := r.Delete(ctx, &actualBindingSecret); err != nil {
 			log.Error(err, "unable to delete binding secret Secret for Stream", "secret", actualBindingSecret.Name)
+			r.Recorder.Eventf(stream, corev1.EventTypeWarning, "DeleteFailed",
+				"Failed to delete binding Secret %q: %v", actualBindingSecret.Name, err)
 			return nil, err
 		}
+		r.Recorder.Eventf(stream, corev1.EventTypeNormal, "Deleted",
+			"Deleted binding Secret %q", actualBindingSecret.Name)
 		return nil, nil
 	}
 
@@ -271,8 +302,12 @@ func (r *StreamReconciler) reconcileChildBindingSecret(ctx context.Context, log 
 		log.Info("creating binding secret", "secret", desiredBindingSecret.Name)
 		if err := r.Create(ctx, desiredBindingSecret); err != nil {
 			log.Error(err, "unable to create binding secret Secret for Stream", "secret", desiredBindingSecret.Name)
+			r.Recorder.Eventf(stream, corev1.EventTypeWarning, "CreationFailed",
+				"Failed to create Secret %q: %v", desiredBindingSecret.Name, err)
 			return nil, err
 		}
+		r.Recorder.Eventf(stream, corev1.EventTypeNormal, "Created",
+			"Created binding Secret %q", desiredBindingSecret.Name)
 		return desiredBindingSecret, nil
 	}
 
@@ -288,8 +323,12 @@ func (r *StreamReconciler) reconcileChildBindingSecret(ctx context.Context, log 
 	log.Info("reconciling binding secret")
 	if err := r.Update(ctx, bindingSecret); err != nil {
 		log.Error(err, "unable to update binding secret Secret for Stream", "secret", bindingSecret.Name)
+		r.Recorder.Eventf(stream, corev1.EventTypeWarning, "UpdateFailed",
+			"Failed to update binding Secret %q: %v", bindingSecret.Name, err)
 		return nil, err
 	}
+	r.Recorder.Eventf(stream, corev1.EventTypeNormal, "Updated",
+		"Updated binding Secret %q", bindingSecret.Name)
 
 	return bindingSecret, nil
 }

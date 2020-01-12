@@ -30,6 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/source"
@@ -48,6 +49,7 @@ const (
 // InMemoryProviderReconciler reconciles a InMemoryProvider object
 type InMemoryProviderReconciler struct {
 	client.Client
+	Recorder  record.EventRecorder
 	Log       logr.Logger
 	Scheme    *runtime.Scheme
 	Tracker   tracker.Tracker
@@ -59,6 +61,7 @@ type InMemoryProviderReconciler struct {
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=services,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch
+// +kubebuilder:rbac:groups=core,resources=events,verbs=get;list;watch;create;update;patch;delete
 
 func (r *InMemoryProviderReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
@@ -86,8 +89,12 @@ func (r *InMemoryProviderReconciler) Reconcile(req ctrl.Request) (ctrl.Result, e
 		log.Info("updating inmemory provider status", "diff", cmp.Diff(originalInMemoryProvider.Status, inMemoryProvider.Status))
 		if updateErr := r.Status().Update(ctx, &inMemoryProvider); updateErr != nil {
 			log.Error(updateErr, "unable to update InMemoryProvider status", "inmemoryprovider", inMemoryProvider)
+			r.Recorder.Eventf(&inMemoryProvider, corev1.EventTypeWarning, "StatusUpdateFailed",
+				"Failed to update status: %v", updateErr)
 			return ctrl.Result{Requeue: true}, updateErr
 		}
+		r.Recorder.Eventf(&inMemoryProvider, corev1.EventTypeNormal, "StatusUpdated",
+			"Updated status")
 	}
 
 	return result, err
@@ -165,8 +172,12 @@ func (r *InMemoryProviderReconciler) reconcileGatewayDeployment(ctx context.Cont
 		for _, extraDeployment := range childDeployments.Items {
 			log.Info("deleting extra gateway deployment", "deployment", extraDeployment)
 			if err := r.Delete(ctx, &extraDeployment); err != nil {
+				r.Recorder.Eventf(inMemoryProvider, corev1.EventTypeWarning, "DeleteFailed",
+					"Failed to delete gateway Deployment %q: %v", extraDeployment.Name, err)
 				return nil, err
 			}
+			r.Recorder.Eventf(inMemoryProvider, corev1.EventTypeNormal, "Deleted",
+				"Deleted gateway Deployment %q", extraDeployment.Name)
 		}
 	}
 
@@ -184,8 +195,12 @@ func (r *InMemoryProviderReconciler) reconcileGatewayDeployment(ctx context.Cont
 	if desiredDeployment == nil {
 		if err := r.Delete(ctx, &actualDeployment); err != nil {
 			log.Error(err, "unable to delete Deployment for InMemoryProvider", "deployment", actualDeployment)
+			r.Recorder.Eventf(inMemoryProvider, corev1.EventTypeWarning, "DeleteFailed",
+				"Failed to delete gateway Deployment %q: %v", actualDeployment.Name, err)
 			return nil, err
 		}
+		r.Recorder.Eventf(inMemoryProvider, corev1.EventTypeNormal, "Deleted",
+			"Deleted gateway Deployment %q", actualDeployment.Name)
 		return nil, nil
 	}
 
@@ -194,8 +209,12 @@ func (r *InMemoryProviderReconciler) reconcileGatewayDeployment(ctx context.Cont
 		log.Info("creating gateway deployment", "spec", desiredDeployment.Spec)
 		if err := r.Create(ctx, desiredDeployment); err != nil {
 			log.Error(err, "unable to create Deployment for InMemoryProvider", "deployment", desiredDeployment)
+			r.Recorder.Eventf(inMemoryProvider, corev1.EventTypeWarning, "CreationFailed",
+				"Failed to create gateway Deployment %q: %v", desiredDeployment.Name, err)
 			return nil, err
 		}
+		r.Recorder.Eventf(inMemoryProvider, corev1.EventTypeNormal, "Created",
+			"Created gateway Deployment %q", desiredDeployment.Name)
 		return desiredDeployment, nil
 	}
 
@@ -215,8 +234,12 @@ func (r *InMemoryProviderReconciler) reconcileGatewayDeployment(ctx context.Cont
 	log.Info("reconciling gateway deployment", "diff", cmp.Diff(actualDeployment.Spec, deployment.Spec))
 	if err := r.Update(ctx, deployment); err != nil {
 		log.Error(err, "unable to update Deployment for InMemoryProvider", "deployment", deployment)
+		r.Recorder.Eventf(inMemoryProvider, corev1.EventTypeWarning, "UpdateFailed",
+			"Failed to update gateway Deployment %q: %v", deployment.Name, err)
 		return nil, err
 	}
+	r.Recorder.Eventf(inMemoryProvider, corev1.EventTypeNormal, "Updated",
+		"Updated gateway Deployment %q", deployment.Name)
 
 	return deployment, nil
 }
@@ -308,8 +331,12 @@ func (r *InMemoryProviderReconciler) reconcileGatewayService(ctx context.Context
 		for _, extraService := range childServices.Items {
 			log.Info("deleting extra gateway service", "service", extraService)
 			if err := r.Delete(ctx, &extraService); err != nil {
+				r.Recorder.Eventf(inMemoryProvider, corev1.EventTypeWarning, "DeleteFailed",
+					"Failed to delete gateway Service %q: %v", extraService.Name, err)
 				return nil, err
 			}
+			r.Recorder.Eventf(inMemoryProvider, corev1.EventTypeNormal, "Deleted",
+				"Deleted gateway Service %q", extraService.Name)
 		}
 	}
 
@@ -322,8 +349,12 @@ func (r *InMemoryProviderReconciler) reconcileGatewayService(ctx context.Context
 	if desiredService == nil {
 		if err := r.Delete(ctx, &actualService); err != nil {
 			log.Error(err, "unable to delete gateway Service for InMemoryProvider", "service", actualService)
+			r.Recorder.Eventf(inMemoryProvider, corev1.EventTypeWarning, "DeleteFailed",
+				"Failed to delete gateway Service %q: %v", actualService.Name, err)
 			return nil, err
 		}
+		r.Recorder.Eventf(inMemoryProvider, corev1.EventTypeNormal, "Deleted",
+			"Deleted gateway Service %q", actualService.Name)
 		return nil, nil
 	}
 
@@ -332,8 +363,12 @@ func (r *InMemoryProviderReconciler) reconcileGatewayService(ctx context.Context
 		log.Info("creating gateway service", "spec", desiredService.Spec)
 		if err := r.Create(ctx, desiredService); err != nil {
 			log.Error(err, "unable to create gateway Service for InMemoryProvider", "service", desiredService)
+			r.Recorder.Eventf(inMemoryProvider, corev1.EventTypeWarning, "CreationFailed",
+				"Failed to create gateway Service %q: %v", desiredService.Name, err)
 			return nil, err
 		}
+		r.Recorder.Eventf(inMemoryProvider, corev1.EventTypeNormal, "Created",
+			"Created gateway Service %q", desiredService.Name)
 		return desiredService, nil
 	}
 
@@ -352,8 +387,12 @@ func (r *InMemoryProviderReconciler) reconcileGatewayService(ctx context.Context
 	log.Info("reconciling gateway service", "diff", cmp.Diff(actualService.Spec, service.Spec))
 	if err := r.Update(ctx, service); err != nil {
 		log.Error(err, "unable to update gateway Service for InMemoryProvider", "service", service)
+		r.Recorder.Eventf(inMemoryProvider, corev1.EventTypeWarning, "UpdateFailed",
+			"Failed to update gateway Service %q: %v", service.Name, err)
 		return nil, err
 	}
+	r.Recorder.Eventf(inMemoryProvider, corev1.EventTypeNormal, "Updated",
+		"Updated gateway Service %q", service.Name)
 
 	return service, nil
 }
@@ -406,8 +445,12 @@ func (r *InMemoryProviderReconciler) reconcileProvisionerDeployment(ctx context.
 		for _, extraDeployment := range childDeployments.Items {
 			log.Info("deleting extra provisioner deployment", "deployment", extraDeployment)
 			if err := r.Delete(ctx, &extraDeployment); err != nil {
+				r.Recorder.Eventf(inMemoryProvider, corev1.EventTypeWarning, "DeleteFailed",
+					"Failed to delete provisioner Deployment %q: %v", extraDeployment.Name, err)
 				return nil, err
 			}
+			r.Recorder.Eventf(inMemoryProvider, corev1.EventTypeNormal, "Deleted",
+				"Deleted provisioner Deployment %q", extraDeployment.Name)
 		}
 	}
 
@@ -425,8 +468,12 @@ func (r *InMemoryProviderReconciler) reconcileProvisionerDeployment(ctx context.
 	if desiredDeployment == nil {
 		if err := r.Delete(ctx, &actualDeployment); err != nil {
 			log.Error(err, "unable to delete Deployment for InMemoryProvider", "deployment", actualDeployment)
+			r.Recorder.Eventf(inMemoryProvider, corev1.EventTypeWarning, "DeleteFailed",
+				"Failed to delete provisioner Deployment %q: %v", actualDeployment.Name, err)
 			return nil, err
 		}
+		r.Recorder.Eventf(inMemoryProvider, corev1.EventTypeNormal, "Deleted",
+			"Deleted provisioner Deployment %q", actualDeployment.Name)
 		return nil, nil
 	}
 
@@ -435,8 +482,12 @@ func (r *InMemoryProviderReconciler) reconcileProvisionerDeployment(ctx context.
 		log.Info("creating provisioner deployment", "spec", desiredDeployment.Spec)
 		if err := r.Create(ctx, desiredDeployment); err != nil {
 			log.Error(err, "unable to create Deployment for InMemoryProvider", "deployment", desiredDeployment)
+			r.Recorder.Eventf(inMemoryProvider, corev1.EventTypeWarning, "CreationFailed",
+				"Failed to create provisioner Deployment %q: %v", desiredDeployment.Name, err)
 			return nil, err
 		}
+		r.Recorder.Eventf(inMemoryProvider, corev1.EventTypeNormal, "Created",
+			"Created provisioner Deployment %q", desiredDeployment.Name)
 		return desiredDeployment, nil
 	}
 
@@ -456,8 +507,12 @@ func (r *InMemoryProviderReconciler) reconcileProvisionerDeployment(ctx context.
 	log.Info("reconciling provisioner deployment", "diff", cmp.Diff(actualDeployment.Spec, deployment.Spec))
 	if err := r.Update(ctx, deployment); err != nil {
 		log.Error(err, "unable to update Deployment for InMemoryProvider", "deployment", deployment)
+		r.Recorder.Eventf(inMemoryProvider, corev1.EventTypeWarning, "UpdateFailed",
+			"Failed to update provisioner Deployment %q: %v", deployment.Name, err)
 		return nil, err
 	}
+	r.Recorder.Eventf(inMemoryProvider, corev1.EventTypeNormal, "Updated",
+		"Updated provisioner Deployment %q", deployment.Name)
 
 	return deployment, nil
 }
@@ -522,8 +577,12 @@ func (r *InMemoryProviderReconciler) reconcileProvisionerService(ctx context.Con
 		for _, extraService := range childServices.Items {
 			log.Info("deleting extra provisioner service", "service", extraService)
 			if err := r.Delete(ctx, &extraService); err != nil {
+				r.Recorder.Eventf(inMemoryProvider, corev1.EventTypeWarning, "DeleteFailed",
+					"Failed to delete provisioner Service %q: %v", extraService.Name, err)
 				return nil, err
 			}
+			r.Recorder.Eventf(inMemoryProvider, corev1.EventTypeNormal, "Deleted",
+				"Deleted provisioner Service %q", extraService.Name)
 		}
 	}
 
@@ -536,8 +595,12 @@ func (r *InMemoryProviderReconciler) reconcileProvisionerService(ctx context.Con
 	if desiredService == nil {
 		if err := r.Delete(ctx, &actualService); err != nil {
 			log.Error(err, "unable to delete provisioner Service for InMemoryProvider", "service", actualService)
+			r.Recorder.Eventf(inMemoryProvider, corev1.EventTypeWarning, "DeleteFailed",
+				"Failed to delete provisioner Serice %q: %v", actualService.Name, err)
 			return nil, err
 		}
+		r.Recorder.Eventf(inMemoryProvider, corev1.EventTypeNormal, "Deleted",
+			"Deleted provisioner Service %q", actualService.Name)
 		return nil, nil
 	}
 
@@ -546,8 +609,12 @@ func (r *InMemoryProviderReconciler) reconcileProvisionerService(ctx context.Con
 		log.Info("creating provisioner service", "spec", desiredService.Spec)
 		if err := r.Create(ctx, desiredService); err != nil {
 			log.Error(err, "unable to create provisioner Service for InMemoryProvider", "service", desiredService)
+			r.Recorder.Eventf(inMemoryProvider, corev1.EventTypeWarning, "CreationFailed",
+				"Failed to create provisioner Service %q: %v", desiredService.Name, err)
 			return nil, err
 		}
+		r.Recorder.Eventf(inMemoryProvider, corev1.EventTypeNormal, "Created",
+			"Created provisioner Service %q", desiredService.Name)
 		return desiredService, nil
 	}
 
@@ -566,8 +633,12 @@ func (r *InMemoryProviderReconciler) reconcileProvisionerService(ctx context.Con
 	log.Info("reconciling provisioner service", "diff", cmp.Diff(actualService.Spec, service.Spec))
 	if err := r.Update(ctx, service); err != nil {
 		log.Error(err, "unable to update provisioner Service for InMemoryProvider", "service", service)
+		r.Recorder.Eventf(inMemoryProvider, corev1.EventTypeWarning, "UpdateFailed",
+			"Failed to update provisioner Service %q: %v", service.Name, err)
 		return nil, err
 	}
+	r.Recorder.Eventf(inMemoryProvider, corev1.EventTypeNormal, "Updated",
+		"Updated provisioner Service %q", service.Name)
 
 	return service, nil
 }

@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/record"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -54,6 +55,8 @@ type Testcase struct {
 
 	// ExpectTracks holds the ordered list of Track calls expected during reconciliation
 	ExpectTracks []TrackRequest
+	// ExpectEvents holds the ordered list of events recorded during the reconciliation
+	ExpectEvents []Event
 	// ExpectCreates builds the ordered list of objects expected to be created during reconciliation
 	ExpectCreates []Factory
 	// ExpectUpdates builds the ordered list of objects expected to be updated during reconciliation
@@ -100,8 +103,12 @@ func (tc *Testcase) Test(t *testing.T, scheme *runtime.Scheme, factory Reconcile
 		clientWrapper.PrependReactor("*", "*", reactor)
 	}
 	tracker := createTracker()
+	recorder := &eventRecorder{
+		events: []Event{},
+		scheme: scheme,
+	}
 	log := TestLogger(t)
-	c := factory(t, tc, clientWrapper, tracker, log)
+	c := factory(t, tc, clientWrapper, tracker, recorder, log)
 
 	// Run the Reconcile we're testing.
 	result, err := c.Reconcile(reconcile.Request{
@@ -122,20 +129,37 @@ func (tc *Testcase) Test(t *testing.T, scheme *runtime.Scheme, factory Reconcile
 		tc.Verify(t, result, err)
 	}
 
-	actualTrack := tracker.getTrackRequests()
+	actualTracks := tracker.getTrackRequests()
 	for i, exp := range tc.ExpectTracks {
-		if i >= len(actualTrack) {
+		if i >= len(actualTracks) {
 			t.Errorf("Missing tracking request: %s", exp)
 			continue
 		}
 
-		if diff := cmp.Diff(exp, actualTrack[i]); diff != "" {
+		if diff := cmp.Diff(exp, actualTracks[i]); diff != "" {
 			t.Errorf("Unexpected tracking request(-expected, +actual): %s", diff)
 		}
 	}
-	if actual, exp := len(actualTrack), len(tc.ExpectTracks); actual > exp {
-		for _, extra := range actualTrack[exp:] {
+	if actual, exp := len(actualTracks), len(tc.ExpectTracks); actual > exp {
+		for _, extra := range actualTracks[exp:] {
 			t.Errorf("Extra tracking request: %s", extra)
+		}
+	}
+
+	actualEvents := recorder.events
+	for i, exp := range tc.ExpectEvents {
+		if i >= len(actualEvents) {
+			t.Errorf("Missing recorded event: %s", exp)
+			continue
+		}
+
+		if diff := cmp.Diff(exp, actualEvents[i]); diff != "" {
+			t.Errorf("Unexpected recorded event(-expected, +actual): %s", diff)
+		}
+	}
+	if actual, exp := len(actualEvents), len(tc.ExpectEvents); actual > exp {
+		for _, extra := range actualEvents[exp:] {
+			t.Errorf("Extra recorded event: %s", extra)
 		}
 	}
 
@@ -257,7 +281,7 @@ func (tb Table) Test(t *testing.T, scheme *runtime.Scheme, factory ReconcilerFac
 // ReconcilerFactory returns a Reconciler.Interface to perform reconciliation in table test,
 // ActionRecorderList/EventList to capture k8s actions/events produced during reconciliation
 // and FakeStatsReporter to capture stats.
-type ReconcilerFactory func(t *testing.T, row *Testcase, client client.Client, tracker tracker.Tracker, log logr.Logger) reconcile.Reconciler
+type ReconcilerFactory func(t *testing.T, row *Testcase, client client.Client, tracker tracker.Tracker, recorder record.EventRecorder, log logr.Logger) reconcile.Reconciler
 
 type DeleteRef struct {
 	Group     string

@@ -33,6 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/source"
@@ -59,6 +60,7 @@ const (
 // ProcessorReconciler reconciles a Processor object
 type ProcessorReconciler struct {
 	client.Client
+	Recorder  record.EventRecorder
 	Log       logr.Logger
 	Scheme    *runtime.Scheme
 	Tracker   tracker.Tracker
@@ -76,6 +78,7 @@ type ProcessorReconciler struct {
 // +kubebuilder:rbac:groups=build.projectriff.io,resources=containers,verbs=get;watch
 // +kubebuilder:rbac:groups=build.projectriff.io,resources=functions,verbs=get;watch
 // +kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch
+// +kubebuilder:rbac:groups=core,resources=events,verbs=get;list;watch;create;update;patch;delete
 
 func (r *ProcessorReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
@@ -98,8 +101,12 @@ func (r *ProcessorReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		log.Info("updating processor status", "diff", cmp.Diff(original.Status, processor.Status))
 		if updateErr := r.Status().Update(ctx, processor); updateErr != nil {
 			log.Error(updateErr, "unable to update Processor status")
+			r.Recorder.Eventf(processor, corev1.EventTypeWarning, "StatusUpdateFailed",
+				"Failed to update status: %v", updateErr)
 			return ctrl.Result{Requeue: true}, updateErr
 		}
+		r.Recorder.Eventf(processor, corev1.EventTypeNormal, "StatusUpdated",
+			"Updated status")
 	}
 	return result, err
 }
@@ -240,8 +247,12 @@ func (r *ProcessorReconciler) reconcileProcessorScaledObject(ctx context.Context
 		for _, extraScaledObject := range childScaledObjects.Items {
 			log.Info("deleting extra scaled object", "scaledObject", extraScaledObject)
 			if err := r.Delete(ctx, &extraScaledObject); err != nil {
+				r.Recorder.Eventf(processor, corev1.EventTypeWarning, "DeleteFailed",
+					"Failed to delete ScaledObject %q: %v", extraScaledObject.Name, err)
 				return nil, err
 			}
+			r.Recorder.Eventf(processor, corev1.EventTypeNormal, "Deleted",
+				"Deleted ScaledObject %q", extraScaledObject.Name)
 		}
 	}
 
@@ -254,8 +265,12 @@ func (r *ProcessorReconciler) reconcileProcessorScaledObject(ctx context.Context
 	if desiredScaledObject == nil {
 		if err := r.Delete(ctx, &actualScaledObject); err != nil {
 			log.Error(err, "unable to delete ScaledObject for Processor", "scaledObject", actualScaledObject)
+			r.Recorder.Eventf(processor, corev1.EventTypeWarning, "DeleteFailed",
+				"Failed to delete ScaledObject %q: %v", actualScaledObject.Name, err)
 			return nil, err
 		}
+		r.Recorder.Eventf(processor, corev1.EventTypeNormal, "Deleted",
+			"Deleted ScaledObject %q", actualScaledObject.Name)
 		return nil, nil
 	}
 
@@ -264,8 +279,12 @@ func (r *ProcessorReconciler) reconcileProcessorScaledObject(ctx context.Context
 		log.Info("creating scaled object", "spec", desiredScaledObject.Spec)
 		if err := r.Create(ctx, desiredScaledObject); err != nil {
 			log.Error(err, "unable to create ScaledObject for Processor", "scaledObject", desiredScaledObject)
+			r.Recorder.Eventf(processor, corev1.EventTypeWarning, "CreationFailed",
+				"Failed to create ScaledObject %q: %v", desiredScaledObject.Name, err)
 			return nil, err
 		}
+		r.Recorder.Eventf(processor, corev1.EventTypeNormal, "Created",
+			"Created ScaledObject %q", desiredScaledObject.Name)
 		return desiredScaledObject, nil
 	}
 
@@ -282,8 +301,12 @@ func (r *ProcessorReconciler) reconcileProcessorScaledObject(ctx context.Context
 	log.Info("reconciling scaled object", "diff", cmp.Diff(actualScaledObject.Spec, scaledObject.Spec))
 	if err := r.Update(ctx, scaledObject); err != nil {
 		log.Error(err, "unable to update ScaledObject for Processor", "scaledObject", scaledObject)
+		r.Recorder.Eventf(processor, corev1.EventTypeWarning, "UpdateFailed",
+			"Failed to update ScaledObject %q: %v", scaledObject.Name, err)
 		return nil, err
 	}
+	r.Recorder.Eventf(processor, corev1.EventTypeNormal, "Updated",
+		"Updated ScaledObject %q", scaledObject.Name)
 
 	return scaledObject, nil
 }
@@ -368,8 +391,12 @@ func (r *ProcessorReconciler) reconcileProcessorDeployment(ctx context.Context, 
 		for _, extraDeployment := range childDeployments.Items {
 			log.Info("deleting extra deployment", "deployment", extraDeployment)
 			if err := r.Delete(ctx, &extraDeployment); err != nil {
+				r.Recorder.Eventf(processor, corev1.EventTypeWarning, "DeleteFailed",
+					"Failed to delete Deployment %q: %v", extraDeployment.Name, err)
 				return nil, err
 			}
+			r.Recorder.Eventf(processor, corev1.EventTypeNormal, "Deleted",
+				"Deleted Deployment %q", extraDeployment.Name)
 		}
 	}
 
@@ -387,8 +414,12 @@ func (r *ProcessorReconciler) reconcileProcessorDeployment(ctx context.Context, 
 	if desiredDeployment == nil {
 		if err := r.Delete(ctx, &actualDeployment); err != nil {
 			log.Error(err, "unable to delete Deployment for Processor", "deployment", actualDeployment)
+			r.Recorder.Eventf(processor, corev1.EventTypeWarning, "DeleteFailed",
+				"Failed to delete Deployment %q: %v", actualDeployment.Name, err)
 			return nil, err
 		}
+		r.Recorder.Eventf(processor, corev1.EventTypeNormal, "Deleted",
+			"Deleted Deployment %q", actualDeployment.Name)
 		return nil, nil
 	}
 
@@ -397,8 +428,12 @@ func (r *ProcessorReconciler) reconcileProcessorDeployment(ctx context.Context, 
 		log.Info("creating processor deployment", "spec", desiredDeployment.Spec)
 		if err := r.Create(ctx, desiredDeployment); err != nil {
 			log.Error(err, "unable to create Deployment for Processor", "deployment", desiredDeployment)
+			r.Recorder.Eventf(processor, corev1.EventTypeWarning, "CreationFailed",
+				"Failed to create Deployment %q: %v", desiredDeployment.Name, err)
 			return nil, err
 		}
+		r.Recorder.Eventf(processor, corev1.EventTypeNormal, "Created",
+			"Created Deployment %q", desiredDeployment.Name)
 		return desiredDeployment, nil
 	}
 
@@ -418,8 +453,12 @@ func (r *ProcessorReconciler) reconcileProcessorDeployment(ctx context.Context, 
 	log.Info("reconciling processor deployment", "diff", cmp.Diff(actualDeployment.Spec, deployment.Spec))
 	if err := r.Update(ctx, deployment); err != nil {
 		log.Error(err, "unable to update Deployment for Processor", "deployment", deployment)
+		r.Recorder.Eventf(processor, corev1.EventTypeWarning, "UpdateFailed",
+			"Failed to update Deployment %q: %v", deployment.Name, err)
 		return nil, err
 	}
+	r.Recorder.Eventf(processor, corev1.EventTypeNormal, "Updated",
+		"Updated Deployment %q", deployment.Name)
 
 	return deployment, nil
 }

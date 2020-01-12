@@ -20,9 +20,11 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -114,6 +116,12 @@ func TestFunctionReconciler(t *testing.T) {
 		GivenObjects: []rtesting.Factory{
 			funcValid,
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(funcValid, scheme, corev1.EventTypeNormal, "Created",
+				`Created kpack Image "%s-function-001"`, testName),
+			rtesting.NewEvent(funcValid, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectCreates: []rtesting.Factory{
 			kpackImageCreate,
 		},
@@ -136,6 +144,12 @@ func TestFunctionReconciler(t *testing.T) {
 				Handler(testHandler).
 				Invoker(testInvoker),
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(funcValid, scheme, corev1.EventTypeNormal, "Created",
+				`Created kpack Image "%s-function-001"`, testName),
+			rtesting.NewEvent(funcValid, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectCreates: []rtesting.Factory{
 			kpackImageCreate.
 				FunctionBuilder(testArtifact, testHandler, testInvoker),
@@ -156,6 +170,12 @@ func TestFunctionReconciler(t *testing.T) {
 		GivenObjects: []rtesting.Factory{
 			funcValid.
 				BuildCache("1Gi"),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(funcValid, scheme, corev1.EventTypeNormal, "Created",
+				`Created kpack Image "%s-function-001"`, testName),
+			rtesting.NewEvent(funcValid, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
 		},
 		ExpectCreates: []rtesting.Factory{
 			kpackImageCreate.
@@ -179,6 +199,12 @@ func TestFunctionReconciler(t *testing.T) {
 				ObjectMeta(func(om factories.ObjectMeta) {
 					om.AddLabel(testLabelKey, testLabelValue)
 				}),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(funcValid, scheme, corev1.EventTypeNormal, "Created",
+				`Created kpack Image "%s-function-001"`, testName),
+			rtesting.NewEvent(funcValid, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
 		},
 		ExpectCreates: []rtesting.Factory{
 			kpackImageCreate.
@@ -205,6 +231,12 @@ func TestFunctionReconciler(t *testing.T) {
 			funcMinimal.
 				SourceGit(testGitUrl, testGitRevision),
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(funcValid, scheme, corev1.EventTypeNormal, "Created",
+				`Created kpack Image "%s-function-001"`, testName),
+			rtesting.NewEvent(funcValid, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectCreates: []rtesting.Factory{
 			kpackImageCreate,
 		},
@@ -225,6 +257,11 @@ func TestFunctionReconciler(t *testing.T) {
 			funcMinimal.
 				SourceGit(testGitUrl, testGitRevision),
 		},
+		ShouldErr: true,
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(funcValid, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			funcMinimal.
 				StatusConditions(
@@ -233,7 +270,6 @@ func TestFunctionReconciler(t *testing.T) {
 					functionConditionReady.False().Reason("DefaultImagePrefixMissing", "missing default image prefix"),
 				),
 		},
-		ShouldErr: true,
 	}, {
 		Name: "default image, undefined",
 		Key:  testKey,
@@ -242,6 +278,11 @@ func TestFunctionReconciler(t *testing.T) {
 			funcMinimal.
 				SourceGit(testGitUrl, testGitRevision),
 		},
+		ShouldErr: true,
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(funcValid, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			funcMinimal.
 				StatusConditions(
@@ -250,7 +291,6 @@ func TestFunctionReconciler(t *testing.T) {
 					functionConditionReady.False().Reason("DefaultImagePrefixMissing", "missing default image prefix"),
 				),
 		},
-		ShouldErr: true,
 	}, {
 		Name: "default image, error",
 		Key:  testKey,
@@ -262,6 +302,11 @@ func TestFunctionReconciler(t *testing.T) {
 			funcMinimal.
 				SourceGit(testGitUrl, testGitRevision),
 		},
+		ShouldErr: true,
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(funcValid, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			funcMinimal.
 				StatusConditions(
@@ -270,7 +315,6 @@ func TestFunctionReconciler(t *testing.T) {
 					functionConditionReady.False().Reason("ImageInvalid", "inducing failure for get ConfigMap"),
 				),
 		},
-		ShouldErr: true,
 	}, {
 		Name: "kpack image ready",
 		Key:  testKey,
@@ -279,6 +323,10 @@ func TestFunctionReconciler(t *testing.T) {
 			kpackImageGiven.
 				StatusReady().
 				StatusLatestImage("%s/%s@sha256:%s", testImagePrefix, testName, testSha256),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(funcValid, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
 		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			funcMinimal.
@@ -300,6 +348,10 @@ func TestFunctionReconciler(t *testing.T) {
 				StatusReady().
 				StatusBuildCacheName(testBuildCacheName).
 				StatusLatestImage("%s/%s@sha256:%s", testImagePrefix, testName, testSha256),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(funcValid, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
 		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			funcMinimal.
@@ -324,6 +376,10 @@ func TestFunctionReconciler(t *testing.T) {
 				).
 				StatusLatestImage("%s/%s@sha256:%s", testImagePrefix, testName, testSha256),
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(funcValid, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			funcMinimal.
 				StatusConditions(
@@ -345,6 +401,12 @@ func TestFunctionReconciler(t *testing.T) {
 			funcValid,
 		},
 		ShouldErr: true,
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(funcValid, scheme, corev1.EventTypeWarning, "CreationFailed",
+				`Failed to create kpack Image "": inducing failure for create Image`),
+			rtesting.NewEvent(funcValid, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectCreates: []rtesting.Factory{
 			kpackImageCreate,
 		},
@@ -364,6 +426,12 @@ func TestFunctionReconciler(t *testing.T) {
 			funcValid,
 			kpackImageGiven.
 				SourceGit(testGitUrl, "bogus"),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(funcValid, scheme, corev1.EventTypeNormal, "Updated",
+				`Updated kpack Image "%s"`, kpackImageGiven.Get().GetName()),
+			rtesting.NewEvent(funcValid, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
 		},
 		ExpectUpdates: []rtesting.Factory{
 			kpackImageGiven,
@@ -387,6 +455,12 @@ func TestFunctionReconciler(t *testing.T) {
 					om.AddLabel(testLabelKey, testLabelValue)
 				}),
 			kpackImageGiven,
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(funcValid, scheme, corev1.EventTypeNormal, "Updated",
+				`Updated kpack Image "%s"`, kpackImageGiven.Get().GetName()),
+			rtesting.NewEvent(funcValid, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
 		},
 		ExpectUpdates: []rtesting.Factory{
 			kpackImageGiven.
@@ -416,6 +490,12 @@ func TestFunctionReconciler(t *testing.T) {
 				SourceGit(testGitUrl, "bogus"),
 		},
 		ShouldErr: true,
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(funcValid, scheme, corev1.EventTypeWarning, "UpdateFailed",
+				`Failed to update kpack Image "%s": inducing failure for update Image`, kpackImageGiven.Get().GetName()),
+			rtesting.NewEvent(funcValid, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectUpdates: []rtesting.Factory{
 			kpackImageGiven,
 		},
@@ -438,6 +518,10 @@ func TestFunctionReconciler(t *testing.T) {
 			funcValid,
 		},
 		ShouldErr: true,
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(funcValid, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			funcValid.
 				StatusConditions(
@@ -455,6 +539,12 @@ func TestFunctionReconciler(t *testing.T) {
 		},
 		GivenObjects: []rtesting.Factory{
 			funcValid,
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(funcValid, scheme, corev1.EventTypeNormal, "Created",
+				`Created kpack Image "%s-function-001"`, testName),
+			rtesting.NewEvent(funcValid, scheme, corev1.EventTypeWarning, "StatusUpdateFailed",
+				`Failed to update status: inducing failure for update Function`),
 		},
 		ExpectCreates: []rtesting.Factory{
 			kpackImageCreate,
@@ -479,6 +569,16 @@ func TestFunctionReconciler(t *testing.T) {
 				NamespaceName(testNamespace, "extra1"),
 			kpackImageGiven.
 				NamespaceName(testNamespace, "extra2"),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(funcValid, scheme, corev1.EventTypeNormal, "Deleted",
+				`Deleted kpack Image "extra1"`),
+			rtesting.NewEvent(funcValid, scheme, corev1.EventTypeNormal, "Deleted",
+				`Deleted kpack Image "extra2"`),
+			rtesting.NewEvent(funcValid, scheme, corev1.EventTypeNormal, "Created",
+				`Created kpack Image "%s-function-001"`, testName),
+			rtesting.NewEvent(funcValid, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
 		},
 		ExpectDeletes: []rtesting.DeleteRef{
 			{Group: "build.pivotal.io", Kind: "Image", Namespace: testNamespace, Name: "extra1"},
@@ -511,6 +611,12 @@ func TestFunctionReconciler(t *testing.T) {
 				NamespaceName(testNamespace, "extra2"),
 		},
 		ShouldErr: true,
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(funcValid, scheme, corev1.EventTypeWarning, "DeleteFailed",
+				`Failed to delete kpack Image "extra1": inducing failure for delete Image`),
+			rtesting.NewEvent(funcValid, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectDeletes: []rtesting.DeleteRef{
 			{Group: "build.pivotal.io", Kind: "Image", Namespace: testNamespace, Name: "extra1"},
 		},
@@ -530,6 +636,10 @@ func TestFunctionReconciler(t *testing.T) {
 			funcMinimal.
 				Image("%s/%s", testImagePrefix, testName),
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(funcValid, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			funcMinimal.
 				StatusConditions(
@@ -548,6 +658,12 @@ func TestFunctionReconciler(t *testing.T) {
 			funcMinimal.
 				Image("%s/%s", testImagePrefix, testName),
 			kpackImageGiven,
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(funcValid, scheme, corev1.EventTypeNormal, "Deleted",
+				`Deleted kpack Image "%s"`, kpackImageGiven.Get().GetName()),
+			rtesting.NewEvent(funcValid, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
 		},
 		ExpectDeletes: []rtesting.DeleteRef{
 			{Group: "build.pivotal.io", Kind: "Image", Namespace: kpackImageGiven.Get().GetNamespace(), Name: kpackImageGiven.Get().GetName()},
@@ -575,6 +691,12 @@ func TestFunctionReconciler(t *testing.T) {
 			kpackImageGiven,
 		},
 		ShouldErr: true,
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(funcValid, scheme, corev1.EventTypeWarning, "DeleteFailed",
+				`Failed to delete kpack Image "%s": inducing failure for delete Image`, kpackImageGiven.Get().GetName()),
+			rtesting.NewEvent(funcValid, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectDeletes: []rtesting.DeleteRef{
 			{Group: "build.pivotal.io", Kind: "Image", Namespace: kpackImageGiven.Get().GetNamespace(), Name: kpackImageGiven.Get().GetName()},
 		},
@@ -589,11 +711,12 @@ func TestFunctionReconciler(t *testing.T) {
 		},
 	}}
 
-	table.Test(t, scheme, func(t *testing.T, row *rtesting.Testcase, client client.Client, tracker tracker.Tracker, log logr.Logger) reconcile.Reconciler {
+	table.Test(t, scheme, func(t *testing.T, row *rtesting.Testcase, client client.Client, tracker tracker.Tracker, recorder record.EventRecorder, log logr.Logger) reconcile.Reconciler {
 		return &build.FunctionReconciler{
-			Client: client,
-			Scheme: scheme,
-			Log:    log,
+			Client:   client,
+			Recorder: recorder,
+			Scheme:   scheme,
+			Log:      log,
 		}
 	})
 }

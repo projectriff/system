@@ -31,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -45,14 +46,16 @@ const functionIndexField = ".metadata.functionController"
 // FunctionReconciler reconciles a Function object
 type FunctionReconciler struct {
 	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
+	Recorder record.EventRecorder
+	Log      logr.Logger
+	Scheme   *runtime.Scheme
 }
 
 // +kubebuilder:rbac:groups=build.projectriff.io,resources=functions,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=build.projectriff.io,resources=functions/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=build.pivotal.io,resources=images,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch
+// +kubebuilder:rbac:groups=core,resources=events,verbs=get;list;watch;create;update;patch;delete
 
 func (r *FunctionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
@@ -82,8 +85,12 @@ func (r *FunctionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		log.Info("updating function status", "diff", cmp.Diff(originalFunction.Status, function.Status))
 		if updateErr := r.Status().Update(ctx, &function); updateErr != nil {
 			log.Error(updateErr, "unable to update Function status", "function", function)
+			r.Recorder.Eventf(&function, corev1.EventTypeWarning, "StatusUpdateFailed",
+				"Failed to update status: %v", updateErr)
 			return ctrl.Result{Requeue: true}, updateErr
 		}
+		r.Recorder.Eventf(&function, corev1.EventTypeNormal, "StatusUpdated",
+			"Updated status")
 	}
 
 	// return original reconcile result
@@ -167,8 +174,12 @@ func (r *FunctionReconciler) reconcileChildKpackImage(ctx context.Context, log l
 		for _, extraImage := range childImages.Items {
 			log.Info("deleting extra kpack image", "image", extraImage)
 			if err := r.Delete(ctx, &extraImage); err != nil {
+				r.Recorder.Eventf(function, corev1.EventTypeWarning, "DeleteFailed",
+					"Failed to delete kpack Image %q: %v", extraImage.Name, err)
 				return nil, err
 			}
+			r.Recorder.Eventf(function, corev1.EventTypeNormal, "Deleted",
+				"Deleted kpack Image %q", extraImage.Name)
 		}
 	}
 
@@ -183,8 +194,12 @@ func (r *FunctionReconciler) reconcileChildKpackImage(ctx context.Context, log l
 			log.Info("deleting kpack image", "image", actualImage)
 			if err := r.Delete(ctx, &actualImage); err != nil {
 				log.Error(err, "unable to delete kpack Image for Function", "image", actualImage)
+				r.Recorder.Eventf(function, corev1.EventTypeWarning, "DeleteFailed",
+					"Failed to delete kpack Image %q: %v", actualImage.Name, err)
 				return nil, err
 			}
+			r.Recorder.Eventf(function, corev1.EventTypeNormal, "Deleted",
+				"Deleted kpack Image %q", actualImage.Name)
 		}
 		return nil, nil
 	}
@@ -194,8 +209,12 @@ func (r *FunctionReconciler) reconcileChildKpackImage(ctx context.Context, log l
 		log.Info("creating kpack image", "spec", desiredImage.Spec)
 		if err := r.Create(ctx, desiredImage); err != nil {
 			log.Error(err, "unable to create kpack Image for Function", "image", desiredImage)
+			r.Recorder.Eventf(function, corev1.EventTypeWarning, "CreationFailed",
+				"Failed to create kpack Image %q: %v", desiredImage.Name, err)
 			return nil, err
 		}
+		r.Recorder.Eventf(function, corev1.EventTypeNormal, "Created",
+			"Created kpack Image %q", desiredImage.Name)
 		return desiredImage, nil
 	}
 
@@ -211,8 +230,12 @@ func (r *FunctionReconciler) reconcileChildKpackImage(ctx context.Context, log l
 	log.Info("reconciling kpack image", "diff", cmp.Diff(actualImage.Spec, image.Spec))
 	if err := r.Update(ctx, image); err != nil {
 		log.Error(err, "unable to update kpack Image for Function", "image", image)
+		r.Recorder.Eventf(function, corev1.EventTypeWarning, "UpdateFailed",
+			"Failed to update kpack Image %q: %v", image.Name, err)
 		return nil, err
 	}
+	r.Recorder.Eventf(function, corev1.EventTypeNormal, "Updated",
+		"Updated kpack Image %q", image.Name)
 
 	return image, nil
 }

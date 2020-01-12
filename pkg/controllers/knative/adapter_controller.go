@@ -22,11 +22,13 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/source"
@@ -41,15 +43,17 @@ import (
 // AdapterReconciler reconciles a Adapter object
 type AdapterReconciler struct {
 	client.Client
-	Log     logr.Logger
-	Scheme  *runtime.Scheme
-	Tracker tracker.Tracker
+	Recorder record.EventRecorder
+	Log      logr.Logger
+	Scheme   *runtime.Scheme
+	Tracker  tracker.Tracker
 }
 
 // +kubebuilder:rbac:groups=knative.projectriff.io,resources=adapters,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=knative.projectriff.io,resources=adapters/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=build.projectriff.io,resources=applications;containers;functions,verbs=get;list;watch
 // +kubebuilder:rbac:groups=serving.knative.dev,resources=configurations;services,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=core,resources=events,verbs=get;list;watch;create;update;patch;delete
 
 func (r *AdapterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
@@ -79,8 +83,12 @@ func (r *AdapterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		log.Info("updating adapter status", "diff", cmp.Diff(originalAdapter.Status, adapter.Status))
 		if updateErr := r.Status().Update(ctx, &adapter); updateErr != nil {
 			log.Error(updateErr, "unable to update Adapter status", "adapter", adapter)
+			r.Recorder.Eventf(&adapter, corev1.EventTypeWarning, "StatusUpdateFailed",
+				"Failed to update status: %v", updateErr)
 			return ctrl.Result{Requeue: true}, updateErr
 		}
+		r.Recorder.Eventf(&adapter, corev1.EventTypeNormal, "StatusUpdated",
+			"Updated status")
 	}
 
 	// return original reconcile result

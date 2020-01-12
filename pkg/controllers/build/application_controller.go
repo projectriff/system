@@ -23,6 +23,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -30,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -44,14 +46,16 @@ const applicationIndexField = ".metadata.applicationController"
 // ApplicationReconciler reconciles a Application object
 type ApplicationReconciler struct {
 	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
+	Recorder record.EventRecorder
+	Log      logr.Logger
+	Scheme   *runtime.Scheme
 }
 
 // +kubebuilder:rbac:groups=build.projectriff.io,resources=applications,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=build.projectriff.io,resources=applications/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=build.pivotal.io,resources=images,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch
+// +kubebuilder:rbac:groups=core,resources=events,verbs=get;list;watch;create;update;patch;delete
 
 func (r *ApplicationReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
@@ -81,8 +85,12 @@ func (r *ApplicationReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 		log.Info("updating application status", "diff", cmp.Diff(originalApplication.Status, application.Status))
 		if updateErr := r.Status().Update(ctx, &application); updateErr != nil {
 			log.Error(updateErr, "unable to update Application status", "application", application)
+			r.Recorder.Eventf(&application, corev1.EventTypeWarning, "StatusUpdateFailed",
+				"Failed to update status: %v", updateErr)
 			return ctrl.Result{Requeue: true}, updateErr
 		}
+		r.Recorder.Eventf(&application, corev1.EventTypeNormal, "StatusUpdated",
+			"Updated status")
 	}
 
 	// return original reconcile result
@@ -166,8 +174,12 @@ func (r *ApplicationReconciler) reconcileChildKpackImage(ctx context.Context, lo
 		for _, extraImage := range childImages.Items {
 			log.Info("deleting extra kpack image", "image", extraImage)
 			if err := r.Delete(ctx, &extraImage); err != nil {
+				r.Recorder.Eventf(application, corev1.EventTypeWarning, "DeleteFailed",
+					"Failed to delete kpack Image %q: %v", extraImage.Name, err)
 				return nil, err
 			}
+			r.Recorder.Eventf(application, corev1.EventTypeNormal, "Deleted",
+				"Deleted kpack Image %q", extraImage.Name)
 		}
 	}
 
@@ -182,8 +194,12 @@ func (r *ApplicationReconciler) reconcileChildKpackImage(ctx context.Context, lo
 			log.Info("deleting kpack image", "image", actualImage)
 			if err := r.Delete(ctx, &actualImage); err != nil {
 				log.Error(err, "unable to delete kpack Image for Application", "image", actualImage)
+				r.Recorder.Eventf(application, corev1.EventTypeWarning, "DeleteFailed",
+					"Failed to delete kpack Image %q: %v", actualImage.Name, err)
 				return nil, err
 			}
+			r.Recorder.Eventf(application, corev1.EventTypeNormal, "Deleted",
+				"Deleted kpack Image %q", actualImage.Name)
 		}
 		return nil, nil
 	}
@@ -193,8 +209,12 @@ func (r *ApplicationReconciler) reconcileChildKpackImage(ctx context.Context, lo
 		log.Info("creating kpack image", "spec", desiredImage.Spec)
 		if err := r.Create(ctx, desiredImage); err != nil {
 			log.Error(err, "unable to create kpack Image for Application", "image", desiredImage)
+			r.Recorder.Eventf(application, corev1.EventTypeWarning, "CreationFailed",
+				"Failed to create kpack Image %q: %v", desiredImage.Name, err)
 			return nil, err
 		}
+		r.Recorder.Eventf(application, corev1.EventTypeNormal, "Created",
+			"Created kpack Image %q", desiredImage.Name)
 		return desiredImage, nil
 	}
 
@@ -210,8 +230,12 @@ func (r *ApplicationReconciler) reconcileChildKpackImage(ctx context.Context, lo
 	log.Info("reconciling kpack image", "diff", cmp.Diff(actualImage.Spec, image.Spec))
 	if err := r.Update(ctx, image); err != nil {
 		log.Error(err, "unable to update kpack Image for Application", "image", image)
+		r.Recorder.Eventf(application, corev1.EventTypeWarning, "UpdateFailed",
+			"Failed to update kpack Image %q: %v", image.Name, err)
 		return nil, err
 	}
+	r.Recorder.Eventf(application, corev1.EventTypeNormal, "Updated",
+		"Updated kpack Image %q", image.Name)
 
 	return image, nil
 }

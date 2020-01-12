@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -151,6 +152,14 @@ func TestDeployerReconciler(t *testing.T) {
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testApplication, testDeployer, scheme),
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "Created",
+				`Created Configuration "%s-deployer-001"`, testName),
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "Created",
+				`Created Route "%s"`, testName),
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectCreates: []rtesting.Factory{
 			testConfigurationCreate,
 			testRouteCreate,
@@ -175,6 +184,10 @@ func TestDeployerReconciler(t *testing.T) {
 		},
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testApplication, testDeployer, scheme),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
 		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			testDeployer.
@@ -222,6 +235,14 @@ func TestDeployerReconciler(t *testing.T) {
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testFunction, testDeployer, scheme),
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "Created",
+				`Created Configuration "%s-deployer-001"`, testName),
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "Created",
+				`Created Route "%s"`, testName),
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectCreates: []rtesting.Factory{
 			testConfigurationCreate,
 			testRouteCreate,
@@ -246,6 +267,10 @@ func TestDeployerReconciler(t *testing.T) {
 		},
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testFunction, testDeployer, scheme),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
 		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			testDeployer.
@@ -293,6 +318,14 @@ func TestDeployerReconciler(t *testing.T) {
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testContainer, testDeployer, scheme),
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "Created",
+				`Created Configuration "%s-deployer-001"`, testName),
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "Created",
+				`Created Route "%s"`, testName),
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectCreates: []rtesting.Factory{
 			testConfigurationCreate,
 			testRouteCreate,
@@ -317,6 +350,10 @@ func TestDeployerReconciler(t *testing.T) {
 		},
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testContainer, testDeployer, scheme),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
 		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			testDeployer.
@@ -360,6 +397,14 @@ func TestDeployerReconciler(t *testing.T) {
 			testDeployer.
 				Image(testImage),
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "Created",
+				`Created Configuration "%s-deployer-001"`, testName),
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "Created",
+				`Created Route "%s"`, testName),
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectCreates: []rtesting.Factory{
 			testConfigurationCreate,
 			testRouteCreate,
@@ -386,6 +431,12 @@ func TestDeployerReconciler(t *testing.T) {
 				Image(testImage),
 		},
 		ShouldErr: true,
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeWarning, "CreationFailed",
+				`Failed to create Configuration "": inducing failure for create Configuration`),
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectCreates: []rtesting.Factory{
 			testConfigurationCreate,
 		},
@@ -409,6 +460,14 @@ func TestDeployerReconciler(t *testing.T) {
 				Image(testImage),
 		},
 		ShouldErr: true,
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "Created",
+				`Created Configuration "%s-deployer-001"`, testName),
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeWarning, "CreationFailed",
+				`Failed to create Route "%s": inducing failure for create Route`, testName),
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectCreates: []rtesting.Factory{
 			testConfigurationCreate,
 			testRouteCreate,
@@ -435,6 +494,14 @@ func TestDeployerReconciler(t *testing.T) {
 			testDeployer.
 				Image(testImage),
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "Created",
+				`Created Configuration "%s-deployer-001"`, testName),
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeWarning, "CreationFailed",
+				`Failed to create Route "%s":  "%s" already exists`, testName, testName),
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectCreates: []rtesting.Factory{
 			testConfigurationCreate,
 			testRouteCreate,
@@ -459,6 +526,18 @@ func TestDeployerReconciler(t *testing.T) {
 				NamespaceName(testNamespace, "extra-configuration-1"),
 			testConfigurationGiven.
 				NamespaceName(testNamespace, "extra-configuration-2"),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "Deleted",
+				`Deleted Configuration "%s"`, "extra-configuration-1"),
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "Deleted",
+				`Deleted Configuration "%s"`, "extra-configuration-2"),
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "Created",
+				`Created Configuration "%s-deployer-001"`, testName),
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "Created",
+				`Created Route "%s"`, testName),
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
 		},
 		ExpectCreates: []rtesting.Factory{
 			testConfigurationCreate,
@@ -494,6 +573,12 @@ func TestDeployerReconciler(t *testing.T) {
 				NamespaceName(testNamespace, "extra-configuration-2"),
 		},
 		ShouldErr: true,
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeWarning, "DeleteFailed",
+				`Failed to delete Configuration "%s": inducing failure for delete Configuration`, "extra-configuration-1"),
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectDeletes: []rtesting.DeleteRef{
 			{Group: "serving.knative.dev", Kind: "Configuration", Namespace: testNamespace, Name: "extra-configuration-1"},
 		},
@@ -516,6 +601,18 @@ func TestDeployerReconciler(t *testing.T) {
 				NamespaceName(testNamespace, "extra-route-1"),
 			testRouteGiven.
 				NamespaceName(testNamespace, "extra-route-2"),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "Created",
+				`Created Configuration "%s-deployer-001"`, testName),
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "Deleted",
+				`Deleted Route "%s"`, "extra-route-1"),
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "Deleted",
+				`Deleted Route "%s"`, "extra-route-2"),
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "Created",
+				`Created Route "%s"`, testName),
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
 		},
 		ExpectCreates: []rtesting.Factory{
 			testConfigurationCreate,
@@ -551,6 +648,14 @@ func TestDeployerReconciler(t *testing.T) {
 				NamespaceName(testNamespace, "extra-route-2"),
 		},
 		ShouldErr: true,
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "Created",
+				`Created Configuration "%s-deployer-001"`, testName),
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeWarning, "DeleteFailed",
+				`Failed to delete Route "%s": inducing failure for delete Route`, "extra-route-1"),
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectCreates: []rtesting.Factory{
 			testConfigurationCreate,
 		},
@@ -578,6 +683,12 @@ func TestDeployerReconciler(t *testing.T) {
 					container.Image = "bogus"
 				}),
 			testRouteGiven,
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "Updated",
+				`Updated Configuration "%s"`, testConfigurationGiven.Get().GetName()),
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
 		},
 		ExpectUpdates: []rtesting.Factory{
 			testConfigurationGiven,
@@ -609,6 +720,10 @@ func TestDeployerReconciler(t *testing.T) {
 			testRouteGiven,
 		},
 		ShouldErr: true,
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			testDeployer.
 				StatusConditions(
@@ -634,6 +749,12 @@ func TestDeployerReconciler(t *testing.T) {
 			testRouteGiven,
 		},
 		ShouldErr: true,
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeWarning, "UpdateFailed",
+				`Failed to update Configuration "%s": inducing failure for update Configuration`, testConfigurationGiven.Get().GetName()),
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectUpdates: []rtesting.Factory{
 			testConfigurationGiven,
 		},
@@ -655,6 +776,12 @@ func TestDeployerReconciler(t *testing.T) {
 			testConfigurationGiven,
 			testRouteGiven.
 				Traffic(),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "Updated",
+				`Updated Route "%s"`, testRouteGiven.Get().GetName()),
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
 		},
 		ExpectUpdates: []rtesting.Factory{
 			testRouteGiven,
@@ -684,6 +811,10 @@ func TestDeployerReconciler(t *testing.T) {
 				Traffic(),
 		},
 		ShouldErr: true,
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			testDeployer.
 				StatusConditions(
@@ -708,6 +839,12 @@ func TestDeployerReconciler(t *testing.T) {
 				Traffic(),
 		},
 		ShouldErr: true,
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeWarning, "UpdateFailed",
+				`Failed to update Route "%s": inducing failure for update Route`, testRouteGiven.Get().GetName()),
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectUpdates: []rtesting.Factory{
 			testRouteGiven,
 		},
@@ -734,6 +871,10 @@ func TestDeployerReconciler(t *testing.T) {
 			testRouteGiven,
 		},
 		ShouldErr: true,
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeWarning, "StatusUpdateFailed",
+				`Failed to update status: inducing failure for update Deployer`),
+		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			testDeployer.
 				StatusConditions(
@@ -761,6 +902,14 @@ func TestDeployerReconciler(t *testing.T) {
 				Image(testImage),
 			testConfigurationGiven,
 			testRouteGiven,
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "Updated",
+				`Updated Configuration "%s"`, testConfigurationGiven.Get().GetName()),
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "Updated",
+				`Updated Route "%s"`, testRouteGiven.Get().GetName()),
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
 		},
 		ExpectUpdates: []rtesting.Factory{
 			testConfigurationGiven.
@@ -798,6 +947,12 @@ func TestDeployerReconciler(t *testing.T) {
 				MaxScale(2),
 			testConfigurationGiven,
 			testRouteGiven,
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "Updated",
+				`Updated Configuration "%s"`, testConfigurationGiven.Get().GetName()),
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
 		},
 		ExpectUpdates: []rtesting.Factory{
 			testConfigurationGiven.
@@ -839,6 +994,10 @@ func TestDeployerReconciler(t *testing.T) {
 				StatusAddressURL(testAddressURL).
 				StatusURL(testURL),
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			testDeployer.
 				StatusConditions(
@@ -866,6 +1025,10 @@ func TestDeployerReconciler(t *testing.T) {
 				StatusReady().
 				StatusAddressURL(testAddressURL).
 				StatusURL(testURL),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
 		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			testDeployer.
@@ -895,6 +1058,10 @@ func TestDeployerReconciler(t *testing.T) {
 				StatusAddressURL(testAddressURL).
 				StatusURL(testURL),
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			testDeployer.
 				StatusConditions(
@@ -910,12 +1077,13 @@ func TestDeployerReconciler(t *testing.T) {
 		},
 	}}
 
-	table.Test(t, scheme, func(t *testing.T, row *rtesting.Testcase, client client.Client, tracker tracker.Tracker, log logr.Logger) reconcile.Reconciler {
+	table.Test(t, scheme, func(t *testing.T, row *rtesting.Testcase, client client.Client, tracker tracker.Tracker, recorder record.EventRecorder, log logr.Logger) reconcile.Reconciler {
 		return &knative.DeployerReconciler{
-			Client:  client,
-			Log:     log,
-			Scheme:  scheme,
-			Tracker: tracker,
+			Client:   client,
+			Recorder: recorder,
+			Log:      log,
+			Scheme:   scheme,
+			Tracker:  tracker,
 		}
 	})
 }

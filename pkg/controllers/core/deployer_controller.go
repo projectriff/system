@@ -32,6 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/source"
@@ -53,9 +54,10 @@ const (
 // DeployerReconciler reconciles a Deployer object
 type DeployerReconciler struct {
 	client.Client
-	Log     logr.Logger
-	Scheme  *runtime.Scheme
-	Tracker tracker.Tracker
+	Recorder record.EventRecorder
+	Log      logr.Logger
+	Scheme   *runtime.Scheme
+	Tracker  tracker.Tracker
 }
 
 // +kubebuilder:rbac:groups=core.projectriff.io,resources=deployers,verbs=get;list;watch;create;update;patch;delete
@@ -64,6 +66,7 @@ type DeployerReconciler struct {
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=services,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=core,resources=events,verbs=get;list;watch;create;update;patch;delete
 
 func (r *DeployerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
@@ -93,8 +96,12 @@ func (r *DeployerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		log.Info("updating deployer status", "diff", cmp.Diff(originalDeployer.Status, deployer.Status))
 		if updateErr := r.Status().Update(ctx, &deployer); updateErr != nil {
 			log.Error(updateErr, "unable to update Deployer status", "deployer", deployer)
+			r.Recorder.Eventf(&deployer, corev1.EventTypeWarning, "StatusUpdateFailed",
+				"Failed to update status: %v", updateErr)
 			return ctrl.Result{Requeue: true}, updateErr
 		}
+		r.Recorder.Eventf(&deployer, corev1.EventTypeNormal, "StatusUpdated",
+			"Updated status")
 	}
 
 	// return original reconcile result
@@ -262,8 +269,12 @@ func (r *DeployerReconciler) reconcileChildDeployment(ctx context.Context, log l
 		for _, extraDeployment := range childDeployments.Items {
 			log.Info("deleting extra deployment", "deployment", extraDeployment)
 			if err := r.Delete(ctx, &extraDeployment); err != nil {
+				r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "DeleteFailed",
+					"Failed to delete Deployment %q: %v", extraDeployment.Name, err)
 				return nil, err
 			}
+			r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Deleted",
+				"Deleted Deployment %q", extraDeployment.Name)
 		}
 	}
 
@@ -277,8 +288,12 @@ func (r *DeployerReconciler) reconcileChildDeployment(ctx context.Context, log l
 		log.Info("deleting deployment", "deployment", actualDeployment)
 		if err := r.Delete(ctx, &actualDeployment); err != nil {
 			log.Error(err, "unable to delete Deployment for Deployer", "deployment", actualDeployment)
+			r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "DeleteFailed",
+				"Failed to delete Deployment %q: %v", actualDeployment.Name, err)
 			return nil, err
 		}
+		r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Deleted",
+			"Deleted Deployment %q", actualDeployment.Name)
 		return nil, nil
 	}
 
@@ -287,8 +302,12 @@ func (r *DeployerReconciler) reconcileChildDeployment(ctx context.Context, log l
 		log.Info("creating deployment", "spec", desiredDeployment.Spec)
 		if err := r.Create(ctx, desiredDeployment); err != nil {
 			log.Error(err, "unable to create Deployment for Deployer", "deployment", desiredDeployment)
+			r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "CreationFailed",
+				"Failed to create Deployment %q: %v", desiredDeployment.Name, err)
 			return nil, err
 		}
+		r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Created",
+			"Created Deployment %q", desiredDeployment.Name)
 		return desiredDeployment, nil
 	}
 
@@ -307,8 +326,12 @@ func (r *DeployerReconciler) reconcileChildDeployment(ctx context.Context, log l
 	log.Info("reconciling deployment", "diff", cmp.Diff(actualDeployment.Spec, deployment.Spec))
 	if err := r.Update(ctx, deployment); err != nil {
 		log.Error(err, "unable to update Deployment for Deployer", "deployment", deployment)
+		r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "UpdateFailed",
+			"Failed to update Deployment %q: %v", deployment.Name, err)
 		return nil, err
 	}
+	r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Updated",
+		"Updated Deployment %q", deployment.Name)
 
 	return deployment, nil
 }
@@ -387,8 +410,12 @@ func (r *DeployerReconciler) reconcileIngress(ctx context.Context, log logr.Logg
 		for _, extraIngress := range childIngresses.Items {
 			log.Info("deleting extra ingress", "ingress", extraIngress)
 			if err := r.Delete(ctx, &extraIngress); err != nil {
+				r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "DeleteFailed",
+					"Failed to delete Ingress %q: %v", extraIngress.Name, err)
 				return nil, err
 			}
+			r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Deleted",
+				"Deleted Ingress %q", extraIngress.Name)
 		}
 	}
 
@@ -403,8 +430,12 @@ func (r *DeployerReconciler) reconcileIngress(ctx context.Context, log logr.Logg
 			log.Info("deleting ingress", "ingress", actualIngress)
 			if err := r.Delete(ctx, &actualIngress); err != nil {
 				log.Error(err, "unable to delete ingress for Deployer", "ingress", actualIngress)
+				r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "DeleteFailed",
+					"Failed to delete Ingress %q: %v", actualIngress.Name, err)
 				return nil, err
 			}
+			r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Deleted",
+				"Deleted Ingress %q", actualIngress.Name)
 		}
 		return nil, nil
 	}
@@ -414,8 +445,12 @@ func (r *DeployerReconciler) reconcileIngress(ctx context.Context, log logr.Logg
 		log.Info("creating service", "spec", desiredIngress.Spec)
 		if err := r.Create(ctx, desiredIngress); err != nil {
 			log.Error(err, "unable to create Ingress for Deployer", "ingress", desiredIngress)
+			r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "CreationFailed",
+				"Failed to create Ingress %q: %v", desiredIngress.Name, err)
 			return nil, err
 		}
+		r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Created",
+			"Created Ingress %q", desiredIngress.Name)
 		return desiredIngress, nil
 	}
 
@@ -431,8 +466,12 @@ func (r *DeployerReconciler) reconcileIngress(ctx context.Context, log logr.Logg
 	log.Info("reconciling ingress", "diff", cmp.Diff(actualIngress.Spec, ingress.Spec))
 	if err := r.Update(ctx, ingress); err != nil {
 		log.Error(err, "unable to update Ingress for Deployer", "deployment", ingress)
+		r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "UpdateFailed",
+			"Failed to update Ingress %q: %v", ingress.Name, err)
 		return nil, err
 	}
+	r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Updated",
+		"Updated Ingress %q", ingress.Name)
 
 	return ingress, nil
 }
@@ -496,8 +535,12 @@ func (r *DeployerReconciler) reconcileChildService(ctx context.Context, log logr
 		for _, extraService := range childServices.Items {
 			log.Info("deleting extra service", "service", extraService)
 			if err := r.Delete(ctx, &extraService); err != nil {
+				r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "DeleteFailed",
+					"Failed to delete Service %q: %v", extraService.Name, err)
 				return nil, err
 			}
+			r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Deleted",
+				"Deleted Service %q", extraService.Name)
 		}
 	}
 
@@ -511,8 +554,12 @@ func (r *DeployerReconciler) reconcileChildService(ctx context.Context, log logr
 		log.Info("deleting service", "service", actualService)
 		if err := r.Delete(ctx, &actualService); err != nil {
 			log.Error(err, "unable to delete Service for Deployer", "service", actualService)
+			r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "DeleteFailed",
+				"Failed to delete Service %q: %v", actualService.Name, err)
 			return nil, err
 		}
+		r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Deleted",
+			"Deleted Service %q", actualService.Name)
 		return nil, nil
 	}
 
@@ -521,8 +568,12 @@ func (r *DeployerReconciler) reconcileChildService(ctx context.Context, log logr
 		log.Info("creating service", "spec", desiredService.Spec)
 		if err := r.Create(ctx, desiredService); err != nil {
 			log.Error(err, "unable to create Service for Deployer", "service", desiredService)
+			r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "CreationFailed",
+				"Failed to create Service %q: %v", desiredService.Name, err)
 			return nil, err
 		}
+		r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Created",
+			"Created Service %q", desiredService.Name)
 		return desiredService, nil
 	}
 
@@ -541,8 +592,12 @@ func (r *DeployerReconciler) reconcileChildService(ctx context.Context, log logr
 	log.Info("reconciling service", "diff", cmp.Diff(actualService.Spec, service.Spec))
 	if err := r.Update(ctx, service); err != nil {
 		log.Error(err, "unable to update Service for Deployer", "deployment", service)
+		r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "UpdateFailed",
+			"Failed to update Service %q: %v", service.Name, err)
 		return nil, err
 	}
+	r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Updated",
+		"Updated Service %q", service.Name)
 
 	return service, nil
 }

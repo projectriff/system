@@ -71,9 +71,10 @@ func main() {
 	}
 
 	if err = (&controllers.ApplicationReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("Application"),
-		Scheme: mgr.GetScheme(),
+		Client:   mgr.GetClient(),
+		Recorder: mgr.GetEventRecorderFor("Application"),
+		Log:      ctrl.Log.WithName("controllers").WithName("Application"),
+		Scheme:   mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Application")
 		os.Exit(1)
@@ -83,9 +84,10 @@ func main() {
 		os.Exit(1)
 	}
 	if err = (&controllers.ContainerReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("Container"),
-		Scheme: mgr.GetScheme(),
+		Client:   mgr.GetClient(),
+		Recorder: mgr.GetEventRecorderFor("Container"),
+		Log:      ctrl.Log.WithName("controllers").WithName("Container"),
+		Scheme:   mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Container")
 		os.Exit(1)
@@ -95,9 +97,10 @@ func main() {
 		os.Exit(1)
 	}
 	if err = (&controllers.FunctionReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("Function"),
-		Scheme: mgr.GetScheme(),
+		Client:   mgr.GetClient(),
+		Recorder: mgr.GetEventRecorderFor("Function"),
+		Log:      ctrl.Log.WithName("controllers").WithName("Function"),
+		Scheme:   mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Function")
 		os.Exit(1)
@@ -107,14 +110,16 @@ func main() {
 		os.Exit(1)
 	}
 	if err = (&controllers.CredentialReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("Credentials"),
+		Client:   mgr.GetClient(),
+		Recorder: mgr.GetEventRecorderFor("Credential"),
+		Log:      ctrl.Log.WithName("controllers").WithName("Credentials"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Credential")
 		os.Exit(1)
 	}
 	if err = (&controllers.ClusterBuilderReconciler{
 		Client:    mgr.GetClient(),
+		Recorder:  mgr.GetEventRecorderFor("ClusterBuilder"),
 		Log:       ctrl.Log.WithName("controllers").WithName("ClusterBuilders"),
 		Namespace: namespace,
 	}).SetupWithManager(mgr); err != nil {
