@@ -55,7 +55,7 @@ func (f *kpackImage) deepCopy() *kpackImage {
 	return KpackImage(f.target.DeepCopy())
 }
 
-func (f *kpackImage) Get() apis.Object {
+func (f *kpackImage) Create() apis.Object {
 	return f.deepCopy().target
 }
 
@@ -76,7 +76,7 @@ func (f *kpackImage) ObjectMeta(nf func(ObjectMeta)) *kpackImage {
 	return f.mutation(func(image *kpackbuildv1alpha1.Image) {
 		omf := objectMeta(image.ObjectMeta)
 		nf(omf)
-		image.ObjectMeta = omf.Get()
+		image.ObjectMeta = omf.Create()
 	})
 }
 
@@ -168,7 +168,7 @@ func (f *kpackImage) StatusConditions(conditions ...*condition) *kpackImage {
 	return f.mutation(func(image *kpackbuildv1alpha1.Image) {
 		c := make([]apis.Condition, len(conditions))
 		for i, cg := range conditions {
-			c[i] = cg.Get()
+			c[i] = cg.Create()
 		}
 		image.Status.Conditions = c
 	})

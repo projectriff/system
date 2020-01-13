@@ -54,7 +54,7 @@ func (f *deployment) deepCopy() *deployment {
 	return Deployment(f.target.DeepCopy())
 }
 
-func (f *deployment) Get() apis.Object {
+func (f *deployment) Create() apis.Object {
 	return f.deepCopy().target
 }
 
@@ -75,7 +75,7 @@ func (f *deployment) ObjectMeta(nf func(ObjectMeta)) *deployment {
 	return f.mutation(func(sa *appsv1.Deployment) {
 		omf := objectMeta(sa.ObjectMeta)
 		nf(omf)
-		sa.ObjectMeta = omf.Get()
+		sa.ObjectMeta = omf.Create()
 	})
 }
 
@@ -83,7 +83,7 @@ func (f *deployment) PodTemplateSpec(nf func(PodTemplateSpec)) *deployment {
 	return f.mutation(func(deployment *appsv1.Deployment) {
 		ptsf := podTemplateSpec(deployment.Spec.Template)
 		nf(ptsf)
-		deployment.Spec.Template = ptsf.Get()
+		deployment.Spec.Template = ptsf.Create()
 	})
 }
 
@@ -105,7 +105,7 @@ func (f *deployment) AddSelectorLabel(key, value string) *deployment {
 			deployment.Spec.Selector = &metav1.LabelSelector{}
 		}
 		metav1.AddLabelToSelector(deployment.Spec.Selector, key, value)
-		deployment.Spec.Template = podTemplateSpec(deployment.Spec.Template).AddLabel(key, value).Get()
+		deployment.Spec.Template = podTemplateSpec(deployment.Spec.Template).AddLabel(key, value).Create()
 	})
 }
 
@@ -113,7 +113,7 @@ func (f *deployment) StatusConditions(conditions ...*condition) *deployment {
 	return f.mutation(func(deployment *appsv1.Deployment) {
 		c := make([]appsv1.DeploymentCondition, len(conditions))
 		for i, cg := range conditions {
-			dc := cg.Get()
+			dc := cg.Create()
 			c[i] = appsv1.DeploymentCondition{
 				Type:    appsv1.DeploymentConditionType(dc.Type),
 				Status:  dc.Status,

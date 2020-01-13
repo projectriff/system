@@ -28,7 +28,7 @@ import (
 
 type ObjectMeta interface {
 	mutate(m func(*metav1.ObjectMeta)) ObjectMeta
-	Get() metav1.ObjectMeta
+	Create() metav1.ObjectMeta
 
 	Namespace(namespace string) ObjectMeta
 	Name(format string, a ...interface{}) ObjectMeta
@@ -51,7 +51,7 @@ func objectMeta(seed metav1.ObjectMeta) *objectMetaImpl {
 	}
 }
 
-func (f *objectMetaImpl) Get() metav1.ObjectMeta {
+func (f *objectMetaImpl) Create() metav1.ObjectMeta {
 	return *(f.target.DeepCopy())
 }
 
@@ -104,7 +104,7 @@ func (f *objectMetaImpl) Generation(generation int64) ObjectMeta {
 
 func (f *objectMetaImpl) ControlledBy(owner testing.Factory, scheme *runtime.Scheme) ObjectMeta {
 	return f.mutate(func(om *metav1.ObjectMeta) {
-		err := ctrl.SetControllerReference(owner.Get(), om, scheme)
+		err := ctrl.SetControllerReference(owner.Create(), om, scheme)
 		if err != nil {
 			panic(err)
 		}

@@ -52,7 +52,7 @@ func (f *service) deepCopy() *service {
 	return Service(f.target.DeepCopy())
 }
 
-func (f *service) Get() apis.Object {
+func (f *service) Create() apis.Object {
 	return f.deepCopy().target
 }
 
@@ -73,7 +73,7 @@ func (f *service) ObjectMeta(nf func(ObjectMeta)) *service {
 	return f.mutation(func(sa *corev1.Service) {
 		omf := objectMeta(sa.ObjectMeta)
 		nf(omf)
-		sa.ObjectMeta = omf.Get()
+		sa.ObjectMeta = omf.Create()
 	})
 }
 

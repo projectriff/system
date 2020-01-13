@@ -91,7 +91,7 @@ func TestDeployerReconciler(t *testing.T) {
 	testConfigurationGiven := testConfigurationCreate.
 		ObjectMeta(func(om factories.ObjectMeta) {
 			om.
-				Name("%s001", om.Get().GenerateName).
+				Name("%s001", om.Create().GenerateName).
 				Generation(1)
 		}).
 		StatusObservedGeneration(1)
@@ -146,7 +146,7 @@ func TestDeployerReconciler(t *testing.T) {
 		Key:  testKey,
 		GivenObjects: []rtesting.Factory{
 			testDeployer.
-				ApplicationRef(testApplication.Get().GetName()),
+				ApplicationRef(testApplication.Create().GetName()),
 			testApplication,
 		},
 		ExpectTracks: []rtesting.TrackRequest{
@@ -172,15 +172,15 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
-				StatusConfigurationRef(testConfigurationGiven.Get().GetName()).
-				StatusRouteRef(testRouteGiven.Get().GetName()),
+				StatusConfigurationRef(testConfigurationGiven.Create().GetName()).
+				StatusRouteRef(testRouteGiven.Create().GetName()),
 		},
 	}, {
 		Name: "create knative resources, from application, application not found",
 		Key:  testKey,
 		GivenObjects: []rtesting.Factory{
 			testDeployer.
-				ApplicationRef(testApplication.Get().GetName()),
+				ApplicationRef(testApplication.Create().GetName()),
 		},
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testApplication, testDeployer, scheme),
@@ -205,7 +205,7 @@ func TestDeployerReconciler(t *testing.T) {
 		},
 		GivenObjects: []rtesting.Factory{
 			testDeployer.
-				ApplicationRef(testApplication.Get().GetName()),
+				ApplicationRef(testApplication.Create().GetName()),
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
@@ -216,7 +216,7 @@ func TestDeployerReconciler(t *testing.T) {
 		Key:  testKey,
 		GivenObjects: []rtesting.Factory{
 			testDeployer.
-				ApplicationRef(testApplication.Get().GetName()),
+				ApplicationRef(testApplication.Create().GetName()),
 			testApplication.
 				StatusLatestImage(""),
 		},
@@ -229,7 +229,7 @@ func TestDeployerReconciler(t *testing.T) {
 		Key:  testKey,
 		GivenObjects: []rtesting.Factory{
 			testDeployer.
-				FunctionRef(testFunction.Get().GetName()),
+				FunctionRef(testFunction.Create().GetName()),
 			testFunction,
 		},
 		ExpectTracks: []rtesting.TrackRequest{
@@ -255,15 +255,15 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
-				StatusConfigurationRef(testConfigurationGiven.Get().GetName()).
-				StatusRouteRef(testRouteGiven.Get().GetName()),
+				StatusConfigurationRef(testConfigurationGiven.Create().GetName()).
+				StatusRouteRef(testRouteGiven.Create().GetName()),
 		},
 	}, {
 		Name: "create knative resources, from function, function not found",
 		Key:  testKey,
 		GivenObjects: []rtesting.Factory{
 			testDeployer.
-				FunctionRef(testFunction.Get().GetName()),
+				FunctionRef(testFunction.Create().GetName()),
 		},
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testFunction, testDeployer, scheme),
@@ -288,7 +288,7 @@ func TestDeployerReconciler(t *testing.T) {
 		},
 		GivenObjects: []rtesting.Factory{
 			testDeployer.
-				FunctionRef(testFunction.Get().GetName()),
+				FunctionRef(testFunction.Create().GetName()),
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
@@ -299,7 +299,7 @@ func TestDeployerReconciler(t *testing.T) {
 		Key:  testKey,
 		GivenObjects: []rtesting.Factory{
 			testDeployer.
-				FunctionRef(testFunction.Get().GetName()),
+				FunctionRef(testFunction.Create().GetName()),
 			testFunction.
 				StatusLatestImage(""),
 		},
@@ -312,7 +312,7 @@ func TestDeployerReconciler(t *testing.T) {
 		Key:  testKey,
 		GivenObjects: []rtesting.Factory{
 			testDeployer.
-				ContainerRef(testContainer.Get().GetName()),
+				ContainerRef(testContainer.Create().GetName()),
 			testContainer,
 		},
 		ExpectTracks: []rtesting.TrackRequest{
@@ -338,15 +338,15 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
-				StatusConfigurationRef(testConfigurationGiven.Get().GetName()).
-				StatusRouteRef(testRouteGiven.Get().GetName()),
+				StatusConfigurationRef(testConfigurationGiven.Create().GetName()).
+				StatusRouteRef(testRouteGiven.Create().GetName()),
 		},
 	}, {
 		Name: "create knative resources, from container, container not found",
 		Key:  testKey,
 		GivenObjects: []rtesting.Factory{
 			testDeployer.
-				ContainerRef(testContainer.Get().GetName()),
+				ContainerRef(testContainer.Create().GetName()),
 		},
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testContainer, testDeployer, scheme),
@@ -371,7 +371,7 @@ func TestDeployerReconciler(t *testing.T) {
 		},
 		GivenObjects: []rtesting.Factory{
 			testDeployer.
-				ContainerRef(testContainer.Get().GetName()),
+				ContainerRef(testContainer.Create().GetName()),
 		},
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
@@ -382,7 +382,7 @@ func TestDeployerReconciler(t *testing.T) {
 		Key:  testKey,
 		GivenObjects: []rtesting.Factory{
 			testDeployer.
-				ContainerRef(testContainer.Get().GetName()),
+				ContainerRef(testContainer.Create().GetName()),
 			testContainer.
 				StatusLatestImage(""),
 		},
@@ -417,8 +417,8 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
-				StatusConfigurationRef(testConfigurationGiven.Get().GetName()).
-				StatusRouteRef(testRouteGiven.Get().GetName()),
+				StatusConfigurationRef(testConfigurationGiven.Create().GetName()).
+				StatusRouteRef(testRouteGiven.Create().GetName()),
 		},
 	}, {
 		Name: "create knative resources, create configuration failed",
@@ -480,7 +480,7 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
-				StatusConfigurationRef(testConfigurationGiven.Get().GetName()),
+				StatusConfigurationRef(testConfigurationGiven.Create().GetName()),
 		},
 	}, {
 		Name: "create knative resources, route exists",
@@ -514,7 +514,7 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionRouteReady.False().Reason("NotOwned", `There is an existing Route "test-deployer" that the Deployer does not own.`),
 				).
 				StatusLatestImage(testImage).
-				StatusConfigurationRef(testConfigurationGiven.Get().GetName()),
+				StatusConfigurationRef(testConfigurationGiven.Create().GetName()),
 		},
 	}, {
 		Name: "create knative resources, delete extra configurations",
@@ -555,8 +555,8 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
-				StatusConfigurationRef(testConfigurationGiven.Get().GetName()).
-				StatusRouteRef(testRouteGiven.Get().GetName()),
+				StatusConfigurationRef(testConfigurationGiven.Create().GetName()).
+				StatusRouteRef(testRouteGiven.Create().GetName()),
 		},
 	}, {
 		Name: "create knative resources, delete extra configurations, delete failed",
@@ -630,8 +630,8 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
-				StatusConfigurationRef(testConfigurationGiven.Get().GetName()).
-				StatusRouteRef(testRouteGiven.Get().GetName()),
+				StatusConfigurationRef(testConfigurationGiven.Create().GetName()).
+				StatusRouteRef(testRouteGiven.Create().GetName()),
 		},
 	}, {
 		Name: "create knative resources, delete extra routes, delete failed",
@@ -670,7 +670,7 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
-				StatusConfigurationRef(testConfigurationGiven.Get().GetName()),
+				StatusConfigurationRef(testConfigurationGiven.Create().GetName()),
 		},
 	}, {
 		Name: "update configuration",
@@ -686,7 +686,7 @@ func TestDeployerReconciler(t *testing.T) {
 		},
 		ExpectEvents: []rtesting.Event{
 			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "Updated",
-				`Updated Configuration "%s"`, testConfigurationGiven.Get().GetName()),
+				`Updated Configuration "%s"`, testConfigurationGiven.Create().GetName()),
 			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "StatusUpdated",
 				`Updated status`),
 		},
@@ -701,8 +701,8 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
-				StatusConfigurationRef(testConfigurationGiven.Get().GetName()).
-				StatusRouteRef(testRouteGiven.Get().GetName()),
+				StatusConfigurationRef(testConfigurationGiven.Create().GetName()).
+				StatusRouteRef(testRouteGiven.Create().GetName()),
 		},
 	}, {
 		Name: "update configuration, listing failed",
@@ -751,7 +751,7 @@ func TestDeployerReconciler(t *testing.T) {
 		ShouldErr: true,
 		ExpectEvents: []rtesting.Event{
 			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeWarning, "UpdateFailed",
-				`Failed to update Configuration "%s": inducing failure for update Configuration`, testConfigurationGiven.Get().GetName()),
+				`Failed to update Configuration "%s": inducing failure for update Configuration`, testConfigurationGiven.Create().GetName()),
 			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "StatusUpdated",
 				`Updated status`),
 		},
@@ -779,7 +779,7 @@ func TestDeployerReconciler(t *testing.T) {
 		},
 		ExpectEvents: []rtesting.Event{
 			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "Updated",
-				`Updated Route "%s"`, testRouteGiven.Get().GetName()),
+				`Updated Route "%s"`, testRouteGiven.Create().GetName()),
 			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "StatusUpdated",
 				`Updated status`),
 		},
@@ -794,8 +794,8 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
-				StatusConfigurationRef(testConfigurationGiven.Get().GetName()).
-				StatusRouteRef(testRouteGiven.Get().GetName()),
+				StatusConfigurationRef(testConfigurationGiven.Create().GetName()).
+				StatusRouteRef(testRouteGiven.Create().GetName()),
 		},
 	}, {
 		Name: "update route, listing failed",
@@ -823,7 +823,7 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
-				StatusConfigurationRef(testConfigurationGiven.Get().GetName()),
+				StatusConfigurationRef(testConfigurationGiven.Create().GetName()),
 		},
 	}, {
 		Name: "update route, update failed",
@@ -841,7 +841,7 @@ func TestDeployerReconciler(t *testing.T) {
 		ShouldErr: true,
 		ExpectEvents: []rtesting.Event{
 			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeWarning, "UpdateFailed",
-				`Failed to update Route "%s": inducing failure for update Route`, testRouteGiven.Get().GetName()),
+				`Failed to update Route "%s": inducing failure for update Route`, testRouteGiven.Create().GetName()),
 			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "StatusUpdated",
 				`Updated status`),
 		},
@@ -856,7 +856,7 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
-				StatusConfigurationRef(testConfigurationGiven.Get().GetName()),
+				StatusConfigurationRef(testConfigurationGiven.Create().GetName()),
 		},
 	}, {
 		Name: "update status failed",
@@ -883,8 +883,8 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
-				StatusConfigurationRef(testConfigurationGiven.Get().GetName()).
-				StatusRouteRef(testRouteGiven.Get().GetName()),
+				StatusConfigurationRef(testConfigurationGiven.Create().GetName()).
+				StatusRouteRef(testRouteGiven.Create().GetName()),
 		},
 	}, {
 		Name: "update knative resources, copy annotations and labels",
@@ -905,9 +905,9 @@ func TestDeployerReconciler(t *testing.T) {
 		},
 		ExpectEvents: []rtesting.Event{
 			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "Updated",
-				`Updated Configuration "%s"`, testConfigurationGiven.Get().GetName()),
+				`Updated Configuration "%s"`, testConfigurationGiven.Create().GetName()),
 			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "Updated",
-				`Updated Route "%s"`, testRouteGiven.Get().GetName()),
+				`Updated Route "%s"`, testRouteGiven.Create().GetName()),
 			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "StatusUpdated",
 				`Updated status`),
 		},
@@ -934,8 +934,8 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
-				StatusConfigurationRef(testConfigurationGiven.Get().GetName()).
-				StatusRouteRef(testRouteGiven.Get().GetName()),
+				StatusConfigurationRef(testConfigurationGiven.Create().GetName()).
+				StatusRouteRef(testRouteGiven.Create().GetName()),
 		},
 	}, {
 		Name: "update knative resources, with scale",
@@ -950,7 +950,7 @@ func TestDeployerReconciler(t *testing.T) {
 		},
 		ExpectEvents: []rtesting.Event{
 			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "Updated",
-				`Updated Configuration "%s"`, testConfigurationGiven.Get().GetName()),
+				`Updated Configuration "%s"`, testConfigurationGiven.Create().GetName()),
 			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "StatusUpdated",
 				`Updated status`),
 		},
@@ -974,8 +974,8 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionRouteReady.Unknown(),
 				).
 				StatusLatestImage(testImage).
-				StatusConfigurationRef(testConfigurationGiven.Get().GetName()).
-				StatusRouteRef(testRouteGiven.Get().GetName()),
+				StatusConfigurationRef(testConfigurationGiven.Create().GetName()).
+				StatusRouteRef(testRouteGiven.Create().GetName()),
 		},
 	}, {
 		Name: "ready",
@@ -1006,8 +1006,8 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionRouteReady.True(),
 				).
 				StatusLatestImage(testImage).
-				StatusConfigurationRef(testConfigurationGiven.Get().GetName()).
-				StatusRouteRef(testRouteGiven.Get().GetName()).
+				StatusConfigurationRef(testConfigurationGiven.Create().GetName()).
+				StatusRouteRef(testRouteGiven.Create().GetName()).
 				StatusAddressURL(testAddressURL).
 				StatusURL(testURL),
 		},
@@ -1038,8 +1038,8 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionRouteReady.True(),
 				).
 				StatusLatestImage(testImage).
-				StatusConfigurationRef(testConfigurationGiven.Get().GetName()).
-				StatusRouteRef(testRouteGiven.Get().GetName()).
+				StatusConfigurationRef(testConfigurationGiven.Create().GetName()).
+				StatusRouteRef(testRouteGiven.Create().GetName()).
 				StatusAddressURL(testAddressURL).
 				StatusURL(testURL),
 		},
@@ -1070,8 +1070,8 @@ func TestDeployerReconciler(t *testing.T) {
 					deployerConditionRouteReady.False().Reason("TestReason", "a human readable message"),
 				).
 				StatusLatestImage(testImage).
-				StatusConfigurationRef(testConfigurationGiven.Get().GetName()).
-				StatusRouteRef(testRouteGiven.Get().GetName()).
+				StatusConfigurationRef(testConfigurationGiven.Create().GetName()).
+				StatusRouteRef(testRouteGiven.Create().GetName()).
 				StatusAddressURL(testAddressURL).
 				StatusURL(testURL),
 		},

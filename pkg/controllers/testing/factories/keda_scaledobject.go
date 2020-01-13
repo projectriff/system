@@ -51,7 +51,7 @@ func (f *kedaScaledObject) deepCopy() *kedaScaledObject {
 	return KedaScaledObject(f.target.DeepCopy())
 }
 
-func (f *kedaScaledObject) Get() apis.Object {
+func (f *kedaScaledObject) Create() apis.Object {
 	return f.deepCopy().target
 }
 
@@ -72,7 +72,7 @@ func (f *kedaScaledObject) ObjectMeta(nf func(ObjectMeta)) *kedaScaledObject {
 	return f.mutation(func(s *kedav1alpha1.ScaledObject) {
 		omf := objectMeta(s.ObjectMeta)
 		nf(omf)
-		s.ObjectMeta = omf.Get()
+		s.ObjectMeta = omf.Create()
 	})
 }
 

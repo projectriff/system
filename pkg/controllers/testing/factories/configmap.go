@@ -52,7 +52,7 @@ func (f *configMap) deepCopy() *configMap {
 	return ConfigMap(f.target.DeepCopy())
 }
 
-func (f *configMap) Get() apis.Object {
+func (f *configMap) Create() apis.Object {
 	return f.deepCopy().target
 }
 
@@ -73,7 +73,7 @@ func (f *configMap) ObjectMeta(nf func(ObjectMeta)) *configMap {
 	return f.mutation(func(cm *corev1.ConfigMap) {
 		omf := objectMeta(cm.ObjectMeta)
 		nf(omf)
-		cm.ObjectMeta = omf.Get()
+		cm.ObjectMeta = omf.Create()
 	})
 }
 

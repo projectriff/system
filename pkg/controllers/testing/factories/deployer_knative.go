@@ -54,7 +54,7 @@ func (f *deployerKnative) deepCopy() *deployerKnative {
 	return DeployerKnative(f.target.DeepCopy())
 }
 
-func (f *deployerKnative) Get() apis.Object {
+func (f *deployerKnative) Create() apis.Object {
 	return f.deepCopy().target
 }
 
@@ -75,7 +75,7 @@ func (f *deployerKnative) ObjectMeta(nf func(ObjectMeta)) *deployerKnative {
 	return f.mutation(func(deployer *knativev1alpha1.Deployer) {
 		omf := objectMeta(deployer.ObjectMeta)
 		nf(omf)
-		deployer.ObjectMeta = omf.Get()
+		deployer.ObjectMeta = omf.Create()
 	})
 }
 
@@ -86,7 +86,7 @@ func (f *deployerKnative) PodTemplateSpec(nf func(PodTemplateSpec)) *deployerKna
 		}
 		ptsf := podTemplateSpec(*deployer.Spec.Template)
 		nf(ptsf)
-		pts := ptsf.Get()
+		pts := ptsf.Create()
 		deployer.Spec.Template = &pts
 	})
 }
@@ -145,7 +145,7 @@ func (f *deployerKnative) StatusConditions(conditions ...*condition) *deployerKn
 	return f.mutation(func(deployer *knativev1alpha1.Deployer) {
 		c := make([]apis.Condition, len(conditions))
 		for i, cg := range conditions {
-			c[i] = cg.Get()
+			c[i] = cg.Create()
 		}
 		deployer.Status.Conditions = c
 	})

@@ -22,7 +22,7 @@ import (
 
 type PodTemplateSpec interface {
 	mutate(m func(*corev1.PodTemplateSpec)) PodTemplateSpec
-	Get() corev1.PodTemplateSpec
+	Create() corev1.PodTemplateSpec
 
 	AddLabel(key, value string) PodTemplateSpec
 	AddAnnotation(key, value string) PodTemplateSpec
@@ -39,7 +39,7 @@ func podTemplateSpec(seed corev1.PodTemplateSpec) *podTemplateSpecImpl {
 	}
 }
 
-func (f *podTemplateSpecImpl) Get() corev1.PodTemplateSpec {
+func (f *podTemplateSpecImpl) Create() corev1.PodTemplateSpec {
 	return *(f.target.DeepCopy())
 }
 
