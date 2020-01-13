@@ -19,6 +19,7 @@ package core
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"
@@ -147,7 +148,8 @@ func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, dep
 	}
 
 	// reconcile deployment
-	if _, err := NewDeployerChildDeploymentReconciler(r).Reconcile(ctx, deployer); err != nil {
+	if _, err := NewDeployerChildDeploymentReconciler(r, corev1alpha1.Deployer{}, appsv1.Deployment{}, appsv1.DeploymentList{}).
+		Reconcile(ctx, deployer); err != nil {
 		return ctrl.Result{}, err
 	}
 
@@ -542,35 +544,38 @@ type DeployerChildDeploymentReconciler struct {
 	Scheme   *runtime.Scheme
 	Tracker  tracker.Tracker
 
-	parentType string
-	childType  string
+	parentType    reflect.Type
+	childType     reflect.Type
+	childListType reflect.Type
 
-	semanticEquals             func(desiredDeployment, deployment *appsv1.Deployment) bool
-	constructDesiredChild      func(deployer *corev1alpha1.Deployer) (*appsv1.Deployment, error)
-	reflectChildStatusOnParent func(parent *corev1alpha1.Deployer, child *appsv1.Deployment)
-	harmonizeImmutableFields   func(actual, desired *appsv1.Deployment)
-	mergeBeforeUpdate          func(current, desired *appsv1.Deployment)
+	SemanticEquals             func(a1, a2 *appsv1.Deployment) bool
+	ConstructDesiredChild      func(parent *corev1alpha1.Deployer) (*appsv1.Deployment, error)
+	ReflectChildStatusOnParent func(parent *corev1alpha1.Deployer, child *appsv1.Deployment)
+	HarmonizeImmutableFields   func(current, desired *appsv1.Deployment)
+	MergeBeforeUpdate          func(current, desired *appsv1.Deployment)
 }
 
-func NewDeployerChildDeploymentReconciler(r *DeployerReconciler) *DeployerChildDeploymentReconciler {
-	parentType := "deployer"
-	childType := "deployment"
+func NewDeployerChildDeploymentReconciler(r *DeployerReconciler, parent, child, childList interface{}) *DeployerChildDeploymentReconciler {
+	parentType := reflect.TypeOf(parent)
+	childType := reflect.TypeOf(child)
+	childListType := reflect.TypeOf(childList)
 
 	return &DeployerChildDeploymentReconciler{
 		Client:   r.Client,
 		Recorder: r.Recorder,
-		Log:      r.Log.WithName(childType),
+		Log:      r.Log.WithName(childType.Name()),
 		Scheme:   r.Scheme,
 		Tracker:  r.Tracker,
 
-		parentType: parentType,
-		childType:  childType,
+		parentType:    parentType,
+		childType:     childType,
+		childListType: childListType,
 
-		semanticEquals: func(a1, a2 *appsv1.Deployment) bool {
+		SemanticEquals: func(a1, a2 *appsv1.Deployment) bool {
 			return equality.Semantic.DeepEqual(a1.Spec, a2.Spec) &&
 				equality.Semantic.DeepEqual(a1.Labels, a2.Labels)
 		},
-		constructDesiredChild: func(parent *corev1alpha1.Deployer) (*appsv1.Deployment, error) {
+		ConstructDesiredChild: func(parent *corev1alpha1.Deployer) (*appsv1.Deployment, error) {
 			labels := r.constructLabelsForDeployer(parent)
 
 			template := *parent.Spec.Template.DeepCopy()
@@ -619,14 +624,14 @@ func NewDeployerChildDeploymentReconciler(r *DeployerReconciler) *DeployerChildD
 
 			return child, nil
 		},
-		reflectChildStatusOnParent: func(parent *corev1alpha1.Deployer, child *appsv1.Deployment) {
+		ReflectChildStatusOnParent: func(parent *corev1alpha1.Deployer, child *appsv1.Deployment) {
 			parent.Status.DeploymentRef = refs.NewTypedLocalObjectReferenceForObject(child, r.Scheme)
 			parent.Status.PropagateDeploymentStatus(&child.Status)
 		},
-		harmonizeImmutableFields: func(actual, desired *appsv1.Deployment) {
-			desired.Spec.Replicas = actual.Spec.Replicas
+		HarmonizeImmutableFields: func(current, desired *appsv1.Deployment) {
+			desired.Spec.Replicas = current.Spec.Replicas
 		},
-		mergeBeforeUpdate: func(current, desired *appsv1.Deployment) {
+		MergeBeforeUpdate: func(current, desired *appsv1.Deployment) {
 			current.ObjectMeta.Labels = desired.ObjectMeta.Labels
 			current.Spec = desired.Spec
 		},
@@ -636,7 +641,7 @@ func NewDeployerChildDeploymentReconciler(r *DeployerReconciler) *DeployerChildD
 func (r *DeployerChildDeploymentReconciler) Reconcile(ctx context.Context, deployer *corev1alpha1.Deployer) (ctrl.Result, error) {
 	child, err := r.reconcile(ctx, deployer)
 	if err != nil {
-		r.Log.Error(err, "unable to reconcile child", r.parentType, deployer)
+		r.Log.Error(err, "unable to reconcile child", r.parentType.Name(), deployer)
 		return ctrl.Result{}, err
 	}
 	r.reflectChildStatusOnParent(deployer, child)
@@ -656,14 +661,14 @@ func (r *DeployerChildDeploymentReconciler) reconcile(ctx context.Context, deplo
 	} else if len(children.Items) > 1 {
 		// this shouldn't happen, delete everything to a clean slate
 		for _, extra := range children.Items {
-			r.Log.Info("deleting extra child", r.childType, extra)
+			r.Log.Info("deleting extra child", r.childType.Name(), extra)
 			if err := r.Delete(ctx, &extra); err != nil {
 				r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "DeleteFailed",
-					"Failed to delete %s %q: %v", r.childType, extra.Name, err)
+					"Failed to delete %s %q: %v", r.childType.Name(), extra.Name, err)
 				return nil, err
 			}
 			r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Deleted",
-				"Deleted %s %q", r.childType, extra.Name)
+				"Deleted %s %q", r.childType.Name(), extra.Name)
 		}
 	}
 
@@ -674,11 +679,11 @@ func (r *DeployerChildDeploymentReconciler) reconcile(ctx context.Context, deplo
 
 	// delete child if no longer needed
 	if desired == nil {
-		r.Log.Info("deleting unwanted child", r.childType, actual)
+		r.Log.Info("deleting unwanted child", r.childType.Name(), actual)
 		if err := r.Delete(ctx, &actual); err != nil {
-			r.Log.Error(err, "unable to delete unwanted child", r.childType, actual)
+			r.Log.Error(err, "unable to delete unwanted child", r.childType.Name(), actual)
 			r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "DeleteFailed",
-				"Failed to delete %s %q: %v", r.childType, actual.Name, err)
+				"Failed to delete %s %q: %v", r.childType.Name(), actual.Name, err)
 			return nil, err
 		}
 		r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Deleted",
@@ -690,13 +695,13 @@ func (r *DeployerChildDeploymentReconciler) reconcile(ctx context.Context, deplo
 	if actual.Name == "" {
 		r.Log.Info("creating child", "spec", desired.Spec)
 		if err := r.Create(ctx, desired); err != nil {
-			r.Log.Error(err, "unable to create child", r.childType, desired)
+			r.Log.Error(err, "unable to create child", r.childType.Name(), desired)
 			r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "CreationFailed",
-				"Failed to create %s %q: %v", r.childType, desired.Name, err)
+				"Failed to create %s %q: %v", r.childType.Name(), desired.Name, err)
 			return nil, err
 		}
 		r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Created",
-			"Created %s %q", r.childType, desired.Name)
+			"Created %s %q", r.childType.Name(), desired.Name)
 		return desired, nil
 	}
 
@@ -713,13 +718,33 @@ func (r *DeployerChildDeploymentReconciler) reconcile(ctx context.Context, deplo
 	r.mergeBeforeUpdate(current, desired)
 	r.Log.Info("reconciling child", "diff", cmp.Diff(actual.Spec, current.Spec))
 	if err := r.Update(ctx, current); err != nil {
-		r.Log.Error(err, "unable to update child", r.childType, current)
+		r.Log.Error(err, "unable to update child", r.childType.Name(), current)
 		r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "UpdateFailed",
-			"Failed to update %s %q: %v", r.childType, current.Name, err)
+			"Failed to update %s %q: %v", r.childType.Name(), current.Name, err)
 		return nil, err
 	}
 	r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Updated",
-		"Updated %s %q", r.childType, current.Name)
+		"Updated %s %q", r.childType.Name(), current.Name)
 
 	return current, nil
+}
+
+func (r *DeployerChildDeploymentReconciler) semanticEquals(a1, a2 *appsv1.Deployment) bool {
+	return r.SemanticEquals(a1, a2)
+}
+
+func (r *DeployerChildDeploymentReconciler) constructDesiredChild(parent *corev1alpha1.Deployer) (*appsv1.Deployment, error) {
+	return r.ConstructDesiredChild(parent)
+}
+
+func (r *DeployerChildDeploymentReconciler) reflectChildStatusOnParent(parent *corev1alpha1.Deployer, child *appsv1.Deployment) {
+	r.ReflectChildStatusOnParent(parent, child)
+}
+
+func (r *DeployerChildDeploymentReconciler) harmonizeImmutableFields(actual, desired *appsv1.Deployment) {
+	r.HarmonizeImmutableFields(actual, desired)
+}
+
+func (r *DeployerChildDeploymentReconciler) mergeBeforeUpdate(current, desired *appsv1.Deployment) {
+	r.MergeBeforeUpdate(current, desired)
 }
