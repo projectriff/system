@@ -53,7 +53,7 @@ func (f *knativeConfiguration) deepCopy() *knativeConfiguration {
 	return KnativeConfiguration(f.target.DeepCopy())
 }
 
-func (f *knativeConfiguration) Get() apis.Object {
+func (f *knativeConfiguration) Create() apis.Object {
 	return f.deepCopy().target
 }
 
@@ -74,7 +74,7 @@ func (f *knativeConfiguration) ObjectMeta(nf func(ObjectMeta)) *knativeConfigura
 	return f.mutation(func(configuration *knativeservingv1.Configuration) {
 		omf := objectMeta(configuration.ObjectMeta)
 		nf(omf)
-		configuration.ObjectMeta = omf.Get()
+		configuration.ObjectMeta = omf.Create()
 	})
 }
 
@@ -88,7 +88,7 @@ func (f *knativeConfiguration) PodTemplateSpec(nf func(PodTemplateSpec)) *knativ
 			},
 		)
 		nf(ptsf)
-		template := ptsf.Get()
+		template := ptsf.Create()
 		// update RevisionTemplateSpec with PodTemplateSpec managed fields
 		configuration.Spec.Template.ObjectMeta = template.ObjectMeta
 		configuration.Spec.Template.Spec.PodSpec = template.Spec
@@ -105,7 +105,7 @@ func (f *knativeConfiguration) StatusConditions(conditions ...*condition) *knati
 	return f.mutation(func(configuration *knativeservingv1.Configuration) {
 		c := make([]apis.Condition, len(conditions))
 		for i, cg := range conditions {
-			c[i] = cg.Get()
+			c[i] = cg.Create()
 		}
 		configuration.Status.Conditions = c
 	})

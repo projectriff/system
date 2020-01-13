@@ -303,7 +303,7 @@ func TestApplicationReconciler(t *testing.T) {
 					applicationConditionKpackImageReady.True(),
 					applicationConditionReady.True(),
 				).
-				StatusKpackImageRef(kpackImageGiven.Get().GetName()).
+				StatusKpackImageRef(kpackImageGiven.Create().GetName()).
 				StatusTargetImage("%s/%s", testImagePrefix, testName).
 				StatusLatestImage("%s/%s@sha256:%s", testImagePrefix, testName, testSha256),
 		},
@@ -328,7 +328,7 @@ func TestApplicationReconciler(t *testing.T) {
 					applicationConditionKpackImageReady.True(),
 					applicationConditionReady.True(),
 				).
-				StatusKpackImageRef(kpackImageGiven.Get().GetName()).
+				StatusKpackImageRef(kpackImageGiven.Create().GetName()).
 				StatusBuildCacheRef(testBuildCacheName).
 				StatusTargetImage("%s/%s", testImagePrefix, testName).
 				StatusLatestImage("%s/%s@sha256:%s", testImagePrefix, testName, testSha256),
@@ -355,7 +355,7 @@ func TestApplicationReconciler(t *testing.T) {
 					applicationConditionKpackImageReady.False().Reason(testConditionReason, testConditionMessage),
 					applicationConditionReady.False().Reason(testConditionReason, testConditionMessage),
 				).
-				StatusKpackImageRef(kpackImageGiven.Get().GetName()).
+				StatusKpackImageRef(kpackImageGiven.Create().GetName()).
 				StatusTargetImage("%s/%s", testImagePrefix, testName).
 				StatusLatestImage("%s/%s@sha256:%s", testImagePrefix, testName, testSha256),
 		},
@@ -397,7 +397,7 @@ func TestApplicationReconciler(t *testing.T) {
 		},
 		ExpectEvents: []rtesting.Event{
 			rtesting.NewEvent(appValid, scheme, corev1.EventTypeNormal, "Updated",
-				`Updated kpack Image "%s"`, kpackImageGiven.Get().GetName()),
+				`Updated kpack Image "%s"`, kpackImageGiven.Create().GetName()),
 			rtesting.NewEvent(appValid, scheme, corev1.EventTypeNormal, "StatusUpdated",
 				`Updated status`),
 		},
@@ -411,7 +411,7 @@ func TestApplicationReconciler(t *testing.T) {
 					applicationConditionKpackImageReady.Unknown(),
 					applicationConditionReady.Unknown(),
 				).
-				StatusKpackImageRef(kpackImageGiven.Get().GetName()).
+				StatusKpackImageRef(kpackImageGiven.Create().GetName()).
 				StatusTargetImage("%s/%s", testImagePrefix, testName),
 		},
 	}, {
@@ -426,7 +426,7 @@ func TestApplicationReconciler(t *testing.T) {
 		},
 		ExpectEvents: []rtesting.Event{
 			rtesting.NewEvent(appValid, scheme, corev1.EventTypeNormal, "Updated",
-				`Updated kpack Image "%s"`, kpackImageGiven.Get().GetName()),
+				`Updated kpack Image "%s"`, kpackImageGiven.Create().GetName()),
 			rtesting.NewEvent(appValid, scheme, corev1.EventTypeNormal, "StatusUpdated",
 				`Updated status`),
 		},
@@ -443,7 +443,7 @@ func TestApplicationReconciler(t *testing.T) {
 					applicationConditionKpackImageReady.Unknown(),
 					applicationConditionReady.Unknown(),
 				).
-				StatusKpackImageRef(kpackImageGiven.Get().GetName()).
+				StatusKpackImageRef(kpackImageGiven.Create().GetName()).
 				StatusTargetImage("%s/%s", testImagePrefix, testName),
 		},
 	}, {
@@ -460,7 +460,7 @@ func TestApplicationReconciler(t *testing.T) {
 		ShouldErr: true,
 		ExpectEvents: []rtesting.Event{
 			rtesting.NewEvent(appValid, scheme, corev1.EventTypeWarning, "UpdateFailed",
-				`Failed to update kpack Image "%s": inducing failure for update Image`, kpackImageGiven.Get().GetName()),
+				`Failed to update kpack Image "%s": inducing failure for update Image`, kpackImageGiven.Create().GetName()),
 			rtesting.NewEvent(appValid, scheme, corev1.EventTypeNormal, "StatusUpdated",
 				`Updated status`),
 		},
@@ -629,12 +629,12 @@ func TestApplicationReconciler(t *testing.T) {
 		},
 		ExpectEvents: []rtesting.Event{
 			rtesting.NewEvent(appValid, scheme, corev1.EventTypeNormal, "Deleted",
-				`Deleted kpack Image "%s"`, kpackImageGiven.Get().GetName()),
+				`Deleted kpack Image "%s"`, kpackImageGiven.Create().GetName()),
 			rtesting.NewEvent(appValid, scheme, corev1.EventTypeNormal, "StatusUpdated",
 				`Updated status`),
 		},
 		ExpectDeletes: []rtesting.DeleteRef{
-			{Group: "build.pivotal.io", Kind: "Image", Namespace: kpackImageGiven.Get().GetNamespace(), Name: kpackImageGiven.Get().GetName()},
+			{Group: "build.pivotal.io", Kind: "Image", Namespace: kpackImageGiven.Create().GetNamespace(), Name: kpackImageGiven.Create().GetName()},
 		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			appMinimal.
@@ -661,12 +661,12 @@ func TestApplicationReconciler(t *testing.T) {
 		ShouldErr: true,
 		ExpectEvents: []rtesting.Event{
 			rtesting.NewEvent(appValid, scheme, corev1.EventTypeWarning, "DeleteFailed",
-				`Failed to delete kpack Image "%s": inducing failure for delete Image`, kpackImageGiven.Get().GetName()),
+				`Failed to delete kpack Image "%s": inducing failure for delete Image`, kpackImageGiven.Create().GetName()),
 			rtesting.NewEvent(appValid, scheme, corev1.EventTypeNormal, "StatusUpdated",
 				`Updated status`),
 		},
 		ExpectDeletes: []rtesting.DeleteRef{
-			{Group: "build.pivotal.io", Kind: "Image", Namespace: kpackImageGiven.Get().GetNamespace(), Name: kpackImageGiven.Get().GetName()},
+			{Group: "build.pivotal.io", Kind: "Image", Namespace: kpackImageGiven.Create().GetNamespace(), Name: kpackImageGiven.Create().GetName()},
 		},
 		ExpectStatusUpdates: []rtesting.Factory{
 			appMinimal.

@@ -51,7 +51,7 @@ func (f *adapterKnative) deepCopy() *adapterKnative {
 	return AdapterKnative(f.target.DeepCopy())
 }
 
-func (f *adapterKnative) Get() apis.Object {
+func (f *adapterKnative) Create() apis.Object {
 	return f.deepCopy().target
 }
 
@@ -72,7 +72,7 @@ func (f *adapterKnative) ObjectMeta(nf func(ObjectMeta)) *adapterKnative {
 	return f.mutation(func(adapter *knativev1alpha1.Adapter) {
 		omf := objectMeta(adapter.ObjectMeta)
 		nf(omf)
-		adapter.ObjectMeta = omf.Get()
+		adapter.ObjectMeta = omf.Create()
 	})
 }
 
@@ -120,7 +120,7 @@ func (f *adapterKnative) StatusConditions(conditions ...*condition) *adapterKnat
 	return f.mutation(func(adapter *knativev1alpha1.Adapter) {
 		c := make([]apis.Condition, len(conditions))
 		for i, cg := range conditions {
-			c[i] = cg.Get()
+			c[i] = cg.Create()
 		}
 		adapter.Status.Conditions = c
 	})

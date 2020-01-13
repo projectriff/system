@@ -103,8 +103,8 @@ func TestAdapterReconciler(t *testing.T) {
 		},
 		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				ApplicationRef(testApplication.Get().GetName()).
-				ServiceRef(testService.Get().GetName()),
+				ApplicationRef(testApplication.Create().GetName()).
+				ServiceRef(testService.Create().GetName()),
 			testApplication.
 				StatusLatestImage(testImage).
 				StatusReady(),
@@ -139,8 +139,8 @@ func TestAdapterReconciler(t *testing.T) {
 		Key:  testKey,
 		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				ApplicationRef(testApplication.Get().GetName()).
-				ServiceRef(testService.Get().GetName()),
+				ApplicationRef(testApplication.Create().GetName()).
+				ServiceRef(testService.Create().GetName()),
 			testApplication.
 				StatusLatestImage(testImage).
 				StatusReady(),
@@ -174,8 +174,8 @@ func TestAdapterReconciler(t *testing.T) {
 		Key:  testKey,
 		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				ApplicationRef(testApplication.Get().GetName()).
-				ServiceRef(testService.Get().GetName()),
+				ApplicationRef(testApplication.Create().GetName()).
+				ServiceRef(testService.Create().GetName()),
 			testApplication,
 			testService,
 		},
@@ -188,8 +188,8 @@ func TestAdapterReconciler(t *testing.T) {
 		Key:  testKey,
 		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				ApplicationRef(testApplication.Get().GetName()).
-				ServiceRef(testService.Get().GetName()),
+				ApplicationRef(testApplication.Create().GetName()).
+				ServiceRef(testService.Create().GetName()),
 			testService,
 		},
 		ExpectTracks: []rtesting.TrackRequest{
@@ -215,8 +215,8 @@ func TestAdapterReconciler(t *testing.T) {
 		},
 		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				ApplicationRef(testApplication.Get().GetName()).
-				ServiceRef(testService.Get().GetName()),
+				ApplicationRef(testApplication.Create().GetName()).
+				ServiceRef(testService.Create().GetName()),
 			testApplication.
 				StatusLatestImage(testImage).
 				StatusReady(),
@@ -231,8 +231,8 @@ func TestAdapterReconciler(t *testing.T) {
 		Key:  testKey,
 		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				FunctionRef(testFunction.Get().GetName()).
-				ServiceRef(testService.Get().GetName()),
+				FunctionRef(testFunction.Create().GetName()).
+				ServiceRef(testService.Create().GetName()),
 			testFunction.
 				StatusLatestImage(testImage).
 				StatusReady(),
@@ -266,8 +266,8 @@ func TestAdapterReconciler(t *testing.T) {
 		Key:  testKey,
 		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				FunctionRef(testFunction.Get().GetName()).
-				ServiceRef(testService.Get().GetName()),
+				FunctionRef(testFunction.Create().GetName()).
+				ServiceRef(testService.Create().GetName()),
 			testFunction,
 			testService,
 		},
@@ -280,8 +280,8 @@ func TestAdapterReconciler(t *testing.T) {
 		Key:  testKey,
 		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				FunctionRef(testFunction.Get().GetName()).
-				ServiceRef(testService.Get().GetName()),
+				FunctionRef(testFunction.Create().GetName()).
+				ServiceRef(testService.Create().GetName()),
 			testService,
 		},
 		ExpectTracks: []rtesting.TrackRequest{
@@ -307,8 +307,8 @@ func TestAdapterReconciler(t *testing.T) {
 		},
 		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				FunctionRef(testFunction.Get().GetName()).
-				ServiceRef(testService.Get().GetName()),
+				FunctionRef(testFunction.Create().GetName()).
+				ServiceRef(testService.Create().GetName()),
 			testFunction.
 				StatusLatestImage(testImage).
 				StatusReady(),
@@ -323,8 +323,8 @@ func TestAdapterReconciler(t *testing.T) {
 		Key:  testKey,
 		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				ContainerRef(testContainer.Get().GetName()).
-				ServiceRef(testService.Get().GetName()),
+				ContainerRef(testContainer.Create().GetName()).
+				ServiceRef(testService.Create().GetName()),
 			testContainer.
 				StatusLatestImage(testImage).
 				StatusReady(),
@@ -358,8 +358,8 @@ func TestAdapterReconciler(t *testing.T) {
 		Key:  testKey,
 		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				ContainerRef(testContainer.Get().GetName()).
-				ServiceRef(testService.Get().GetName()),
+				ContainerRef(testContainer.Create().GetName()).
+				ServiceRef(testService.Create().GetName()),
 			testContainer,
 			testService,
 		},
@@ -372,8 +372,8 @@ func TestAdapterReconciler(t *testing.T) {
 		Key:  testKey,
 		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				ContainerRef(testContainer.Get().GetName()).
-				ServiceRef(testService.Get().GetName()),
+				ContainerRef(testContainer.Create().GetName()).
+				ServiceRef(testService.Create().GetName()),
 			testService,
 		},
 		ExpectTracks: []rtesting.TrackRequest{
@@ -399,8 +399,8 @@ func TestAdapterReconciler(t *testing.T) {
 		},
 		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				ContainerRef(testContainer.Get().GetName()).
-				ServiceRef(testService.Get().GetName()),
+				ContainerRef(testContainer.Create().GetName()).
+				ServiceRef(testService.Create().GetName()),
 			testContainer.
 				StatusLatestImage(testImage).
 				StatusReady(),
@@ -415,8 +415,8 @@ func TestAdapterReconciler(t *testing.T) {
 		Key:  testKey,
 		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				ContainerRef(testContainer.Get().GetName()).
-				ServiceRef(testService.Get().GetName()),
+				ContainerRef(testContainer.Create().GetName()).
+				ServiceRef(testService.Create().GetName()),
 			testContainer.
 				StatusLatestImage(testImage).
 				StatusReady(),
@@ -446,8 +446,8 @@ func TestAdapterReconciler(t *testing.T) {
 		},
 		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				ContainerRef(testContainer.Get().GetName()).
-				ServiceRef(testService.Get().GetName()),
+				ContainerRef(testContainer.Create().GetName()).
+				ServiceRef(testService.Create().GetName()),
 			testContainer.
 				StatusLatestImage(testImage).
 				StatusReady(),
@@ -463,8 +463,8 @@ func TestAdapterReconciler(t *testing.T) {
 		Key:  testKey,
 		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				ContainerRef(testContainer.Get().GetName()).
-				ServiceRef(testService.Get().GetName()).
+				ContainerRef(testContainer.Create().GetName()).
+				ServiceRef(testService.Create().GetName()).
 				StatusConditions(
 					adapterConditionBuildReady.True(),
 					adapterConditionReady.True(),
@@ -491,8 +491,8 @@ func TestAdapterReconciler(t *testing.T) {
 		},
 		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				ContainerRef(testContainer.Get().GetName()).
-				ServiceRef(testService.Get().GetName()),
+				ContainerRef(testContainer.Create().GetName()).
+				ServiceRef(testService.Create().GetName()),
 			testContainer.
 				StatusLatestImage(testImage).
 				StatusReady(),
@@ -514,8 +514,8 @@ func TestAdapterReconciler(t *testing.T) {
 		Key:  testKey,
 		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				ContainerRef(testContainer.Get().GetName()).
-				ConfigurationRef(testConfiguration.Get().GetName()),
+				ContainerRef(testContainer.Create().GetName()).
+				ConfigurationRef(testConfiguration.Create().GetName()),
 			testContainer.
 				StatusLatestImage(testImage).
 				StatusReady(),
@@ -549,8 +549,8 @@ func TestAdapterReconciler(t *testing.T) {
 		Key:  testKey,
 		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				ContainerRef(testContainer.Get().GetName()).
-				ConfigurationRef(testConfiguration.Get().GetName()),
+				ContainerRef(testContainer.Create().GetName()).
+				ConfigurationRef(testConfiguration.Create().GetName()),
 			testContainer.
 				StatusLatestImage(testImage).
 				StatusReady(),
@@ -580,8 +580,8 @@ func TestAdapterReconciler(t *testing.T) {
 		},
 		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				ContainerRef(testContainer.Get().GetName()).
-				ConfigurationRef(testConfiguration.Get().GetName()),
+				ContainerRef(testContainer.Create().GetName()).
+				ConfigurationRef(testConfiguration.Create().GetName()),
 			testContainer.
 				StatusLatestImage(testImage).
 				StatusReady(),
@@ -597,8 +597,8 @@ func TestAdapterReconciler(t *testing.T) {
 		Key:  testKey,
 		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				ContainerRef(testContainer.Get().GetName()).
-				ConfigurationRef(testConfiguration.Get().GetName()).
+				ContainerRef(testContainer.Create().GetName()).
+				ConfigurationRef(testConfiguration.Create().GetName()).
 				StatusConditions(
 					adapterConditionBuildReady.True(),
 					adapterConditionReady.True(),
@@ -625,8 +625,8 @@ func TestAdapterReconciler(t *testing.T) {
 		},
 		GivenObjects: []rtesting.Factory{
 			testAdapter.
-				ContainerRef(testContainer.Get().GetName()).
-				ConfigurationRef(testConfiguration.Get().GetName()),
+				ContainerRef(testContainer.Create().GetName()).
+				ConfigurationRef(testConfiguration.Create().GetName()),
 			testContainer.
 				StatusLatestImage(testImage).
 				StatusReady(),

@@ -91,7 +91,7 @@ func (tc *Testcase) Test(t *testing.T, scheme *runtime.Scheme, factory Reconcile
 	givenObjects := make([]runtime.Object, 0, len(tc.GivenObjects))
 	originalGivenObjects := make([]runtime.Object, 0, len(tc.GivenObjects))
 	for _, f := range tc.GivenObjects {
-		object := f.Get()
+		object := f.Create()
 		givenObjects = append(givenObjects, object.DeepCopyObject())
 		originalGivenObjects = append(originalGivenObjects, object.DeepCopyObject())
 	}
@@ -165,12 +165,12 @@ func (tc *Testcase) Test(t *testing.T, scheme *runtime.Scheme, factory Reconcile
 
 	for i, exp := range tc.ExpectCreates {
 		if i >= len(clientWrapper.createActions) {
-			t.Errorf("Missing create: %#v", exp.Get())
+			t.Errorf("Missing create: %#v", exp.Create())
 			continue
 		}
 		actual := clientWrapper.createActions[i].GetObject()
 
-		if diff := cmp.Diff(exp.Get(), actual, ignoreLastTransitionTime, safeDeployDiff, ignoreTypeMeta, cmpopts.EquateEmpty()); diff != "" {
+		if diff := cmp.Diff(exp.Create(), actual, ignoreLastTransitionTime, safeDeployDiff, ignoreTypeMeta, cmpopts.EquateEmpty()); diff != "" {
 			t.Errorf("Unexpected create (-expected, +actual): %s", diff)
 		}
 	}
@@ -182,12 +182,12 @@ func (tc *Testcase) Test(t *testing.T, scheme *runtime.Scheme, factory Reconcile
 
 	for i, exp := range tc.ExpectUpdates {
 		if i >= len(clientWrapper.updateActions) {
-			t.Errorf("Missing update: %#v", exp.Get())
+			t.Errorf("Missing update: %#v", exp.Create())
 			continue
 		}
 		actual := clientWrapper.updateActions[i].GetObject()
 
-		if diff := cmp.Diff(exp.Get(), actual, ignoreLastTransitionTime, safeDeployDiff, ignoreTypeMeta, cmpopts.EquateEmpty()); diff != "" {
+		if diff := cmp.Diff(exp.Create(), actual, ignoreLastTransitionTime, safeDeployDiff, ignoreTypeMeta, cmpopts.EquateEmpty()); diff != "" {
 			t.Errorf("Unexpected update (-expected, +actual): %s", diff)
 		}
 	}
@@ -216,12 +216,12 @@ func (tc *Testcase) Test(t *testing.T, scheme *runtime.Scheme, factory Reconcile
 
 	for i, exp := range tc.ExpectStatusUpdates {
 		if i >= len(clientWrapper.statusUpdateActions) {
-			t.Errorf("Missing status update: %#v", exp.Get())
+			t.Errorf("Missing status update: %#v", exp.Create())
 			continue
 		}
 		actual := clientWrapper.statusUpdateActions[i].GetObject()
 
-		if diff := cmp.Diff(exp.Get(), actual, statusSubresourceOnly, ignoreLastTransitionTime, safeDeployDiff, cmpopts.EquateEmpty()); diff != "" {
+		if diff := cmp.Diff(exp.Create(), actual, statusSubresourceOnly, ignoreLastTransitionTime, safeDeployDiff, cmpopts.EquateEmpty()); diff != "" {
 			t.Errorf("Unexpected status update (-expected, +actual): %s", diff)
 		}
 	}

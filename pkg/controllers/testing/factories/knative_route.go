@@ -51,7 +51,7 @@ func (f *knativeRoute) deepCopy() *knativeRoute {
 	return KnativeRoute(f.target.DeepCopy())
 }
 
-func (f *knativeRoute) Get() apis.Object {
+func (f *knativeRoute) Create() apis.Object {
 	return f.deepCopy().target
 }
 
@@ -72,7 +72,7 @@ func (f *knativeRoute) ObjectMeta(nf func(ObjectMeta)) *knativeRoute {
 	return f.mutation(func(route *knativeservingv1.Route) {
 		omf := objectMeta(route.ObjectMeta)
 		nf(omf)
-		route.ObjectMeta = omf.Get()
+		route.ObjectMeta = omf.Create()
 	})
 }
 
@@ -86,7 +86,7 @@ func (f *knativeRoute) StatusConditions(conditions ...*condition) *knativeRoute 
 	return f.mutation(func(route *knativeservingv1.Route) {
 		c := make([]apis.Condition, len(conditions))
 		for i, cg := range conditions {
-			c[i] = cg.Get()
+			c[i] = cg.Create()
 		}
 		route.Status.Conditions = c
 	})

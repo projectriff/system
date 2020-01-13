@@ -162,9 +162,9 @@ func TestCredentialsReconciler(t *testing.T) {
 		ExpectCreates: []rtesting.Factory{
 			testServiceAccount.
 				ObjectMeta(func(om factories.ObjectMeta) {
-					om.AddAnnotation("build.projectriff.io/credentials", testCredential.Get().GetName())
+					om.AddAnnotation("build.projectriff.io/credentials", testCredential.Create().GetName())
 				}).
-				Secrets(testCredential.Get().GetName()),
+				Secrets(testCredential.Create().GetName()),
 		},
 	}, {
 		Name: "create service account for credential, listing fail",
@@ -189,9 +189,9 @@ func TestCredentialsReconciler(t *testing.T) {
 		ExpectCreates: []rtesting.Factory{
 			testServiceAccount.
 				ObjectMeta(func(om factories.ObjectMeta) {
-					om.AddAnnotation("build.projectriff.io/credentials", testCredential.Get().GetName())
+					om.AddAnnotation("build.projectriff.io/credentials", testCredential.Create().GetName())
 				}).
-				Secrets(testCredential.Get().GetName()),
+				Secrets(testCredential.Create().GetName()),
 		},
 	}, {
 		Name: "add credential to service account",
@@ -203,9 +203,9 @@ func TestCredentialsReconciler(t *testing.T) {
 		ExpectUpdates: []rtesting.Factory{
 			testServiceAccount.
 				ObjectMeta(func(om factories.ObjectMeta) {
-					om.AddAnnotation("build.projectriff.io/credentials", testCredential.Get().GetName())
+					om.AddAnnotation("build.projectriff.io/credentials", testCredential.Create().GetName())
 				}).
-				Secrets(testCredential.Get().GetName()),
+				Secrets(testCredential.Create().GetName()),
 		},
 	}, {
 		Name: "add credentials to service account",
@@ -249,9 +249,9 @@ func TestCredentialsReconciler(t *testing.T) {
 		ExpectUpdates: []rtesting.Factory{
 			testServiceAccount.
 				ObjectMeta(func(om factories.ObjectMeta) {
-					om.AddAnnotation("build.projectriff.io/credentials", testCredential.Get().GetName())
+					om.AddAnnotation("build.projectriff.io/credentials", testCredential.Create().GetName())
 				}).
-				Secrets(testCredential.Get().GetName()),
+				Secrets(testCredential.Create().GetName()),
 		},
 	}, {
 		Name: "add credentials to service account, preserving non-credential bound secrets",

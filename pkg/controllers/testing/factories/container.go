@@ -51,7 +51,7 @@ func (f *container) deepCopy() *container {
 	return Container(f.target.DeepCopy())
 }
 
-func (f *container) Get() apis.Object {
+func (f *container) Create() apis.Object {
 	return f.deepCopy().target
 }
 
@@ -72,7 +72,7 @@ func (f *container) ObjectMeta(nf func(ObjectMeta)) *container {
 	return f.mutation(func(con *buildv1alpha1.Container) {
 		omf := objectMeta(con.ObjectMeta)
 		nf(omf)
-		con.ObjectMeta = omf.Get()
+		con.ObjectMeta = omf.Create()
 	})
 }
 
@@ -86,7 +86,7 @@ func (f *container) StatusConditions(conditions ...*condition) *container {
 	return f.mutation(func(con *buildv1alpha1.Container) {
 		c := make([]apis.Condition, len(conditions))
 		for i, cg := range conditions {
-			c[i] = cg.Get()
+			c[i] = cg.Create()
 		}
 		con.Status.Conditions = c
 	})

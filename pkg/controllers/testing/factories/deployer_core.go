@@ -54,7 +54,7 @@ func (f *deployerCore) deepCopy() *deployerCore {
 	return DeployerCore(f.target.DeepCopy())
 }
 
-func (f *deployerCore) Get() apis.Object {
+func (f *deployerCore) Create() apis.Object {
 	return f.deepCopy().target
 }
 
@@ -75,7 +75,7 @@ func (f *deployerCore) ObjectMeta(nf func(ObjectMeta)) *deployerCore {
 	return f.mutation(func(deployer *corev1alpha1.Deployer) {
 		omf := objectMeta(deployer.ObjectMeta)
 		nf(omf)
-		deployer.ObjectMeta = omf.Get()
+		deployer.ObjectMeta = omf.Create()
 	})
 }
 
@@ -86,7 +86,7 @@ func (f *deployerCore) PodTemplateSpec(nf func(PodTemplateSpec)) *deployerCore {
 		}
 		ptsf := podTemplateSpec(*deployer.Spec.Template)
 		nf(ptsf)
-		template := ptsf.Get()
+		template := ptsf.Create()
 		deployer.Spec.Template = &template
 	})
 }
@@ -137,7 +137,7 @@ func (f *deployerCore) StatusConditions(conditions ...*condition) *deployerCore 
 	return f.mutation(func(deployer *corev1alpha1.Deployer) {
 		c := make([]apis.Condition, len(conditions))
 		for i, cg := range conditions {
-			c[i] = cg.Get()
+			c[i] = cg.Create()
 		}
 		deployer.Status.Conditions = c
 	})

@@ -54,7 +54,7 @@ func (f *application) deepCopy() *application {
 	return Application(f.target.DeepCopy())
 }
 
-func (f *application) Get() apis.Object {
+func (f *application) Create() apis.Object {
 	return f.deepCopy().target
 }
 
@@ -75,7 +75,7 @@ func (f *application) ObjectMeta(nf func(ObjectMeta)) *application {
 	return f.mutation(func(app *buildv1alpha1.Application) {
 		omf := objectMeta(app.ObjectMeta)
 		nf(omf)
-		app.ObjectMeta = omf.Get()
+		app.ObjectMeta = omf.Create()
 	})
 }
 
@@ -123,7 +123,7 @@ func (f *application) StatusConditions(conditions ...*condition) *application {
 	return f.mutation(func(app *buildv1alpha1.Application) {
 		c := make([]apis.Condition, len(conditions))
 		for i, cg := range conditions {
-			c[i] = cg.Get()
+			c[i] = cg.Create()
 		}
 		app.Status.Conditions = c
 	})

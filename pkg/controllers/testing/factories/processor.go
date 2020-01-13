@@ -54,7 +54,7 @@ func (f *processor) deepCopy() *processor {
 	return Processor(f.target.DeepCopy())
 }
 
-func (f *processor) Get() apis.Object {
+func (f *processor) Create() apis.Object {
 	return f.deepCopy().target
 }
 
@@ -75,7 +75,7 @@ func (f *processor) ObjectMeta(nf func(ObjectMeta)) *processor {
 	return f.mutation(func(s *streamingv1alpha1.Processor) {
 		omf := objectMeta(s.ObjectMeta)
 		nf(omf)
-		s.ObjectMeta = omf.Get()
+		s.ObjectMeta = omf.Create()
 	})
 }
 
@@ -88,7 +88,7 @@ func (f *processor) PodTemplateSpec(nf func(PodTemplateSpec)) *processor {
 			ptsf = podTemplateSpec(corev1.PodTemplateSpec{})
 		}
 		nf(ptsf)
-		templateSpec := ptsf.Get()
+		templateSpec := ptsf.Create()
 		processor.Spec.Template = &templateSpec
 	})
 }
@@ -97,7 +97,7 @@ func (f *processor) StatusConditions(conditions ...*condition) *processor {
 	return f.mutation(func(processor *streamingv1alpha1.Processor) {
 		c := make([]apis.Condition, len(conditions))
 		for i, cg := range conditions {
-			dc := cg.Get()
+			dc := cg.Create()
 			c[i] = apis.Condition{
 				Type:    apis.ConditionType(dc.Type),
 				Status:  dc.Status,

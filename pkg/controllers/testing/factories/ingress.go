@@ -54,7 +54,7 @@ func (f *ingress) deepCopy() *ingress {
 	return Ingress(f.target.DeepCopy())
 }
 
-func (f *ingress) Get() apis.Object {
+func (f *ingress) Create() apis.Object {
 	return f.deepCopy().target
 }
 
@@ -75,7 +75,7 @@ func (f *ingress) ObjectMeta(nf func(ObjectMeta)) *ingress {
 	return f.mutation(func(sa *networkingv1beta1.Ingress) {
 		omf := objectMeta(sa.ObjectMeta)
 		nf(omf)
-		sa.ObjectMeta = omf.Get()
+		sa.ObjectMeta = omf.Create()
 	})
 }
 

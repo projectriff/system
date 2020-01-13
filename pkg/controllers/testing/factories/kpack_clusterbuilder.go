@@ -51,7 +51,7 @@ func (f *kpackClusterBuilder) deepCopy() *kpackClusterBuilder {
 	return KpackClusterBuilder(f.target.DeepCopy())
 }
 
-func (f *kpackClusterBuilder) Get() apis.Object {
+func (f *kpackClusterBuilder) Create() apis.Object {
 	return f.deepCopy().target
 }
 
@@ -72,7 +72,7 @@ func (f *kpackClusterBuilder) ObjectMeta(nf func(ObjectMeta)) *kpackClusterBuild
 	return f.mutation(func(cb *kpackbuildv1alpha1.ClusterBuilder) {
 		omf := objectMeta(cb.ObjectMeta)
 		nf(omf)
-		cb.ObjectMeta = omf.Get()
+		cb.ObjectMeta = omf.Create()
 	})
 }
 
@@ -86,7 +86,7 @@ func (f *kpackClusterBuilder) StatusConditions(conditions ...*condition) *kpackC
 	return f.mutation(func(cb *kpackbuildv1alpha1.ClusterBuilder) {
 		c := make([]apis.Condition, len(conditions))
 		for i, cg := range conditions {
-			c[i] = cg.Get()
+			c[i] = cg.Create()
 		}
 		cb.Status.Conditions = c
 	})

@@ -53,7 +53,7 @@ func (f *secret) deepCopy() *secret {
 	return Secret(f.target.DeepCopy())
 }
 
-func (f *secret) Get() apis.Object {
+func (f *secret) Create() apis.Object {
 	return f.deepCopy().target
 }
 
@@ -74,7 +74,7 @@ func (f *secret) ObjectMeta(nf func(ObjectMeta)) *secret {
 	return f.mutation(func(s *corev1.Secret) {
 		omf := objectMeta(s.ObjectMeta)
 		nf(omf)
-		s.ObjectMeta = omf.Get()
+		s.ObjectMeta = omf.Create()
 	})
 }
 

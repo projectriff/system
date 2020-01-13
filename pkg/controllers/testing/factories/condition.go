@@ -47,7 +47,7 @@ func (f *condition) deepCopy() *condition {
 	return Condition(*f.target.DeepCopy())
 }
 
-func (f *condition) Get() apis.Condition {
+func (f *condition) Create() apis.Condition {
 	return *f.deepCopy().target
 }
 

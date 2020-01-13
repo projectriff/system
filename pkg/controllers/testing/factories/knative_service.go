@@ -53,7 +53,7 @@ func (f *knativeService) deepCopy() *knativeService {
 	return KnativeService(f.target.DeepCopy())
 }
 
-func (f *knativeService) Get() apis.Object {
+func (f *knativeService) Create() apis.Object {
 	return f.deepCopy().target
 }
 
@@ -74,7 +74,7 @@ func (f *knativeService) ObjectMeta(nf func(ObjectMeta)) *knativeService {
 	return f.mutation(func(service *knativeservingv1.Service) {
 		omf := objectMeta(service.ObjectMeta)
 		nf(omf)
-		service.ObjectMeta = omf.Get()
+		service.ObjectMeta = omf.Create()
 	})
 }
 
@@ -88,7 +88,7 @@ func (f *knativeService) PodTemplateSpec(nf func(PodTemplateSpec)) *knativeServi
 			},
 		)
 		nf(ptsf)
-		template := ptsf.Get()
+		template := ptsf.Create()
 		// update RevisionTemplateSpec with PodTemplateSpec managed fields
 		service.Spec.Template.ObjectMeta = template.ObjectMeta
 		service.Spec.Template.Spec.PodSpec = template.Spec
@@ -105,7 +105,7 @@ func (f *knativeService) StatusConditions(conditions ...*condition) *knativeServ
 	return f.mutation(func(service *knativeservingv1.Service) {
 		c := make([]apis.Condition, len(conditions))
 		for i, cg := range conditions {
-			c[i] = cg.Get()
+			c[i] = cg.Create()
 		}
 		service.Status.Conditions = c
 	})

@@ -22,6 +22,6 @@ import (
 
 // Factory creates Kubernetes objects
 type Factory interface {
-	// Get returns a Kubernetes object
-	Get() apis.Object
+	// Create creates a new Kubernetes object
+	Create() apis.Object
 }
