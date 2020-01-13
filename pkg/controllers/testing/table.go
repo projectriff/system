@@ -191,7 +191,7 @@ func (tc *Testcase) Test(t *testing.T, scheme *runtime.Scheme, factory Reconcile
 	}
 }
 
-func compareActions(t *testing.T, actionName string, expectedActionFactories []Factory, actualActions []SingularAction, diffOptions ...cmp.Option) {
+func compareActions(t *testing.T, actionName string, expectedActionFactories []Factory, actualActions []objectAction, diffOptions ...cmp.Option) {
 	t.Helper()
 	for i, exp := range expectedActionFactories {
 		if i >= len(actualActions) {

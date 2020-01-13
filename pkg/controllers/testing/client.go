@@ -30,17 +30,13 @@ import (
 	"github.com/projectriff/system/pkg/apis"
 )
 
-type SingularAction interface {
-	GetObject() runtime.Object
-}
-
 type clientWrapper struct {
 	client              client.Client
 	scheme              *runtime.Scheme
-	createActions       []SingularAction
-	updateActions       []SingularAction
+	createActions       []objectAction
+	updateActions       []objectAction
 	deleteActions       []DeleteAction
-	statusUpdateActions []SingularAction
+	statusUpdateActions []objectAction
 	genCount            int
 	reactionChain       []Reactor
 }
@@ -51,10 +47,10 @@ func newClientWrapperWithScheme(scheme *runtime.Scheme, objs ...runtime.Object) 
 	client := &clientWrapper{
 		client:              fakeclient.NewFakeClientWithScheme(scheme, objs...),
 		scheme:              scheme,
-		createActions:       []SingularAction{},
-		updateActions:       []SingularAction{},
+		createActions:       []objectAction{},
+		updateActions:       []objectAction{},
 		deleteActions:       []DeleteAction{},
-		statusUpdateActions: []SingularAction{},
+		statusUpdateActions: []objectAction{},
 		genCount:            0,
 		reactionChain:       []Reactor{},
 	}
