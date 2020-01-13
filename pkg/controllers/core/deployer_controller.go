@@ -545,8 +545,11 @@ type DeployerChildDeploymentReconciler struct {
 	parentType string
 	childType  string
 
-	semanticEquals      func(desiredDeployment, deployment *appsv1.Deployment) bool
-	constructDeployment func(deployer *corev1alpha1.Deployer) (*appsv1.Deployment, error)
+	semanticEquals             func(desiredDeployment, deployment *appsv1.Deployment) bool
+	constructDesiredChild      func(deployer *corev1alpha1.Deployer) (*appsv1.Deployment, error)
+	reflectChildStatusOnParent func(parent *corev1alpha1.Deployer, child *appsv1.Deployment)
+	harmonizeImmutableFields   func(actual, desired *appsv1.Deployment)
+	mergeBeforeUpdate          func(current, desired *appsv1.Deployment)
 }
 
 func NewDeployerChildDeploymentReconciler(r *DeployerReconciler) *DeployerChildDeploymentReconciler {
@@ -567,13 +570,13 @@ func NewDeployerChildDeploymentReconciler(r *DeployerReconciler) *DeployerChildD
 			return equality.Semantic.DeepEqual(a1.Spec, a2.Spec) &&
 				equality.Semantic.DeepEqual(a1.Labels, a2.Labels)
 		},
-		constructDeployment: func(deployer *corev1alpha1.Deployer) (*appsv1.Deployment, error) {
-			labels := r.constructLabelsForDeployer(deployer)
+		constructDesiredChild: func(parent *corev1alpha1.Deployer) (*appsv1.Deployment, error) {
+			labels := r.constructLabelsForDeployer(parent)
 
-			template := *deployer.Spec.Template.DeepCopy()
+			template := *parent.Spec.Template.DeepCopy()
 			targetPort := template.Spec.Containers[0].Ports[0]
 
-			for k, v := range r.constructLabelsForDeployer(deployer) {
+			for k, v := range r.constructLabelsForDeployer(parent) {
 				template.Labels[k] = v
 			}
 
@@ -591,30 +594,41 @@ func NewDeployerChildDeploymentReconciler(r *DeployerReconciler) *DeployerChildD
 				}
 			}
 
-			deployment := &appsv1.Deployment{
+			child := &appsv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels:       labels,
 					Annotations:  make(map[string]string),
-					GenerateName: fmt.Sprintf("%s-deployer-", deployer.Name),
-					Namespace:    deployer.Namespace,
+					GenerateName: fmt.Sprintf("%s-deployer-", parent.Name),
+					Namespace:    parent.Namespace,
 				},
 				Spec: appsv1.DeploymentSpec{
 					Selector: &metav1.LabelSelector{
 						MatchLabels: map[string]string{
-							corev1alpha1.DeployerLabelKey: deployer.Name,
+							corev1alpha1.DeployerLabelKey: parent.Name,
 						},
 					},
 					Template: template,
 				},
 			}
-			if deployment.Spec.Template.Spec.Containers[0].Image == "" {
-				deployment.Spec.Template.Spec.Containers[0].Image = deployer.Status.LatestImage
+			if child.Spec.Template.Spec.Containers[0].Image == "" {
+				child.Spec.Template.Spec.Containers[0].Image = parent.Status.LatestImage
 			}
-			if err := ctrl.SetControllerReference(deployer, deployment, r.Scheme); err != nil {
+			if err := ctrl.SetControllerReference(parent, child, r.Scheme); err != nil {
 				return nil, err
 			}
 
-			return deployment, nil
+			return child, nil
+		},
+		reflectChildStatusOnParent: func(parent *corev1alpha1.Deployer, child *appsv1.Deployment) {
+			parent.Status.DeploymentRef = refs.NewTypedLocalObjectReferenceForObject(child, r.Scheme)
+			parent.Status.PropagateDeploymentStatus(&child.Status)
+		},
+		harmonizeImmutableFields: func(actual, desired *appsv1.Deployment) {
+			desired.Spec.Replicas = actual.Spec.Replicas
+		},
+		mergeBeforeUpdate: func(current, desired *appsv1.Deployment) {
+			current.ObjectMeta.Labels = desired.ObjectMeta.Labels
+			current.Spec = desired.Spec
 		},
 	}
 }
@@ -625,8 +639,7 @@ func (r *DeployerChildDeploymentReconciler) Reconcile(ctx context.Context, deplo
 		r.Log.Error(err, "unable to reconcile child", r.parentType, deployer)
 		return ctrl.Result{}, err
 	}
-	deployer.Status.DeploymentRef = refs.NewTypedLocalObjectReferenceForObject(child, r.Scheme)
-	deployer.Status.PropagateDeploymentStatus(&child.Status)
+	r.reflectChildStatusOnParent(deployer, child)
 
 	return ctrl.Result{}, nil
 }
@@ -654,12 +667,12 @@ func (r *DeployerChildDeploymentReconciler) reconcile(ctx context.Context, deplo
 		}
 	}
 
-	desired, err := r.constructDeployment(deployer)
+	desired, err := r.constructDesiredChild(deployer)
 	if err != nil {
 		return nil, err
 	}
 
-	// delete deployment if no longer needed
+	// delete child if no longer needed
 	if desired == nil {
 		r.Log.Info("deleting unwanted child", r.childType, actual)
 		if err := r.Delete(ctx, &actual); err != nil {
@@ -673,7 +686,7 @@ func (r *DeployerChildDeploymentReconciler) reconcile(ctx context.Context, deplo
 		return nil, nil
 	}
 
-	// create deployment if it doesn't exist
+	// create child if it doesn't exist
 	if actual.Name == "" {
 		r.Log.Info("creating child", "spec", desired.Spec)
 		if err := r.Create(ctx, desired); err != nil {
@@ -688,26 +701,25 @@ func (r *DeployerChildDeploymentReconciler) reconcile(ctx context.Context, deplo
 	}
 
 	// overwrite fields that should not be mutated
-	desired.Spec.Replicas = actual.Spec.Replicas
+	r.harmonizeImmutableFields(&actual, desired)
 
 	if r.semanticEquals(desired, &actual) {
-		// deployment is unchanged
+		// child is unchanged
 		return &actual, nil
 	}
 
-	// update deployment with desired changes
-	deployment := actual.DeepCopy()
-	deployment.ObjectMeta.Labels = desired.ObjectMeta.Labels
-	deployment.Spec = desired.Spec
-	r.Log.Info("reconciling child", "diff", cmp.Diff(actual.Spec, deployment.Spec))
-	if err := r.Update(ctx, deployment); err != nil {
-		r.Log.Error(err, "unable to update child", r.childType, deployment)
+	// update child with desired changes
+	current := actual.DeepCopy()
+	r.mergeBeforeUpdate(current, desired)
+	r.Log.Info("reconciling child", "diff", cmp.Diff(actual.Spec, current.Spec))
+	if err := r.Update(ctx, current); err != nil {
+		r.Log.Error(err, "unable to update child", r.childType, current)
 		r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "UpdateFailed",
-			"Failed to update %s %q: %v", r.childType, deployment.Name, err)
+			"Failed to update %s %q: %v", r.childType, current.Name, err)
 		return nil, err
 	}
 	r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Updated",
-		"Updated %s %q", r.childType, deployment.Name)
+		"Updated %s %q", r.childType, current.Name)
 
-	return deployment, nil
+	return current, nil
 }
