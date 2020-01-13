@@ -147,13 +147,9 @@ func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, dep
 	}
 
 	// reconcile deployment
-	childDeployment, err := r.reconcileChildDeployment(ctx, log, deployer)
-	if err != nil {
-		log.Error(err, "unable to reconcile child Deployment", "deployer", deployer)
+	if _, err := NewDeployerChildDeploymentReconciler(r).Reconcile(deployer); err != nil {
 		return ctrl.Result{}, err
 	}
-	deployer.Status.DeploymentRef = refs.NewTypedLocalObjectReferenceForObject(childDeployment, r.Scheme)
-	deployer.Status.PropagateDeploymentStatus(&childDeployment.Status)
 
 	// reconcile service
 	childService, err := r.reconcileChildService(ctx, log, deployer)
@@ -253,146 +249,6 @@ func (r *DeployerReconciler) reconcileBuildImage(ctx context.Context, log logr.L
 	}
 
 	return fmt.Errorf("invalid deployer build")
-}
-
-func (r *DeployerReconciler) reconcileChildDeployment(ctx context.Context, log logr.Logger, deployer *corev1alpha1.Deployer) (*appsv1.Deployment, error) {
-	var actualDeployment appsv1.Deployment
-	var childDeployments appsv1.DeploymentList
-	if err := r.List(ctx, &childDeployments, client.InNamespace(deployer.Namespace), client.MatchingField(deploymentIndexField, deployer.Name)); err != nil {
-		return nil, err
-	}
-	// TODO do we need to remove resources pending deletion?
-	if len(childDeployments.Items) == 1 {
-		actualDeployment = childDeployments.Items[0]
-	} else if len(childDeployments.Items) > 1 {
-		// this shouldn't happen, delete everything to a clean slate
-		for _, extraDeployment := range childDeployments.Items {
-			log.Info("deleting extra deployment", "deployment", extraDeployment)
-			if err := r.Delete(ctx, &extraDeployment); err != nil {
-				r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "DeleteFailed",
-					"Failed to delete Deployment %q: %v", extraDeployment.Name, err)
-				return nil, err
-			}
-			r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Deleted",
-				"Deleted Deployment %q", extraDeployment.Name)
-		}
-	}
-
-	desiredDeployment, err := r.constructDeploymentForDeployer(deployer)
-	if err != nil {
-		return nil, err
-	}
-
-	// delete deployment if no longer needed
-	if desiredDeployment == nil {
-		log.Info("deleting deployment", "deployment", actualDeployment)
-		if err := r.Delete(ctx, &actualDeployment); err != nil {
-			log.Error(err, "unable to delete Deployment for Deployer", "deployment", actualDeployment)
-			r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "DeleteFailed",
-				"Failed to delete Deployment %q: %v", actualDeployment.Name, err)
-			return nil, err
-		}
-		r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Deleted",
-			"Deleted Deployment %q", actualDeployment.Name)
-		return nil, nil
-	}
-
-	// create deployment if it doesn't exist
-	if actualDeployment.Name == "" {
-		log.Info("creating deployment", "spec", desiredDeployment.Spec)
-		if err := r.Create(ctx, desiredDeployment); err != nil {
-			log.Error(err, "unable to create Deployment for Deployer", "deployment", desiredDeployment)
-			r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "CreationFailed",
-				"Failed to create Deployment %q: %v", desiredDeployment.Name, err)
-			return nil, err
-		}
-		r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Created",
-			"Created Deployment %q", desiredDeployment.Name)
-		return desiredDeployment, nil
-	}
-
-	// overwrite fields that should not be mutated
-	desiredDeployment.Spec.Replicas = actualDeployment.Spec.Replicas
-
-	if r.deploymentSemanticEquals(desiredDeployment, &actualDeployment) {
-		// deployment is unchanged
-		return &actualDeployment, nil
-	}
-
-	// update deployment with desired changes
-	deployment := actualDeployment.DeepCopy()
-	deployment.ObjectMeta.Labels = desiredDeployment.ObjectMeta.Labels
-	deployment.Spec = desiredDeployment.Spec
-	log.Info("reconciling deployment", "diff", cmp.Diff(actualDeployment.Spec, deployment.Spec))
-	if err := r.Update(ctx, deployment); err != nil {
-		log.Error(err, "unable to update Deployment for Deployer", "deployment", deployment)
-		r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "UpdateFailed",
-			"Failed to update Deployment %q: %v", deployment.Name, err)
-		return nil, err
-	}
-	r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Updated",
-		"Updated Deployment %q", deployment.Name)
-
-	return deployment, nil
-}
-
-func (r *DeployerReconciler) deploymentSemanticEquals(desiredDeployment, deployment *appsv1.Deployment) bool {
-	return equality.Semantic.DeepEqual(desiredDeployment.Spec, deployment.Spec) &&
-		equality.Semantic.DeepEqual(desiredDeployment.ObjectMeta.Labels, deployment.ObjectMeta.Labels)
-}
-
-func (r *DeployerReconciler) constructDeploymentForDeployer(deployer *corev1alpha1.Deployer) (*appsv1.Deployment, error) {
-	labels := r.constructLabelsForDeployer(deployer)
-
-	deployment := &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Labels:       labels,
-			Annotations:  make(map[string]string),
-			GenerateName: fmt.Sprintf("%s-deployer-", deployer.Name),
-			Namespace:    deployer.Namespace,
-		},
-		Spec: appsv1.DeploymentSpec{
-			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					corev1alpha1.DeployerLabelKey: deployer.Name,
-				},
-			},
-			Template: r.constructPodTemplateSpecForDeployer(deployer),
-		},
-	}
-	if deployment.Spec.Template.Spec.Containers[0].Image == "" {
-		deployment.Spec.Template.Spec.Containers[0].Image = deployer.Status.LatestImage
-	}
-	if err := ctrl.SetControllerReference(deployer, deployment, r.Scheme); err != nil {
-		return nil, err
-	}
-
-	return deployment, nil
-}
-
-func (r *DeployerReconciler) constructPodTemplateSpecForDeployer(deployer *corev1alpha1.Deployer) corev1.PodTemplateSpec {
-	template := *deployer.Spec.Template.DeepCopy()
-	targetPort := template.Spec.Containers[0].Ports[0]
-
-	for k, v := range r.constructLabelsForDeployer(deployer) {
-		template.Labels[k] = v
-	}
-
-	template.Spec.Containers[0].Env = append(template.Spec.Containers[0].Env, corev1.EnvVar{
-		Name:  "PORT",
-		Value: fmt.Sprintf("%d", targetPort.ContainerPort),
-	})
-	if template.Spec.Containers[0].ReadinessProbe == nil {
-		template.Spec.Containers[0].ReadinessProbe = &corev1.Probe{
-			Handler: corev1.Handler{
-				TCPSocket: &corev1.TCPSocketAction{
-					Port: intstr.FromInt(int(targetPort.ContainerPort)),
-				},
-			},
-		}
-	}
-
-	return template
 }
 
 func (r *DeployerReconciler) reconcileIngress(ctx context.Context, log logr.Logger, deployer *corev1alpha1.Deployer, serviceName string, coreSettings *corev1.ConfigMap) (*networkingv1beta1.Ingress, error) {
@@ -677,4 +533,179 @@ func (r *DeployerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(&source.Kind{Type: &buildv1alpha1.Container{}}, controllers.EnqueueTracked(&buildv1alpha1.Container{}, r.Tracker, r.Scheme)).
 		Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, controllers.EnqueueTracked(&buildv1alpha1.Function{}, r.Tracker, r.Scheme)).
 		Complete(r)
+}
+
+type DeployerChildDeploymentReconciler struct {
+	client.Client
+	Recorder record.EventRecorder
+	Log      logr.Logger
+	Scheme   *runtime.Scheme
+	Tracker  tracker.Tracker
+
+	constructLabelsForDeployer func(deployer *corev1alpha1.Deployer) map[string]string
+}
+
+func NewDeployerChildDeploymentReconciler(r *DeployerReconciler) *DeployerChildDeploymentReconciler {
+	return &DeployerChildDeploymentReconciler{
+		Client:   r.Client,
+		Recorder: r.Recorder,
+		Log:      r.Log.WithName("Deployment"),
+		Scheme:   r.Scheme,
+		Tracker:  r.Tracker,
+
+		constructLabelsForDeployer: r.constructLabelsForDeployer,
+	}
+}
+
+func (r *DeployerChildDeploymentReconciler) Reconcile(deployer *corev1alpha1.Deployer) (ctrl.Result, error) {
+	ctx := context.Background()
+	childDeployment, err := r.reconcileChildDeployment(ctx, deployer)
+	if err != nil {
+		r.Log.Error(err, "unable to reconcile child Deployment", "deployer", deployer)
+		return ctrl.Result{}, err
+	}
+	deployer.Status.DeploymentRef = refs.NewTypedLocalObjectReferenceForObject(childDeployment, r.Scheme)
+	deployer.Status.PropagateDeploymentStatus(&childDeployment.Status)
+
+	return ctrl.Result{}, nil
+}
+
+func (r *DeployerChildDeploymentReconciler) reconcileChildDeployment(ctx context.Context, deployer *corev1alpha1.Deployer) (*appsv1.Deployment, error) {
+	var actualDeployment appsv1.Deployment
+	var childDeployments appsv1.DeploymentList
+	if err := r.List(ctx, &childDeployments, client.InNamespace(deployer.Namespace), client.MatchingField(deploymentIndexField, deployer.Name)); err != nil {
+		return nil, err
+	}
+	// TODO do we need to remove resources pending deletion?
+	if len(childDeployments.Items) == 1 {
+		actualDeployment = childDeployments.Items[0]
+	} else if len(childDeployments.Items) > 1 {
+		// this shouldn't happen, delete everything to a clean slate
+		for _, extraDeployment := range childDeployments.Items {
+			r.Log.Info("deleting extra deployment", "deployment", extraDeployment)
+			if err := r.Delete(ctx, &extraDeployment); err != nil {
+				r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "DeleteFailed",
+					"Failed to delete Deployment %q: %v", extraDeployment.Name, err)
+				return nil, err
+			}
+			r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Deleted",
+				"Deleted Deployment %q", extraDeployment.Name)
+		}
+	}
+
+	desiredDeployment, err := r.constructDeploymentForDeployer(deployer)
+	if err != nil {
+		return nil, err
+	}
+
+	// delete deployment if no longer needed
+	if desiredDeployment == nil {
+		r.Log.Info("deleting deployment", "deployment", actualDeployment)
+		if err := r.Delete(ctx, &actualDeployment); err != nil {
+			r.Log.Error(err, "unable to delete Deployment for Deployer", "deployment", actualDeployment)
+			r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "DeleteFailed",
+				"Failed to delete Deployment %q: %v", actualDeployment.Name, err)
+			return nil, err
+		}
+		r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Deleted",
+			"Deleted Deployment %q", actualDeployment.Name)
+		return nil, nil
+	}
+
+	// create deployment if it doesn't exist
+	if actualDeployment.Name == "" {
+		r.Log.Info("creating deployment", "spec", desiredDeployment.Spec)
+		if err := r.Create(ctx, desiredDeployment); err != nil {
+			r.Log.Error(err, "unable to create Deployment for Deployer", "deployment", desiredDeployment)
+			r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "CreationFailed",
+				"Failed to create Deployment %q: %v", desiredDeployment.Name, err)
+			return nil, err
+		}
+		r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Created",
+			"Created Deployment %q", desiredDeployment.Name)
+		return desiredDeployment, nil
+	}
+
+	// overwrite fields that should not be mutated
+	desiredDeployment.Spec.Replicas = actualDeployment.Spec.Replicas
+
+	if r.deploymentSemanticEquals(desiredDeployment, &actualDeployment) {
+		// deployment is unchanged
+		return &actualDeployment, nil
+	}
+
+	// update deployment with desired changes
+	deployment := actualDeployment.DeepCopy()
+	deployment.ObjectMeta.Labels = desiredDeployment.ObjectMeta.Labels
+	deployment.Spec = desiredDeployment.Spec
+	r.Log.Info("reconciling deployment", "diff", cmp.Diff(actualDeployment.Spec, deployment.Spec))
+	if err := r.Update(ctx, deployment); err != nil {
+		r.Log.Error(err, "unable to update Deployment for Deployer", "deployment", deployment)
+		r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "UpdateFailed",
+			"Failed to update Deployment %q: %v", deployment.Name, err)
+		return nil, err
+	}
+	r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Updated",
+		"Updated Deployment %q", deployment.Name)
+
+	return deployment, nil
+}
+
+func (r *DeployerChildDeploymentReconciler) deploymentSemanticEquals(desiredDeployment, deployment *appsv1.Deployment) bool {
+	return equality.Semantic.DeepEqual(desiredDeployment.Spec, deployment.Spec) &&
+		equality.Semantic.DeepEqual(desiredDeployment.ObjectMeta.Labels, deployment.ObjectMeta.Labels)
+}
+
+func (r *DeployerChildDeploymentReconciler) constructDeploymentForDeployer(deployer *corev1alpha1.Deployer) (*appsv1.Deployment, error) {
+	labels := r.constructLabelsForDeployer(deployer)
+
+	deployment := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Labels:       labels,
+			Annotations:  make(map[string]string),
+			GenerateName: fmt.Sprintf("%s-deployer-", deployer.Name),
+			Namespace:    deployer.Namespace,
+		},
+		Spec: appsv1.DeploymentSpec{
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					corev1alpha1.DeployerLabelKey: deployer.Name,
+				},
+			},
+			Template: r.constructPodTemplateSpecForDeployer(deployer),
+		},
+	}
+	if deployment.Spec.Template.Spec.Containers[0].Image == "" {
+		deployment.Spec.Template.Spec.Containers[0].Image = deployer.Status.LatestImage
+	}
+	if err := ctrl.SetControllerReference(deployer, deployment, r.Scheme); err != nil {
+		return nil, err
+	}
+
+	return deployment, nil
+}
+
+func (r *DeployerChildDeploymentReconciler) constructPodTemplateSpecForDeployer(deployer *corev1alpha1.Deployer) corev1.PodTemplateSpec {
+	template := *deployer.Spec.Template.DeepCopy()
+	targetPort := template.Spec.Containers[0].Ports[0]
+
+	for k, v := range r.constructLabelsForDeployer(deployer) {
+		template.Labels[k] = v
+	}
+
+	template.Spec.Containers[0].Env = append(template.Spec.Containers[0].Env, corev1.EnvVar{
+		Name:  "PORT",
+		Value: fmt.Sprintf("%d", targetPort.ContainerPort),
+	})
+	if template.Spec.Containers[0].ReadinessProbe == nil {
+		template.Spec.Containers[0].ReadinessProbe = &corev1.Probe{
+			Handler: corev1.Handler{
+				TCPSocket: &corev1.TCPSocketAction{
+					Port: intstr.FromInt(int(targetPort.ContainerPort)),
+				},
+			},
+		}
+	}
+
+	return template
 }
