@@ -321,7 +321,7 @@ func (r *DeployerReconciler) reconcileIngress(ctx context.Context, log logr.Logg
 	ingress.Spec = desiredIngress.Spec
 	log.Info("reconciling ingress", "diff", cmp.Diff(actualIngress.Spec, ingress.Spec))
 	if err := r.Update(ctx, ingress); err != nil {
-		log.Error(err, "unable to update Ingress for Deployer", "deployment", ingress)
+		log.Error(err, "unable to update Ingress for Deployer", "ingress", ingress)
 		r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "UpdateFailed",
 			"Failed to update Ingress %q: %v", ingress.Name, err)
 		return nil, err
@@ -447,7 +447,7 @@ func (r *DeployerReconciler) reconcileChildService(ctx context.Context, log logr
 	service.Spec = desiredService.Spec
 	log.Info("reconciling service", "diff", cmp.Diff(actualService.Spec, service.Spec))
 	if err := r.Update(ctx, service); err != nil {
-		log.Error(err, "unable to update Service for Deployer", "deployment", service)
+		log.Error(err, "unable to update Service for Deployer", "service", service)
 		r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "UpdateFailed",
 			"Failed to update Service %q: %v", service.Name, err)
 		return nil, err
@@ -542,17 +542,26 @@ type DeployerChildDeploymentReconciler struct {
 	Scheme   *runtime.Scheme
 	Tracker  tracker.Tracker
 
+	parentType string
+	childType  string
+
 	semanticEquals      func(desiredDeployment, deployment *appsv1.Deployment) bool
 	constructDeployment func(deployer *corev1alpha1.Deployer) (*appsv1.Deployment, error)
 }
 
 func NewDeployerChildDeploymentReconciler(r *DeployerReconciler) *DeployerChildDeploymentReconciler {
+	parentType := "deployer"
+	childType := "deployment"
+
 	return &DeployerChildDeploymentReconciler{
 		Client:   r.Client,
 		Recorder: r.Recorder,
-		Log:      r.Log.WithName("Deployment"),
+		Log:      r.Log.WithName(childType),
 		Scheme:   r.Scheme,
 		Tracker:  r.Tracker,
+
+		parentType: parentType,
+		childType:  childType,
 
 		semanticEquals: func(a1, a2 *appsv1.Deployment) bool {
 			return equality.Semantic.DeepEqual(a1.Spec, a2.Spec) &&
@@ -613,7 +622,7 @@ func NewDeployerChildDeploymentReconciler(r *DeployerReconciler) *DeployerChildD
 func (r *DeployerChildDeploymentReconciler) Reconcile(ctx context.Context, deployer *corev1alpha1.Deployer) (ctrl.Result, error) {
 	child, err := r.reconcile(ctx, deployer)
 	if err != nil {
-		r.Log.Error(err, "unable to reconcile child Deployment", "deployer", deployer)
+		r.Log.Error(err, "unable to reconcile child", r.parentType, deployer)
 		return ctrl.Result{}, err
 	}
 	deployer.Status.DeploymentRef = refs.NewTypedLocalObjectReferenceForObject(child, r.Scheme)
@@ -634,14 +643,14 @@ func (r *DeployerChildDeploymentReconciler) reconcile(ctx context.Context, deplo
 	} else if len(children.Items) > 1 {
 		// this shouldn't happen, delete everything to a clean slate
 		for _, extra := range children.Items {
-			r.Log.Info("deleting extra deployment", "deployment", extra)
+			r.Log.Info("deleting extra child", r.childType, extra)
 			if err := r.Delete(ctx, &extra); err != nil {
 				r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "DeleteFailed",
-					"Failed to delete Deployment %q: %v", extra.Name, err)
+					"Failed to delete %s %q: %v", r.childType, extra.Name, err)
 				return nil, err
 			}
 			r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Deleted",
-				"Deleted Deployment %q", extra.Name)
+				"Deleted %s %q", r.childType, extra.Name)
 		}
 	}
 
@@ -652,11 +661,11 @@ func (r *DeployerChildDeploymentReconciler) reconcile(ctx context.Context, deplo
 
 	// delete deployment if no longer needed
 	if desired == nil {
-		r.Log.Info("deleting deployment", "deployment", actual)
+		r.Log.Info("deleting unwanted child", r.childType, actual)
 		if err := r.Delete(ctx, &actual); err != nil {
-			r.Log.Error(err, "unable to delete Deployment for Deployer", "deployment", actual)
+			r.Log.Error(err, "unable to delete unwanted child", r.childType, actual)
 			r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "DeleteFailed",
-				"Failed to delete Deployment %q: %v", actual.Name, err)
+				"Failed to delete %s %q: %v", r.childType, actual.Name, err)
 			return nil, err
 		}
 		r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Deleted",
@@ -666,15 +675,15 @@ func (r *DeployerChildDeploymentReconciler) reconcile(ctx context.Context, deplo
 
 	// create deployment if it doesn't exist
 	if actual.Name == "" {
-		r.Log.Info("creating deployment", "spec", desired.Spec)
+		r.Log.Info("creating child", "spec", desired.Spec)
 		if err := r.Create(ctx, desired); err != nil {
-			r.Log.Error(err, "unable to create Deployment for Deployer", "deployment", desired)
+			r.Log.Error(err, "unable to create child", r.childType, desired)
 			r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "CreationFailed",
-				"Failed to create Deployment %q: %v", desired.Name, err)
+				"Failed to create %s %q: %v", r.childType, desired.Name, err)
 			return nil, err
 		}
 		r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Created",
-			"Created Deployment %q", desired.Name)
+			"Created %s %q", r.childType, desired.Name)
 		return desired, nil
 	}
 
@@ -690,15 +699,15 @@ func (r *DeployerChildDeploymentReconciler) reconcile(ctx context.Context, deplo
 	deployment := actual.DeepCopy()
 	deployment.ObjectMeta.Labels = desired.ObjectMeta.Labels
 	deployment.Spec = desired.Spec
-	r.Log.Info("reconciling deployment", "diff", cmp.Diff(actual.Spec, deployment.Spec))
+	r.Log.Info("reconciling child", "diff", cmp.Diff(actual.Spec, deployment.Spec))
 	if err := r.Update(ctx, deployment); err != nil {
-		r.Log.Error(err, "unable to update Deployment for Deployer", "deployment", deployment)
+		r.Log.Error(err, "unable to update child", r.childType, deployment)
 		r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "UpdateFailed",
-			"Failed to update Deployment %q: %v", deployment.Name, err)
+			"Failed to update %s %q: %v", r.childType, deployment.Name, err)
 		return nil, err
 	}
 	r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Updated",
-		"Updated Deployment %q", deployment.Name)
+		"Updated %s %q", r.childType, deployment.Name)
 
 	return deployment, nil
 }

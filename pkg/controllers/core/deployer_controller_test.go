@@ -184,7 +184,7 @@ func TestDeployerReconciler(t *testing.T) {
 		},
 		ExpectEvents: []rtesting.Event{
 			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Created",
-				`Created Deployment "%s-deployer-001"`, testName),
+				`Created deployment "%s-deployer-001"`, testName),
 			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Created",
 				`Created Service "%s"`, testName),
 			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "StatusUpdated",
@@ -261,7 +261,7 @@ func TestDeployerReconciler(t *testing.T) {
 		},
 		ExpectEvents: []rtesting.Event{
 			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Created",
-				`Created Deployment "%s-deployer-001"`, testName),
+				`Created deployment "%s-deployer-001"`, testName),
 			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Created",
 				`Created Service "%s"`, testName),
 			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "StatusUpdated",
@@ -338,7 +338,7 @@ func TestDeployerReconciler(t *testing.T) {
 		},
 		ExpectEvents: []rtesting.Event{
 			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Created",
-				`Created Deployment "%s-deployer-001"`, testName),
+				`Created deployment "%s-deployer-001"`, testName),
 			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Created",
 				`Created Service "%s"`, testName),
 			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "StatusUpdated",
@@ -413,7 +413,7 @@ func TestDeployerReconciler(t *testing.T) {
 		},
 		ExpectEvents: []rtesting.Event{
 			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Created",
-				`Created Deployment "%s-deployer-001"`, testName),
+				`Created deployment "%s-deployer-001"`, testName),
 			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Created",
 				`Created Service "%s"`, testName),
 			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "StatusUpdated",
@@ -453,7 +453,7 @@ func TestDeployerReconciler(t *testing.T) {
 		},
 		ExpectEvents: []rtesting.Event{
 			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeWarning, "CreationFailed",
-				`Failed to create Deployment "": inducing failure for create Deployment`),
+				`Failed to create deployment "": inducing failure for create Deployment`),
 			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "StatusUpdated",
 				`Updated status`),
 		},
@@ -486,7 +486,7 @@ func TestDeployerReconciler(t *testing.T) {
 		},
 		ExpectEvents: []rtesting.Event{
 			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Created",
-				`Created Deployment "%s-deployer-001"`, testName),
+				`Created deployment "%s-deployer-001"`, testName),
 			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeWarning, "CreationFailed",
 				`Failed to create Service "%s": inducing failure for create Service`, testName),
 			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "StatusUpdated",
@@ -524,7 +524,7 @@ func TestDeployerReconciler(t *testing.T) {
 		},
 		ExpectEvents: []rtesting.Event{
 			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Created",
-				`Created Deployment "%s-deployer-001"`, testName),
+				`Created deployment "%s-deployer-001"`, testName),
 			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeWarning, "CreationFailed",
 				`Failed to create Service "%s":  "%s" already exists`, testName, testName),
 			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "StatusUpdated",
@@ -573,7 +573,7 @@ func TestDeployerReconciler(t *testing.T) {
 		},
 		ExpectEvents: []rtesting.Event{
 			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Updated",
-				`Updated Deployment "%s"`, deploymentGiven.Create().GetName()),
+				`Updated deployment "%s"`, deploymentGiven.Create().GetName()),
 		},
 		ExpectUpdates: []rtesting.Factory{
 			deploymentGiven,
@@ -611,7 +611,7 @@ func TestDeployerReconciler(t *testing.T) {
 		},
 		ExpectEvents: []rtesting.Event{
 			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeWarning, "UpdateFailed",
-				`Failed to update Deployment "%s": inducing failure for update Deployment`, deploymentGiven.Create().GetName()),
+				`Failed to update deployment "%s": inducing failure for update Deployment`, deploymentGiven.Create().GetName()),
 		},
 		ExpectUpdates: []rtesting.Factory{
 			deploymentGiven,
@@ -769,11 +769,11 @@ func TestDeployerReconciler(t *testing.T) {
 		},
 		ExpectEvents: []rtesting.Event{
 			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Deleted",
-				`Deleted Deployment "%s"`, "extra-deployment-1"),
+				`Deleted deployment "%s"`, "extra-deployment-1"),
 			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Deleted",
-				`Deleted Deployment "%s"`, "extra-deployment-2"),
+				`Deleted deployment "%s"`, "extra-deployment-2"),
 			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Created",
-				`Created Deployment "%s-deployer-001"`, testName),
+				`Created deployment "%s-deployer-001"`, testName),
 		},
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
@@ -814,7 +814,7 @@ func TestDeployerReconciler(t *testing.T) {
 		ShouldErr: true,
 		ExpectEvents: []rtesting.Event{
 			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeWarning, "DeleteFailed",
-				`Failed to delete Deployment "%s": inducing failure for delete Deployment`, "extra-deployment-1"),
+				`Failed to delete deployment "%s": inducing failure for delete Deployment`, "extra-deployment-1"),
 		},
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testSettings, deployerMinimal, scheme),
@@ -1302,7 +1302,7 @@ func TestDeployerReconciler(t *testing.T) {
 		},
 		ExpectEvents: []rtesting.Event{
 			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Updated",
-				`Updated Deployment "%s"`, deploymentGiven.Create().GetName()),
+				`Updated deployment "%s"`, deploymentGiven.Create().GetName()),
 			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Updated",
 				`Updated Service "%s"`, serviceGiven.Create().GetName()),
 			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "Updated",
