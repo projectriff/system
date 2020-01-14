@@ -109,31 +109,9 @@ func (r *DeployerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	return result, err
 }
 
-func (r *DeployerReconciler) getAndTrackSettings(ctx context.Context, log logr.Logger, obj metav1.Object) (*corev1.ConfigMap, error) {
-	cm := &corev1.ConfigMap{}
-	cmKey := types.NamespacedName{Namespace: systemNamespace, Name: settingsConfigMapName}
-
-	// track config map
-	r.Tracker.Track(
-		tracker.NewKey(schema.GroupVersionKind{Version: "v1", Kind: "ConfigMap"}, cmKey),
-		types.NamespacedName{Namespace: obj.GetNamespace(), Name: obj.GetName()},
-	)
-	if err := r.Get(ctx, cmKey, cm); err != nil {
-		log.Error(err, fmt.Sprintf("unable to fetch resource with reference: %s", cmKey.String()))
-		return nil, err
-	}
-
-	return cm, nil
-}
-
 func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, deployer *corev1alpha1.Deployer) (ctrl.Result, error) {
 	if deployer.GetDeletionTimestamp() != nil {
 		return ctrl.Result{}, nil
-	}
-
-	coreSettings, err := r.getAndTrackSettings(ctx, log, deployer)
-	if err != nil {
-		return ctrl.Result{}, err
 	}
 
 	// resolve build image
@@ -153,35 +131,13 @@ func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, dep
 	}
 
 	// reconcile service
-	childService, err := r.reconcileChildService(ctx, log, deployer)
-	if err != nil {
-		if apierrs.IsAlreadyExists(err) {
-			service := err.(apierrs.APIStatus).Status().Details.Name
-			deployer.Status.MarkServiceNotOwned(service)
-			log.Info("unable to reconcile child Service, service not owned", "deployer", deployer, "service", service)
-			return ctrl.Result{}, nil
-		}
-		log.Error(err, "unable to reconcile child Service", "deployer", deployer)
+	if _, err := NewDeployerChildServiceReconciler(r).Reconcile(ctx, deployer); err != nil {
 		return ctrl.Result{}, err
 	}
-	deployer.Status.ServiceRef = refs.NewTypedLocalObjectReferenceForObject(childService, r.Scheme)
-	deployer.Status.Address = &apis.Addressable{URL: fmt.Sprintf("http://%s.%s.%s", childService.Name, childService.Namespace, "svc.cluster.local")}
-	deployer.Status.PropagateServiceStatus(&childService.Status)
 
 	// reconcile ingress
-	childIngress, err := r.reconcileIngress(ctx, log, deployer, childService.Name, coreSettings)
-	if err != nil {
-		log.Error(err, "unable to reconcile Ingress", "deployer", deployer)
+	if _, err := NewDeployerChildIngressReconciler(r).Reconcile(ctx, deployer); err != nil {
 		return ctrl.Result{}, err
-	}
-	if childIngress == nil {
-		deployer.Status.IngressRef = nil
-		deployer.Status.URL = ""
-		deployer.Status.MarkIngressNotRequired()
-	} else {
-		deployer.Status.IngressRef = refs.NewTypedLocalObjectReferenceForObject(childIngress, r.Scheme)
-		deployer.Status.URL = fmt.Sprintf("http://%s", childIngress.Spec.Rules[0].Host)
-		deployer.Status.PropagateIngressStatus(&childIngress.Status)
 	}
 
 	deployer.Status.ObservedGeneration = deployer.Generation
@@ -252,245 +208,6 @@ func (r *DeployerReconciler) reconcileBuildImage(ctx context.Context, log logr.L
 	return fmt.Errorf("invalid deployer build")
 }
 
-func (r *DeployerReconciler) reconcileIngress(ctx context.Context, log logr.Logger, deployer *corev1alpha1.Deployer, serviceName string, coreSettings *corev1.ConfigMap) (*networkingv1beta1.Ingress, error) {
-	var actualIngress networkingv1beta1.Ingress
-	var childIngresses networkingv1beta1.IngressList
-
-	if err := r.List(ctx, &childIngresses, client.InNamespace(deployer.Namespace), client.MatchingField(ingressIndexField, deployer.Name)); err != nil {
-		return nil, err
-	}
-
-	if len(childIngresses.Items) == 1 {
-		actualIngress = childIngresses.Items[0]
-	} else if len(childIngresses.Items) > 1 {
-		// this shouldn't happen, delete everything to a clean slate
-		for _, extraIngress := range childIngresses.Items {
-			log.Info("deleting extra ingress", "ingress", extraIngress)
-			if err := r.Delete(ctx, &extraIngress); err != nil {
-				r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "DeleteFailed",
-					"Failed to delete Ingress %q: %v", extraIngress.Name, err)
-				return nil, err
-			}
-			r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Deleted",
-				"Deleted Ingress %q", extraIngress.Name)
-		}
-	}
-
-	desiredIngress, err := r.constructIngressForDeployer(deployer, coreSettings)
-	if err != nil {
-		return nil, err
-	}
-
-	// delete ingress if no longer needed
-	if desiredIngress == nil {
-		if !actualIngress.CreationTimestamp.IsZero() {
-			log.Info("deleting ingress", "ingress", actualIngress)
-			if err := r.Delete(ctx, &actualIngress); err != nil {
-				log.Error(err, "unable to delete ingress for Deployer", "ingress", actualIngress)
-				r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "DeleteFailed",
-					"Failed to delete Ingress %q: %v", actualIngress.Name, err)
-				return nil, err
-			}
-			r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Deleted",
-				"Deleted Ingress %q", actualIngress.Name)
-		}
-		return nil, nil
-	}
-
-	// create ingress if it doesn't exist
-	if actualIngress.Name == "" {
-		log.Info("creating service", "spec", desiredIngress.Spec)
-		if err := r.Create(ctx, desiredIngress); err != nil {
-			log.Error(err, "unable to create Ingress for Deployer", "ingress", desiredIngress)
-			r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "CreationFailed",
-				"Failed to create Ingress %q: %v", desiredIngress.Name, err)
-			return nil, err
-		}
-		r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Created",
-			"Created Ingress %q", desiredIngress.Name)
-		return desiredIngress, nil
-	}
-
-	if r.ingressSemanticEquals(desiredIngress, &actualIngress) {
-		// ingress is unchanged
-		return &actualIngress, nil
-	}
-
-	// update ingress with desired changes
-	ingress := actualIngress.DeepCopy()
-	ingress.ObjectMeta.Labels = desiredIngress.ObjectMeta.Labels
-	ingress.Spec = desiredIngress.Spec
-	log.Info("reconciling ingress", "diff", cmp.Diff(actualIngress.Spec, ingress.Spec))
-	if err := r.Update(ctx, ingress); err != nil {
-		log.Error(err, "unable to update Ingress for Deployer", "ingress", ingress)
-		r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "UpdateFailed",
-			"Failed to update Ingress %q: %v", ingress.Name, err)
-		return nil, err
-	}
-	r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Updated",
-		"Updated Ingress %q", ingress.Name)
-
-	return ingress, nil
-}
-
-func (r *DeployerReconciler) ingressSemanticEquals(desiredIngress, ingress *networkingv1beta1.Ingress) bool {
-	return equality.Semantic.DeepEqual(desiredIngress.Spec, ingress.Spec) &&
-		equality.Semantic.DeepEqual(desiredIngress.ObjectMeta.Labels, ingress.ObjectMeta.Labels)
-}
-
-func (r *DeployerReconciler) constructIngressForDeployer(deployer *corev1alpha1.Deployer, coreSettings *corev1.ConfigMap) (*networkingv1beta1.Ingress, error) {
-	if deployer.Status.ServiceRef == nil || deployer.Spec.IngressPolicy == corev1alpha1.IngressPolicyClusterLocal {
-		// skip ingress
-		return nil, nil
-	}
-	labels := r.constructLabelsForDeployer(deployer)
-	host := r.constructHostForDeployer(deployer, coreSettings)
-
-	ingress := &networkingv1beta1.Ingress{
-		ObjectMeta: metav1.ObjectMeta{
-			Labels:       labels,
-			Annotations:  make(map[string]string),
-			GenerateName: fmt.Sprintf("%s-deployer-", deployer.Name),
-			Namespace:    deployer.Namespace,
-		},
-		Spec: networkingv1beta1.IngressSpec{
-			Rules: []networkingv1beta1.IngressRule{{
-				Host: host,
-				IngressRuleValue: networkingv1beta1.IngressRuleValue{
-					HTTP: &networkingv1beta1.HTTPIngressRuleValue{
-						Paths: []networkingv1beta1.HTTPIngressPath{{
-							Path: "/",
-							Backend: networkingv1beta1.IngressBackend{
-								ServiceName: deployer.Status.ServiceRef.Name,
-								ServicePort: intstr.FromInt(80),
-							},
-						}},
-					},
-				},
-			}},
-		},
-	}
-
-	if err := ctrl.SetControllerReference(deployer, ingress, r.Scheme); err != nil {
-		return nil, err
-	}
-
-	return ingress, nil
-}
-
-func (r *DeployerReconciler) reconcileChildService(ctx context.Context, log logr.Logger, deployer *corev1alpha1.Deployer) (*corev1.Service, error) {
-	var actualService corev1.Service
-	var childServices corev1.ServiceList
-	if err := r.List(ctx, &childServices, client.InNamespace(deployer.Namespace), client.MatchingField(serviceIndexField, deployer.Name)); err != nil {
-		return nil, err
-	}
-	// TODO do we need to remove resources pending deletion?
-	if len(childServices.Items) == 1 {
-		actualService = childServices.Items[0]
-	} else if len(childServices.Items) > 1 {
-		// this shouldn't happen, delete everything to a clean slate
-		for _, extraService := range childServices.Items {
-			log.Info("deleting extra service", "service", extraService)
-			if err := r.Delete(ctx, &extraService); err != nil {
-				r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "DeleteFailed",
-					"Failed to delete Service %q: %v", extraService.Name, err)
-				return nil, err
-			}
-			r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Deleted",
-				"Deleted Service %q", extraService.Name)
-		}
-	}
-
-	desiredService, err := r.constructServiceForDeployer(deployer)
-	if err != nil {
-		return nil, err
-	}
-
-	// delete service if no longer needed
-	if desiredService == nil {
-		log.Info("deleting service", "service", actualService)
-		if err := r.Delete(ctx, &actualService); err != nil {
-			log.Error(err, "unable to delete Service for Deployer", "service", actualService)
-			r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "DeleteFailed",
-				"Failed to delete Service %q: %v", actualService.Name, err)
-			return nil, err
-		}
-		r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Deleted",
-			"Deleted Service %q", actualService.Name)
-		return nil, nil
-	}
-
-	// create service if it doesn't exist
-	if actualService.Name == "" {
-		log.Info("creating service", "spec", desiredService.Spec)
-		if err := r.Create(ctx, desiredService); err != nil {
-			log.Error(err, "unable to create Service for Deployer", "service", desiredService)
-			r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "CreationFailed",
-				"Failed to create Service %q: %v", desiredService.Name, err)
-			return nil, err
-		}
-		r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Created",
-			"Created Service %q", desiredService.Name)
-		return desiredService, nil
-	}
-
-	// overwrite fields that should not be mutated
-	desiredService.Spec.ClusterIP = actualService.Spec.ClusterIP
-
-	if r.serviceSemanticEquals(desiredService, &actualService) {
-		// service is unchanged
-		return &actualService, nil
-	}
-
-	// update service with desired changes
-	service := actualService.DeepCopy()
-	service.ObjectMeta.Labels = desiredService.ObjectMeta.Labels
-	service.Spec = desiredService.Spec
-	log.Info("reconciling service", "diff", cmp.Diff(actualService.Spec, service.Spec))
-	if err := r.Update(ctx, service); err != nil {
-		log.Error(err, "unable to update Service for Deployer", "service", service)
-		r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "UpdateFailed",
-			"Failed to update Service %q: %v", service.Name, err)
-		return nil, err
-	}
-	r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Updated",
-		"Updated Service %q", service.Name)
-
-	return service, nil
-}
-
-func (r *DeployerReconciler) serviceSemanticEquals(desiredService, service *corev1.Service) bool {
-	return equality.Semantic.DeepEqual(desiredService.Spec, service.Spec) &&
-		equality.Semantic.DeepEqual(desiredService.ObjectMeta.Labels, service.ObjectMeta.Labels)
-}
-
-func (r *DeployerReconciler) constructServiceForDeployer(deployer *corev1alpha1.Deployer) (*corev1.Service, error) {
-	labels := r.constructLabelsForDeployer(deployer)
-	targetPort := deployer.Spec.Template.Spec.Containers[0].Ports[0]
-
-	service := &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Labels:      labels,
-			Annotations: make(map[string]string),
-			Namespace:   deployer.Namespace,
-			Name:        deployer.Name,
-		},
-		Spec: corev1.ServiceSpec{
-			Ports: []corev1.ServicePort{
-				{Name: targetPort.Name, Port: 80, TargetPort: intstr.FromInt(int(targetPort.ContainerPort))},
-			},
-			Selector: map[string]string{
-				corev1alpha1.DeployerLabelKey: deployer.Name,
-			},
-		},
-	}
-	if err := ctrl.SetControllerReference(deployer, service, r.Scheme); err != nil {
-		return nil, err
-	}
-
-	return service, nil
-}
-
 func (r *DeployerReconciler) constructLabelsForDeployer(deployer *corev1alpha1.Deployer) map[string]string {
 	labels := make(map[string]string, len(deployer.ObjectMeta.Labels)+1)
 	// pass through existing labels
@@ -501,15 +218,6 @@ func (r *DeployerReconciler) constructLabelsForDeployer(deployer *corev1alpha1.D
 	labels[corev1alpha1.DeployerLabelKey] = deployer.Name
 
 	return labels
-}
-
-func (r *DeployerReconciler) constructHostForDeployer(deployer *corev1alpha1.Deployer, cm *corev1.ConfigMap) string {
-	domain := defaultDomain
-	if d := cm.Data[defaultDomainKey]; d != "" {
-		domain = d
-	}
-
-	return fmt.Sprintf("%s.%s.%s", deployer.Name, deployer.Namespace, domain)
 }
 
 func (r *DeployerReconciler) SetupWithManager(mgr ctrl.Manager) error {
@@ -536,12 +244,12 @@ func (r *DeployerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func NewDeployerChildDeploymentReconciler(r *DeployerReconciler) *ChildReconciler {
+func NewDeployerChildDeploymentReconciler(r *DeployerReconciler) *controllers.ChildReconciler {
 	parentType := reflect.TypeOf(corev1alpha1.Deployer{})
 	childType := reflect.TypeOf(appsv1.Deployment{})
 	childListType := reflect.TypeOf(appsv1.DeploymentList{})
 
-	return &ChildReconciler{
+	return &controllers.ChildReconciler{
 		Client:   r.Client,
 		Recorder: r.Recorder,
 		Log:      r.Log.WithName(childType.Name()),
@@ -607,7 +315,10 @@ func NewDeployerChildDeploymentReconciler(r *DeployerReconciler) *ChildReconcile
 
 			return child, nil
 		},
-		ReflectChildStatusOnParent: func(parent *corev1alpha1.Deployer, child *appsv1.Deployment) {
+		ReflectChildStatusOnParent: func(parent *corev1alpha1.Deployer, child *appsv1.Deployment, err error) {
+			if err != nil {
+				return
+			}
 			parent.Status.DeploymentRef = refs.NewTypedLocalObjectReferenceForObject(child, r.Scheme)
 			parent.Status.PropagateDeploymentStatus(&child.Status)
 		},
@@ -615,7 +326,7 @@ func NewDeployerChildDeploymentReconciler(r *DeployerReconciler) *ChildReconcile
 			desired.Spec.Replicas = current.Spec.Replicas
 		},
 		MergeBeforeUpdate: func(current, desired *appsv1.Deployment) {
-			current.ObjectMeta.Labels = desired.ObjectMeta.Labels
+			current.Labels = desired.Labels
 			current.Spec = desired.Spec
 		},
 		Sanitize: func(child *appsv1.Deployment) interface{} {
@@ -624,186 +335,177 @@ func NewDeployerChildDeploymentReconciler(r *DeployerReconciler) *ChildReconcile
 	}
 }
 
-type ChildReconciler struct {
-	client.Client
-	Recorder record.EventRecorder
-	Log      logr.Logger
-	Scheme   *runtime.Scheme
-	Tracker  tracker.Tracker
+func NewDeployerChildServiceReconciler(r *DeployerReconciler) *controllers.ChildReconciler {
+	parentType := reflect.TypeOf(corev1alpha1.Deployer{})
+	childType := reflect.TypeOf(corev1.Service{})
+	childListType := reflect.TypeOf(corev1.ServiceList{})
 
-	ParentType    reflect.Type
-	ChildType     reflect.Type
-	ChildListType reflect.Type
+	return &controllers.ChildReconciler{
+		Client:   r.Client,
+		Recorder: r.Recorder,
+		Log:      r.Log.WithName(childType.Name()),
+		Scheme:   r.Scheme,
+		Tracker:  r.Tracker,
 
-	IndexField string
+		IndexField: deploymentIndexField,
 
-	SemanticEquals             interface{} // func(a1, a2 *appsv1.Deployment) bool
-	ConstructDesiredChild      interface{} // func(parent *corev1alpha1.Deployer) (*appsv1.Deployment, error)
-	ReflectChildStatusOnParent interface{} // func(parent *corev1alpha1.Deployer, child *appsv1.Deployment)
-	HarmonizeImmutableFields   interface{} // func(current, desired *appsv1.Deployment)
-	MergeBeforeUpdate          interface{} // func(current, desired *appsv1.Deployment)
-	Sanitize                   interface{} // func(child *appsv1.Deployment) interface{}
-}
+		ParentType:    parentType,
+		ChildType:     childType,
+		ChildListType: childListType,
 
-func (r *ChildReconciler) Reconcile(ctx context.Context, parent apis.Object) (ctrl.Result, error) {
-	child, err := r.reconcile(ctx, parent)
-	if err != nil {
-		r.Log.Error(err, "unable to reconcile child", r.ParentType.Name(), parent)
-		return ctrl.Result{}, err
-	}
-	r.reflectChildStatusOnParent(parent, child)
+		SemanticEquals: func(a1, a2 *corev1.Service) bool {
+			return equality.Semantic.DeepEqual(a1.Spec, a2.Spec) &&
+				equality.Semantic.DeepEqual(a1.Labels, a2.Labels)
+		},
+		ConstructDesiredChild: func(parent *corev1alpha1.Deployer) (*corev1.Service, error) {
+			labels := r.constructLabelsForDeployer(parent)
+			targetPort := parent.Spec.Template.Spec.Containers[0].Ports[0]
 
-	return ctrl.Result{}, nil
-}
-
-func (r *ChildReconciler) reconcile(ctx context.Context, parent apis.Object) (apis.Object, error) {
-	actual := reflect.New(r.ChildType).Interface().(apis.Object)
-	children := reflect.New(r.ChildListType).Interface().(runtime.Object)
-	if err := r.List(ctx, children, client.InNamespace(parent.GetNamespace()), client.MatchingField(r.IndexField, parent.GetName())); err != nil {
-		return nil, err
-	}
-	// TODO do we need to remove resources pending deletion?
-	items := r.items(children)
-	if len(items) == 1 {
-		actual = items[0]
-	} else if len(items) > 1 {
-		// this shouldn't happen, delete everything to a clean slate
-		for _, extra := range items {
-			r.Log.Info("deleting extra child", r.ChildType.Name(), r.sanitize(extra))
-			if err := r.Delete(ctx, extra); err != nil {
-				r.Recorder.Eventf(parent, corev1.EventTypeWarning, "DeleteFailed",
-					"Failed to delete %s %q: %v", r.ChildType.Name(), extra.GetName(), err)
+			child := &corev1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels:      labels,
+					Annotations: make(map[string]string),
+					Namespace:   parent.Namespace,
+					Name:        parent.Name,
+				},
+				Spec: corev1.ServiceSpec{
+					Ports: []corev1.ServicePort{
+						{Name: targetPort.Name, Port: 80, TargetPort: intstr.FromInt(int(targetPort.ContainerPort))},
+					},
+					Selector: map[string]string{
+						corev1alpha1.DeployerLabelKey: parent.Name,
+					},
+				},
+			}
+			if err := ctrl.SetControllerReference(parent, child, r.Scheme); err != nil {
 				return nil, err
 			}
-			r.Recorder.Eventf(parent, corev1.EventTypeNormal, "Deleted",
-				"Deleted %s %q", r.ChildType.Name(), extra.GetName())
-		}
+
+			return child, nil
+		},
+		ReflectChildStatusOnParent: func(parent *corev1alpha1.Deployer, child *corev1.Service, err error) {
+			if err != nil {
+				if apierrs.IsAlreadyExists(err) {
+					name := err.(apierrs.APIStatus).Status().Details.Name
+					parent.Status.MarkServiceNotOwned(name)
+				}
+				return
+			}
+			parent.Status.ServiceRef = refs.NewTypedLocalObjectReferenceForObject(child, r.Scheme)
+			parent.Status.Address = &apis.Addressable{URL: fmt.Sprintf("http://%s.%s.%s", child.Name, child.Namespace, "svc.cluster.local")}
+			parent.Status.PropagateServiceStatus(&child.Status)
+		},
+		HarmonizeImmutableFields: func(current, desired *corev1.Service) {
+			desired.Spec.ClusterIP = current.Spec.ClusterIP
+		},
+		MergeBeforeUpdate: func(current, desired *corev1.Service) {
+			current.Labels = desired.Labels
+			current.Spec = desired.Spec
+		},
+		Sanitize: func(child *corev1.Service) interface{} {
+			return child.Spec
+		},
 	}
-
-	desired, err := r.constructDesiredChild(parent)
-	if err != nil {
-		return nil, err
-	}
-
-	// delete child if no longer needed
-	if desired == nil {
-		r.Log.Info("deleting unwanted child", r.ChildType.Name(), r.sanitize(actual))
-		if err := r.Delete(ctx, actual); err != nil {
-			r.Log.Error(err, "unable to delete unwanted child", r.ChildType.Name(), r.sanitize(actual))
-			r.Recorder.Eventf(parent, corev1.EventTypeWarning, "DeleteFailed",
-				"Failed to delete %s %q: %v", r.ChildType.Name(), actual.GetName(), err)
-			return nil, err
-		}
-		r.Recorder.Eventf(parent, corev1.EventTypeNormal, "Deleted",
-			"Deleted Deployment %q", actual.GetName())
-		return nil, nil
-	}
-
-	// create child if it doesn't exist
-	if actual.GetName() == "" {
-		r.Log.Info("creating child", r.ChildType.Name(), r.sanitize(desired))
-		if err := r.Create(ctx, desired); err != nil {
-			r.Log.Error(err, "unable to create child", r.ChildType.Name(), r.sanitize(desired))
-			r.Recorder.Eventf(parent, corev1.EventTypeWarning, "CreationFailed",
-				"Failed to create %s %q: %v", r.ChildType.Name(), desired.GetName(), err)
-			return nil, err
-		}
-		r.Recorder.Eventf(parent, corev1.EventTypeNormal, "Created",
-			"Created %s %q", r.ChildType.Name(), desired.GetName())
-		return desired, nil
-	}
-
-	// overwrite fields that should not be mutated
-	r.harmonizeImmutableFields(actual, desired)
-
-	if r.semanticEquals(desired, actual) {
-		// child is unchanged
-		return actual, nil
-	}
-
-	// update child with desired changes
-	current := actual.DeepCopyObject().(apis.Object)
-	r.mergeBeforeUpdate(current, desired)
-	r.Log.Info("reconciling child", "diff", cmp.Diff(r.sanitize(actual), r.sanitize(current)))
-	if err := r.Update(ctx, current); err != nil {
-		r.Log.Error(err, "unable to update child", r.ChildType.Name(), r.sanitize(current))
-		r.Recorder.Eventf(parent, corev1.EventTypeWarning, "UpdateFailed",
-			"Failed to update %s %q: %v", r.ChildType.Name(), current.GetName(), err)
-		return nil, err
-	}
-	r.Recorder.Eventf(parent, corev1.EventTypeNormal, "Updated",
-		"Updated %s %q", r.ChildType.Name(), current.GetName())
-
-	return current, nil
 }
 
-func (r *ChildReconciler) semanticEquals(a1, a2 apis.Object) bool {
-	fn := reflect.ValueOf(r.SemanticEquals)
-	out := fn.Call([]reflect.Value{
-		reflect.ValueOf(a1),
-		reflect.ValueOf(a2),
-	})
-	return out[0].Bool()
-}
+func NewDeployerChildIngressReconciler(r *DeployerReconciler) *controllers.ChildReconciler {
+	parentType := reflect.TypeOf(corev1alpha1.Deployer{})
+	childType := reflect.TypeOf(networkingv1beta1.Ingress{})
+	childListType := reflect.TypeOf(networkingv1beta1.IngressList{})
 
-func (r *ChildReconciler) constructDesiredChild(parent apis.Object) (apis.Object, error) {
-	fn := reflect.ValueOf(r.ConstructDesiredChild)
-	out := fn.Call([]reflect.Value{
-		reflect.ValueOf(parent),
-	})
-	var obj apis.Object
-	if !out[0].IsNil() {
-		obj = out[0].Interface().(apis.Object)
+	return &controllers.ChildReconciler{
+		Client:   r.Client,
+		Recorder: r.Recorder,
+		Log:      r.Log.WithName(childType.Name()),
+		Scheme:   r.Scheme,
+		Tracker:  r.Tracker,
+
+		IndexField: deploymentIndexField,
+
+		ParentType:    parentType,
+		ChildType:     childType,
+		ChildListType: childListType,
+
+		SemanticEquals: func(a1, a2 *networkingv1beta1.Ingress) bool {
+			return equality.Semantic.DeepEqual(a1.Spec, a2.Spec) &&
+				equality.Semantic.DeepEqual(a1.Labels, a2.Labels)
+		},
+		ConstructDesiredChild: func(parent *corev1alpha1.Deployer) (*networkingv1beta1.Ingress, error) {
+			if parent.Status.ServiceRef == nil || parent.Spec.IngressPolicy == corev1alpha1.IngressPolicyClusterLocal {
+				// skip ingress
+				return nil, nil
+			}
+
+			coreSettings := &corev1.ConfigMap{}
+			coreSettingsKey := types.NamespacedName{Namespace: systemNamespace, Name: settingsConfigMapName}
+
+			// track config map
+			r.Tracker.Track(
+				tracker.NewKey(schema.GroupVersionKind{Version: "v1", Kind: "ConfigMap"}, coreSettingsKey),
+				types.NamespacedName{Namespace: parent.Namespace, Name: parent.Name},
+			)
+			if err := r.Get(context.TODO(), coreSettingsKey, coreSettings); err != nil {
+				r.Log.Error(err, fmt.Sprintf("unable to fetch resource with reference: %s", coreSettingsKey.String()))
+				return nil, err
+			}
+
+			domain := defaultDomain
+			if d := coreSettings.Data[defaultDomainKey]; d != "" {
+				domain = d
+			}
+			host := fmt.Sprintf("%s.%s.%s", parent.Name, parent.Namespace, domain)
+
+			child := &networkingv1beta1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels:       r.constructLabelsForDeployer(parent),
+					Annotations:  make(map[string]string),
+					GenerateName: fmt.Sprintf("%s-deployer-", parent.Name),
+					Namespace:    parent.Namespace,
+				},
+				Spec: networkingv1beta1.IngressSpec{
+					Rules: []networkingv1beta1.IngressRule{{
+						Host: host,
+						IngressRuleValue: networkingv1beta1.IngressRuleValue{
+							HTTP: &networkingv1beta1.HTTPIngressRuleValue{
+								Paths: []networkingv1beta1.HTTPIngressPath{{
+									Path: "/",
+									Backend: networkingv1beta1.IngressBackend{
+										ServiceName: parent.Status.ServiceRef.Name,
+										ServicePort: intstr.FromInt(80),
+									},
+								}},
+							},
+						},
+					}},
+				},
+			}
+
+			if err := ctrl.SetControllerReference(parent, child, r.Scheme); err != nil {
+				return nil, err
+			}
+
+			return child, nil
+		},
+		ReflectChildStatusOnParent: func(parent *corev1alpha1.Deployer, child *networkingv1beta1.Ingress, err error) {
+			if err != nil {
+				return
+			}
+			if child == nil {
+				parent.Status.IngressRef = nil
+				parent.Status.URL = ""
+				parent.Status.MarkIngressNotRequired()
+			} else {
+				parent.Status.IngressRef = refs.NewTypedLocalObjectReferenceForObject(child, r.Scheme)
+				parent.Status.URL = fmt.Sprintf("http://%s", child.Spec.Rules[0].Host)
+				parent.Status.PropagateIngressStatus(&child.Status)
+			}
+		},
+		MergeBeforeUpdate: func(current, desired *networkingv1beta1.Ingress) {
+			current.Labels = desired.Labels
+			current.Spec = desired.Spec
+		},
+		Sanitize: func(child *networkingv1beta1.Ingress) interface{} {
+			return child.Spec
+		},
 	}
-	var err error
-	if !out[1].IsNil() {
-		err = out[1].Interface().(error)
-	}
-	return obj, err
-}
-
-func (r *ChildReconciler) reflectChildStatusOnParent(parent, child apis.Object) {
-	fn := reflect.ValueOf(r.ReflectChildStatusOnParent)
-	fn.Call([]reflect.Value{
-		reflect.ValueOf(parent),
-		reflect.ValueOf(child),
-	})
-}
-
-func (r *ChildReconciler) harmonizeImmutableFields(current, desired apis.Object) {
-	fn := reflect.ValueOf(r.HarmonizeImmutableFields)
-	fn.Call([]reflect.Value{
-		reflect.ValueOf(current),
-		reflect.ValueOf(desired),
-	})
-}
-
-func (r *ChildReconciler) mergeBeforeUpdate(current, desired apis.Object) {
-	fn := reflect.ValueOf(r.MergeBeforeUpdate)
-	fn.Call([]reflect.Value{
-		reflect.ValueOf(current),
-		reflect.ValueOf(desired),
-	})
-}
-
-func (r *ChildReconciler) sanitize(child apis.Object) interface{} {
-	fn := reflect.ValueOf(r.Sanitize)
-	out := fn.Call([]reflect.Value{
-		reflect.ValueOf(child),
-	})
-	var sanitized interface{}
-	if !out[0].IsNil() {
-		sanitized = out[0].Interface()
-	}
-	return sanitized
-}
-
-func (r *ChildReconciler) items(children runtime.Object) []apis.Object {
-	childrenValue := reflect.ValueOf(children).Elem()
-	itemsValue := childrenValue.FieldByName("Items")
-	items := make([]apis.Object, itemsValue.Len())
-	for i := range items {
-		items[i] = itemsValue.Index(i).Addr().Interface().(apis.Object)
-	}
-	return items
 }
