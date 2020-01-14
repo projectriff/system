@@ -59,6 +59,10 @@ type DeployerReconciler struct {
 	Log      logr.Logger
 	Scheme   *runtime.Scheme
 	Tracker  tracker.Tracker
+
+	deploymentReconciler controllers.SubReconciler
+	serviceReconciler    controllers.SubReconciler
+	ingressReconciler    controllers.SubReconciler
 }
 
 // +kubebuilder:rbac:groups=core.projectriff.io,resources=deployers,verbs=get;list;watch;create;update;patch;delete
@@ -72,6 +76,17 @@ type DeployerReconciler struct {
 func (r *DeployerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 	log := r.Log.WithValues("deployer", req.NamespacedName)
+
+	// TODO move to an init or constructor
+	if r.deploymentReconciler == nil {
+		r.deploymentReconciler = NewDeployerChildDeploymentReconciler(r)
+	}
+	if r.serviceReconciler == nil {
+		r.serviceReconciler = NewDeployerChildServiceReconciler(r)
+	}
+	if r.ingressReconciler == nil {
+		r.ingressReconciler = NewDeployerChildIngressReconciler(r)
+	}
 
 	var originalDeployer corev1alpha1.Deployer
 	if err := r.Get(ctx, req.NamespacedName, &originalDeployer); err != nil {
@@ -126,17 +141,17 @@ func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, dep
 	}
 
 	// reconcile deployment
-	if _, err := NewDeployerChildDeploymentReconciler(r).Reconcile(ctx, deployer); err != nil {
+	if _, err := r.deploymentReconciler.Reconcile(ctx, deployer); err != nil {
 		return ctrl.Result{}, err
 	}
 
 	// reconcile service
-	if _, err := NewDeployerChildServiceReconciler(r).Reconcile(ctx, deployer); err != nil {
+	if _, err := r.serviceReconciler.Reconcile(ctx, deployer); err != nil {
 		return ctrl.Result{}, err
 	}
 
 	// reconcile ingress
-	if _, err := NewDeployerChildIngressReconciler(r).Reconcile(ctx, deployer); err != nil {
+	if _, err := r.ingressReconciler.Reconcile(ctx, deployer); err != nil {
 		return ctrl.Result{}, err
 	}
 

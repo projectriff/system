@@ -33,6 +33,10 @@ import (
 	"github.com/projectriff/system/pkg/tracker"
 )
 
+type SubReconciler interface {
+	Reconcile(ctx context.Context, parent apis.Object) (ctrl.Result, error)
+}
+
 type ChildReconciler struct {
 	client.Client
 	Recorder record.EventRecorder
