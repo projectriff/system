@@ -19,6 +19,7 @@ package knative
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"
@@ -53,6 +54,9 @@ type DeployerReconciler struct {
 	Log      logr.Logger
 	Scheme   *runtime.Scheme
 	Tracker  tracker.Tracker
+
+	configurationReconciler controllers.SubReconciler
+	routeReconciler         controllers.SubReconciler
 }
 
 // +kubebuilder:rbac:groups=knative.projectriff.io,resources=deployers,verbs=get;list;watch;create;update;patch;delete
@@ -64,6 +68,14 @@ type DeployerReconciler struct {
 func (r *DeployerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 	log := r.Log.WithValues("deployer", req.NamespacedName)
+
+	// TODO move to an init or constructor
+	if r.configurationReconciler == nil {
+		r.configurationReconciler = NewDeployerChildConfigurationReconciler(r)
+	}
+	if r.routeReconciler == nil {
+		r.routeReconciler = NewDeployerChildRouteReconciler(r)
+	}
 
 	var originalDeployer knativev1alpha1.Deployer
 	if err := r.Get(ctx, req.NamespacedName, &originalDeployer); err != nil {
@@ -118,28 +130,14 @@ func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, dep
 	}
 
 	// reconcile configuration
-	childConfiguration, err := r.reconcileChildConfiguration(ctx, log, deployer)
-	if err != nil {
-		log.Error(err, "unable to reconcile child Configuration", "deployer", deployer)
+	if _, err := r.configurationReconciler.Reconcile(ctx, deployer); err != nil {
 		return ctrl.Result{}, err
 	}
-	deployer.Status.ConfigurationRef = refs.NewTypedLocalObjectReferenceForObject(childConfiguration, r.Scheme)
-	deployer.Status.PropagateConfigurationStatus(&childConfiguration.Status)
 
 	// reconcile route
-	childRoute, err := r.reconcileChildRoute(ctx, log, deployer)
-	if err != nil {
-		if apierrs.IsAlreadyExists(err) {
-			route := err.(apierrs.APIStatus).Status().Details.Name
-			deployer.Status.MarkRouteNotOwned(route)
-			log.Info("unable to reconcile child Route, route not owned", "deployer", deployer, "route", route)
-			return ctrl.Result{}, nil
-		}
-		log.Error(err, "unable to reconcile child Route", "deployer", deployer)
+	if _, err := r.routeReconciler.Reconcile(ctx, deployer); err != nil {
 		return ctrl.Result{}, err
 	}
-	deployer.Status.RouteRef = refs.NewTypedLocalObjectReferenceForObject(childRoute, r.Scheme)
-	deployer.Status.PropagateRouteStatus(&childRoute.Status)
 
 	deployer.Status.ObservedGeneration = deployer.Generation
 
@@ -213,249 +211,6 @@ func (r *DeployerReconciler) reconcileBuildImage(ctx context.Context, log logr.L
 	return fmt.Errorf("invalid deployer build")
 }
 
-func (r *DeployerReconciler) reconcileChildConfiguration(ctx context.Context, log logr.Logger, deployer *knativev1alpha1.Deployer) (*servingv1.Configuration, error) {
-	var actualConfiguration servingv1.Configuration
-	var childConfigurations servingv1.ConfigurationList
-	if err := r.List(ctx, &childConfigurations, client.InNamespace(deployer.Namespace), client.MatchingField(configurationIndexField, deployer.Name)); err != nil {
-		return nil, err
-	}
-	// TODO do we need to remove resources pending deletion?
-	if len(childConfigurations.Items) == 1 {
-		actualConfiguration = childConfigurations.Items[0]
-	} else if len(childConfigurations.Items) > 1 {
-		// this shouldn't happen, delete everything to a clean slate
-		for _, extraConfiguration := range childConfigurations.Items {
-			log.Info("deleting extra configuration", "configuration", extraConfiguration)
-			if err := r.Delete(ctx, &extraConfiguration); err != nil {
-				r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "DeleteFailed",
-					"Failed to delete Configuration %q: %v", extraConfiguration.Name, err)
-				return nil, err
-			}
-			r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Deleted",
-				"Deleted Configuration %q", extraConfiguration.Name)
-		}
-	}
-
-	desiredConfiguration, err := r.constructConfigurationForDeployer(deployer)
-	if err != nil {
-		return nil, err
-	}
-
-	// delete configuration if no longer needed
-	if desiredConfiguration == nil {
-		log.Info("deleting configuration", "configuration", actualConfiguration)
-		if err := r.Delete(ctx, &actualConfiguration); err != nil {
-			log.Error(err, "unable to delete Configuration for Deployer", "configuration", actualConfiguration)
-			r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "DeleteFailed",
-				"Failed to delete Configuration %q: %v", actualConfiguration.Name, err)
-			return nil, err
-		}
-		r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Deleted",
-			"Deleted Configuration %q", actualConfiguration.Name)
-		return nil, nil
-	}
-
-	// create configuration if it doesn't exist
-	if actualConfiguration.Name == "" {
-		log.Info("creating configuration", "spec", desiredConfiguration.Spec)
-		if err := r.Create(ctx, desiredConfiguration); err != nil {
-			log.Error(err, "unable to create Configuration for Deployer", "configuration", desiredConfiguration)
-			r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "CreationFailed",
-				"Failed to create Configuration %q: %v", desiredConfiguration.Name, err)
-			return nil, err
-		}
-		r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Created",
-			"Created Configuration %q", desiredConfiguration.Name)
-		return desiredConfiguration, nil
-	}
-
-	if r.configurationSemanticEquals(desiredConfiguration, &actualConfiguration) {
-		// configuration is unchanged
-		return &actualConfiguration, nil
-	}
-
-	// update configuration with desired changes
-	configuration := actualConfiguration.DeepCopy()
-	configuration.ObjectMeta.Labels = desiredConfiguration.ObjectMeta.Labels
-	configuration.ObjectMeta.Annotations = desiredConfiguration.ObjectMeta.Annotations
-	configuration.Spec = desiredConfiguration.Spec
-	log.Info("reconciling configuration", "diff", cmp.Diff(actualConfiguration.Spec, configuration.Spec))
-	if err := r.Update(ctx, configuration); err != nil {
-		log.Error(err, "unable to update Configuration for Deployer", "configuration", configuration)
-		r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "UpdateFailed",
-			"Failed to update Configuration %q: %v", configuration.Name, err)
-		return nil, err
-	}
-	r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Updated",
-		"Updated Configuration %q", configuration.Name)
-
-	return configuration, nil
-}
-
-func (r *DeployerReconciler) configurationSemanticEquals(desiredConfiguration, configuration *servingv1.Configuration) bool {
-	return equality.Semantic.DeepEqual(desiredConfiguration.Spec, configuration.Spec) &&
-		equality.Semantic.DeepEqual(desiredConfiguration.ObjectMeta.Labels, configuration.ObjectMeta.Labels) &&
-		equality.Semantic.DeepEqual(desiredConfiguration.ObjectMeta.Annotations, configuration.ObjectMeta.Annotations)
-}
-
-func (r *DeployerReconciler) constructConfigurationForDeployer(deployer *knativev1alpha1.Deployer) (*servingv1.Configuration, error) {
-	labels := r.constructLabelsForDeployer(deployer)
-	annotations := r.constructAnnotationsForDeployer(deployer)
-	template := deployer.Spec.Template.DeepCopy()
-
-	for k, v := range labels {
-		template.Labels[k] = v
-	}
-	for k, v := range annotations {
-		template.Annotations[k] = v
-	}
-
-	configuration := &servingv1.Configuration{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: fmt.Sprintf("%s-deployer-", deployer.Name),
-			Namespace:    deployer.Namespace,
-			Labels:       labels,
-			Annotations:  annotations,
-		},
-		Spec: servingv1.ConfigurationSpec{
-			Template: servingv1.RevisionTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels:      labels,
-					Annotations: annotations,
-				},
-				Spec: servingv1.RevisionSpec{
-					PodSpec: template.Spec,
-				},
-			},
-		},
-	}
-	if configuration.Spec.Template.Spec.Containers[0].Name == "" {
-		configuration.Spec.Template.Spec.Containers[0].Name = "user-container"
-	}
-	if configuration.Spec.Template.Spec.Containers[0].Image == "" {
-		configuration.Spec.Template.Spec.Containers[0].Image = deployer.Status.LatestImage
-	}
-	if err := ctrl.SetControllerReference(deployer, configuration, r.Scheme); err != nil {
-		return nil, err
-	}
-
-	return configuration, nil
-}
-
-func (r *DeployerReconciler) reconcileChildRoute(ctx context.Context, log logr.Logger, deployer *knativev1alpha1.Deployer) (*servingv1.Route, error) {
-	var actualRoute servingv1.Route
-	var childRoutes servingv1.RouteList
-	if err := r.List(ctx, &childRoutes, client.InNamespace(deployer.Namespace), client.MatchingField(routeIndexField, deployer.Name)); err != nil {
-		return nil, err
-	}
-	// TODO do we need to remove resources pending deletion?
-	if len(childRoutes.Items) == 1 {
-		actualRoute = childRoutes.Items[0]
-	} else if len(childRoutes.Items) > 1 {
-		// this shouldn't happen, delete everything to a clean slate
-		for _, extraRoute := range childRoutes.Items {
-			log.Info("deleting extra route", "route", extraRoute)
-			if err := r.Delete(ctx, &extraRoute); err != nil {
-				r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "DeleteFailed",
-					"Failed to delete Route %q: %v", extraRoute.Name, err)
-				return nil, err
-			}
-			r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Deleted",
-				"Deleted Route %q", extraRoute.Name)
-		}
-	}
-
-	desiredRoute, err := r.constructRouteForDeployer(deployer)
-	if err != nil {
-		return nil, err
-	}
-
-	// delete route if no longer needed
-	if desiredRoute == nil {
-		log.Info("deleting route", "route", actualRoute)
-		if err := r.Delete(ctx, &actualRoute); err != nil {
-			log.Error(err, "unable to delete Route for Deployer", "route", actualRoute)
-			r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "DeleteFailed",
-				"Failed to delete Route %q: %v", actualRoute.Name, err)
-			return nil, err
-		}
-		r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Deleted",
-			"Deleted Route %q", actualRoute.Name)
-		return nil, nil
-	}
-
-	// create route if it doesn't exist
-	if actualRoute.Name == "" {
-		log.Info("creating route", "spec", desiredRoute.Spec)
-		if err := r.Create(ctx, desiredRoute); err != nil {
-			log.Error(err, "unable to create Route for Deployer", "route", desiredRoute)
-			r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "CreationFailed",
-				"Failed to create Route %q: %v", desiredRoute.Name, err)
-			return nil, err
-		}
-		r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Created",
-			"Created Route %q", desiredRoute.Name)
-		return desiredRoute, nil
-	}
-
-	if r.routeSemanticEquals(desiredRoute, &actualRoute) {
-		// route is unchanged
-		return &actualRoute, nil
-	}
-
-	// update route with desired changes
-	route := actualRoute.DeepCopy()
-	route.ObjectMeta.Labels = desiredRoute.ObjectMeta.Labels
-	route.Spec = desiredRoute.Spec
-	log.Info("reconciling route", "diff", cmp.Diff(actualRoute.Spec, route.Spec))
-	if err := r.Update(ctx, route); err != nil {
-		log.Error(err, "unable to update Route for Deployer", "configuration", route)
-		r.Recorder.Eventf(deployer, corev1.EventTypeWarning, "UpdateFailed",
-			"Failed to update Route %q: %v", route.Name, err)
-		return nil, err
-	}
-	r.Recorder.Eventf(deployer, corev1.EventTypeNormal, "Updated",
-		"Updated Route %q", route.Name)
-
-	return route, nil
-}
-
-func (r *DeployerReconciler) routeSemanticEquals(desiredRoute, route *servingv1.Route) bool {
-	return equality.Semantic.DeepEqual(desiredRoute.Spec, route.Spec) &&
-		equality.Semantic.DeepEqual(desiredRoute.ObjectMeta.Labels, route.ObjectMeta.Labels)
-}
-
-func (r *DeployerReconciler) constructRouteForDeployer(deployer *knativev1alpha1.Deployer) (*servingv1.Route, error) {
-	if deployer.Status.ConfigurationRef == nil {
-		return nil, fmt.Errorf("unable to create Route, waiting for Configuration")
-	}
-
-	labels := r.constructLabelsForDeployer(deployer)
-	var allTraffic int64 = 100
-
-	route := &servingv1.Route{
-		ObjectMeta: metav1.ObjectMeta{
-			Labels:      labels,
-			Annotations: make(map[string]string),
-			Namespace:   deployer.Namespace,
-			Name:        deployer.Name,
-		},
-		Spec: servingv1.RouteSpec{
-			Traffic: []servingv1.TrafficTarget{
-				{
-					Percent:           &allTraffic,
-					ConfigurationName: deployer.Status.ConfigurationRef.Name,
-				},
-			},
-		},
-	}
-	if err := ctrl.SetControllerReference(deployer, route, r.Scheme); err != nil {
-		return nil, err
-	}
-
-	return route, nil
-}
-
 func (r *DeployerReconciler) constructLabelsForDeployer(deployer *knativev1alpha1.Deployer) map[string]string {
 	labels := make(map[string]string, len(deployer.ObjectMeta.Labels)+2)
 	// pass through existing labels
@@ -508,4 +263,158 @@ func (r *DeployerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(&source.Kind{Type: &buildv1alpha1.Container{}}, controllers.EnqueueTracked(&buildv1alpha1.Container{}, r.Tracker, r.Scheme)).
 		Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, controllers.EnqueueTracked(&buildv1alpha1.Function{}, r.Tracker, r.Scheme)).
 		Complete(r)
+}
+
+func NewDeployerChildConfigurationReconciler(r *DeployerReconciler) *controllers.ChildReconciler {
+	parentType := reflect.TypeOf(knativev1alpha1.Deployer{})
+	childType := reflect.TypeOf(servingv1.Configuration{})
+	childListType := reflect.TypeOf(servingv1.ConfigurationList{})
+
+	return &controllers.ChildReconciler{
+		Client:   r.Client,
+		Recorder: r.Recorder,
+		Log:      r.Log.WithName(childType.Name()),
+		Scheme:   r.Scheme,
+		Tracker:  r.Tracker,
+
+		IndexField: configurationIndexField,
+
+		ParentType:    parentType,
+		ChildType:     childType,
+		ChildListType: childListType,
+
+		SemanticEquals: func(a1, a2 *servingv1.Configuration) bool {
+			return equality.Semantic.DeepEqual(a1.Spec, a2.Spec) &&
+				equality.Semantic.DeepEqual(a1.Labels, a2.Labels) &&
+				equality.Semantic.DeepEqual(a1.Annotations, a2.Annotations)
+		},
+		ConstructDesiredChild: func(parent *knativev1alpha1.Deployer) (*servingv1.Configuration, error) {
+			labels := r.constructLabelsForDeployer(parent)
+			annotations := r.constructAnnotationsForDeployer(parent)
+			template := parent.Spec.Template.DeepCopy()
+
+			for k, v := range labels {
+				template.Labels[k] = v
+			}
+			for k, v := range annotations {
+				template.Annotations[k] = v
+			}
+
+			child := &servingv1.Configuration{
+				ObjectMeta: metav1.ObjectMeta{
+					GenerateName: fmt.Sprintf("%s-deployer-", parent.Name),
+					Namespace:    parent.Namespace,
+					Labels:       labels,
+					Annotations:  annotations,
+				},
+				Spec: servingv1.ConfigurationSpec{
+					Template: servingv1.RevisionTemplateSpec{
+						ObjectMeta: metav1.ObjectMeta{
+							Labels:      labels,
+							Annotations: annotations,
+						},
+						Spec: servingv1.RevisionSpec{
+							PodSpec: template.Spec,
+						},
+					},
+				},
+			}
+			if child.Spec.Template.Spec.Containers[0].Name == "" {
+				child.Spec.Template.Spec.Containers[0].Name = "user-container"
+			}
+			if child.Spec.Template.Spec.Containers[0].Image == "" {
+				child.Spec.Template.Spec.Containers[0].Image = parent.Status.LatestImage
+			}
+			if err := ctrl.SetControllerReference(parent, child, r.Scheme); err != nil {
+				return nil, err
+			}
+
+			return child, nil
+		},
+		ReflectChildStatusOnParent: func(parent *knativev1alpha1.Deployer, child *servingv1.Configuration, err error) {
+			parent.Status.ConfigurationRef = refs.NewTypedLocalObjectReferenceForObject(child, r.Scheme)
+			parent.Status.PropagateConfigurationStatus(&child.Status)
+		},
+		MergeBeforeUpdate: func(current, desired *servingv1.Configuration) {
+			current.Labels = desired.Labels
+			current.Annotations = desired.Annotations
+			current.Spec = desired.Spec
+		},
+		Sanitize: func(child *servingv1.Configuration) interface{} {
+			return child.Spec
+		},
+	}
+}
+
+func NewDeployerChildRouteReconciler(r *DeployerReconciler) *controllers.ChildReconciler {
+	parentType := reflect.TypeOf(knativev1alpha1.Deployer{})
+	childType := reflect.TypeOf(servingv1.Route{})
+	childListType := reflect.TypeOf(servingv1.RouteList{})
+
+	return &controllers.ChildReconciler{
+		Client:   r.Client,
+		Recorder: r.Recorder,
+		Log:      r.Log.WithName(childType.Name()),
+		Scheme:   r.Scheme,
+		Tracker:  r.Tracker,
+
+		IndexField: routeIndexField,
+
+		ParentType:    parentType,
+		ChildType:     childType,
+		ChildListType: childListType,
+
+		SemanticEquals: func(a1, a2 *servingv1.Route) bool {
+			return equality.Semantic.DeepEqual(a1.Spec, a2.Spec) &&
+				equality.Semantic.DeepEqual(a1.Labels, a2.Labels)
+		},
+		ConstructDesiredChild: func(parent *knativev1alpha1.Deployer) (*servingv1.Route, error) {
+			if parent.Status.ConfigurationRef == nil {
+				return nil, fmt.Errorf("unable to create Route, waiting for Configuration")
+			}
+
+			labels := r.constructLabelsForDeployer(parent)
+			var allTraffic int64 = 100
+
+			child := &servingv1.Route{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels:      labels,
+					Annotations: make(map[string]string),
+					Namespace:   parent.Namespace,
+					Name:        parent.Name,
+				},
+				Spec: servingv1.RouteSpec{
+					Traffic: []servingv1.TrafficTarget{
+						{
+							Percent:           &allTraffic,
+							ConfigurationName: parent.Status.ConfigurationRef.Name,
+						},
+					},
+				},
+			}
+			if err := ctrl.SetControllerReference(parent, child, r.Scheme); err != nil {
+				return nil, err
+			}
+
+			return child, nil
+		},
+		ReflectChildStatusOnParent: func(parent *knativev1alpha1.Deployer, child *servingv1.Route, err error) {
+			if err != nil {
+				if apierrs.IsAlreadyExists(err) {
+					name := err.(apierrs.APIStatus).Status().Details.Name
+					parent.Status.MarkRouteNotOwned(name)
+				}
+				return
+			}
+			parent.Status.RouteRef = refs.NewTypedLocalObjectReferenceForObject(child, r.Scheme)
+			parent.Status.PropagateRouteStatus(&child.Status)
+		},
+		MergeBeforeUpdate: func(current, desired *servingv1.Route) {
+			current.Labels = desired.Labels
+			current.Spec = desired.Spec
+		},
+		Sanitize: func(child *servingv1.Route) interface{} {
+			return child.Spec
+		},
+	}
 }
