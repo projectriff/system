@@ -362,7 +362,7 @@ func NewDeployerChildServiceReconciler(r *DeployerReconciler) *controllers.Child
 		Scheme:   r.Scheme,
 		Tracker:  r.Tracker,
 
-		IndexField: deploymentIndexField,
+		IndexField: serviceIndexField,
 
 		ParentType:    parentType,
 		ChildType:     childType,
@@ -435,7 +435,7 @@ func NewDeployerChildIngressReconciler(r *DeployerReconciler) *controllers.Child
 		Scheme:   r.Scheme,
 		Tracker:  r.Tracker,
 
-		IndexField: deploymentIndexField,
+		IndexField: ingressIndexField,
 
 		ParentType:    parentType,
 		ChildType:     childType,
