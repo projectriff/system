@@ -59,7 +59,7 @@ func TestDeployerReconciler(t *testing.T) {
 	testLabelValue := "test-label-value"
 
 	deployerConditionDeploymentReady := factories.Condition().Type(corev1alpha1.DeployerConditionDeploymentReady)
-	deployerConditionIngressReady := factories.Condition().Type(corev1alpha1.DeployerConditionIngressReady).Info()
+	deployerConditionIngressReady := factories.Condition().Type(corev1alpha1.DeployerConditionIngressReady)
 	deployerConditionReady := factories.Condition().Type(corev1alpha1.DeployerConditionReady)
 	deployerConditionServiceReady := factories.Condition().Type(corev1alpha1.DeployerConditionServiceReady)
 
@@ -198,6 +198,7 @@ func TestDeployerReconciler(t *testing.T) {
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.True(),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.True(),
 				).
@@ -224,6 +225,7 @@ func TestDeployerReconciler(t *testing.T) {
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.True(),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.Unknown(),
 				),
@@ -248,6 +250,7 @@ func TestDeployerReconciler(t *testing.T) {
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.True(),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.Unknown(),
 				),
@@ -279,6 +282,7 @@ func TestDeployerReconciler(t *testing.T) {
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.True(),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.True(),
 				).
@@ -305,6 +309,7 @@ func TestDeployerReconciler(t *testing.T) {
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.True(),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.Unknown(),
 				),
@@ -329,6 +334,7 @@ func TestDeployerReconciler(t *testing.T) {
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.True(),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.Unknown(),
 				),
@@ -360,6 +366,7 @@ func TestDeployerReconciler(t *testing.T) {
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.True(),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.True(),
 				).
@@ -386,6 +393,7 @@ func TestDeployerReconciler(t *testing.T) {
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.True(),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.Unknown(),
 				),
@@ -410,6 +418,7 @@ func TestDeployerReconciler(t *testing.T) {
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.True(),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.Unknown(),
 				),
@@ -437,6 +446,7 @@ func TestDeployerReconciler(t *testing.T) {
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.True(),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.True(),
 				).
@@ -469,6 +479,7 @@ func TestDeployerReconciler(t *testing.T) {
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.Unknown(),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.Unknown(),
 				).
@@ -501,6 +512,7 @@ func TestDeployerReconciler(t *testing.T) {
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.Unknown(),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.Unknown(),
 				).
@@ -535,6 +547,7 @@ func TestDeployerReconciler(t *testing.T) {
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.True(),
 					deployerConditionReady.False().Reason("NotOwned", `There is an existing Service "test-deployer" that the Deployer does not own.`),
 					deployerConditionServiceReady.False().Reason("NotOwned", `There is an existing Service "test-deployer" that the Deployer does not own.`),
 				).
@@ -549,6 +562,7 @@ func TestDeployerReconciler(t *testing.T) {
 				Image(testImage).
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.True(),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.True(),
 				).
@@ -581,6 +595,7 @@ func TestDeployerReconciler(t *testing.T) {
 				Image(testImage).
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.True(),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.True(),
 				).
@@ -614,6 +629,7 @@ func TestDeployerReconciler(t *testing.T) {
 				Image(testImage).
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.True(),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.True(),
 				).
@@ -637,6 +653,7 @@ func TestDeployerReconciler(t *testing.T) {
 				Image(testImage).
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.True(),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.True(),
 				).
@@ -667,6 +684,7 @@ func TestDeployerReconciler(t *testing.T) {
 				Image(testImage).
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.True(),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.True(),
 				).
@@ -698,6 +716,7 @@ func TestDeployerReconciler(t *testing.T) {
 				Image(testImage).
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.True(),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.True(),
 				).
@@ -719,6 +738,7 @@ func TestDeployerReconciler(t *testing.T) {
 				Image(testImage).
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.True(),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.True(),
 				).
@@ -758,6 +778,7 @@ func TestDeployerReconciler(t *testing.T) {
 				Image(testImage).
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.True(),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.True(),
 				).
@@ -787,6 +808,7 @@ func TestDeployerReconciler(t *testing.T) {
 				Image(testImage).
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.True(),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.True(),
 				).
@@ -826,6 +848,7 @@ func TestDeployerReconciler(t *testing.T) {
 				Image(testImage).
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.True(),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.True(),
 				).
@@ -875,7 +898,7 @@ func TestDeployerReconciler(t *testing.T) {
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
 					deployerConditionIngressReady.Unknown().Reason("IngressNotConfigured", "Ingress has not yet been reconciled."),
-					deployerConditionReady.Unknown(),
+					deployerConditionReady.Unknown().Reason("IngressNotConfigured", "Ingress has not yet been reconciled."),
 					deployerConditionServiceReady.True(),
 				).
 				StatusLatestImage(testImage).
@@ -916,6 +939,7 @@ func TestDeployerReconciler(t *testing.T) {
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.Unknown(),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.True(),
 				).
@@ -950,6 +974,7 @@ func TestDeployerReconciler(t *testing.T) {
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.True(),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.True(),
 				).
@@ -988,6 +1013,7 @@ func TestDeployerReconciler(t *testing.T) {
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.Unknown(),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.True(),
 				).
@@ -1027,7 +1053,7 @@ func TestDeployerReconciler(t *testing.T) {
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
 					deployerConditionIngressReady.Unknown().Reason("IngressNotConfigured", "Ingress has not yet been reconciled."),
-					deployerConditionReady.Unknown(),
+					deployerConditionReady.Unknown().Reason("IngressNotConfigured", "Ingress has not yet been reconciled."),
 					deployerConditionServiceReady.True(),
 				).
 				StatusLatestImage(testImage).
@@ -1071,6 +1097,7 @@ func TestDeployerReconciler(t *testing.T) {
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.Unknown(),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.True(),
 				).
@@ -1119,7 +1146,7 @@ func TestDeployerReconciler(t *testing.T) {
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
 					deployerConditionIngressReady.Unknown().Reason("IngressNotConfigured", "Ingress has not yet been reconciled."),
-					deployerConditionReady.Unknown(),
+					deployerConditionReady.Unknown().Reason("IngressNotConfigured", "Ingress has not yet been reconciled."),
 					deployerConditionServiceReady.True(),
 				).
 				StatusLatestImage(testImage).
@@ -1156,6 +1183,7 @@ func TestDeployerReconciler(t *testing.T) {
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.Unknown(),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.True(),
 				).
@@ -1196,6 +1224,7 @@ func TestDeployerReconciler(t *testing.T) {
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.Unknown(),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.True(),
 				).
@@ -1217,7 +1246,7 @@ func TestDeployerReconciler(t *testing.T) {
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
 					deployerConditionIngressReady.Unknown().Reason("IngressNotConfigured", "Ingress has not yet been reconciled."),
-					deployerConditionReady.Unknown(),
+					deployerConditionReady.Unknown().Reason("IngressNotConfigured", "Ingress has not yet been reconciled."),
 					deployerConditionServiceReady.True(),
 				).
 				StatusLatestImage(testImage).
@@ -1279,6 +1308,7 @@ func TestDeployerReconciler(t *testing.T) {
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.True(),
+					deployerConditionIngressReady.True(),
 					deployerConditionReady.True(),
 					deployerConditionServiceReady.True(),
 				).
@@ -1349,6 +1379,7 @@ func TestDeployerReconciler(t *testing.T) {
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.False().Reason(testConditionReason, testConditionMessage),
+					deployerConditionIngressReady.True(),
 					deployerConditionReady.False().Reason(testConditionReason, testConditionMessage),
 					deployerConditionServiceReady.True(),
 				).
@@ -1377,6 +1408,7 @@ func TestDeployerReconciler(t *testing.T) {
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.True(),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.True(),
 				).
@@ -1407,6 +1439,7 @@ func TestDeployerReconciler(t *testing.T) {
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionIngressReady.Unknown(),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.True(),
 				).

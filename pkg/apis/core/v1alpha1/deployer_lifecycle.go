@@ -34,6 +34,7 @@ const (
 var deployerCondSet = apis.NewLivingConditionSet(
 	DeployerConditionDeploymentReady,
 	DeployerConditionServiceReady,
+	DeployerConditionIngressReady,
 )
 
 func (ds *DeployerStatus) GetObservedGeneration() int64 {
@@ -101,4 +102,8 @@ func (ds *DeployerStatus) PropagateIngressStatus(is *networkingv1beta1.IngressSt
 	} else {
 		deployerCondSet.Manage(ds).MarkTrue(DeployerConditionIngressReady)
 	}
+}
+
+func (ds *DeployerStatus) MarkIngressNotRequired() {
+	deployerCondSet.Manage(ds).MarkTrue(DeployerConditionIngressReady)
 }

@@ -399,6 +399,9 @@ func DeployerChildIngressReconciler(config controllers.Config) controllers.SubRe
 			if child == nil {
 				parent.Status.IngressRef = nil
 				parent.Status.URL = ""
+				if parent.Spec.IngressPolicy == corev1alpha1.IngressPolicyClusterLocal {
+					parent.Status.MarkIngressNotRequired()
+				}
 			} else {
 				parent.Status.IngressRef = refs.NewTypedLocalObjectReferenceForObject(child, r.Scheme)
 				parent.Status.URL = fmt.Sprintf("http://%s", child.Spec.Rules[0].Host)
