@@ -19,7 +19,6 @@ package core
 import (
 	"context"
 	"fmt"
-	"reflect"
 
 	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"
@@ -259,9 +258,9 @@ func DeployerChildDeploymentReconciler(r *DeployerReconciler) controllers.SubRec
 
 		IndexField: deploymentIndexField,
 
-		ParentType:    reflect.TypeOf(corev1alpha1.Deployer{}),
-		ChildType:     reflect.TypeOf(appsv1.Deployment{}),
-		ChildListType: reflect.TypeOf(appsv1.DeploymentList{}),
+		ParentType:    &corev1alpha1.Deployer{},
+		ChildType:     &appsv1.Deployment{},
+		ChildListType: &appsv1.DeploymentList{},
 
 		SemanticEquals: func(a1, a2 *appsv1.Deployment) bool {
 			return equality.Semantic.DeepEqual(a1.Spec, a2.Spec) &&
@@ -341,9 +340,9 @@ func DeployerChildServiceReconciler(r *DeployerReconciler) controllers.SubReconc
 
 		IndexField: serviceIndexField,
 
-		ParentType:    reflect.TypeOf(corev1alpha1.Deployer{}),
-		ChildType:     reflect.TypeOf(corev1.Service{}),
-		ChildListType: reflect.TypeOf(corev1.ServiceList{}),
+		ParentType:    &corev1alpha1.Deployer{},
+		ChildType:     &corev1.Service{},
+		ChildListType: &corev1.ServiceList{},
 
 		SemanticEquals: func(a1, a2 *corev1.Service) bool {
 			return equality.Semantic.DeepEqual(a1.Spec, a2.Spec) &&
@@ -405,9 +404,9 @@ func NewDeployerChildIngressReconciler(r *DeployerReconciler) controllers.SubRec
 
 		IndexField: ingressIndexField,
 
-		ParentType:    reflect.TypeOf(corev1alpha1.Deployer{}),
-		ChildType:     reflect.TypeOf(networkingv1beta1.Ingress{}),
-		ChildListType: reflect.TypeOf(networkingv1beta1.IngressList{}),
+		ParentType:    &corev1alpha1.Deployer{},
+		ChildType:     &networkingv1beta1.Ingress{},
+		ChildListType: &networkingv1beta1.IngressList{},
 
 		SemanticEquals: func(a1, a2 *networkingv1beta1.Ingress) bool {
 			return equality.Semantic.DeepEqual(a1.Spec, a2.Spec) &&

@@ -19,7 +19,6 @@ package build
 import (
 	"context"
 	"fmt"
-	"reflect"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -43,7 +42,7 @@ import (
 func FunctionReconciler(config controllers.Config) *controllers.ParentReconciler {
 	return &controllers.ParentReconciler{
 		Config:     config,
-		ParentType: reflect.TypeOf(buildv1alpha1.Function{}),
+		ParentType: &buildv1alpha1.Function{},
 		SubReconcilers: []controllers.SubReconciler{
 			FunctionTargetImageReconciler(config),
 			FunctionChildImageReconciler(config),
@@ -55,7 +54,7 @@ func FunctionTargetImageReconciler(config controllers.Config) controllers.SubRec
 	var r *controllers.SyncReconciler
 	r = &controllers.SyncReconciler{
 		Config:     config,
-		ParentType: reflect.TypeOf(buildv1alpha1.Function{}),
+		ParentType: &buildv1alpha1.Function{},
 		Sync: func(ctx context.Context, parent *buildv1alpha1.Function) error {
 			targetImage, err := resolveTargetImage(ctx, r.Client, parent)
 			if err != nil {
@@ -83,9 +82,9 @@ func FunctionChildImageReconciler(config controllers.Config) controllers.SubReco
 
 		IndexField: ".metadata.functionController",
 
-		ParentType:    reflect.TypeOf(buildv1alpha1.Function{}),
-		ChildType:     reflect.TypeOf(kpackbuildv1alpha1.Image{}),
-		ChildListType: reflect.TypeOf(kpackbuildv1alpha1.ImageList{}),
+		ParentType:    &buildv1alpha1.Function{},
+		ChildType:     &kpackbuildv1alpha1.Image{},
+		ChildListType: &kpackbuildv1alpha1.ImageList{},
 
 		Setup: func(mgr ctrl.Manager, bldr *builder.Builder) error {
 			return controllers.IndexControllersOfType(mgr, r.IndexField, &buildv1alpha1.Function{}, &kpackbuildv1alpha1.Image{})

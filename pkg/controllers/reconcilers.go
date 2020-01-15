@@ -62,14 +62,13 @@ func (c *Config) WithLog(log logr.Logger) Config {
 type ParentReconciler struct {
 	Config
 
-	ParentType reflect.Type
+	ParentType runtime.Object
 
 	SubReconcilers []SubReconciler
 }
 
 func (r *ParentReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	bldr := ctrl.NewControllerManagedBy(mgr).
-		For(reflect.New(r.ParentType).Interface().(apis.Object))
+	bldr := ctrl.NewControllerManagedBy(mgr).For(r.ParentType)
 	for _, reconciler := range r.SubReconcilers {
 		err := reconciler.SetupWithManager(mgr, bldr)
 		if err != nil {
@@ -83,7 +82,7 @@ func (r *ParentReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 	log := r.Log.WithValues("request", req.NamespacedName)
 
-	originalParent := reflect.New(r.ParentType).Interface().(apis.Object)
+	originalParent := r.ParentType.DeepCopyObject().(apis.Object)
 
 	if err := r.Get(ctx, req.NamespacedName, originalParent); err != nil {
 		if apierrs.IsNotFound(err) {
@@ -113,7 +112,7 @@ func (r *ParentReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		// update status
 		log.Info("updating status", "diff", cmp.Diff(r.status(originalParent), r.status(parent)))
 		if updateErr := r.Status().Update(ctx, parent); updateErr != nil {
-			log.Error(updateErr, "unable to update status", r.ParentType.Name(), parent)
+			log.Error(updateErr, "unable to update status", typeName(r.ParentType), parent)
 			r.Recorder.Eventf(parent, corev1.EventTypeWarning, "StatusUpdateFailed",
 				"Failed to update status: %v", updateErr)
 			return ctrl.Result{}, updateErr
@@ -166,7 +165,7 @@ var (
 type SyncReconciler struct {
 	Config
 
-	ParentType reflect.Type
+	ParentType apis.Object
 
 	// Sync does whatever work is necessary for the reconciler
 	//
@@ -191,7 +190,7 @@ func (r *SyncReconciler) SetupWithManager(mgr ctrl.Manager, bldr *builder.Builde
 func (r *SyncReconciler) Reconcile(ctx context.Context, parent apis.Object) (ctrl.Result, error) {
 	err := r.sync(ctx, parent)
 	if err != nil {
-		r.Log.Error(err, "unable to sync", r.ParentType.Name(), parent)
+		r.Log.Error(err, "unable to sync", typeName(r.ParentType), parent)
 		return ctrl.Result{}, err
 	}
 
@@ -214,9 +213,9 @@ func (r *SyncReconciler) sync(ctx context.Context, parent apis.Object) error {
 type ChildReconciler struct {
 	Config
 
-	ParentType    reflect.Type
-	ChildType     reflect.Type
-	ChildListType reflect.Type
+	ParentType    apis.Object
+	ChildType     apis.Object
+	ChildListType runtime.Object
 
 	// IndexField is used to index objects of the child's type based on their
 	// controlling owner. This field needs to be unique within the manager.
@@ -280,7 +279,7 @@ type ChildReconciler struct {
 }
 
 func (r *ChildReconciler) SetupWithManager(mgr ctrl.Manager, bldr *builder.Builder) error {
-	bldr.Owns(reflect.New(r.ChildType).Interface().(apis.Object))
+	bldr.Owns(r.ChildType)
 
 	if r.Setup == nil {
 		return nil
@@ -292,11 +291,11 @@ func (r *ChildReconciler) Reconcile(ctx context.Context, parent apis.Object) (ct
 	child, err := r.reconcile(ctx, parent)
 	if err != nil {
 		if apierrs.IsAlreadyExists(err) {
-			r.Log.Info("unable to reconcile child, not owned", r.ParentType.Name(), parent, r.ChildType.Name(), r.sanitize(child))
+			r.Log.Info("unable to reconcile child, not owned", typeName(r.ParentType), parent, typeName(r.ChildType), r.sanitize(child))
 			r.reflectChildStatusOnParent(parent, child, err)
 			return ctrl.Result{}, nil
 		}
-		r.Log.Error(err, "unable to reconcile child", r.ParentType.Name(), parent)
+		r.Log.Error(err, "unable to reconcile child", typeName(r.ParentType), parent)
 		return ctrl.Result{}, err
 	}
 	r.reflectChildStatusOnParent(parent, child, err)
@@ -305,8 +304,8 @@ func (r *ChildReconciler) Reconcile(ctx context.Context, parent apis.Object) (ct
 }
 
 func (r *ChildReconciler) reconcile(ctx context.Context, parent apis.Object) (apis.Object, error) {
-	actual := reflect.New(r.ChildType).Interface().(apis.Object)
-	children := reflect.New(r.ChildListType).Interface().(runtime.Object)
+	actual := r.ChildType.DeepCopyObject().(apis.Object)
+	children := r.ChildListType.DeepCopyObject().(runtime.Object)
 	if err := r.List(ctx, children, client.InNamespace(parent.GetNamespace()), client.MatchingField(r.IndexField, parent.GetName())); err != nil {
 		return nil, err
 	}
@@ -317,14 +316,14 @@ func (r *ChildReconciler) reconcile(ctx context.Context, parent apis.Object) (ap
 	} else if len(items) > 1 {
 		// this shouldn't happen, delete everything to a clean slate
 		for _, extra := range items {
-			r.Log.Info("deleting extra child", r.ChildType.Name(), r.sanitize(extra))
+			r.Log.Info("deleting extra child", typeName(r.ChildType), r.sanitize(extra))
 			if err := r.Delete(ctx, extra); err != nil {
 				r.Recorder.Eventf(parent, corev1.EventTypeWarning, "DeleteFailed",
-					"Failed to delete %s %q: %v", r.ChildType.Name(), extra.GetName(), err)
+					"Failed to delete %s %q: %v", typeName(r.ChildType), extra.GetName(), err)
 				return nil, err
 			}
 			r.Recorder.Eventf(parent, corev1.EventTypeNormal, "Deleted",
-				"Deleted %s %q", r.ChildType.Name(), extra.GetName())
+				"Deleted %s %q", typeName(r.ChildType), extra.GetName())
 		}
 	}
 
@@ -341,30 +340,30 @@ func (r *ChildReconciler) reconcile(ctx context.Context, parent apis.Object) (ap
 	// delete child if no longer needed
 	if desired == nil {
 		if !actual.GetCreationTimestamp().Time.IsZero() {
-			r.Log.Info("deleting unwanted child", r.ChildType.Name(), r.sanitize(actual))
+			r.Log.Info("deleting unwanted child", typeName(r.ChildType), r.sanitize(actual))
 			if err := r.Delete(ctx, actual); err != nil {
-				r.Log.Error(err, "unable to delete unwanted child", r.ChildType.Name(), r.sanitize(actual))
+				r.Log.Error(err, "unable to delete unwanted child", typeName(r.ChildType), r.sanitize(actual))
 				r.Recorder.Eventf(parent, corev1.EventTypeWarning, "DeleteFailed",
-					"Failed to delete %s %q: %v", r.ChildType.Name(), actual.GetName(), err)
+					"Failed to delete %s %q: %v", typeName(r.ChildType), actual.GetName(), err)
 				return nil, err
 			}
 			r.Recorder.Eventf(parent, corev1.EventTypeNormal, "Deleted",
-				"Deleted %s %q", r.ChildType.Name(), actual.GetName())
+				"Deleted %s %q", typeName(r.ChildType), actual.GetName())
 		}
 		return nil, nil
 	}
 
 	// create child if it doesn't exist
 	if actual.GetName() == "" {
-		r.Log.Info("creating child", r.ChildType.Name(), r.sanitize(desired))
+		r.Log.Info("creating child", typeName(r.ChildType), r.sanitize(desired))
 		if err := r.Create(ctx, desired); err != nil {
-			r.Log.Error(err, "unable to create child", r.ChildType.Name(), r.sanitize(desired))
+			r.Log.Error(err, "unable to create child", typeName(r.ChildType), r.sanitize(desired))
 			r.Recorder.Eventf(parent, corev1.EventTypeWarning, "CreationFailed",
-				"Failed to create %s %q: %v", r.ChildType.Name(), desired.GetName(), err)
+				"Failed to create %s %q: %v", typeName(r.ChildType), desired.GetName(), err)
 			return nil, err
 		}
 		r.Recorder.Eventf(parent, corev1.EventTypeNormal, "Created",
-			"Created %s %q", r.ChildType.Name(), desired.GetName())
+			"Created %s %q", typeName(r.ChildType), desired.GetName())
 		return desired, nil
 	}
 
@@ -381,13 +380,13 @@ func (r *ChildReconciler) reconcile(ctx context.Context, parent apis.Object) (ap
 	r.mergeBeforeUpdate(current, desired)
 	r.Log.Info("reconciling child", "diff", cmp.Diff(r.sanitize(actual), r.sanitize(current)))
 	if err := r.Update(ctx, current); err != nil {
-		r.Log.Error(err, "unable to update child", r.ChildType.Name(), r.sanitize(current))
+		r.Log.Error(err, "unable to update child", typeName(r.ChildType), r.sanitize(current))
 		r.Recorder.Eventf(parent, corev1.EventTypeWarning, "UpdateFailed",
-			"Failed to update %s %q: %v", r.ChildType.Name(), current.GetName(), err)
+			"Failed to update %s %q: %v", typeName(r.ChildType), current.GetName(), err)
 		return nil, err
 	}
 	r.Recorder.Eventf(parent, corev1.EventTypeNormal, "Updated",
-		"Updated %s %q", r.ChildType.Name(), current.GetName())
+		"Updated %s %q", typeName(r.ChildType), current.GetName())
 
 	return current, nil
 }
@@ -481,4 +480,13 @@ func (r *ChildReconciler) items(children runtime.Object) []apis.Object {
 		items[i] = itemsValue.Index(i).Addr().Interface().(apis.Object)
 	}
 	return items
+}
+
+func typeName(i interface{}) string {
+	t := reflect.TypeOf(i)
+	// TODO do we need this?
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+	return t.Name()
 }

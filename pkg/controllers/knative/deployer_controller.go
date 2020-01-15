@@ -19,7 +19,6 @@ package knative
 import (
 	"context"
 	"fmt"
-	"reflect"
 
 	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"
@@ -265,9 +264,9 @@ func DeployerChildConfigurationReconciler(r *DeployerReconciler) controllers.Sub
 
 		IndexField: configurationIndexField,
 
-		ParentType:    reflect.TypeOf(knativev1alpha1.Deployer{}),
-		ChildType:     reflect.TypeOf(servingv1.Configuration{}),
-		ChildListType: reflect.TypeOf(servingv1.ConfigurationList{}),
+		ParentType:    &knativev1alpha1.Deployer{},
+		ChildType:     &servingv1.Configuration{},
+		ChildListType: &servingv1.ConfigurationList{},
 
 		SemanticEquals: func(a1, a2 *servingv1.Configuration) bool {
 			return equality.Semantic.DeepEqual(a1.Spec, a2.Spec) &&
@@ -337,9 +336,9 @@ func DeployerChildRouteReconciler(r *DeployerReconciler) controllers.SubReconcil
 
 		IndexField: routeIndexField,
 
-		ParentType:    reflect.TypeOf(knativev1alpha1.Deployer{}),
-		ChildType:     reflect.TypeOf(servingv1.Route{}),
-		ChildListType: reflect.TypeOf(servingv1.RouteList{}),
+		ParentType:    &knativev1alpha1.Deployer{},
+		ChildType:     &servingv1.Route{},
+		ChildListType: &servingv1.RouteList{},
 
 		SemanticEquals: func(a1, a2 *servingv1.Route) bool {
 			return equality.Semantic.DeepEqual(a1.Spec, a2.Spec) &&
