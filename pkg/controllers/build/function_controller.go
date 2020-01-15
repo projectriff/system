@@ -89,16 +89,11 @@ func FunctionChildImageReconciler(config controllers.Config) controllers.SubReco
 				return nil, nil
 			}
 
-			labels := make(map[string]string, len(parent.ObjectMeta.Labels)+1)
-			// pass through existing labels
-			for k, v := range parent.Labels {
-				labels[k] = v
-			}
-			labels[buildv1alpha1.FunctionLabelKey] = parent.Name
-
 			child := &kpackbuildv1alpha1.Image{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels:       labels,
+					Labels: controllers.MergeMaps(parent.Labels, map[string]string{
+						buildv1alpha1.FunctionLabelKey: parent.Name,
+					}),
 					Annotations:  make(map[string]string),
 					GenerateName: fmt.Sprintf("%s-function-", parent.Name),
 					Namespace:    parent.Namespace,

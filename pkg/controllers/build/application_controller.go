@@ -89,16 +89,11 @@ func ApplicationChildImageReconciler(config controllers.Config) controllers.SubR
 				return nil, nil
 			}
 
-			labels := make(map[string]string, len(parent.Labels)+1)
-			// pass through existing labels
-			for k, v := range parent.Labels {
-				labels[k] = v
-			}
-			labels[buildv1alpha1.ApplicationLabelKey] = parent.Name
-
 			image := &kpackbuildv1alpha1.Image{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels:       labels,
+					Labels: controllers.MergeMaps(parent.Labels, map[string]string{
+						buildv1alpha1.ApplicationLabelKey: parent.Name,
+					}),
 					Annotations:  make(map[string]string),
 					GenerateName: fmt.Sprintf("%s-application-", parent.Name),
 					Namespace:    parent.Namespace,
