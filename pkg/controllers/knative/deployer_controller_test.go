@@ -80,20 +80,18 @@ func TestDeployerReconciler(t *testing.T) {
 			om.GenerateName("%s-deployer-", testName)
 			om.ControlledBy(testDeployer, scheme)
 			om.AddLabel(knativev1alpha1.DeployerLabelKey, testName)
-			om.AddLabel("serving.knative.dev/visibility", "cluster-local")
 		}).
 		PodTemplateSpec(func(pts factories.PodTemplateSpec) {
 			pts.AddLabel(knativev1alpha1.DeployerLabelKey, testName)
-			pts.AddLabel("serving.knative.dev/visibility", "cluster-local")
 		}).
 		UserContainer(func(container *corev1.Container) {
 			container.Image = testImage
 		})
 	testConfigurationGiven := testConfigurationCreate.
 		ObjectMeta(func(om factories.ObjectMeta) {
-			om.
-				Name("%s001", om.Create().GenerateName).
-				Generation(1)
+			om.Name("%s001", om.Create().GenerateName)
+			om.Created(1)
+			om.Generation(1)
 		}).
 		StatusObservedGeneration(1)
 
@@ -113,6 +111,7 @@ func TestDeployerReconciler(t *testing.T) {
 		)
 	testRouteGiven := testRouteCreate.
 		ObjectMeta(func(om factories.ObjectMeta) {
+			om.Created(1)
 			om.Generation(1)
 		}).
 		StatusObservedGeneration(1)
@@ -212,6 +211,18 @@ func TestDeployerReconciler(t *testing.T) {
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testApplication, testDeployer, scheme),
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
+		ExpectStatusUpdates: []rtesting.Factory{
+			testDeployer.
+				StatusConditions(
+					deployerConditionConfigurationReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionRouteReady.Unknown(),
+				),
+		},
 	}, {
 		Name: "create knative resources, from application, no latest",
 		Key:  testKey,
@@ -221,9 +232,20 @@ func TestDeployerReconciler(t *testing.T) {
 			testApplication.
 				StatusLatestImage(""),
 		},
-		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testApplication, testDeployer, scheme),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
+		ExpectStatusUpdates: []rtesting.Factory{
+			testDeployer.
+				StatusConditions(
+					deployerConditionConfigurationReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionRouteReady.Unknown(),
+				),
 		},
 	}, {
 		Name: "create knative resources, from function",
@@ -295,6 +317,18 @@ func TestDeployerReconciler(t *testing.T) {
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testFunction, testDeployer, scheme),
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
+		ExpectStatusUpdates: []rtesting.Factory{
+			testDeployer.
+				StatusConditions(
+					deployerConditionConfigurationReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionRouteReady.Unknown(),
+				),
+		},
 	}, {
 		Name: "create knative resources, from function, no latest",
 		Key:  testKey,
@@ -304,9 +338,20 @@ func TestDeployerReconciler(t *testing.T) {
 			testFunction.
 				StatusLatestImage(""),
 		},
-		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testFunction, testDeployer, scheme),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
+		ExpectStatusUpdates: []rtesting.Factory{
+			testDeployer.
+				StatusConditions(
+					deployerConditionConfigurationReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionRouteReady.Unknown(),
+				),
 		},
 	}, {
 		Name: "create knative resources, from container",
@@ -378,6 +423,18 @@ func TestDeployerReconciler(t *testing.T) {
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testContainer, testDeployer, scheme),
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
+		ExpectStatusUpdates: []rtesting.Factory{
+			testDeployer.
+				StatusConditions(
+					deployerConditionConfigurationReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionRouteReady.Unknown(),
+				),
+		},
 	}, {
 		Name: "create knative resources, from container, no latest",
 		Key:  testKey,
@@ -387,9 +444,20 @@ func TestDeployerReconciler(t *testing.T) {
 			testContainer.
 				StatusLatestImage(""),
 		},
-		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testContainer, testDeployer, scheme),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
+		ExpectStatusUpdates: []rtesting.Factory{
+			testDeployer.
+				StatusConditions(
+					deployerConditionConfigurationReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionRouteReady.Unknown(),
+				),
 		},
 	}, {
 		Name: "create knative resources, from image",
@@ -893,11 +961,9 @@ func TestDeployerReconciler(t *testing.T) {
 		GivenObjects: []rtesting.Factory{
 			testDeployer.
 				ObjectMeta(func(om factories.ObjectMeta) {
-					om.AddAnnotation("test-annotation", "test-annotation-value")
 					om.AddLabel("test-label", "test-label-value")
 				}).
 				PodTemplateSpec(func(pts factories.PodTemplateSpec) {
-					pts.AddAnnotation("test-annotation-pts", "test-annotation-value")
 					pts.AddLabel("test-label-pts", "test-label-value")
 				}).
 				Image(testImage),
@@ -915,11 +981,9 @@ func TestDeployerReconciler(t *testing.T) {
 		ExpectUpdates: []rtesting.Factory{
 			testConfigurationGiven.
 				ObjectMeta(func(om factories.ObjectMeta) {
-					om.AddAnnotation("test-annotation", "test-annotation-value")
 					om.AddLabel("test-label", "test-label-value")
 				}).
 				PodTemplateSpec(func(pts factories.PodTemplateSpec) {
-					pts.AddAnnotation("test-annotation", "test-annotation-value")
 					pts.AddLabel("test-label", "test-label-value")
 				}),
 			testRouteGiven.
@@ -1079,14 +1143,14 @@ func TestDeployerReconciler(t *testing.T) {
 	}}
 
 	table.Test(t, scheme, func(t *testing.T, row *rtesting.Testcase, client client.Client, tracker tracker.Tracker, recorder record.EventRecorder, log logr.Logger) reconcile.Reconciler {
-		return &knative.DeployerReconciler{
-			Config: controllers.Config{
+		return knative.DeployerReconciler(
+			controllers.Config{
 				Client:   client,
 				Recorder: recorder,
 				Log:      log,
 				Scheme:   scheme,
 				Tracker:  tracker,
 			},
-		}
+		)
 	})
 }

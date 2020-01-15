@@ -91,15 +91,15 @@ func main() {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Adapter")
 		os.Exit(1)
 	}
-	if err = (&knativecontrollers.DeployerReconciler{
-		Config: controllers.Config{
+	if err = knativecontrollers.DeployerReconciler(
+		controllers.Config{
 			Client:   mgr.GetClient(),
 			Recorder: mgr.GetEventRecorderFor("Deployer"),
 			Log:      ctrl.Log.WithName("controllers").WithName("Deployer"),
 			Scheme:   mgr.GetScheme(),
 			Tracker:  tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("Deployer").WithName("tracker")),
 		},
-	}).SetupWithManager(mgr); err != nil {
+	).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Deployer")
 		os.Exit(1)
 	}

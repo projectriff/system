@@ -20,14 +20,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/go-logr/logr"
-	"github.com/google/go-cmp/cmp"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
@@ -38,224 +36,121 @@ import (
 	"github.com/projectriff/system/pkg/tracker"
 )
 
-const (
-	configurationIndexField = ".metadata.configurationController"
-	routeIndexField         = ".metadata.routeController"
-)
-
-// DeployerReconciler reconciles a Deployer object
-type DeployerReconciler struct {
-	controllers.Config
-
-	configurationReconciler controllers.SubReconciler
-	routeReconciler         controllers.SubReconciler
-}
-
 // +kubebuilder:rbac:groups=knative.projectriff.io,resources=deployers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=knative.projectriff.io,resources=deployers/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=build.projectriff.io,resources=applications;containers;functions,verbs=get;list;watch
 // +kubebuilder:rbac:groups=serving.knative.dev,resources=configurations;routes,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=events,verbs=get;list;watch;create;update;patch;delete
 
-func (r *DeployerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	ctx := context.Background()
-	log := r.Log.WithValues("deployer", req.NamespacedName)
-
-	// TODO move to an init or constructor
-	if r.configurationReconciler == nil {
-		r.configurationReconciler = DeployerChildConfigurationReconciler(r)
+func DeployerReconciler(config controllers.Config) *controllers.ParentReconciler {
+	return &controllers.ParentReconciler{
+		Config:     config,
+		ParentType: &knativev1alpha1.Deployer{},
+		SubReconcilers: []controllers.SubReconciler{
+			DeployerBuildReconciler(config),
+			DeployerChildConfigurationReconciler(config),
+			DeployerChildRouteReconciler(config),
+		},
 	}
-	if r.routeReconciler == nil {
-		r.routeReconciler = DeployerChildRouteReconciler(r)
-	}
-
-	var originalDeployer knativev1alpha1.Deployer
-	if err := r.Get(ctx, req.NamespacedName, &originalDeployer); err != nil {
-		if apierrs.IsNotFound(err) {
-			// we'll ignore not-found errors, since they can't be fixed by an immediate
-			// requeue (we'll need to wait for a new notification), and we can get them
-			// on deleted requests.
-			return ctrl.Result{}, nil
-		}
-		log.Error(err, "unable to fetch Deployer")
-		return ctrl.Result{}, err
-	}
-	deployer := *(originalDeployer.DeepCopy())
-
-	deployer.Default()
-	deployer.Status.InitializeConditions()
-
-	result, err := r.reconcile(ctx, log, &deployer)
-
-	// check if status has changed before updating, unless requeued
-	if !result.Requeue && !equality.Semantic.DeepEqual(deployer.Status, originalDeployer.Status) && deployer.GetDeletionTimestamp() == nil {
-		// update status
-		log.Info("updating deployer status", "diff", cmp.Diff(originalDeployer.Status, deployer.Status))
-		if updateErr := r.Status().Update(ctx, &deployer); updateErr != nil {
-			log.Error(updateErr, "unable to update Deployer status", "deployer", deployer)
-			r.Recorder.Eventf(&deployer, corev1.EventTypeWarning, "StatusUpdateFailed",
-				"Failed to update status: %v", updateErr)
-			return ctrl.Result{Requeue: true}, updateErr
-		}
-		r.Recorder.Eventf(&deployer, corev1.EventTypeNormal, "StatusUpdated",
-			"Updated status")
-	}
-
-	// return original reconcile result
-	return result, err
 }
 
-func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, deployer *knativev1alpha1.Deployer) (ctrl.Result, error) {
-	if deployer.GetDeletionTimestamp() != nil {
-		return ctrl.Result{}, nil
-	}
+func DeployerBuildReconciler(config controllers.Config) controllers.SubReconciler {
+	var r *controllers.SyncReconciler
 
-	// resolve build image
-	if err := r.reconcileBuildImage(ctx, log, deployer); err != nil {
-		if apierrs.IsNotFound(err) {
-			// we'll ignore not-found errors, since the reference build resource
-			// may not exist yet.
-			return ctrl.Result{}, nil
+	resolveBuild := func(ctx context.Context, parent *knativev1alpha1.Deployer) error {
+		build := parent.Spec.Build
+		if build == nil {
+			parent.Status.LatestImage = parent.Spec.Template.Spec.Containers[0].Image
+			return nil
 		}
-		log.Error(err, "unable to resolve image for Deployer", "deployer", deployer)
-		return ctrl.Result{Requeue: true}, err
+
+		switch {
+		case build.ApplicationRef != "":
+			var application buildv1alpha1.Application
+			key := types.NamespacedName{Namespace: parent.Namespace, Name: build.ApplicationRef}
+			// track application for new images
+			r.Tracker.Track(
+				tracker.NewKey(application.GetGroupVersionKind(), key),
+				types.NamespacedName{Namespace: parent.Namespace, Name: parent.Name},
+			)
+			if err := r.Get(ctx, key, &application); err != nil {
+				return err
+			}
+			if application.Status.LatestImage != "" {
+				parent.Status.LatestImage = application.Status.LatestImage
+			}
+			return nil
+
+		case build.ContainerRef != "":
+			var container buildv1alpha1.Container
+			key := types.NamespacedName{Namespace: parent.Namespace, Name: build.ContainerRef}
+			// track container for new images
+			r.Tracker.Track(
+				tracker.NewKey(container.GetGroupVersionKind(), key),
+				types.NamespacedName{Namespace: parent.Namespace, Name: parent.Name},
+			)
+			if err := r.Get(ctx, key, &container); err != nil {
+				return err
+			}
+			if container.Status.LatestImage != "" {
+				parent.Status.LatestImage = container.Status.LatestImage
+			}
+			return nil
+
+		case build.FunctionRef != "":
+			var function buildv1alpha1.Function
+			key := types.NamespacedName{Namespace: parent.Namespace, Name: build.FunctionRef}
+			// track function for new images
+			r.Tracker.Track(
+				tracker.NewKey(function.GetGroupVersionKind(), key),
+				types.NamespacedName{Namespace: parent.Namespace, Name: parent.Name},
+			)
+			if err := r.Get(ctx, key, &function); err != nil {
+				return err
+			}
+			if function.Status.LatestImage != "" {
+				parent.Status.LatestImage = function.Status.LatestImage
+			}
+			return nil
+
+		}
+
+		return fmt.Errorf("invalid build")
 	}
 
-	// reconcile configuration
-	if _, err := r.configurationReconciler.Reconcile(ctx, deployer); err != nil {
-		return ctrl.Result{}, err
+	r = &controllers.SyncReconciler{
+		Config:     config.WithLog(config.Log.WithName("Build")),
+		ParentType: &knativev1alpha1.Deployer{},
+
+		Setup: func(mgr manager.Manager, bldr *builder.Builder) error {
+			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Application{}}, controllers.EnqueueTracked(&buildv1alpha1.Application{}, r.Tracker, r.Scheme))
+			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Container{}}, controllers.EnqueueTracked(&buildv1alpha1.Container{}, r.Tracker, r.Scheme))
+			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, controllers.EnqueueTracked(&buildv1alpha1.Function{}, r.Tracker, r.Scheme))
+			return nil
+		},
+
+		Sync: func(ctx context.Context, parent *knativev1alpha1.Deployer) error {
+			if err := resolveBuild(ctx, parent); err != nil {
+				if apierrs.IsNotFound(err) {
+					// we'll ignore not-found errors, since the reference build resource
+					// may not exist yet.
+					return nil
+				}
+				r.Log.Error(err, "unable to resolve image for Deployer", "deployer", parent)
+				return err
+			}
+			return nil
+		},
 	}
-
-	// reconcile route
-	if _, err := r.routeReconciler.Reconcile(ctx, deployer); err != nil {
-		return ctrl.Result{}, err
-	}
-
-	deployer.Status.ObservedGeneration = deployer.Generation
-
-	return ctrl.Result{}, nil
+	return r
 }
 
-func (r *DeployerReconciler) reconcileBuildImage(ctx context.Context, log logr.Logger, deployer *knativev1alpha1.Deployer) error {
-	build := deployer.Spec.Build
-	if build == nil {
-		deployer.Status.LatestImage = deployer.Spec.Template.Spec.Containers[0].Image
-		return nil
-	}
+func DeployerChildConfigurationReconciler(config controllers.Config) controllers.SubReconciler {
+	var r *controllers.ChildReconciler
+	r = &controllers.ChildReconciler{
+		Config: config.WithLog(config.Log.WithName("Configuration")),
 
-	switch {
-	case build.ApplicationRef != "":
-		var application buildv1alpha1.Application
-		key := types.NamespacedName{Namespace: deployer.Namespace, Name: build.ApplicationRef}
-		// track application for new images
-		r.Tracker.Track(
-			tracker.NewKey(application.GetGroupVersionKind(), key),
-			types.NamespacedName{Namespace: deployer.Namespace, Name: deployer.Name},
-		)
-		if err := r.Get(ctx, key, &application); err != nil {
-			return err
-		}
-		if application.Status.LatestImage == "" {
-			// TODO this should not be an error
-			return fmt.Errorf("application %q does not have a ready image", build.ApplicationRef)
-		}
-		deployer.Status.LatestImage = application.Status.LatestImage
-		return nil
-
-	case build.ContainerRef != "":
-		var container buildv1alpha1.Container
-		key := types.NamespacedName{Namespace: deployer.Namespace, Name: build.ContainerRef}
-		// track container for new images
-		r.Tracker.Track(
-			tracker.NewKey(container.GetGroupVersionKind(), key),
-			types.NamespacedName{Namespace: deployer.Namespace, Name: deployer.Name},
-		)
-		if err := r.Get(ctx, key, &container); err != nil {
-			return err
-		}
-		if container.Status.LatestImage == "" {
-			// TODO this should not be an error
-			return fmt.Errorf("container %q does not have a ready image", build.ContainerRef)
-		}
-		deployer.Status.LatestImage = container.Status.LatestImage
-		return nil
-
-	case build.FunctionRef != "":
-		var function buildv1alpha1.Function
-		key := types.NamespacedName{Namespace: deployer.Namespace, Name: build.FunctionRef}
-		// track function for new images
-		r.Tracker.Track(
-			tracker.NewKey(function.GetGroupVersionKind(), key),
-			types.NamespacedName{Namespace: deployer.Namespace, Name: deployer.Name},
-		)
-		if err := r.Get(ctx, key, &function); err != nil {
-			return err
-		}
-		if function.Status.LatestImage == "" {
-			// TODO this should not be an error
-			return fmt.Errorf("function %q does not have a ready image", build.FunctionRef)
-		}
-		deployer.Status.LatestImage = function.Status.LatestImage
-		return nil
-
-	}
-
-	return fmt.Errorf("invalid deployer build")
-}
-
-func (r *DeployerReconciler) constructLabelsForDeployer(deployer *knativev1alpha1.Deployer) map[string]string {
-	labels := make(map[string]string, len(deployer.ObjectMeta.Labels)+2)
-	// pass through existing labels
-	for k, v := range deployer.ObjectMeta.Labels {
-		labels[k] = v
-	}
-
-	labels[knativev1alpha1.DeployerLabelKey] = deployer.Name
-
-	if deployer.Spec.IngressPolicy == knativev1alpha1.IngressPolicyClusterLocal {
-		labels["serving.knative.dev/visibility"] = "cluster-local"
-	}
-
-	return labels
-}
-
-func (r *DeployerReconciler) constructAnnotationsForDeployer(deployer *knativev1alpha1.Deployer) map[string]string {
-	// make a little extra space just in case
-	annotations := make(map[string]string, len(deployer.ObjectMeta.Annotations)+2)
-
-	// pass through existing annotations
-	for k, v := range deployer.ObjectMeta.Annotations {
-		annotations[k] = v
-	}
-
-	if deployer.Spec.Scale.Min != nil {
-		annotations["autoscaling.knative.dev/minScale"] = fmt.Sprintf("%d", *deployer.Spec.Scale.Min)
-	}
-	if deployer.Spec.Scale.Max != nil {
-		annotations["autoscaling.knative.dev/maxScale"] = fmt.Sprintf("%d", *deployer.Spec.Scale.Max)
-	}
-
-	return annotations
-}
-
-func (r *DeployerReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&knativev1alpha1.Deployer{}).
-		Owns(&servingv1.Configuration{}).
-		Owns(&servingv1.Route{}).
-		// watch for build mutations to update dependent deployers
-		Watches(&source.Kind{Type: &buildv1alpha1.Application{}}, controllers.EnqueueTracked(&buildv1alpha1.Application{}, r.Tracker, r.Scheme)).
-		Watches(&source.Kind{Type: &buildv1alpha1.Container{}}, controllers.EnqueueTracked(&buildv1alpha1.Container{}, r.Tracker, r.Scheme)).
-		Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, controllers.EnqueueTracked(&buildv1alpha1.Function{}, r.Tracker, r.Scheme)).
-		Complete(r)
-}
-
-func DeployerChildConfigurationReconciler(r *DeployerReconciler) controllers.SubReconciler {
-	var cr *controllers.ChildReconciler
-	cr = &controllers.ChildReconciler{
-		Config: r.WithLog(r.Log.WithName("Configuration")),
-
-		IndexField: configurationIndexField,
+		IndexField: ".metadata.configurationController",
 
 		ParentType:    &knativev1alpha1.Deployer{},
 		ChildType:     &servingv1.Configuration{},
@@ -267,16 +162,24 @@ func DeployerChildConfigurationReconciler(r *DeployerReconciler) controllers.Sub
 				equality.Semantic.DeepEqual(a1.Annotations, a2.Annotations)
 		},
 		DesiredChild: func(parent *knativev1alpha1.Deployer) (*servingv1.Configuration, error) {
-			labels := r.constructLabelsForDeployer(parent)
-			annotations := r.constructAnnotationsForDeployer(parent)
-			template := parent.Spec.Template.DeepCopy()
+			if parent.Status.LatestImage == "" {
+				return nil, nil
+			}
 
-			for k, v := range labels {
-				template.Labels[k] = v
+			labels := controllers.MergeMaps(parent.Labels, map[string]string{
+				knativev1alpha1.DeployerLabelKey: parent.Name,
+			})
+			annotations := map[string]string{}
+			if parent.Spec.Scale.Min != nil {
+				annotations["autoscaling.knative.dev/minScale"] = fmt.Sprintf("%d", *parent.Spec.Scale.Min)
 			}
-			for k, v := range annotations {
-				template.Annotations[k] = v
+			if parent.Spec.Scale.Max != nil {
+				annotations["autoscaling.knative.dev/maxScale"] = fmt.Sprintf("%d", *parent.Spec.Scale.Max)
 			}
+
+			template := parent.Spec.Template.DeepCopy()
+			template.Annotations = controllers.MergeMaps(annotations, template.Annotations)
+			template.Labels = controllers.MergeMaps(labels, template.Labels)
 
 			child := &servingv1.Configuration{
 				ObjectMeta: metav1.ObjectMeta{
@@ -307,8 +210,12 @@ func DeployerChildConfigurationReconciler(r *DeployerReconciler) controllers.Sub
 			return child, nil
 		},
 		ReflectChildStatusOnParent: func(parent *knativev1alpha1.Deployer, child *servingv1.Configuration, err error) {
-			parent.Status.ConfigurationRef = refs.NewTypedLocalObjectReferenceForObject(child, r.Scheme)
-			parent.Status.PropagateConfigurationStatus(&child.Status)
+			if child == nil {
+				parent.Status.ConfigurationRef = nil
+			} else {
+				parent.Status.ConfigurationRef = refs.NewTypedLocalObjectReferenceForObject(child, r.Scheme)
+				parent.Status.PropagateConfigurationStatus(&child.Status)
+			}
 		},
 		MergeBeforeUpdate: func(current, desired *servingv1.Configuration) {
 			current.Labels = desired.Labels
@@ -319,15 +226,15 @@ func DeployerChildConfigurationReconciler(r *DeployerReconciler) controllers.Sub
 			return child.Spec
 		},
 	}
-	return cr
+	return r
 }
 
-func DeployerChildRouteReconciler(r *DeployerReconciler) controllers.SubReconciler {
-	var cr *controllers.ChildReconciler
-	cr = &controllers.ChildReconciler{
-		Config: r.WithLog(r.Log.WithName("Route")),
+func DeployerChildRouteReconciler(config controllers.Config) controllers.SubReconciler {
+	var r *controllers.ChildReconciler
+	r = &controllers.ChildReconciler{
+		Config: config.WithLog(config.Log.WithName("Route")),
 
-		IndexField: routeIndexField,
+		IndexField: ".metadata.routeController",
 
 		ParentType:    &knativev1alpha1.Deployer{},
 		ChildType:     &servingv1.Route{},
@@ -339,10 +246,15 @@ func DeployerChildRouteReconciler(r *DeployerReconciler) controllers.SubReconcil
 		},
 		DesiredChild: func(parent *knativev1alpha1.Deployer) (*servingv1.Route, error) {
 			if parent.Status.ConfigurationRef == nil {
-				return nil, fmt.Errorf("unable to create Route, waiting for Configuration")
+				return nil, nil
 			}
 
-			labels := r.constructLabelsForDeployer(parent)
+			labels := controllers.MergeMaps(parent.Labels, map[string]string{
+				knativev1alpha1.DeployerLabelKey: parent.Name,
+			})
+			if parent.Spec.IngressPolicy == knativev1alpha1.IngressPolicyClusterLocal {
+				labels["serving.knative.dev/visibility"] = "cluster-local"
+			}
 			var allTraffic int64 = 100
 
 			child := &servingv1.Route{
@@ -372,8 +284,12 @@ func DeployerChildRouteReconciler(r *DeployerReconciler) controllers.SubReconcil
 				}
 				return
 			}
-			parent.Status.RouteRef = refs.NewTypedLocalObjectReferenceForObject(child, r.Scheme)
-			parent.Status.PropagateRouteStatus(&child.Status)
+			if child == nil {
+				parent.Status.RouteRef = nil
+			} else {
+				parent.Status.RouteRef = refs.NewTypedLocalObjectReferenceForObject(child, r.Scheme)
+				parent.Status.PropagateRouteStatus(&child.Status)
+			}
 		},
 		MergeBeforeUpdate: func(current, desired *servingv1.Route) {
 			current.Labels = desired.Labels
@@ -383,5 +299,5 @@ func DeployerChildRouteReconciler(r *DeployerReconciler) controllers.SubReconcil
 			return child.Spec
 		},
 	}
-	return cr
+	return r
 }
