@@ -261,7 +261,7 @@ func (r *DeployerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 func DeployerChildConfigurationReconciler(r *DeployerReconciler) controllers.SubReconciler {
 	var cr *controllers.ChildReconciler
 	cr = &controllers.ChildReconciler{
-		Config: r.Config,
+		Config: r.WithLog(r.Log.WithName("Configuration")),
 
 		IndexField: configurationIndexField,
 
@@ -274,7 +274,7 @@ func DeployerChildConfigurationReconciler(r *DeployerReconciler) controllers.Sub
 				equality.Semantic.DeepEqual(a1.Labels, a2.Labels) &&
 				equality.Semantic.DeepEqual(a1.Annotations, a2.Annotations)
 		},
-		ConstructDesiredChild: func(parent *knativev1alpha1.Deployer) (*servingv1.Configuration, error) {
+		DesiredChild: func(parent *knativev1alpha1.Deployer) (*servingv1.Configuration, error) {
 			labels := r.constructLabelsForDeployer(parent)
 			annotations := r.constructAnnotationsForDeployer(parent)
 			template := parent.Spec.Template.DeepCopy()
@@ -311,9 +311,6 @@ func DeployerChildConfigurationReconciler(r *DeployerReconciler) controllers.Sub
 			if child.Spec.Template.Spec.Containers[0].Image == "" {
 				child.Spec.Template.Spec.Containers[0].Image = parent.Status.LatestImage
 			}
-			if err := ctrl.SetControllerReference(parent, child, r.Scheme); err != nil {
-				return nil, err
-			}
 
 			return child, nil
 		},
@@ -330,14 +327,13 @@ func DeployerChildConfigurationReconciler(r *DeployerReconciler) controllers.Sub
 			return child.Spec
 		},
 	}
-	cr.Log = r.Log.WithName(cr.ChildType.Name())
 	return cr
 }
 
 func DeployerChildRouteReconciler(r *DeployerReconciler) controllers.SubReconciler {
 	var cr *controllers.ChildReconciler
 	cr = &controllers.ChildReconciler{
-		Config: r.Config,
+		Config: r.WithLog(r.Log.WithName("Route")),
 
 		IndexField: routeIndexField,
 
@@ -349,7 +345,7 @@ func DeployerChildRouteReconciler(r *DeployerReconciler) controllers.SubReconcil
 			return equality.Semantic.DeepEqual(a1.Spec, a2.Spec) &&
 				equality.Semantic.DeepEqual(a1.Labels, a2.Labels)
 		},
-		ConstructDesiredChild: func(parent *knativev1alpha1.Deployer) (*servingv1.Route, error) {
+		DesiredChild: func(parent *knativev1alpha1.Deployer) (*servingv1.Route, error) {
 			if parent.Status.ConfigurationRef == nil {
 				return nil, fmt.Errorf("unable to create Route, waiting for Configuration")
 			}
@@ -373,9 +369,6 @@ func DeployerChildRouteReconciler(r *DeployerReconciler) controllers.SubReconcil
 					},
 				},
 			}
-			if err := ctrl.SetControllerReference(parent, child, r.Scheme); err != nil {
-				return nil, err
-			}
 
 			return child, nil
 		},
@@ -398,6 +391,5 @@ func DeployerChildRouteReconciler(r *DeployerReconciler) controllers.SubReconcil
 			return child.Spec
 		},
 	}
-	cr.Log = r.Log.WithName(cr.ChildType.Name())
 	return cr
 }

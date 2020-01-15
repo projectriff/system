@@ -255,7 +255,7 @@ func (r *DeployerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 func DeployerChildDeploymentReconciler(r *DeployerReconciler) controllers.SubReconciler {
 	var cr *controllers.ChildReconciler
 	cr = &controllers.ChildReconciler{
-		Config: r.Config,
+		Config: r.WithLog(r.Log.WithName("Deployment")),
 
 		IndexField: deploymentIndexField,
 
@@ -267,7 +267,7 @@ func DeployerChildDeploymentReconciler(r *DeployerReconciler) controllers.SubRec
 			return equality.Semantic.DeepEqual(a1.Spec, a2.Spec) &&
 				equality.Semantic.DeepEqual(a1.Labels, a2.Labels)
 		},
-		ConstructDesiredChild: func(parent *corev1alpha1.Deployer) (*appsv1.Deployment, error) {
+		DesiredChild: func(parent *corev1alpha1.Deployer) (*appsv1.Deployment, error) {
 			labels := r.constructLabelsForDeployer(parent)
 
 			template := *parent.Spec.Template.DeepCopy()
@@ -310,9 +310,6 @@ func DeployerChildDeploymentReconciler(r *DeployerReconciler) controllers.SubRec
 			if child.Spec.Template.Spec.Containers[0].Image == "" {
 				child.Spec.Template.Spec.Containers[0].Image = parent.Status.LatestImage
 			}
-			if err := ctrl.SetControllerReference(parent, child, r.Scheme); err != nil {
-				return nil, err
-			}
 
 			return child, nil
 		},
@@ -334,14 +331,13 @@ func DeployerChildDeploymentReconciler(r *DeployerReconciler) controllers.SubRec
 			return child.Spec
 		},
 	}
-	cr.Log = r.Log.WithName(cr.ChildType.Name())
 	return cr
 }
 
 func DeployerChildServiceReconciler(r *DeployerReconciler) controllers.SubReconciler {
 	var cr *controllers.ChildReconciler
 	cr = &controllers.ChildReconciler{
-		Config: r.Config,
+		Config: r.WithLog(r.Log.WithName("Service")),
 
 		IndexField: serviceIndexField,
 
@@ -353,7 +349,7 @@ func DeployerChildServiceReconciler(r *DeployerReconciler) controllers.SubReconc
 			return equality.Semantic.DeepEqual(a1.Spec, a2.Spec) &&
 				equality.Semantic.DeepEqual(a1.Labels, a2.Labels)
 		},
-		ConstructDesiredChild: func(parent *corev1alpha1.Deployer) (*corev1.Service, error) {
+		DesiredChild: func(parent *corev1alpha1.Deployer) (*corev1.Service, error) {
 			labels := r.constructLabelsForDeployer(parent)
 			targetPort := parent.Spec.Template.Spec.Containers[0].Ports[0]
 
@@ -372,9 +368,6 @@ func DeployerChildServiceReconciler(r *DeployerReconciler) controllers.SubReconc
 						corev1alpha1.DeployerLabelKey: parent.Name,
 					},
 				},
-			}
-			if err := ctrl.SetControllerReference(parent, child, r.Scheme); err != nil {
-				return nil, err
 			}
 
 			return child, nil
@@ -402,14 +395,13 @@ func DeployerChildServiceReconciler(r *DeployerReconciler) controllers.SubReconc
 			return child.Spec
 		},
 	}
-	cr.Log = r.Log.WithName(cr.ChildType.Name())
 	return cr
 }
 
 func NewDeployerChildIngressReconciler(r *DeployerReconciler) controllers.SubReconciler {
 	var cr *controllers.ChildReconciler
 	cr = &controllers.ChildReconciler{
-		Config: r.Config,
+		Config: r.WithLog(r.Log.WithName("Ingress")),
 
 		IndexField: ingressIndexField,
 
@@ -421,7 +413,7 @@ func NewDeployerChildIngressReconciler(r *DeployerReconciler) controllers.SubRec
 			return equality.Semantic.DeepEqual(a1.Spec, a2.Spec) &&
 				equality.Semantic.DeepEqual(a1.Labels, a2.Labels)
 		},
-		ConstructDesiredChild: func(parent *corev1alpha1.Deployer) (*networkingv1beta1.Ingress, error) {
+		DesiredChild: func(parent *corev1alpha1.Deployer) (*networkingv1beta1.Ingress, error) {
 			if parent.Status.ServiceRef == nil || parent.Spec.IngressPolicy == corev1alpha1.IngressPolicyClusterLocal {
 				// skip ingress
 				return nil, nil
@@ -471,10 +463,6 @@ func NewDeployerChildIngressReconciler(r *DeployerReconciler) controllers.SubRec
 				},
 			}
 
-			if err := ctrl.SetControllerReference(parent, child, r.Scheme); err != nil {
-				return nil, err
-			}
-
 			return child, nil
 		},
 		ReflectChildStatusOnParent: func(parent *corev1alpha1.Deployer, child *networkingv1beta1.Ingress, err error) {
@@ -499,6 +487,5 @@ func NewDeployerChildIngressReconciler(r *DeployerReconciler) controllers.SubRec
 			return child.Spec
 		},
 	}
-	cr.Log = r.Log.WithName(cr.ChildType.Name())
 	return cr
 }

@@ -34,8 +34,6 @@ import (
 	"github.com/projectriff/system/pkg/refs"
 )
 
-const functionIndexField = ".metadata.functionController"
-
 // +kubebuilder:rbac:groups=build.projectriff.io,resources=functions,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=build.projectriff.io,resources=functions/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=build.pivotal.io,resources=images,verbs=get;list;watch;create;update;patch;delete
@@ -78,11 +76,12 @@ func FunctionTargetImageReconciler(config controllers.Config) controllers.SubRec
 }
 
 func FunctionChildImageReconciler(config controllers.Config) controllers.SubReconciler {
+	config = config.WithLog(config.Log.WithName("Function"))
 	var r *controllers.ChildReconciler
 	r = &controllers.ChildReconciler{
 		Config: config,
 
-		IndexField: functionIndexField,
+		IndexField: ".metadata.functionController",
 
 		ParentType:    reflect.TypeOf(buildv1alpha1.Function{}),
 		ChildType:     reflect.TypeOf(kpackbuildv1alpha1.Image{}),
@@ -96,7 +95,7 @@ func FunctionChildImageReconciler(config controllers.Config) controllers.SubReco
 			return equality.Semantic.DeepEqual(a1.Spec, a2.Spec) &&
 				equality.Semantic.DeepEqual(a1.Labels, a2.Labels)
 		},
-		ConstructDesiredChild: func(parent *buildv1alpha1.Function) (*kpackbuildv1alpha1.Image, error) {
+		DesiredChild: func(parent *buildv1alpha1.Function) (*kpackbuildv1alpha1.Image, error) {
 			if parent.Spec.Source == nil {
 				return nil, nil
 			}
@@ -138,9 +137,6 @@ func FunctionChildImageReconciler(config controllers.Config) controllers.SubReco
 				corev1.EnvVar{Name: "RIFF_HANDLER", Value: parent.Spec.Handler},
 				corev1.EnvVar{Name: "RIFF_OVERRIDE", Value: parent.Spec.Invoker},
 			)
-			if err := ctrl.SetControllerReference(parent, child, r.Scheme); err != nil {
-				return nil, err
-			}
 
 			return child, nil
 		},

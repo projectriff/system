@@ -49,6 +49,16 @@ type Config struct {
 	Tracker  tracker.Tracker
 }
 
+func (c *Config) WithLog(log logr.Logger) Config {
+	return Config{
+		Client:   c.Client,
+		Recorder: c.Recorder,
+		Log:      log,
+		Scheme:   c.Scheme,
+		Tracker:  c.Tracker,
+	}
+}
+
 type ParentReconciler struct {
 	Config
 
@@ -219,12 +229,12 @@ type ChildReconciler struct {
 	//     func(a1, a2 apis.Object) bool
 	SemanticEquals interface{}
 
-	// ConstructDesiredChild returns the desired child object for the given
-	// parent object, or nil if the child should not exist.
+	// DesiredChild returns the desired child object for the given parent
+	// object, or nil if the child should not exist.
 	//
 	// Expected function signature:
 	//     func(parent apis.Object) (apis.Object, error)
-	ConstructDesiredChild interface{}
+	DesiredChild interface{}
 
 	// ReflectChildStatusOnParent updates the parent object's status with values
 	// from the child. Select types of error are passed, including:
@@ -318,9 +328,14 @@ func (r *ChildReconciler) reconcile(ctx context.Context, parent apis.Object) (ap
 		}
 	}
 
-	desired, err := r.constructDesiredChild(parent)
+	desired, err := r.desiredChild(parent)
 	if err != nil {
 		return nil, err
+	}
+	if desired != nil {
+		if err := ctrl.SetControllerReference(parent, desired, r.Scheme); err != nil {
+			return nil, err
+		}
 	}
 
 	// delete child if no longer needed
@@ -386,8 +401,8 @@ func (r *ChildReconciler) semanticEquals(a1, a2 apis.Object) bool {
 	return out[0].Bool()
 }
 
-func (r *ChildReconciler) constructDesiredChild(parent apis.Object) (apis.Object, error) {
-	fn := reflect.ValueOf(r.ConstructDesiredChild)
+func (r *ChildReconciler) desiredChild(parent apis.Object) (apis.Object, error) {
+	fn := reflect.ValueOf(r.DesiredChild)
 	out := fn.Call([]reflect.Value{
 		reflect.ValueOf(parent),
 	})

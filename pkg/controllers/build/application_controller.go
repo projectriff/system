@@ -33,8 +33,6 @@ import (
 	"github.com/projectriff/system/pkg/refs"
 )
 
-const applicationIndexField = ".metadata.applicationController"
-
 // +kubebuilder:rbac:groups=build.projectriff.io,resources=applications,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=build.projectriff.io,resources=applications/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=build.pivotal.io,resources=images,verbs=get;list;watch;create;update;patch;delete
@@ -78,26 +76,26 @@ func ApplicationTargetImageReconciler(config controllers.Config) controllers.Sub
 }
 
 func ApplicationChildImageReconciler(config controllers.Config) controllers.SubReconciler {
+	config = config.WithLog(config.Log.WithName("Application"))
 	var r *controllers.ChildReconciler
-
 	r = &controllers.ChildReconciler{
 		Config: config,
 
-		IndexField: applicationIndexField,
+		IndexField: ".metadata.applicationController",
 
 		ParentType:    reflect.TypeOf(buildv1alpha1.Application{}),
 		ChildType:     reflect.TypeOf(kpackbuildv1alpha1.Image{}),
 		ChildListType: reflect.TypeOf(kpackbuildv1alpha1.ImageList{}),
 
 		Setup: func(mgr ctrl.Manager, bldr *builder.Builder) error {
-			return controllers.IndexControllersOfType(mgr, applicationIndexField, &buildv1alpha1.Application{}, &kpackbuildv1alpha1.Image{})
+			return controllers.IndexControllersOfType(mgr, r.IndexField, &buildv1alpha1.Application{}, &kpackbuildv1alpha1.Image{})
 		},
 
 		SemanticEquals: func(a1, a2 *kpackbuildv1alpha1.Image) bool {
 			return equality.Semantic.DeepEqual(a1.Spec, a2.Spec) &&
 				equality.Semantic.DeepEqual(a1.Labels, a2.Labels)
 		},
-		ConstructDesiredChild: func(parent *buildv1alpha1.Application) (*kpackbuildv1alpha1.Image, error) {
+		DesiredChild: func(parent *buildv1alpha1.Application) (*kpackbuildv1alpha1.Image, error) {
 			if parent.Spec.Source == nil {
 				return nil, nil
 			}
@@ -133,9 +131,6 @@ func ApplicationChildImageReconciler(config controllers.Config) controllers.SubR
 					Build:                    parent.Spec.Build,
 				},
 			}
-			if err := ctrl.SetControllerReference(parent, image, r.Scheme); err != nil {
-				return nil, err
-			}
 
 			return image, nil
 		},
@@ -159,6 +154,5 @@ func ApplicationChildImageReconciler(config controllers.Config) controllers.SubR
 			return child.Spec
 		},
 	}
-
 	return r
 }
