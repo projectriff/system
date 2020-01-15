@@ -23,8 +23,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/builder"
 
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	kpackbuildv1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/kpack/build/v1alpha1"
@@ -86,14 +84,6 @@ func ApplicationChildImageReconciler(config controllers.Config) controllers.SubR
 		ChildType:     &kpackbuildv1alpha1.Image{},
 		ChildListType: &kpackbuildv1alpha1.ImageList{},
 
-		Setup: func(mgr ctrl.Manager, bldr *builder.Builder) error {
-			return controllers.IndexControllersOfType(mgr, r.IndexField, &buildv1alpha1.Application{}, &kpackbuildv1alpha1.Image{})
-		},
-
-		SemanticEquals: func(a1, a2 *kpackbuildv1alpha1.Image) bool {
-			return equality.Semantic.DeepEqual(a1.Spec, a2.Spec) &&
-				equality.Semantic.DeepEqual(a1.Labels, a2.Labels)
-		},
 		DesiredChild: func(parent *buildv1alpha1.Application) (*kpackbuildv1alpha1.Image, error) {
 			if parent.Spec.Source == nil {
 				return nil, nil
@@ -133,6 +123,10 @@ func ApplicationChildImageReconciler(config controllers.Config) controllers.SubR
 
 			return image, nil
 		},
+		MergeBeforeUpdate: func(current, desired *kpackbuildv1alpha1.Image) {
+			current.Labels = desired.Labels
+			current.Spec = desired.Spec
+		},
 		ReflectChildStatusOnParent: func(parent *buildv1alpha1.Application, child *kpackbuildv1alpha1.Image, err error) {
 			if child == nil {
 				// TODO resolve to a digest
@@ -145,9 +139,9 @@ func ApplicationChildImageReconciler(config controllers.Config) controllers.SubR
 				parent.Status.PropagateKpackImageStatus(&child.Status)
 			}
 		},
-		MergeBeforeUpdate: func(current, desired *kpackbuildv1alpha1.Image) {
-			current.Labels = desired.Labels
-			current.Spec = desired.Spec
+		SemanticEquals: func(a1, a2 *kpackbuildv1alpha1.Image) bool {
+			return equality.Semantic.DeepEqual(a1.Spec, a2.Spec) &&
+				equality.Semantic.DeepEqual(a1.Labels, a2.Labels)
 		},
 		Sanitize: func(child *kpackbuildv1alpha1.Image) interface{} {
 			return child.Spec

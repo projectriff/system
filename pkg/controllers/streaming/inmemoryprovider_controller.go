@@ -684,10 +684,10 @@ func (r *InMemoryProviderReconciler) constructProvisionerLabelsForInMemoryProvid
 }
 
 func (r *InMemoryProviderReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	if err := controllers.IndexControllersOfType(mgr, inMemoryProviderDeploymentIndexField, &streamingv1alpha1.InMemoryProvider{}, &appsv1.Deployment{}); err != nil {
+	if err := controllers.IndexControllersOfType(mgr, inMemoryProviderDeploymentIndexField, &streamingv1alpha1.InMemoryProvider{}, &appsv1.Deployment{}, r.Scheme); err != nil {
 		return err
 	}
-	if err := controllers.IndexControllersOfType(mgr, inMemoryProviderServiceIndexField, &streamingv1alpha1.InMemoryProvider{}, &corev1.Service{}); err != nil {
+	if err := controllers.IndexControllersOfType(mgr, inMemoryProviderServiceIndexField, &streamingv1alpha1.InMemoryProvider{}, &corev1.Service{}, r.Scheme); err != nil {
 		return err
 	}
 

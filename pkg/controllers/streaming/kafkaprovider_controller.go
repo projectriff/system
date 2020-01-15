@@ -686,10 +686,10 @@ func (r *KafkaProviderReconciler) constructProvisionerLabelsForKafkaProvider(kaf
 }
 
 func (r *KafkaProviderReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	if err := controllers.IndexControllersOfType(mgr, kafkaProviderDeploymentIndexField, &streamingv1alpha1.KafkaProvider{}, &appsv1.Deployment{}); err != nil {
+	if err := controllers.IndexControllersOfType(mgr, kafkaProviderDeploymentIndexField, &streamingv1alpha1.KafkaProvider{}, &appsv1.Deployment{}, r.Scheme); err != nil {
 		return err
 	}
-	if err := controllers.IndexControllersOfType(mgr, kafkaProviderServiceIndexField, &streamingv1alpha1.KafkaProvider{}, &corev1.Service{}); err != nil {
+	if err := controllers.IndexControllersOfType(mgr, kafkaProviderServiceIndexField, &streamingv1alpha1.KafkaProvider{}, &corev1.Service{}, r.Scheme); err != nil {
 		return err
 	}
 

@@ -24,9 +24,12 @@ import (
 	"github.com/projectriff/system/pkg/apis"
 )
 
-func IndexControllersOfType(mgr ctrl.Manager, field string, owner apis.Resource, ownee runtime.Object) error {
-	ownerAPIVersion := owner.GetGroupVersionKind().GroupVersion().String()
-	ownerKind := owner.GetGroupVersionKind().Kind
+func IndexControllersOfType(mgr ctrl.Manager, field string, owner, ownee apis.Object, scheme *runtime.Scheme) error {
+	gvks, _, err := scheme.ObjectKinds(owner)
+	if err != nil {
+		return err
+	}
+	ownerAPIVersion, ownerKind := gvks[0].ToAPIVersionAndKind()
 
 	return mgr.GetFieldIndexer().IndexField(ownee, field, func(rawObj runtime.Object) []string {
 		ownerRef := metav1.GetControllerOf(rawObj.(metav1.Object))

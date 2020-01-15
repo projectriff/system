@@ -281,6 +281,10 @@ type ChildReconciler struct {
 func (r *ChildReconciler) SetupWithManager(mgr ctrl.Manager, bldr *builder.Builder) error {
 	bldr.Owns(r.ChildType)
 
+	if err := IndexControllersOfType(mgr, r.IndexField, r.ParentType, r.ChildType, r.Scheme); err != nil {
+		return err
+	}
+
 	if r.Setup == nil {
 		return nil
 	}

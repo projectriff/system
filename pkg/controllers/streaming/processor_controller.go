@@ -751,10 +751,10 @@ func (*ProcessorReconciler) collectInputStartOffsets(bindings []streamingv1alpha
 }
 
 func (r *ProcessorReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	if err := controllers.IndexControllersOfType(mgr, processorDeploymentIndexField, &streamingv1alpha1.Processor{}, &appsv1.Deployment{}); err != nil {
+	if err := controllers.IndexControllersOfType(mgr, processorDeploymentIndexField, &streamingv1alpha1.Processor{}, &appsv1.Deployment{}, r.Scheme); err != nil {
 		return err
 	}
-	if err := controllers.IndexControllersOfType(mgr, processorScaledObjectIndexField, &streamingv1alpha1.Processor{}, &kedav1alpha1.ScaledObject{}); err != nil {
+	if err := controllers.IndexControllersOfType(mgr, processorScaledObjectIndexField, &streamingv1alpha1.Processor{}, &kedav1alpha1.ScaledObject{}, r.Scheme); err != nil {
 		return err
 	}
 

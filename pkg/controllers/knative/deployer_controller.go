@@ -239,13 +239,6 @@ func (r *DeployerReconciler) constructAnnotationsForDeployer(deployer *knativev1
 }
 
 func (r *DeployerReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	if err := controllers.IndexControllersOfType(mgr, configurationIndexField, &knativev1alpha1.Deployer{}, &servingv1.Configuration{}); err != nil {
-		return err
-	}
-	if err := controllers.IndexControllersOfType(mgr, routeIndexField, &knativev1alpha1.Deployer{}, &servingv1.Route{}); err != nil {
-		return err
-	}
-
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&knativev1alpha1.Deployer{}).
 		Owns(&servingv1.Configuration{}).
