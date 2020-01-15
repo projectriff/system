@@ -93,10 +93,6 @@ func (ds *DeployerStatus) MarkServiceNotOwned(name string) {
 	deployerCondSet.Manage(ds).MarkFalse(DeployerConditionServiceReady, "NotOwned", "There is an existing Service %q that the Deployer does not own.", name)
 }
 
-func (ds *DeployerStatus) MarkIngressNotRequired() {
-	deployerCondSet.Manage(ds).MarkFalse(DeployerConditionIngressReady, "IngressNotRequired", "Ingress resource is not required.")
-}
-
 // PropagateIngressStatus update DeployerConditionIngressReady condition
 // in DeployerStatus according to IngressStatus.
 func (ds *DeployerStatus) PropagateIngressStatus(is *networkingv1beta1.IngressStatus) {

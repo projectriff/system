@@ -35,7 +35,8 @@ import (
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	corev1alpha1 "github.com/projectriff/system/pkg/apis/core/v1alpha1"
 	"github.com/projectriff/system/pkg/controllers"
-	"github.com/projectriff/system/pkg/controllers/core"
+
+	corecontrollers "github.com/projectriff/system/pkg/controllers/core"
 	rtesting "github.com/projectriff/system/pkg/controllers/testing"
 	"github.com/projectriff/system/pkg/controllers/testing/factories"
 	"github.com/projectriff/system/pkg/tracker"
@@ -197,7 +198,6 @@ func TestDeployerReconciler(t *testing.T) {
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
-					deployerConditionIngressReady.False().Reason("IngressNotRequired", "Ingress resource is not required."),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.True(),
 				).
@@ -237,9 +237,20 @@ func TestDeployerReconciler(t *testing.T) {
 			testApplication.
 				StatusLatestImage(""),
 		},
-		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testApplication, deployerMinimal, scheme),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
+		ExpectStatusUpdates: []rtesting.Factory{
+			deployerMinimal.
+				StatusConditions(
+					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionServiceReady.Unknown(),
+				),
 		},
 	}, {
 		Name: "create resources, from function",
@@ -268,7 +279,6 @@ func TestDeployerReconciler(t *testing.T) {
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
-					deployerConditionIngressReady.False().Reason("IngressNotRequired", "Ingress resource is not required."),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.True(),
 				).
@@ -308,9 +318,20 @@ func TestDeployerReconciler(t *testing.T) {
 			testFunction.
 				StatusLatestImage(""),
 		},
-		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testFunction, deployerMinimal, scheme),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
+		ExpectStatusUpdates: []rtesting.Factory{
+			deployerMinimal.
+				StatusConditions(
+					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionServiceReady.Unknown(),
+				),
 		},
 	}, {
 		Name: "create resources, from container",
@@ -339,7 +360,6 @@ func TestDeployerReconciler(t *testing.T) {
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
-					deployerConditionIngressReady.False().Reason("IngressNotRequired", "Ingress resource is not required."),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.True(),
 				).
@@ -379,9 +399,20 @@ func TestDeployerReconciler(t *testing.T) {
 			testContainer.
 				StatusLatestImage(""),
 		},
-		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testContainer, deployerMinimal, scheme),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(deployerMinimal, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
+		ExpectStatusUpdates: []rtesting.Factory{
+			deployerMinimal.
+				StatusConditions(
+					deployerConditionDeploymentReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionServiceReady.Unknown(),
+				),
 		},
 	}, {
 		Name: "create resources, from image",
@@ -406,7 +437,6 @@ func TestDeployerReconciler(t *testing.T) {
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
-					deployerConditionIngressReady.False().Reason("IngressNotRequired", "Ingress resource is not required."),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.True(),
 				).
@@ -505,7 +535,6 @@ func TestDeployerReconciler(t *testing.T) {
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
-					deployerConditionIngressReady.False().Reason("IngressNotRequired", "Ingress resource is not required."),
 					deployerConditionReady.False().Reason("NotOwned", `There is an existing Service "test-deployer" that the Deployer does not own.`),
 					deployerConditionServiceReady.False().Reason("NotOwned", `There is an existing Service "test-deployer" that the Deployer does not own.`),
 				).
@@ -520,7 +549,6 @@ func TestDeployerReconciler(t *testing.T) {
 				Image(testImage).
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
-					deployerConditionIngressReady.False().Reason("IngressNotRequired", "Ingress resource is not required."),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.True(),
 				).
@@ -553,7 +581,6 @@ func TestDeployerReconciler(t *testing.T) {
 				Image(testImage).
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
-					deployerConditionIngressReady.False().Reason("IngressNotRequired", "Ingress resource is not required."),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.True(),
 				).
@@ -587,7 +614,6 @@ func TestDeployerReconciler(t *testing.T) {
 				Image(testImage).
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
-					deployerConditionIngressReady.False().Reason("IngressNotRequired", "Ingress resource is not required."),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.True(),
 				).
@@ -611,7 +637,6 @@ func TestDeployerReconciler(t *testing.T) {
 				Image(testImage).
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
-					deployerConditionIngressReady.False().Reason("IngressNotRequired", "Ingress resource is not required."),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.True(),
 				).
@@ -642,7 +667,6 @@ func TestDeployerReconciler(t *testing.T) {
 				Image(testImage).
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
-					deployerConditionIngressReady.False().Reason("IngressNotRequired", "Ingress resource is not required."),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.True(),
 				).
@@ -674,7 +698,6 @@ func TestDeployerReconciler(t *testing.T) {
 				Image(testImage).
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
-					deployerConditionIngressReady.False().Reason("IngressNotRequired", "Ingress resource is not required."),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.True(),
 				).
@@ -696,7 +719,6 @@ func TestDeployerReconciler(t *testing.T) {
 				Image(testImage).
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
-					deployerConditionIngressReady.False().Reason("IngressNotRequired", "Ingress resource is not required."),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.True(),
 				).
@@ -736,7 +758,6 @@ func TestDeployerReconciler(t *testing.T) {
 				Image(testImage).
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
-					deployerConditionIngressReady.False().Reason("IngressNotRequired", "Ingress resource is not required."),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.True(),
 				).
@@ -766,7 +787,6 @@ func TestDeployerReconciler(t *testing.T) {
 				Image(testImage).
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
-					deployerConditionIngressReady.False().Reason("IngressNotRequired", "Ingress resource is not required."),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.True(),
 				).
@@ -806,7 +826,6 @@ func TestDeployerReconciler(t *testing.T) {
 				Image(testImage).
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
-					deployerConditionIngressReady.False().Reason("IngressNotRequired", "Ingress resource is not required."),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.True(),
 				).
@@ -931,7 +950,6 @@ func TestDeployerReconciler(t *testing.T) {
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
-					deployerConditionIngressReady.False().Reason("IngressNotRequired", "Ingress resource is not required."),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.True(),
 				).
@@ -1261,7 +1279,6 @@ func TestDeployerReconciler(t *testing.T) {
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.True(),
-					deployerConditionIngressReady.False().Reason("IngressNotRequired", "Ingress resource is not required."),
 					deployerConditionReady.True(),
 					deployerConditionServiceReady.True(),
 				).
@@ -1332,7 +1349,6 @@ func TestDeployerReconciler(t *testing.T) {
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.False().Reason(testConditionReason, testConditionMessage),
-					deployerConditionIngressReady.False().Reason("IngressNotRequired", "Ingress resource is not required."),
 					deployerConditionReady.False().Reason(testConditionReason, testConditionMessage),
 					deployerConditionServiceReady.True(),
 				).
@@ -1361,7 +1377,6 @@ func TestDeployerReconciler(t *testing.T) {
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
-					deployerConditionIngressReady.False().Reason("IngressNotRequired", "Ingress resource is not required."),
 					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.True(),
 				).
@@ -1403,14 +1418,14 @@ func TestDeployerReconciler(t *testing.T) {
 	}}
 
 	table.Test(t, scheme, func(t *testing.T, row *rtesting.Testcase, client client.Client, tracker tracker.Tracker, recorder record.EventRecorder, log logr.Logger) reconcile.Reconciler {
-		return &core.DeployerReconciler{
-			Config: controllers.Config{
+		return corecontrollers.DeployerReconciler(
+			controllers.Config{
 				Client:   client,
 				Recorder: recorder,
 				Scheme:   scheme,
 				Log:      log,
 				Tracker:  tracker,
 			},
-		}
+		)
 	})
 }

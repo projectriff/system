@@ -75,15 +75,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&corecontrollers.DeployerReconciler{
-		Config: controllers.Config{
+	if err = corecontrollers.DeployerReconciler(
+		controllers.Config{
 			Client:   mgr.GetClient(),
 			Recorder: mgr.GetEventRecorderFor("Deployer"),
 			Log:      ctrl.Log.WithName("controllers").WithName("Deployer"),
 			Scheme:   mgr.GetScheme(),
 			Tracker:  tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("Deployer").WithName("tracker")),
 		},
-	}).SetupWithManager(mgr); err != nil {
+	).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Deployer")
 		os.Exit(1)
 	}

@@ -20,8 +20,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/go-logr/logr"
-	"github.com/google/go-cmp/cmp"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
@@ -31,7 +29,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/projectriff/system/pkg/apis"
@@ -42,21 +41,6 @@ import (
 	"github.com/projectriff/system/pkg/tracker"
 )
 
-const (
-	deploymentIndexField = ".metadata.deploymentController"
-	serviceIndexField    = ".metadata.serviceController"
-	ingressIndexField    = ".metadata.ingressController"
-)
-
-// DeployerReconciler reconciles a Deployer object
-type DeployerReconciler struct {
-	controllers.Config
-
-	deploymentReconciler controllers.SubReconciler
-	serviceReconciler    controllers.SubReconciler
-	ingressReconciler    controllers.SubReconciler
-}
-
 // +kubebuilder:rbac:groups=core.projectriff.io,resources=deployers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core.projectriff.io,resources=deployers/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=build.projectriff.io,resources=applications;containers;functions,verbs=get;list;watch
@@ -65,188 +49,116 @@ type DeployerReconciler struct {
 // +kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=events,verbs=get;list;watch;create;update;patch;delete
 
-func (r *DeployerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	ctx := context.Background()
-	log := r.Log.WithValues("deployer", req.NamespacedName)
-
-	// TODO move to an init or constructor
-	if r.deploymentReconciler == nil {
-		r.deploymentReconciler = DeployerChildDeploymentReconciler(r)
+func DeployerReconciler(config controllers.Config) *controllers.ParentReconciler {
+	return &controllers.ParentReconciler{
+		Config:     config,
+		ParentType: &corev1alpha1.Deployer{},
+		SubReconcilers: []controllers.SubReconciler{
+			DeployerBuildReconciler(config),
+			DeployerChildDeploymentReconciler(config),
+			DeployerChildServiceReconciler(config),
+			DeployerChildIngressReconciler(config),
+		},
 	}
-	if r.serviceReconciler == nil {
-		r.serviceReconciler = DeployerChildServiceReconciler(r)
-	}
-	if r.ingressReconciler == nil {
-		r.ingressReconciler = NewDeployerChildIngressReconciler(r)
-	}
-
-	var originalDeployer corev1alpha1.Deployer
-	if err := r.Get(ctx, req.NamespacedName, &originalDeployer); err != nil {
-		if apierrs.IsNotFound(err) {
-			// we'll ignore not-found errors, since they can't be fixed by an immediate
-			// requeue (we'll need to wait for a new notification), and we can get them
-			// on deleted requests.
-			return ctrl.Result{}, nil
-		}
-		log.Error(err, "unable to fetch Deployer")
-		return ctrl.Result{}, err
-	}
-	deployer := *(originalDeployer.DeepCopy())
-
-	deployer.Default()
-	deployer.Status.InitializeConditions()
-
-	result, err := r.reconcile(ctx, log, &deployer)
-
-	// check if status has changed before updating, unless requeued
-	if !result.Requeue && !equality.Semantic.DeepEqual(deployer.Status, originalDeployer.Status) && deployer.GetDeletionTimestamp() == nil {
-		// update status
-		log.Info("updating deployer status", "diff", cmp.Diff(originalDeployer.Status, deployer.Status))
-		if updateErr := r.Status().Update(ctx, &deployer); updateErr != nil {
-			log.Error(updateErr, "unable to update Deployer status", "deployer", deployer)
-			r.Recorder.Eventf(&deployer, corev1.EventTypeWarning, "StatusUpdateFailed",
-				"Failed to update status: %v", updateErr)
-			return ctrl.Result{Requeue: true}, updateErr
-		}
-		r.Recorder.Eventf(&deployer, corev1.EventTypeNormal, "StatusUpdated",
-			"Updated status")
-	}
-
-	// return original reconcile result
-	return result, err
 }
 
-func (r *DeployerReconciler) reconcile(ctx context.Context, log logr.Logger, deployer *corev1alpha1.Deployer) (ctrl.Result, error) {
-	if deployer.GetDeletionTimestamp() != nil {
-		return ctrl.Result{}, nil
-	}
+func DeployerBuildReconciler(config controllers.Config) controllers.SubReconciler {
+	var r *controllers.SyncReconciler
 
-	// resolve build image
-	if err := r.reconcileBuildImage(ctx, log, deployer); err != nil {
-		if apierrs.IsNotFound(err) {
-			// we'll ignore not-found errors, since the reference build resource
-			// may not exist yet.
-			return ctrl.Result{}, nil
+	resolveBuild := func(ctx context.Context, parent *corev1alpha1.Deployer) error {
+		build := parent.Spec.Build
+		if build == nil {
+			parent.Status.LatestImage = parent.Spec.Template.Spec.Containers[0].Image
+			return nil
 		}
-		log.Error(err, "unable to resolve image for Deployer", "deployer", deployer)
-		return ctrl.Result{Requeue: true}, err
+
+		switch {
+		case build.ApplicationRef != "":
+			var application buildv1alpha1.Application
+			key := types.NamespacedName{Namespace: parent.Namespace, Name: build.ApplicationRef}
+			// track application for new images
+			r.Tracker.Track(
+				tracker.NewKey(application.GetGroupVersionKind(), key),
+				types.NamespacedName{Namespace: parent.Namespace, Name: parent.Name},
+			)
+			if err := r.Get(ctx, key, &application); err != nil {
+				return err
+			}
+			if application.Status.LatestImage != "" {
+				parent.Status.LatestImage = application.Status.LatestImage
+			}
+			return nil
+
+		case build.ContainerRef != "":
+			var container buildv1alpha1.Container
+			key := types.NamespacedName{Namespace: parent.Namespace, Name: build.ContainerRef}
+			// track container for new images
+			r.Tracker.Track(
+				tracker.NewKey(container.GetGroupVersionKind(), key),
+				types.NamespacedName{Namespace: parent.Namespace, Name: parent.Name},
+			)
+			if err := r.Get(ctx, key, &container); err != nil {
+				return err
+			}
+			if container.Status.LatestImage != "" {
+				parent.Status.LatestImage = container.Status.LatestImage
+			}
+			return nil
+
+		case build.FunctionRef != "":
+			var function buildv1alpha1.Function
+			key := types.NamespacedName{Namespace: parent.Namespace, Name: build.FunctionRef}
+			// track function for new images
+			r.Tracker.Track(
+				tracker.NewKey(function.GetGroupVersionKind(), key),
+				types.NamespacedName{Namespace: parent.Namespace, Name: parent.Name},
+			)
+			if err := r.Get(ctx, key, &function); err != nil {
+				return err
+			}
+			if function.Status.LatestImage != "" {
+				parent.Status.LatestImage = function.Status.LatestImage
+			}
+			return nil
+
+		}
+
+		return fmt.Errorf("invalid build")
 	}
 
-	// reconcile deployment
-	if _, err := r.deploymentReconciler.Reconcile(ctx, deployer); err != nil {
-		return ctrl.Result{}, err
-	}
+	r = &controllers.SyncReconciler{
+		Config:     config.WithLog(config.Log.WithName("Build")),
+		ParentType: &corev1alpha1.Deployer{},
 
-	// reconcile service
-	if _, err := r.serviceReconciler.Reconcile(ctx, deployer); err != nil {
-		return ctrl.Result{}, err
-	}
+		Setup: func(mgr manager.Manager, bldr *builder.Builder) error {
+			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Application{}}, controllers.EnqueueTracked(&buildv1alpha1.Application{}, r.Tracker, r.Scheme))
+			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Container{}}, controllers.EnqueueTracked(&buildv1alpha1.Container{}, r.Tracker, r.Scheme))
+			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, controllers.EnqueueTracked(&buildv1alpha1.Function{}, r.Tracker, r.Scheme))
+			return nil
+		},
 
-	// reconcile ingress
-	if _, err := r.ingressReconciler.Reconcile(ctx, deployer); err != nil {
-		return ctrl.Result{}, err
+		Sync: func(ctx context.Context, parent *corev1alpha1.Deployer) error {
+			if err := resolveBuild(ctx, parent); err != nil {
+				if apierrs.IsNotFound(err) {
+					// we'll ignore not-found errors, since the reference build resource
+					// may not exist yet.
+					return nil
+				}
+				r.Log.Error(err, "unable to resolve image for Deployer", "deployer", parent)
+				return err
+			}
+			return nil
+		},
 	}
-
-	deployer.Status.ObservedGeneration = deployer.Generation
-	return ctrl.Result{}, nil
+	return r
 }
 
-func (r *DeployerReconciler) reconcileBuildImage(ctx context.Context, log logr.Logger, deployer *corev1alpha1.Deployer) error {
-	build := deployer.Spec.Build
-	if build == nil {
-		deployer.Status.LatestImage = deployer.Spec.Template.Spec.Containers[0].Image
-		return nil
-	}
+func DeployerChildDeploymentReconciler(config controllers.Config) controllers.SubReconciler {
+	var r *controllers.ChildReconciler
+	r = &controllers.ChildReconciler{
+		Config: config.WithLog(config.Log.WithName("Deployment")),
 
-	switch {
-	case build.ApplicationRef != "":
-		var application buildv1alpha1.Application
-		key := types.NamespacedName{Namespace: deployer.Namespace, Name: build.ApplicationRef}
-		// track application for new images
-		r.Tracker.Track(
-			tracker.NewKey(application.GetGroupVersionKind(), key),
-			types.NamespacedName{Namespace: deployer.Namespace, Name: deployer.Name},
-		)
-		if err := r.Get(ctx, key, &application); err != nil {
-			return err
-		}
-		if application.Status.LatestImage == "" {
-			return fmt.Errorf("application %q does not have a ready image", build.ApplicationRef)
-		}
-		deployer.Status.LatestImage = application.Status.LatestImage
-		return nil
-
-	case build.ContainerRef != "":
-		var container buildv1alpha1.Container
-		key := types.NamespacedName{Namespace: deployer.Namespace, Name: build.ContainerRef}
-		// track container for new images
-		r.Tracker.Track(
-			tracker.NewKey(container.GetGroupVersionKind(), key),
-			types.NamespacedName{Namespace: deployer.Namespace, Name: deployer.Name},
-		)
-		if err := r.Get(ctx, key, &container); err != nil {
-			return err
-		}
-		if container.Status.LatestImage == "" {
-			return fmt.Errorf("container %q does not have a ready image", build.ContainerRef)
-		}
-		deployer.Status.LatestImage = container.Status.LatestImage
-		return nil
-
-	case build.FunctionRef != "":
-		var function buildv1alpha1.Function
-		key := types.NamespacedName{Namespace: deployer.Namespace, Name: build.FunctionRef}
-		// track function for new images
-		r.Tracker.Track(
-			tracker.NewKey(function.GetGroupVersionKind(), key),
-			types.NamespacedName{Namespace: deployer.Namespace, Name: deployer.Name},
-		)
-		if err := r.Get(ctx, key, &function); err != nil {
-			return err
-		}
-		if function.Status.LatestImage == "" {
-			return fmt.Errorf("function %q does not have a ready image", build.FunctionRef)
-		}
-		deployer.Status.LatestImage = function.Status.LatestImage
-		return nil
-
-	}
-
-	return fmt.Errorf("invalid deployer build")
-}
-
-func (r *DeployerReconciler) constructLabelsForDeployer(deployer *corev1alpha1.Deployer) map[string]string {
-	labels := make(map[string]string, len(deployer.ObjectMeta.Labels)+1)
-	// pass through existing labels
-	for k, v := range deployer.ObjectMeta.Labels {
-		labels[k] = v
-	}
-
-	labels[corev1alpha1.DeployerLabelKey] = deployer.Name
-
-	return labels
-}
-
-func (r *DeployerReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&corev1alpha1.Deployer{}).
-		Owns(&appsv1.Deployment{}).
-		Owns(&corev1.Service{}).
-		Owns(&networkingv1beta1.Ingress{}).
-		// watch for build mutations to update dependent deployers
-		Watches(&source.Kind{Type: &corev1.ConfigMap{}}, controllers.EnqueueTracked(&corev1.ConfigMap{}, r.Tracker, r.Scheme)).
-		Watches(&source.Kind{Type: &buildv1alpha1.Application{}}, controllers.EnqueueTracked(&buildv1alpha1.Application{}, r.Tracker, r.Scheme)).
-		Watches(&source.Kind{Type: &buildv1alpha1.Container{}}, controllers.EnqueueTracked(&buildv1alpha1.Container{}, r.Tracker, r.Scheme)).
-		Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, controllers.EnqueueTracked(&buildv1alpha1.Function{}, r.Tracker, r.Scheme)).
-		Complete(r)
-}
-
-func DeployerChildDeploymentReconciler(r *DeployerReconciler) controllers.SubReconciler {
-	var cr *controllers.ChildReconciler
-	cr = &controllers.ChildReconciler{
-		Config: r.WithLog(r.Log.WithName("Deployment")),
-
-		IndexField: deploymentIndexField,
+		IndexField: ".metadata.deploymentController",
 
 		ParentType:    &corev1alpha1.Deployer{},
 		ChildType:     &appsv1.Deployment{},
@@ -257,14 +169,18 @@ func DeployerChildDeploymentReconciler(r *DeployerReconciler) controllers.SubRec
 				equality.Semantic.DeepEqual(a1.Labels, a2.Labels)
 		},
 		DesiredChild: func(parent *corev1alpha1.Deployer) (*appsv1.Deployment, error) {
-			labels := r.constructLabelsForDeployer(parent)
+			if parent.Status.LatestImage == "" {
+				// no image, skip
+				return nil, nil
+			}
+
+			labels := controllers.MergeMaps(parent.Labels, map[string]string{
+				corev1alpha1.DeployerLabelKey: parent.Name,
+			})
 
 			template := *parent.Spec.Template.DeepCopy()
+			template.Labels = controllers.MergeMaps(template.Labels, labels)
 			targetPort := template.Spec.Containers[0].Ports[0]
-
-			for k, v := range r.constructLabelsForDeployer(parent) {
-				template.Labels[k] = v
-			}
 
 			template.Spec.Containers[0].Env = append(template.Spec.Containers[0].Env, corev1.EnvVar{
 				Name:  "PORT",
@@ -306,8 +222,12 @@ func DeployerChildDeploymentReconciler(r *DeployerReconciler) controllers.SubRec
 			if err != nil {
 				return
 			}
-			parent.Status.DeploymentRef = refs.NewTypedLocalObjectReferenceForObject(child, r.Scheme)
-			parent.Status.PropagateDeploymentStatus(&child.Status)
+			if child == nil {
+				parent.Status.DeploymentRef = nil
+			} else {
+				parent.Status.DeploymentRef = refs.NewTypedLocalObjectReferenceForObject(child, r.Scheme)
+				parent.Status.PropagateDeploymentStatus(&child.Status)
+			}
 		},
 		HarmonizeImmutableFields: func(current, desired *appsv1.Deployment) {
 			desired.Spec.Replicas = current.Spec.Replicas
@@ -320,15 +240,15 @@ func DeployerChildDeploymentReconciler(r *DeployerReconciler) controllers.SubRec
 			return child.Spec
 		},
 	}
-	return cr
+	return r
 }
 
-func DeployerChildServiceReconciler(r *DeployerReconciler) controllers.SubReconciler {
-	var cr *controllers.ChildReconciler
-	cr = &controllers.ChildReconciler{
-		Config: r.WithLog(r.Log.WithName("Service")),
+func DeployerChildServiceReconciler(config controllers.Config) controllers.SubReconciler {
+	var r *controllers.ChildReconciler
+	r = &controllers.ChildReconciler{
+		Config: config.WithLog(config.Log.WithName("Service")),
 
-		IndexField: serviceIndexField,
+		IndexField: ".metadata.serviceController",
 
 		ParentType:    &corev1alpha1.Deployer{},
 		ChildType:     &corev1.Service{},
@@ -339,12 +259,18 @@ func DeployerChildServiceReconciler(r *DeployerReconciler) controllers.SubReconc
 				equality.Semantic.DeepEqual(a1.Labels, a2.Labels)
 		},
 		DesiredChild: func(parent *corev1alpha1.Deployer) (*corev1.Service, error) {
-			labels := r.constructLabelsForDeployer(parent)
+			if parent.Status.DeploymentRef == nil {
+				// no deployment, skip
+				return nil, nil
+			}
+
 			targetPort := parent.Spec.Template.Spec.Containers[0].Ports[0]
 
 			child := &corev1.Service{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels:      labels,
+					Labels: controllers.MergeMaps(parent.Labels, map[string]string{
+						corev1alpha1.DeployerLabelKey: parent.Name,
+					}),
 					Annotations: make(map[string]string),
 					Namespace:   parent.Namespace,
 					Name:        parent.Name,
@@ -369,9 +295,14 @@ func DeployerChildServiceReconciler(r *DeployerReconciler) controllers.SubReconc
 				}
 				return
 			}
-			parent.Status.ServiceRef = refs.NewTypedLocalObjectReferenceForObject(child, r.Scheme)
-			parent.Status.Address = &apis.Addressable{URL: fmt.Sprintf("http://%s.%s.%s", child.Name, child.Namespace, "svc.cluster.local")}
-			parent.Status.PropagateServiceStatus(&child.Status)
+			if child == nil {
+				parent.Status.ServiceRef = nil
+				parent.Status.Address = nil
+			} else {
+				parent.Status.ServiceRef = refs.NewTypedLocalObjectReferenceForObject(child, r.Scheme)
+				parent.Status.Address = &apis.Addressable{URL: fmt.Sprintf("http://%s.%s.%s", child.Name, child.Namespace, "svc.cluster.local")}
+				parent.Status.PropagateServiceStatus(&child.Status)
+			}
 		},
 		HarmonizeImmutableFields: func(current, desired *corev1.Service) {
 			desired.Spec.ClusterIP = current.Spec.ClusterIP
@@ -384,19 +315,24 @@ func DeployerChildServiceReconciler(r *DeployerReconciler) controllers.SubReconc
 			return child.Spec
 		},
 	}
-	return cr
+	return r
 }
 
-func NewDeployerChildIngressReconciler(r *DeployerReconciler) controllers.SubReconciler {
-	var cr *controllers.ChildReconciler
-	cr = &controllers.ChildReconciler{
-		Config: r.WithLog(r.Log.WithName("Ingress")),
+func DeployerChildIngressReconciler(config controllers.Config) controllers.SubReconciler {
+	var r *controllers.ChildReconciler
+	r = &controllers.ChildReconciler{
+		Config: config.WithLog(config.Log.WithName("Ingress")),
 
-		IndexField: ingressIndexField,
+		IndexField: ".metadata.ingressController",
 
 		ParentType:    &corev1alpha1.Deployer{},
 		ChildType:     &networkingv1beta1.Ingress{},
 		ChildListType: &networkingv1beta1.IngressList{},
+
+		Setup: func(mgr manager.Manager, bldr *builder.Builder) error {
+			bldr.Watches(&source.Kind{Type: &corev1.ConfigMap{}}, controllers.EnqueueTracked(&corev1.ConfigMap{}, r.Tracker, r.Scheme))
+			return nil
+		},
 
 		SemanticEquals: func(a1, a2 *networkingv1beta1.Ingress) bool {
 			return equality.Semantic.DeepEqual(a1.Spec, a2.Spec) &&
@@ -404,7 +340,7 @@ func NewDeployerChildIngressReconciler(r *DeployerReconciler) controllers.SubRec
 		},
 		DesiredChild: func(parent *corev1alpha1.Deployer) (*networkingv1beta1.Ingress, error) {
 			if parent.Status.ServiceRef == nil || parent.Spec.IngressPolicy == corev1alpha1.IngressPolicyClusterLocal {
-				// skip ingress
+				// no service, skip
 				return nil, nil
 			}
 
@@ -429,7 +365,9 @@ func NewDeployerChildIngressReconciler(r *DeployerReconciler) controllers.SubRec
 
 			child := &networkingv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels:       r.constructLabelsForDeployer(parent),
+					Labels: controllers.MergeMaps(parent.Labels, map[string]string{
+						corev1alpha1.DeployerLabelKey: parent.Name,
+					}),
 					Annotations:  make(map[string]string),
 					GenerateName: fmt.Sprintf("%s-deployer-", parent.Name),
 					Namespace:    parent.Namespace,
@@ -461,7 +399,6 @@ func NewDeployerChildIngressReconciler(r *DeployerReconciler) controllers.SubRec
 			if child == nil {
 				parent.Status.IngressRef = nil
 				parent.Status.URL = ""
-				parent.Status.MarkIngressNotRequired()
 			} else {
 				parent.Status.IngressRef = refs.NewTypedLocalObjectReferenceForObject(child, r.Scheme)
 				parent.Status.URL = fmt.Sprintf("http://%s", child.Spec.Rules[0].Host)
@@ -476,5 +413,5 @@ func NewDeployerChildIngressReconciler(r *DeployerReconciler) controllers.SubRec
 			return child.Spec
 		},
 	}
-	return cr
+	return r
 }
