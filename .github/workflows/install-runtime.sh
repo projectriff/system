@@ -17,7 +17,7 @@ export KO_DOCKER_REPO=$(fats_image_repo '#' | cut -d '#' -f 1 | sed 's|/$||g')
 kubectl create ns apps
 
 echo "Installing Cert Manager"
-fats_retry kapp deploy -n apps -a cert-manager -f https://storage.googleapis.com/projectriff/charts/uncharted/${riff_version}/cert-manager.yaml -y
+kapp deploy -n apps -a cert-manager -f https://storage.googleapis.com/projectriff/charts/uncharted/${riff_version}/cert-manager.yaml -y
 
 source $FATS_DIR/macros/no-resource-requests.sh
 
