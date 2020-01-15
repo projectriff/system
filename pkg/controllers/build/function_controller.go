@@ -51,7 +51,7 @@ func FunctionReconciler(config controllers.Config) *controllers.ParentReconciler
 func FunctionTargetImageReconciler(config controllers.Config) controllers.SubReconciler {
 	var r *controllers.SyncReconciler
 	r = &controllers.SyncReconciler{
-		Config:     config,
+		Config:     config.WithLog(config.Log.WithName("TargetImage")),
 		ParentType: &buildv1alpha1.Function{},
 		Sync: func(ctx context.Context, parent *buildv1alpha1.Function) error {
 			targetImage, err := resolveTargetImage(ctx, r.Client, parent)
@@ -68,15 +68,13 @@ func FunctionTargetImageReconciler(config controllers.Config) controllers.SubRec
 			return nil
 		},
 	}
-	r.Log = r.Log.WithName("TargetImage")
 	return r
 }
 
 func FunctionChildImageReconciler(config controllers.Config) controllers.SubReconciler {
-	config = config.WithLog(config.Log.WithName("Function"))
 	var r *controllers.ChildReconciler
 	r = &controllers.ChildReconciler{
-		Config: config,
+		Config: config.WithLog(config.Log.WithName("Function")),
 
 		IndexField: ".metadata.functionController",
 
@@ -130,7 +128,7 @@ func FunctionChildImageReconciler(config controllers.Config) controllers.SubReco
 		},
 		ReflectChildStatusOnParent: func(parent *buildv1alpha1.Function, child *kpackbuildv1alpha1.Image, err error) {
 			if child == nil {
-				// TODO resolve to a digest
+				// TODO resolve to a digest?
 				parent.Status.LatestImage = parent.Status.TargetImage
 				parent.Status.MarkBuildNotUsed()
 			} else {

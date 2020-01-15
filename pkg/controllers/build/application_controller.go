@@ -50,7 +50,7 @@ func ApplicationReconciler(config controllers.Config) *controllers.ParentReconci
 func ApplicationTargetImageReconciler(config controllers.Config) controllers.SubReconciler {
 	var r *controllers.SyncReconciler
 	r = &controllers.SyncReconciler{
-		Config:     config,
+		Config:     config.WithLog(config.Log.WithName("TargetImage")),
 		ParentType: &buildv1alpha1.Application{},
 
 		Sync: func(ctx context.Context, parent *buildv1alpha1.Application) error {
@@ -68,15 +68,13 @@ func ApplicationTargetImageReconciler(config controllers.Config) controllers.Sub
 			return nil
 		},
 	}
-	r.Log = r.Log.WithName("TargetImage")
 	return r
 }
 
 func ApplicationChildImageReconciler(config controllers.Config) controllers.SubReconciler {
-	config = config.WithLog(config.Log.WithName("Application"))
 	var r *controllers.ChildReconciler
 	r = &controllers.ChildReconciler{
-		Config: config,
+		Config: config.WithLog(config.Log.WithName("Application")),
 
 		IndexField: ".metadata.applicationController",
 
@@ -124,7 +122,7 @@ func ApplicationChildImageReconciler(config controllers.Config) controllers.SubR
 		},
 		ReflectChildStatusOnParent: func(parent *buildv1alpha1.Application, child *kpackbuildv1alpha1.Image, err error) {
 			if child == nil {
-				// TODO resolve to a digest
+				// TODO resolve to a digest?
 				parent.Status.LatestImage = parent.Status.TargetImage
 				parent.Status.MarkBuildNotUsed()
 			} else {
