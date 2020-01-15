@@ -190,7 +190,7 @@ func NewFunctionChildImageReconciler(r *FunctionReconciler) *controllers.ChildRe
 		Log:      r.Log.WithName(childType.Name()),
 		Scheme:   r.Scheme,
 
-		IndexField: applicationIndexField,
+		IndexField: functionIndexField,
 
 		ParentType:    parentType,
 		ChildType:     childType,
