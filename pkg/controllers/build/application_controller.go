@@ -19,6 +19,7 @@ package build
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/go-logr/logr"
@@ -49,6 +50,8 @@ type ApplicationReconciler struct {
 	Recorder record.EventRecorder
 	Log      logr.Logger
 	Scheme   *runtime.Scheme
+
+	imageReconciler controllers.SubReconciler
 }
 
 // +kubebuilder:rbac:groups=build.projectriff.io,resources=applications,verbs=get;list;watch;create;update;patch;delete
@@ -60,6 +63,11 @@ type ApplicationReconciler struct {
 func (r *ApplicationReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 	log := r.Log.WithValues("application", req.NamespacedName)
+
+	// TODO move to an init or constructor
+	if r.imageReconciler == nil {
+		r.imageReconciler = NewApplicationChildImageReconciler(r)
+	}
 
 	var originalApplication buildv1alpha1.Application
 	if err := r.Get(ctx, req.NamespacedName, &originalApplication); err != nil {
@@ -116,20 +124,8 @@ func (r *ApplicationReconciler) reconcile(ctx context.Context, log logr.Logger, 
 	application.Status.TargetImage = targetImage
 
 	// reconcile child kpack image
-	childImage, err := r.reconcileChildKpackImage(ctx, log, application)
-	if err != nil {
-		log.Error(err, "unable to reconcile child Image", "application", application)
+	if _, err := r.imageReconciler.Reconcile(ctx, application); err != nil {
 		return ctrl.Result{}, err
-	}
-	if childImage == nil {
-		// TODO resolve to a digest
-		application.Status.LatestImage = application.Status.TargetImage
-		application.Status.MarkBuildNotUsed()
-	} else {
-		application.Status.KpackImageRef = refs.NewTypedLocalObjectReferenceForObject(childImage, r.Scheme)
-		application.Status.LatestImage = childImage.Status.LatestImage
-		application.Status.BuildCacheRef = refs.NewTypedLocalObjectReference(childImage.Status.BuildCacheName, schema.GroupKind{Kind: "PersistentVolumeClaim"})
-		application.Status.PropagateKpackImageStatus(&childImage.Status)
 	}
 
 	application.Status.ObservedGeneration = application.Generation
@@ -160,127 +156,6 @@ func (r *ApplicationReconciler) resolveTargetImage(ctx context.Context, log logr
 	return image, nil
 }
 
-func (r *ApplicationReconciler) reconcileChildKpackImage(ctx context.Context, log logr.Logger, application *buildv1alpha1.Application) (*kpackbuildv1alpha1.Image, error) {
-	var actualImage kpackbuildv1alpha1.Image
-	var childImages kpackbuildv1alpha1.ImageList
-	if err := r.List(ctx, &childImages, client.InNamespace(application.Namespace), client.MatchingField(applicationIndexField, application.Name)); err != nil {
-		return nil, err
-	}
-	// TODO do we need to remove resources pending deletion?
-	if len(childImages.Items) == 1 {
-		actualImage = childImages.Items[0]
-	} else if len(childImages.Items) > 1 {
-		// this shouldn't happen, delete everything to a clean slate
-		for _, extraImage := range childImages.Items {
-			log.Info("deleting extra kpack image", "image", extraImage)
-			if err := r.Delete(ctx, &extraImage); err != nil {
-				r.Recorder.Eventf(application, corev1.EventTypeWarning, "DeleteFailed",
-					"Failed to delete kpack Image %q: %v", extraImage.Name, err)
-				return nil, err
-			}
-			r.Recorder.Eventf(application, corev1.EventTypeNormal, "Deleted",
-				"Deleted kpack Image %q", extraImage.Name)
-		}
-	}
-
-	desiredImage, err := r.constructImageForApplication(application)
-	if err != nil {
-		return nil, err
-	}
-
-	if desiredImage == nil {
-		// delete image if no longer needed
-		if actualImage.Name != "" {
-			log.Info("deleting kpack image", "image", actualImage)
-			if err := r.Delete(ctx, &actualImage); err != nil {
-				log.Error(err, "unable to delete kpack Image for Application", "image", actualImage)
-				r.Recorder.Eventf(application, corev1.EventTypeWarning, "DeleteFailed",
-					"Failed to delete kpack Image %q: %v", actualImage.Name, err)
-				return nil, err
-			}
-			r.Recorder.Eventf(application, corev1.EventTypeNormal, "Deleted",
-				"Deleted kpack Image %q", actualImage.Name)
-		}
-		return nil, nil
-	}
-
-	// create image if it doesn't exist
-	if actualImage.Name == "" {
-		log.Info("creating kpack image", "spec", desiredImage.Spec)
-		if err := r.Create(ctx, desiredImage); err != nil {
-			log.Error(err, "unable to create kpack Image for Application", "image", desiredImage)
-			r.Recorder.Eventf(application, corev1.EventTypeWarning, "CreationFailed",
-				"Failed to create kpack Image %q: %v", desiredImage.Name, err)
-			return nil, err
-		}
-		r.Recorder.Eventf(application, corev1.EventTypeNormal, "Created",
-			"Created kpack Image %q", desiredImage.Name)
-		return desiredImage, nil
-	}
-
-	if r.imageSemanticEquals(desiredImage, &actualImage) {
-		// image is unchanged
-		return &actualImage, nil
-	}
-
-	// update image with desired changes
-	image := actualImage.DeepCopy()
-	image.ObjectMeta.Labels = desiredImage.ObjectMeta.Labels
-	image.Spec = desiredImage.Spec
-	log.Info("reconciling kpack image", "diff", cmp.Diff(actualImage.Spec, image.Spec))
-	if err := r.Update(ctx, image); err != nil {
-		log.Error(err, "unable to update kpack Image for Application", "image", image)
-		r.Recorder.Eventf(application, corev1.EventTypeWarning, "UpdateFailed",
-			"Failed to update kpack Image %q: %v", image.Name, err)
-		return nil, err
-	}
-	r.Recorder.Eventf(application, corev1.EventTypeNormal, "Updated",
-		"Updated kpack Image %q", image.Name)
-
-	return image, nil
-}
-
-func (r *ApplicationReconciler) imageSemanticEquals(desiredImage, image *kpackbuildv1alpha1.Image) bool {
-	return equality.Semantic.DeepEqual(desiredImage.Spec, image.Spec) &&
-		equality.Semantic.DeepEqual(desiredImage.ObjectMeta.Labels, image.ObjectMeta.Labels)
-}
-
-func (r *ApplicationReconciler) constructImageForApplication(application *buildv1alpha1.Application) (*kpackbuildv1alpha1.Image, error) {
-	if application.Spec.Source == nil {
-		return nil, nil
-	}
-
-	image := &kpackbuildv1alpha1.Image{
-		ObjectMeta: metav1.ObjectMeta{
-			Labels:       r.constructLabelsForApplication(application),
-			Annotations:  make(map[string]string),
-			GenerateName: fmt.Sprintf("%s-application-", application.Name),
-			Namespace:    application.Namespace,
-		},
-		Spec: kpackbuildv1alpha1.ImageSpec{
-			Tag: application.Status.TargetImage,
-			Builder: kpackbuildv1alpha1.ImageBuilder{
-				TypeMeta: metav1.TypeMeta{
-					Kind: "ClusterBuilder",
-				},
-				Name: "riff-application",
-			},
-			ServiceAccount:           riffBuildServiceAccount,
-			Source:                   *application.Spec.Source,
-			CacheSize:                application.Spec.CacheSize,
-			FailedBuildHistoryLimit:  application.Spec.FailedBuildHistoryLimit,
-			SuccessBuildHistoryLimit: application.Spec.SuccessBuildHistoryLimit,
-			ImageTaggingStrategy:     application.Spec.ImageTaggingStrategy,
-			Build:                    application.Spec.Build,
-		},
-	}
-	if err := ctrl.SetControllerReference(application, image, r.Scheme); err != nil {
-		return nil, err
-	}
-
-	return image, nil
-}
-
 func (r *ApplicationReconciler) constructLabelsForApplication(application *buildv1alpha1.Application) map[string]string {
 	labels := make(map[string]string, len(application.ObjectMeta.Labels)+1)
 	// pass through existing labels
@@ -302,4 +177,82 @@ func (r *ApplicationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&buildv1alpha1.Application{}).
 		Owns(&kpackbuildv1alpha1.Image{}).
 		Complete(r)
+}
+
+func NewApplicationChildImageReconciler(r *ApplicationReconciler) *controllers.ChildReconciler {
+	parentType := reflect.TypeOf(buildv1alpha1.Application{})
+	childType := reflect.TypeOf(kpackbuildv1alpha1.Image{})
+	childListType := reflect.TypeOf(kpackbuildv1alpha1.ImageList{})
+
+	return &controllers.ChildReconciler{
+		Client:   r.Client,
+		Recorder: r.Recorder,
+		Log:      r.Log.WithName(childType.Name()),
+		Scheme:   r.Scheme,
+
+		IndexField: applicationIndexField,
+
+		ParentType:    parentType,
+		ChildType:     childType,
+		ChildListType: childListType,
+
+		SemanticEquals: func(a1, a2 *kpackbuildv1alpha1.Image) bool {
+			return equality.Semantic.DeepEqual(a1.Spec, a2.Spec) &&
+				equality.Semantic.DeepEqual(a1.Labels, a2.Labels)
+		},
+		ConstructDesiredChild: func(parent *buildv1alpha1.Application) (*kpackbuildv1alpha1.Image, error) {
+			if parent.Spec.Source == nil {
+				return nil, nil
+			}
+
+			image := &kpackbuildv1alpha1.Image{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels:       r.constructLabelsForApplication(parent),
+					Annotations:  make(map[string]string),
+					GenerateName: fmt.Sprintf("%s-application-", parent.Name),
+					Namespace:    parent.Namespace,
+				},
+				Spec: kpackbuildv1alpha1.ImageSpec{
+					Tag: parent.Status.TargetImage,
+					Builder: kpackbuildv1alpha1.ImageBuilder{
+						TypeMeta: metav1.TypeMeta{
+							Kind: "ClusterBuilder",
+						},
+						Name: "riff-application",
+					},
+					ServiceAccount:           riffBuildServiceAccount,
+					Source:                   *parent.Spec.Source,
+					CacheSize:                parent.Spec.CacheSize,
+					FailedBuildHistoryLimit:  parent.Spec.FailedBuildHistoryLimit,
+					SuccessBuildHistoryLimit: parent.Spec.SuccessBuildHistoryLimit,
+					ImageTaggingStrategy:     parent.Spec.ImageTaggingStrategy,
+					Build:                    parent.Spec.Build,
+				},
+			}
+			if err := ctrl.SetControllerReference(parent, image, r.Scheme); err != nil {
+				return nil, err
+			}
+
+			return image, nil
+		},
+		ReflectChildStatusOnParent: func(parent *buildv1alpha1.Application, child *kpackbuildv1alpha1.Image, err error) {
+			if child == nil {
+				// TODO resolve to a digest
+				parent.Status.LatestImage = parent.Status.TargetImage
+				parent.Status.MarkBuildNotUsed()
+			} else {
+				parent.Status.KpackImageRef = refs.NewTypedLocalObjectReferenceForObject(child, r.Scheme)
+				parent.Status.LatestImage = child.Status.LatestImage
+				parent.Status.BuildCacheRef = refs.NewTypedLocalObjectReference(child.Status.BuildCacheName, schema.GroupKind{Kind: "PersistentVolumeClaim"})
+				parent.Status.PropagateKpackImageStatus(&child.Status)
+			}
+		},
+		MergeBeforeUpdate: func(current, desired *kpackbuildv1alpha1.Image) {
+			current.Labels = desired.Labels
+			current.Spec = desired.Spec
+		},
+		Sanitize: func(child *kpackbuildv1alpha1.Image) interface{} {
+			return child.Spec
+		},
+	}
 }
