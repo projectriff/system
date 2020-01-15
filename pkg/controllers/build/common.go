@@ -16,8 +16,44 @@ limitations under the License.
 
 package build
 
-import "fmt"
+import (
+	"context"
+	"fmt"
+	"strings"
+
+	corev1 "k8s.io/api/core/v1"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
+)
 
 const riffBuildServiceAccount = "riff-build"
 
 var errMissingDefaultPrefix = fmt.Errorf("missing default image prefix")
+
+// +kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch
+
+func resolveTargetImage(ctx context.Context, client client.Client, build buildv1alpha1.ImageResource) (string, error) {
+	if !strings.HasPrefix(build.GetImage(), "_") {
+		return build.GetImage(), nil
+	}
+
+	var riffBuildConfig corev1.ConfigMap
+	if err := client.Get(ctx, types.NamespacedName{Namespace: build.GetNamespace(), Name: riffBuildServiceAccount}, &riffBuildConfig); err != nil {
+		if apierrs.IsNotFound(err) {
+			return "", errMissingDefaultPrefix
+		}
+		return "", err
+	}
+	defaultPrefix := riffBuildConfig.Data["default-image-prefix"]
+	if defaultPrefix == "" {
+		return "", errMissingDefaultPrefix
+	}
+	image, err := buildv1alpha1.ResolveDefaultImage(build, defaultPrefix)
+	if err != nil {
+		return "", err
+	}
+	return image, nil
+}

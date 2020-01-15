@@ -20,21 +20,13 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-	"strings"
 
-	"github.com/go-logr/logr"
-	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
-	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	kpackbuildv1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/kpack/build/v1alpha1"
@@ -44,157 +36,61 @@ import (
 
 const functionIndexField = ".metadata.functionController"
 
-// FunctionReconciler reconciles a Function object
-type FunctionReconciler struct {
-	client.Client
-	Recorder record.EventRecorder
-	Log      logr.Logger
-	Scheme   *runtime.Scheme
-
-	imageReconciler controllers.SubReconciler
-}
-
 // +kubebuilder:rbac:groups=build.projectriff.io,resources=functions,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=build.projectriff.io,resources=functions/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=build.pivotal.io,resources=images,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch
 // +kubebuilder:rbac:groups=core,resources=events,verbs=get;list;watch;create;update;patch;delete
 
-func (r *FunctionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	ctx := context.Background()
-	log := r.Log.WithValues("function", req.NamespacedName)
-
-	// TODO move to an init or constructor
-	if r.imageReconciler == nil {
-		r.imageReconciler = NewFunctionChildImageReconciler(r)
+// FunctionReconciler reconciles a Function object
+func FunctionReconciler(config controllers.Config) *controllers.ParentReconciler {
+	return &controllers.ParentReconciler{
+		Config:     config,
+		ParentType: reflect.TypeOf(buildv1alpha1.Function{}),
+		SubReconcilers: []controllers.SubReconciler{
+			FunctionTargetImageReconciler(config),
+			FunctionChildImageReconciler(config),
+		},
 	}
-
-	var originalFunction buildv1alpha1.Function
-	if err := r.Get(ctx, req.NamespacedName, &originalFunction); err != nil {
-		if apierrs.IsNotFound(err) {
-			// we'll ignore not-found errors, since they can't be fixed by an immediate
-			// requeue (we'll need to wait for a new notification), and we can get them
-			// on deleted requests.
-			return ctrl.Result{}, nil
-		}
-		log.Error(err, "unable to fetch Function")
-		return ctrl.Result{}, err
-	}
-	function := *(originalFunction.DeepCopy())
-
-	function.Default()
-	function.Status.InitializeConditions()
-
-	result, err := r.reconcile(ctx, log, &function)
-
-	// check if status has changed before updating, unless requeued
-	if !result.Requeue && !equality.Semantic.DeepEqual(function.Status, originalFunction.Status) && function.GetDeletionTimestamp() == nil {
-		// update status
-		log.Info("updating function status", "diff", cmp.Diff(originalFunction.Status, function.Status))
-		if updateErr := r.Status().Update(ctx, &function); updateErr != nil {
-			log.Error(updateErr, "unable to update Function status", "function", function)
-			r.Recorder.Eventf(&function, corev1.EventTypeWarning, "StatusUpdateFailed",
-				"Failed to update status: %v", updateErr)
-			return ctrl.Result{Requeue: true}, updateErr
-		}
-		r.Recorder.Eventf(&function, corev1.EventTypeNormal, "StatusUpdated",
-			"Updated status")
-	}
-
-	// return original reconcile result
-	return result, err
 }
 
-func (r *FunctionReconciler) reconcile(ctx context.Context, log logr.Logger, function *buildv1alpha1.Function) (ctrl.Result, error) {
-	if function.GetDeletionTimestamp() != nil {
-		return ctrl.Result{}, nil
+func FunctionTargetImageReconciler(config controllers.Config) controllers.SubReconciler {
+	var r *controllers.SyncReconciler
+	r = &controllers.SyncReconciler{
+		Config:     config,
+		ParentType: reflect.TypeOf(buildv1alpha1.Function{}),
+		Sync: func(ctx context.Context, parent *buildv1alpha1.Function) error {
+			targetImage, err := resolveTargetImage(ctx, r.Client, parent)
+			if err != nil {
+				if err == errMissingDefaultPrefix {
+					parent.Status.MarkImageDefaultPrefixMissing(err.Error())
+				} else {
+					parent.Status.MarkImageInvalid(err.Error())
+				}
+				return err
+			}
+			parent.Status.MarkImageResolved()
+			parent.Status.TargetImage = targetImage
+			return nil
+		},
 	}
-
-	// resolve target image
-	targetImage, err := r.resolveTargetImage(ctx, log, function)
-	if err != nil {
-		if err == errMissingDefaultPrefix {
-			function.Status.MarkImageDefaultPrefixMissing(err.Error())
-		} else {
-			function.Status.MarkImageInvalid(err.Error())
-		}
-		return ctrl.Result{}, err
-	}
-	function.Status.MarkImageResolved()
-	function.Status.TargetImage = targetImage
-
-	// reconcile child kpack image
-	if _, err := r.imageReconciler.Reconcile(ctx, function); err != nil {
-		return ctrl.Result{}, err
-	}
-
-	function.Status.ObservedGeneration = function.Generation
-
-	return ctrl.Result{}, nil
+	r.Log = r.Log.WithName("TargetImage")
+	return r
 }
 
-func (r *FunctionReconciler) resolveTargetImage(ctx context.Context, log logr.Logger, function *buildv1alpha1.Function) (string, error) {
-	if !strings.HasPrefix(function.Spec.Image, "_") {
-		return function.Spec.Image, nil
-	}
-
-	var riffBuildConfig v1.ConfigMap
-	if err := r.Get(ctx, types.NamespacedName{Namespace: function.Namespace, Name: riffBuildServiceAccount}, &riffBuildConfig); err != nil {
-		if apierrs.IsNotFound(err) {
-			return "", errMissingDefaultPrefix
-		}
-		return "", err
-	}
-	defaultPrefix := riffBuildConfig.Data["default-image-prefix"]
-	if defaultPrefix == "" {
-		return "", errMissingDefaultPrefix
-	}
-	image, err := buildv1alpha1.ResolveDefaultImage(function, defaultPrefix)
-	if err != nil {
-		return "", err
-	}
-	return image, nil
-}
-
-func (r *FunctionReconciler) constructLabelsForFunction(function *buildv1alpha1.Function) map[string]string {
-	labels := make(map[string]string, len(function.ObjectMeta.Labels)+1)
-	// pass through existing labels
-	for k, v := range function.ObjectMeta.Labels {
-		labels[k] = v
-	}
-
-	labels[buildv1alpha1.FunctionLabelKey] = function.Name
-
-	return labels
-}
-
-func (r *FunctionReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	if err := controllers.IndexControllersOfType(mgr, functionIndexField, &buildv1alpha1.Function{}, &kpackbuildv1alpha1.Image{}); err != nil {
-		return err
-	}
-
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&buildv1alpha1.Function{}).
-		Owns(&kpackbuildv1alpha1.Image{}).
-		Complete(r)
-}
-
-func NewFunctionChildImageReconciler(r *FunctionReconciler) *controllers.ChildReconciler {
-	parentType := reflect.TypeOf(buildv1alpha1.Function{})
-	childType := reflect.TypeOf(kpackbuildv1alpha1.Image{})
-	childListType := reflect.TypeOf(kpackbuildv1alpha1.ImageList{})
-
-	return &controllers.ChildReconciler{
-		Client:   r.Client,
-		Recorder: r.Recorder,
-		Log:      r.Log.WithName(childType.Name()),
-		Scheme:   r.Scheme,
+func FunctionChildImageReconciler(config controllers.Config) controllers.SubReconciler {
+	var r *controllers.ChildReconciler
+	r = &controllers.ChildReconciler{
+		Config: config,
 
 		IndexField: functionIndexField,
 
-		ParentType:    parentType,
-		ChildType:     childType,
-		ChildListType: childListType,
+		ParentType:    reflect.TypeOf(buildv1alpha1.Function{}),
+		ChildType:     reflect.TypeOf(kpackbuildv1alpha1.Image{}),
+		ChildListType: reflect.TypeOf(kpackbuildv1alpha1.ImageList{}),
+
+		Setup: func(mgr ctrl.Manager, bldr *builder.Builder) error {
+			return controllers.IndexControllersOfType(mgr, r.IndexField, &buildv1alpha1.Function{}, &kpackbuildv1alpha1.Image{})
+		},
 
 		SemanticEquals: func(a1, a2 *kpackbuildv1alpha1.Image) bool {
 			return equality.Semantic.DeepEqual(a1.Spec, a2.Spec) &&
@@ -205,9 +101,16 @@ func NewFunctionChildImageReconciler(r *FunctionReconciler) *controllers.ChildRe
 				return nil, nil
 			}
 
+			labels := make(map[string]string, len(parent.ObjectMeta.Labels)+1)
+			// pass through existing labels
+			for k, v := range parent.Labels {
+				labels[k] = v
+			}
+			labels[buildv1alpha1.FunctionLabelKey] = parent.Name
+
 			child := &kpackbuildv1alpha1.Image{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels:       r.constructLabelsForFunction(parent),
+					Labels:       labels,
 					Annotations:  make(map[string]string),
 					GenerateName: fmt.Sprintf("%s-function-", parent.Name),
 					Namespace:    parent.Namespace,
@@ -261,4 +164,5 @@ func NewFunctionChildImageReconciler(r *FunctionReconciler) *controllers.ChildRe
 			return child.Spec
 		},
 	}
+	return r
 }

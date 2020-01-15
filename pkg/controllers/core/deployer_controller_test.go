@@ -34,6 +34,7 @@ import (
 
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	corev1alpha1 "github.com/projectriff/system/pkg/apis/core/v1alpha1"
+	"github.com/projectriff/system/pkg/controllers"
 	"github.com/projectriff/system/pkg/controllers/core"
 	rtesting "github.com/projectriff/system/pkg/controllers/testing"
 	"github.com/projectriff/system/pkg/controllers/testing/factories"
@@ -1403,11 +1404,13 @@ func TestDeployerReconciler(t *testing.T) {
 
 	table.Test(t, scheme, func(t *testing.T, row *rtesting.Testcase, client client.Client, tracker tracker.Tracker, recorder record.EventRecorder, log logr.Logger) reconcile.Reconciler {
 		return &core.DeployerReconciler{
-			Client:   client,
-			Recorder: recorder,
-			Scheme:   scheme,
-			Log:      log,
-			Tracker:  tracker,
+			Config: controllers.Config{
+				Client:   client,
+				Recorder: recorder,
+				Scheme:   scheme,
+				Log:      log,
+				Tracker:  tracker,
+			},
 		}
 	})
 }

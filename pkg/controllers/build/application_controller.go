@@ -20,21 +20,12 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-	"strings"
 
-	"github.com/go-logr/logr"
-	"github.com/google/go-cmp/cmp"
-	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
-	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	kpackbuildv1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/kpack/build/v1alpha1"
@@ -44,157 +35,63 @@ import (
 
 const applicationIndexField = ".metadata.applicationController"
 
-// ApplicationReconciler reconciles a Application object
-type ApplicationReconciler struct {
-	client.Client
-	Recorder record.EventRecorder
-	Log      logr.Logger
-	Scheme   *runtime.Scheme
-
-	imageReconciler controllers.SubReconciler
-}
-
 // +kubebuilder:rbac:groups=build.projectriff.io,resources=applications,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=build.projectriff.io,resources=applications/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=build.pivotal.io,resources=images,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch
 // +kubebuilder:rbac:groups=core,resources=events,verbs=get;list;watch;create;update;patch;delete
 
-func (r *ApplicationReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	ctx := context.Background()
-	log := r.Log.WithValues("application", req.NamespacedName)
-
-	// TODO move to an init or constructor
-	if r.imageReconciler == nil {
-		r.imageReconciler = NewApplicationChildImageReconciler(r)
+// ApplicationReconciler reconciles a Application object
+func ApplicationReconciler(config controllers.Config) *controllers.ParentReconciler {
+	return &controllers.ParentReconciler{
+		Config:     config,
+		ParentType: reflect.TypeOf(buildv1alpha1.Application{}),
+		SubReconcilers: []controllers.SubReconciler{
+			ApplicationTargetImageReconciler(config),
+			ApplicationChildImageReconciler(config),
+		},
 	}
-
-	var originalApplication buildv1alpha1.Application
-	if err := r.Get(ctx, req.NamespacedName, &originalApplication); err != nil {
-		if apierrs.IsNotFound(err) {
-			// we'll ignore not-found errors, since they can't be fixed by an immediate
-			// requeue (we'll need to wait for a new notification), and we can get them
-			// on deleted requests.
-			return ctrl.Result{}, nil
-		}
-		log.Error(err, "unable to fetch Application")
-		return ctrl.Result{}, err
-	}
-	application := *(originalApplication.DeepCopy())
-
-	application.Default()
-	application.Status.InitializeConditions()
-
-	result, err := r.reconcile(ctx, log, &application)
-
-	// check if status has changed before updating, unless requeued
-	if !result.Requeue && !equality.Semantic.DeepEqual(application.Status, originalApplication.Status) && application.GetDeletionTimestamp() == nil {
-		// update status
-		log.Info("updating application status", "diff", cmp.Diff(originalApplication.Status, application.Status))
-		if updateErr := r.Status().Update(ctx, &application); updateErr != nil {
-			log.Error(updateErr, "unable to update Application status", "application", application)
-			r.Recorder.Eventf(&application, corev1.EventTypeWarning, "StatusUpdateFailed",
-				"Failed to update status: %v", updateErr)
-			return ctrl.Result{Requeue: true}, updateErr
-		}
-		r.Recorder.Eventf(&application, corev1.EventTypeNormal, "StatusUpdated",
-			"Updated status")
-	}
-
-	// return original reconcile result
-	return result, err
 }
 
-func (r *ApplicationReconciler) reconcile(ctx context.Context, log logr.Logger, application *buildv1alpha1.Application) (ctrl.Result, error) {
-	if application.GetDeletionTimestamp() != nil {
-		return ctrl.Result{}, nil
+func ApplicationTargetImageReconciler(config controllers.Config) controllers.SubReconciler {
+	var r *controllers.SyncReconciler
+	r = &controllers.SyncReconciler{
+		Config:     config,
+		ParentType: reflect.TypeOf(buildv1alpha1.Application{}),
+
+		Sync: func(ctx context.Context, parent *buildv1alpha1.Application) error {
+			targetImage, err := resolveTargetImage(ctx, r.Client, parent)
+			if err != nil {
+				if err == errMissingDefaultPrefix {
+					parent.Status.MarkImageDefaultPrefixMissing(err.Error())
+				} else {
+					parent.Status.MarkImageInvalid(err.Error())
+				}
+				return err
+			}
+			parent.Status.MarkImageResolved()
+			parent.Status.TargetImage = targetImage
+			return nil
+		},
 	}
-
-	// resolve target image
-	targetImage, err := r.resolveTargetImage(ctx, log, application)
-	if err != nil {
-		if err == errMissingDefaultPrefix {
-			application.Status.MarkImageDefaultPrefixMissing(err.Error())
-		} else {
-			application.Status.MarkImageInvalid(err.Error())
-		}
-		return ctrl.Result{}, err
-	}
-	application.Status.MarkImageResolved()
-	application.Status.TargetImage = targetImage
-
-	// reconcile child kpack image
-	if _, err := r.imageReconciler.Reconcile(ctx, application); err != nil {
-		return ctrl.Result{}, err
-	}
-
-	application.Status.ObservedGeneration = application.Generation
-
-	return ctrl.Result{}, nil
+	r.Log = r.Log.WithName("TargetImage")
+	return r
 }
 
-func (r *ApplicationReconciler) resolveTargetImage(ctx context.Context, log logr.Logger, application *buildv1alpha1.Application) (string, error) {
-	if !strings.HasPrefix(application.Spec.Image, "_") {
-		return application.Spec.Image, nil
-	}
+func ApplicationChildImageReconciler(config controllers.Config) controllers.SubReconciler {
+	var r *controllers.ChildReconciler
 
-	var riffBuildConfig v1.ConfigMap
-	if err := r.Get(ctx, types.NamespacedName{Namespace: application.Namespace, Name: riffBuildServiceAccount}, &riffBuildConfig); err != nil {
-		if apierrs.IsNotFound(err) {
-			return "", errMissingDefaultPrefix
-		}
-		return "", err
-	}
-	defaultPrefix := riffBuildConfig.Data["default-image-prefix"]
-	if defaultPrefix == "" {
-		return "", errMissingDefaultPrefix
-	}
-	image, err := buildv1alpha1.ResolveDefaultImage(application, defaultPrefix)
-	if err != nil {
-		return "", err
-	}
-	return image, nil
-}
-
-func (r *ApplicationReconciler) constructLabelsForApplication(application *buildv1alpha1.Application) map[string]string {
-	labels := make(map[string]string, len(application.ObjectMeta.Labels)+1)
-	// pass through existing labels
-	for k, v := range application.ObjectMeta.Labels {
-		labels[k] = v
-	}
-
-	labels[buildv1alpha1.ApplicationLabelKey] = application.Name
-
-	return labels
-}
-
-func (r *ApplicationReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	if err := controllers.IndexControllersOfType(mgr, applicationIndexField, &buildv1alpha1.Application{}, &kpackbuildv1alpha1.Image{}); err != nil {
-		return err
-	}
-
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&buildv1alpha1.Application{}).
-		Owns(&kpackbuildv1alpha1.Image{}).
-		Complete(r)
-}
-
-func NewApplicationChildImageReconciler(r *ApplicationReconciler) *controllers.ChildReconciler {
-	parentType := reflect.TypeOf(buildv1alpha1.Application{})
-	childType := reflect.TypeOf(kpackbuildv1alpha1.Image{})
-	childListType := reflect.TypeOf(kpackbuildv1alpha1.ImageList{})
-
-	return &controllers.ChildReconciler{
-		Client:   r.Client,
-		Recorder: r.Recorder,
-		Log:      r.Log.WithName(childType.Name()),
-		Scheme:   r.Scheme,
+	r = &controllers.ChildReconciler{
+		Config: config,
 
 		IndexField: applicationIndexField,
 
-		ParentType:    parentType,
-		ChildType:     childType,
-		ChildListType: childListType,
+		ParentType:    reflect.TypeOf(buildv1alpha1.Application{}),
+		ChildType:     reflect.TypeOf(kpackbuildv1alpha1.Image{}),
+		ChildListType: reflect.TypeOf(kpackbuildv1alpha1.ImageList{}),
+
+		Setup: func(mgr ctrl.Manager, bldr *builder.Builder) error {
+			return controllers.IndexControllersOfType(mgr, applicationIndexField, &buildv1alpha1.Application{}, &kpackbuildv1alpha1.Image{})
+		},
 
 		SemanticEquals: func(a1, a2 *kpackbuildv1alpha1.Image) bool {
 			return equality.Semantic.DeepEqual(a1.Spec, a2.Spec) &&
@@ -205,9 +102,16 @@ func NewApplicationChildImageReconciler(r *ApplicationReconciler) *controllers.C
 				return nil, nil
 			}
 
+			labels := make(map[string]string, len(parent.Labels)+1)
+			// pass through existing labels
+			for k, v := range parent.Labels {
+				labels[k] = v
+			}
+			labels[buildv1alpha1.ApplicationLabelKey] = parent.Name
+
 			image := &kpackbuildv1alpha1.Image{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels:       r.constructLabelsForApplication(parent),
+					Labels:       labels,
 					Annotations:  make(map[string]string),
 					GenerateName: fmt.Sprintf("%s-application-", parent.Name),
 					Namespace:    parent.Namespace,
@@ -255,4 +159,6 @@ func NewApplicationChildImageReconciler(r *ApplicationReconciler) *controllers.C
 			return child.Spec
 		},
 	}
+
+	return r
 }

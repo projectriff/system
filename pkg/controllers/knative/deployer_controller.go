@@ -27,11 +27,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
@@ -49,11 +46,7 @@ const (
 
 // DeployerReconciler reconciles a Deployer object
 type DeployerReconciler struct {
-	client.Client
-	Recorder record.EventRecorder
-	Log      logr.Logger
-	Scheme   *runtime.Scheme
-	Tracker  tracker.Tracker
+	controllers.Config
 
 	configurationReconciler controllers.SubReconciler
 	routeReconciler         controllers.SubReconciler
@@ -71,10 +64,10 @@ func (r *DeployerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	// TODO move to an init or constructor
 	if r.configurationReconciler == nil {
-		r.configurationReconciler = NewDeployerChildConfigurationReconciler(r)
+		r.configurationReconciler = DeployerChildConfigurationReconciler(r)
 	}
 	if r.routeReconciler == nil {
-		r.routeReconciler = NewDeployerChildRouteReconciler(r)
+		r.routeReconciler = DeployerChildRouteReconciler(r)
 	}
 
 	var originalDeployer knativev1alpha1.Deployer
@@ -265,23 +258,16 @@ func (r *DeployerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func NewDeployerChildConfigurationReconciler(r *DeployerReconciler) *controllers.ChildReconciler {
-	parentType := reflect.TypeOf(knativev1alpha1.Deployer{})
-	childType := reflect.TypeOf(servingv1.Configuration{})
-	childListType := reflect.TypeOf(servingv1.ConfigurationList{})
-
-	return &controllers.ChildReconciler{
-		Client:   r.Client,
-		Recorder: r.Recorder,
-		Log:      r.Log.WithName(childType.Name()),
-		Scheme:   r.Scheme,
-		Tracker:  r.Tracker,
+func DeployerChildConfigurationReconciler(r *DeployerReconciler) controllers.SubReconciler {
+	var cr *controllers.ChildReconciler
+	cr = &controllers.ChildReconciler{
+		Config: r.Config,
 
 		IndexField: configurationIndexField,
 
-		ParentType:    parentType,
-		ChildType:     childType,
-		ChildListType: childListType,
+		ParentType:    reflect.TypeOf(knativev1alpha1.Deployer{}),
+		ChildType:     reflect.TypeOf(servingv1.Configuration{}),
+		ChildListType: reflect.TypeOf(servingv1.ConfigurationList{}),
 
 		SemanticEquals: func(a1, a2 *servingv1.Configuration) bool {
 			return equality.Semantic.DeepEqual(a1.Spec, a2.Spec) &&
@@ -344,25 +330,20 @@ func NewDeployerChildConfigurationReconciler(r *DeployerReconciler) *controllers
 			return child.Spec
 		},
 	}
+	cr.Log = r.Log.WithName(cr.ChildType.Name())
+	return cr
 }
 
-func NewDeployerChildRouteReconciler(r *DeployerReconciler) *controllers.ChildReconciler {
-	parentType := reflect.TypeOf(knativev1alpha1.Deployer{})
-	childType := reflect.TypeOf(servingv1.Route{})
-	childListType := reflect.TypeOf(servingv1.RouteList{})
-
-	return &controllers.ChildReconciler{
-		Client:   r.Client,
-		Recorder: r.Recorder,
-		Log:      r.Log.WithName(childType.Name()),
-		Scheme:   r.Scheme,
-		Tracker:  r.Tracker,
+func DeployerChildRouteReconciler(r *DeployerReconciler) controllers.SubReconciler {
+	var cr *controllers.ChildReconciler
+	cr = &controllers.ChildReconciler{
+		Config: r.Config,
 
 		IndexField: routeIndexField,
 
-		ParentType:    parentType,
-		ChildType:     childType,
-		ChildListType: childListType,
+		ParentType:    reflect.TypeOf(knativev1alpha1.Deployer{}),
+		ChildType:     reflect.TypeOf(servingv1.Route{}),
+		ChildListType: reflect.TypeOf(servingv1.RouteList{}),
 
 		SemanticEquals: func(a1, a2 *servingv1.Route) bool {
 			return equality.Semantic.DeepEqual(a1.Spec, a2.Spec) &&
@@ -417,4 +398,6 @@ func NewDeployerChildRouteReconciler(r *DeployerReconciler) *controllers.ChildRe
 			return child.Spec
 		},
 	}
+	cr.Log = r.Log.WithName(cr.ChildType.Name())
+	return cr
 }

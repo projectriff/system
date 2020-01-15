@@ -31,6 +31,7 @@ import (
 	"github.com/projectriff/system/pkg/apis"
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	kpackbuildv1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/kpack/build/v1alpha1"
+	"github.com/projectriff/system/pkg/controllers"
 	"github.com/projectriff/system/pkg/controllers/build"
 	rtesting "github.com/projectriff/system/pkg/controllers/testing"
 	"github.com/projectriff/system/pkg/controllers/testing/factories"
@@ -684,11 +685,11 @@ func TestApplicationReconciler(t *testing.T) {
 	}}
 
 	table.Test(t, scheme, func(t *testing.T, row *rtesting.Testcase, client client.Client, tracker tracker.Tracker, recorder record.EventRecorder, log logr.Logger) reconcile.Reconciler {
-		return &build.ApplicationReconciler{
+		return build.ApplicationReconciler(controllers.Config{
 			Client:   client,
 			Recorder: recorder,
 			Scheme:   scheme,
 			Log:      log,
-		}
+		})
 	})
 }

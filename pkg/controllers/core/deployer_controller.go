@@ -29,13 +29,10 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/projectriff/system/pkg/apis"
@@ -54,11 +51,7 @@ const (
 
 // DeployerReconciler reconciles a Deployer object
 type DeployerReconciler struct {
-	client.Client
-	Recorder record.EventRecorder
-	Log      logr.Logger
-	Scheme   *runtime.Scheme
-	Tracker  tracker.Tracker
+	controllers.Config
 
 	deploymentReconciler controllers.SubReconciler
 	serviceReconciler    controllers.SubReconciler
@@ -79,10 +72,10 @@ func (r *DeployerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	// TODO move to an init or constructor
 	if r.deploymentReconciler == nil {
-		r.deploymentReconciler = NewDeployerChildDeploymentReconciler(r)
+		r.deploymentReconciler = DeployerChildDeploymentReconciler(r)
 	}
 	if r.serviceReconciler == nil {
-		r.serviceReconciler = NewDeployerChildServiceReconciler(r)
+		r.serviceReconciler = DeployerChildServiceReconciler(r)
 	}
 	if r.ingressReconciler == nil {
 		r.ingressReconciler = NewDeployerChildIngressReconciler(r)
@@ -259,23 +252,16 @@ func (r *DeployerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func NewDeployerChildDeploymentReconciler(r *DeployerReconciler) *controllers.ChildReconciler {
-	parentType := reflect.TypeOf(corev1alpha1.Deployer{})
-	childType := reflect.TypeOf(appsv1.Deployment{})
-	childListType := reflect.TypeOf(appsv1.DeploymentList{})
-
-	return &controllers.ChildReconciler{
-		Client:   r.Client,
-		Recorder: r.Recorder,
-		Log:      r.Log.WithName(childType.Name()),
-		Scheme:   r.Scheme,
-		Tracker:  r.Tracker,
+func DeployerChildDeploymentReconciler(r *DeployerReconciler) controllers.SubReconciler {
+	var cr *controllers.ChildReconciler
+	cr = &controllers.ChildReconciler{
+		Config: r.Config,
 
 		IndexField: deploymentIndexField,
 
-		ParentType:    parentType,
-		ChildType:     childType,
-		ChildListType: childListType,
+		ParentType:    reflect.TypeOf(corev1alpha1.Deployer{}),
+		ChildType:     reflect.TypeOf(appsv1.Deployment{}),
+		ChildListType: reflect.TypeOf(appsv1.DeploymentList{}),
 
 		SemanticEquals: func(a1, a2 *appsv1.Deployment) bool {
 			return equality.Semantic.DeepEqual(a1.Spec, a2.Spec) &&
@@ -348,25 +334,20 @@ func NewDeployerChildDeploymentReconciler(r *DeployerReconciler) *controllers.Ch
 			return child.Spec
 		},
 	}
+	cr.Log = r.Log.WithName(cr.ChildType.Name())
+	return cr
 }
 
-func NewDeployerChildServiceReconciler(r *DeployerReconciler) *controllers.ChildReconciler {
-	parentType := reflect.TypeOf(corev1alpha1.Deployer{})
-	childType := reflect.TypeOf(corev1.Service{})
-	childListType := reflect.TypeOf(corev1.ServiceList{})
-
-	return &controllers.ChildReconciler{
-		Client:   r.Client,
-		Recorder: r.Recorder,
-		Log:      r.Log.WithName(childType.Name()),
-		Scheme:   r.Scheme,
-		Tracker:  r.Tracker,
+func DeployerChildServiceReconciler(r *DeployerReconciler) controllers.SubReconciler {
+	var cr *controllers.ChildReconciler
+	cr = &controllers.ChildReconciler{
+		Config: r.Config,
 
 		IndexField: serviceIndexField,
 
-		ParentType:    parentType,
-		ChildType:     childType,
-		ChildListType: childListType,
+		ParentType:    reflect.TypeOf(corev1alpha1.Deployer{}),
+		ChildType:     reflect.TypeOf(corev1.Service{}),
+		ChildListType: reflect.TypeOf(corev1.ServiceList{}),
 
 		SemanticEquals: func(a1, a2 *corev1.Service) bool {
 			return equality.Semantic.DeepEqual(a1.Spec, a2.Spec) &&
@@ -421,25 +402,20 @@ func NewDeployerChildServiceReconciler(r *DeployerReconciler) *controllers.Child
 			return child.Spec
 		},
 	}
+	cr.Log = r.Log.WithName(cr.ChildType.Name())
+	return cr
 }
 
-func NewDeployerChildIngressReconciler(r *DeployerReconciler) *controllers.ChildReconciler {
-	parentType := reflect.TypeOf(corev1alpha1.Deployer{})
-	childType := reflect.TypeOf(networkingv1beta1.Ingress{})
-	childListType := reflect.TypeOf(networkingv1beta1.IngressList{})
-
-	return &controllers.ChildReconciler{
-		Client:   r.Client,
-		Recorder: r.Recorder,
-		Log:      r.Log.WithName(childType.Name()),
-		Scheme:   r.Scheme,
-		Tracker:  r.Tracker,
+func NewDeployerChildIngressReconciler(r *DeployerReconciler) controllers.SubReconciler {
+	var cr *controllers.ChildReconciler
+	cr = &controllers.ChildReconciler{
+		Config: r.Config,
 
 		IndexField: ingressIndexField,
 
-		ParentType:    parentType,
-		ChildType:     childType,
-		ChildListType: childListType,
+		ParentType:    reflect.TypeOf(corev1alpha1.Deployer{}),
+		ChildType:     reflect.TypeOf(networkingv1beta1.Ingress{}),
+		ChildListType: reflect.TypeOf(networkingv1beta1.IngressList{}),
 
 		SemanticEquals: func(a1, a2 *networkingv1beta1.Ingress) bool {
 			return equality.Semantic.DeepEqual(a1.Spec, a2.Spec) &&
@@ -523,4 +499,6 @@ func NewDeployerChildIngressReconciler(r *DeployerReconciler) *controllers.Child
 			return child.Spec
 		},
 	}
+	cr.Log = r.Log.WithName(cr.ChildType.Name())
+	return cr
 }

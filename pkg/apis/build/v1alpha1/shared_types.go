@@ -20,8 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
+	"github.com/projectriff/system/pkg/apis"
 	"github.com/projectriff/system/pkg/refs"
 )
 
@@ -49,7 +48,7 @@ type BuildStatus struct {
 
 // +k8s:deepcopy-gen=false
 type ImageResource interface {
-	metav1.ObjectMetaAccessor
+	apis.Object
 	GetImage() string
 }
 
@@ -68,7 +67,7 @@ func ResolveDefaultImage(resource ImageResource, defaultImagePrefix string) (str
 	image := resource.GetImage()
 	if image == "_" {
 		// combine registry prefix and application name
-		image = fmt.Sprintf("%s/%s", defaultImagePrefix, resource.GetObjectMeta().GetName())
+		image = fmt.Sprintf("%s/%s", defaultImagePrefix, resource.GetName())
 	} else if strings.HasPrefix(image, "_/") {
 		// add the prefix to the specified image name
 		image = strings.Replace(image, "_", defaultImagePrefix, 1)

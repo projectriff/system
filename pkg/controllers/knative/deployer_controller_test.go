@@ -34,6 +34,7 @@ import (
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	knativev1alpha1 "github.com/projectriff/system/pkg/apis/knative/v1alpha1"
 	knativeservingv1 "github.com/projectriff/system/pkg/apis/thirdparty/knative/serving/v1"
+	"github.com/projectriff/system/pkg/controllers"
 	"github.com/projectriff/system/pkg/controllers/knative"
 	rtesting "github.com/projectriff/system/pkg/controllers/testing"
 	"github.com/projectriff/system/pkg/controllers/testing/factories"
@@ -1079,11 +1080,13 @@ func TestDeployerReconciler(t *testing.T) {
 
 	table.Test(t, scheme, func(t *testing.T, row *rtesting.Testcase, client client.Client, tracker tracker.Tracker, recorder record.EventRecorder, log logr.Logger) reconcile.Reconciler {
 		return &knative.DeployerReconciler{
-			Client:   client,
-			Recorder: recorder,
-			Log:      log,
-			Scheme:   scheme,
-			Tracker:  tracker,
+			Config: controllers.Config{
+				Client:   client,
+				Recorder: recorder,
+				Log:      log,
+				Scheme:   scheme,
+				Tracker:  tracker,
+			},
 		}
 	})
 }

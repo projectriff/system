@@ -23,26 +23,186 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	"github.com/projectriff/system/pkg/apis"
 	"github.com/projectriff/system/pkg/tracker"
 )
 
-type SubReconciler interface {
-	Reconcile(ctx context.Context, parent apis.Object) (ctrl.Result, error)
-}
+var (
+	_ reconcile.Reconciler = (*ParentReconciler)(nil)
+)
 
-type ChildReconciler struct {
+type Config struct {
 	client.Client
 	Recorder record.EventRecorder
 	Log      logr.Logger
 	Scheme   *runtime.Scheme
 	Tracker  tracker.Tracker
+}
+
+type ParentReconciler struct {
+	Config
+
+	ParentType reflect.Type
+
+	SubReconcilers []SubReconciler
+}
+
+func (r *ParentReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	bldr := ctrl.NewControllerManagedBy(mgr).
+		For(reflect.New(r.ParentType).Interface().(apis.Object))
+	for _, reconciler := range r.SubReconcilers {
+		err := reconciler.SetupWithManager(mgr, bldr)
+		if err != nil {
+			return err
+		}
+	}
+	return bldr.Complete(r)
+}
+
+func (r *ParentReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
+	ctx := context.Background()
+	log := r.Log.WithValues("request", req.NamespacedName)
+
+	originalParent := reflect.New(r.ParentType).Interface().(apis.Object)
+
+	if err := r.Get(ctx, req.NamespacedName, originalParent); err != nil {
+		if apierrs.IsNotFound(err) {
+			// we'll ignore not-found errors, since they can't be fixed by an immediate
+			// requeue (we'll need to wait for a new notification), and we can get them
+			// on deleted requests.
+			return ctrl.Result{}, nil
+		}
+		log.Error(err, "unable to fetch resource")
+		return ctrl.Result{}, err
+	}
+	parent := originalParent.DeepCopyObject().(apis.Object)
+
+	if defaulter, ok := parent.(webhook.Defaulter); ok {
+		// parent.Default()
+		defaulter.Default()
+	}
+	if initializeConditions := reflect.ValueOf(parent).Elem().FieldByName("Status").Addr().MethodByName("InitializeConditions"); initializeConditions.Kind() == reflect.Func {
+		// parent.Status.InitializeConditions()
+		initializeConditions.Call([]reflect.Value{})
+	}
+
+	result, err := r.reconcile(ctx, parent)
+
+	// check if status has changed before updating
+	if !equality.Semantic.DeepEqual(r.status(parent), r.status(originalParent)) && parent.GetDeletionTimestamp() == nil {
+		// update status
+		log.Info("updating status", "diff", cmp.Diff(r.status(originalParent), r.status(parent)))
+		if updateErr := r.Status().Update(ctx, parent); updateErr != nil {
+			log.Error(updateErr, "unable to update status", r.ParentType.Name(), parent)
+			r.Recorder.Eventf(parent, corev1.EventTypeWarning, "StatusUpdateFailed",
+				"Failed to update status: %v", updateErr)
+			return ctrl.Result{}, updateErr
+		}
+		r.Recorder.Eventf(parent, corev1.EventTypeNormal, "StatusUpdated",
+			"Updated status")
+	}
+
+	// return original reconcile result
+	return result, err
+}
+
+func (r *ParentReconciler) reconcile(ctx context.Context, parent apis.Object) (ctrl.Result, error) {
+	if parent.GetDeletionTimestamp() != nil {
+		return ctrl.Result{}, nil
+	}
+
+	for _, reconciler := range r.SubReconcilers {
+		if _, err := reconciler.Reconcile(ctx, parent); err != nil {
+			return ctrl.Result{}, err
+		}
+	}
+
+	r.copyGeneration(parent)
+
+	return ctrl.Result{}, nil
+}
+
+func (r *ParentReconciler) copyGeneration(obj apis.Object) {
+	// obj.Status.ObservedGeneration = obj.Generation
+	objVal := reflect.ValueOf(obj).Elem()
+	generation := objVal.FieldByName("Generation").Int()
+	objVal.FieldByName("Status").FieldByName("ObservedGeneration").SetInt(generation)
+}
+
+func (r *ParentReconciler) status(obj apis.Object) interface{} {
+	return reflect.ValueOf(obj).Elem().FieldByName("Status").Addr().Interface()
+}
+
+type SubReconciler interface {
+	SetupWithManager(mgr ctrl.Manager, bldr *builder.Builder) error
+	Reconcile(ctx context.Context, parent apis.Object) (ctrl.Result, error)
+}
+
+var (
+	_ SubReconciler = (*SyncReconciler)(nil)
+	_ SubReconciler = (*ChildReconciler)(nil)
+)
+
+type SyncReconciler struct {
+	Config
+
+	ParentType reflect.Type
+
+	// Sync does whatever work is necessary for the reconciler
+	//
+	// Expected function signature:
+	//     func(ctx context.Context, parent apis.Object) error
+	Sync interface{}
+
+	// Setup performs initialization on the manager and builder this reconciler
+	// will run with. It's common to setup field indexes and watch resources.
+	//
+	// +optional
+	Setup func(mgr ctrl.Manager, bldr *builder.Builder) error
+}
+
+func (r *SyncReconciler) SetupWithManager(mgr ctrl.Manager, bldr *builder.Builder) error {
+	if r.Setup == nil {
+		return nil
+	}
+	return r.Setup(mgr, bldr)
+}
+
+func (r *SyncReconciler) Reconcile(ctx context.Context, parent apis.Object) (ctrl.Result, error) {
+	err := r.sync(ctx, parent)
+	if err != nil {
+		r.Log.Error(err, "unable to sync", r.ParentType.Name(), parent)
+		return ctrl.Result{}, err
+	}
+
+	return ctrl.Result{}, nil
+}
+
+func (r *SyncReconciler) sync(ctx context.Context, parent apis.Object) error {
+	fn := reflect.ValueOf(r.Sync)
+	out := fn.Call([]reflect.Value{
+		reflect.ValueOf(ctx),
+		reflect.ValueOf(parent),
+	})
+	var err error
+	if !out[0].IsNil() {
+		err = out[0].Interface().(error)
+	}
+	return err
+}
+
+type ChildReconciler struct {
+	Config
 
 	ParentType    reflect.Type
 	ChildType     reflect.Type
@@ -101,6 +261,21 @@ type ChildReconciler struct {
 	//
 	// +optional
 	Sanitize interface{}
+
+	// Setup performs initialization on the manager and builder this reconciler
+	// will run with. It's common to setup field indexes and watch resources.
+	//
+	// +optional
+	Setup func(mgr ctrl.Manager, bldr *builder.Builder) error
+}
+
+func (r *ChildReconciler) SetupWithManager(mgr ctrl.Manager, bldr *builder.Builder) error {
+	bldr.Owns(reflect.New(r.ChildType).Interface().(apis.Object))
+
+	if r.Setup == nil {
+		return nil
+	}
+	return r.Setup(mgr, bldr)
 }
 
 func (r *ChildReconciler) Reconcile(ctx context.Context, parent apis.Object) (ctrl.Result, error) {
