@@ -32,6 +32,7 @@ import (
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	knativev1alpha1 "github.com/projectriff/system/pkg/apis/knative/v1alpha1"
 	knativeservingv1 "github.com/projectriff/system/pkg/apis/thirdparty/knative/serving/v1"
+	"github.com/projectriff/system/pkg/controllers"
 	"github.com/projectriff/system/pkg/controllers/knative"
 	rtesting "github.com/projectriff/system/pkg/controllers/testing"
 	"github.com/projectriff/system/pkg/controllers/testing/factories"
@@ -179,9 +180,20 @@ func TestAdapterReconciler(t *testing.T) {
 			testApplication,
 			testService,
 		},
-		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testApplication, testAdapter, scheme),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testAdapter, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
+		ExpectStatusUpdates: []rtesting.Factory{
+			testAdapter.
+				StatusConditions(
+					adapterConditionBuildReady.Unknown(),
+					adapterConditionReady.Unknown(),
+					adapterConditionTargetFound.Unknown(),
+				),
 		},
 	}, {
 		Name: "adapt application to service, application not found",
@@ -202,13 +214,13 @@ func TestAdapterReconciler(t *testing.T) {
 		ExpectStatusUpdates: []rtesting.Factory{
 			testAdapter.
 				StatusConditions(
-					adapterConditionBuildReady.Unknown(),
-					adapterConditionReady.Unknown(),
+					adapterConditionBuildReady.False().Reason("NotFound", `The application "my-application" was not found.`),
+					adapterConditionReady.False().Reason("NotFound", `The application "my-application" was not found.`),
 					adapterConditionTargetFound.Unknown(),
 				),
 		},
 	}, {
-		Name: "adapt application to service, application get failed",
+		Name: "adapt application to service, get application failed",
 		Key:  testKey,
 		WithReactors: []rtesting.ReactionFunc{
 			rtesting.InduceFailure("get", "Application"),
@@ -225,6 +237,18 @@ func TestAdapterReconciler(t *testing.T) {
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testApplication, testAdapter, scheme),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testAdapter, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
+		ExpectStatusUpdates: []rtesting.Factory{
+			testAdapter.
+				StatusConditions(
+					adapterConditionBuildReady.Unknown(),
+					adapterConditionReady.Unknown(),
+					adapterConditionTargetFound.Unknown(),
+				),
 		},
 	}, {
 		Name: "adapt function to service",
@@ -271,9 +295,20 @@ func TestAdapterReconciler(t *testing.T) {
 			testFunction,
 			testService,
 		},
-		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testFunction, testAdapter, scheme),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testAdapter, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
+		ExpectStatusUpdates: []rtesting.Factory{
+			testAdapter.
+				StatusConditions(
+					adapterConditionBuildReady.Unknown(),
+					adapterConditionReady.Unknown(),
+					adapterConditionTargetFound.Unknown(),
+				),
 		},
 	}, {
 		Name: "adapt function to service, function not found",
@@ -294,8 +329,8 @@ func TestAdapterReconciler(t *testing.T) {
 		ExpectStatusUpdates: []rtesting.Factory{
 			testAdapter.
 				StatusConditions(
-					adapterConditionBuildReady.Unknown(),
-					adapterConditionReady.Unknown(),
+					adapterConditionBuildReady.False().Reason("NotFound", `The function "my-function" was not found.`),
+					adapterConditionReady.False().Reason("NotFound", `The function "my-function" was not found.`),
 					adapterConditionTargetFound.Unknown(),
 				),
 		},
@@ -317,6 +352,18 @@ func TestAdapterReconciler(t *testing.T) {
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testFunction, testAdapter, scheme),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testAdapter, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
+		ExpectStatusUpdates: []rtesting.Factory{
+			testAdapter.
+				StatusConditions(
+					adapterConditionBuildReady.Unknown(),
+					adapterConditionReady.Unknown(),
+					adapterConditionTargetFound.Unknown(),
+				),
 		},
 	}, {
 		Name: "adapt container to service",
@@ -363,9 +410,20 @@ func TestAdapterReconciler(t *testing.T) {
 			testContainer,
 			testService,
 		},
-		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testContainer, testAdapter, scheme),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testAdapter, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
+		ExpectStatusUpdates: []rtesting.Factory{
+			testAdapter.
+				StatusConditions(
+					adapterConditionBuildReady.Unknown(),
+					adapterConditionReady.Unknown(),
+					adapterConditionTargetFound.Unknown(),
+				),
 		},
 	}, {
 		Name: "adapt container to service, container not found",
@@ -386,8 +444,8 @@ func TestAdapterReconciler(t *testing.T) {
 		ExpectStatusUpdates: []rtesting.Factory{
 			testAdapter.
 				StatusConditions(
-					adapterConditionBuildReady.Unknown(),
-					adapterConditionReady.Unknown(),
+					adapterConditionBuildReady.False().Reason("NotFound", `The container "my-container" was not found.`),
+					adapterConditionReady.False().Reason("NotFound", `The container "my-container" was not found.`),
 					adapterConditionTargetFound.Unknown(),
 				),
 		},
@@ -409,6 +467,18 @@ func TestAdapterReconciler(t *testing.T) {
 		ShouldErr: true,
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testContainer, testAdapter, scheme),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testAdapter, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
+		ExpectStatusUpdates: []rtesting.Factory{
+			testAdapter.
+				StatusConditions(
+					adapterConditionBuildReady.Unknown(),
+					adapterConditionReady.Unknown(),
+					adapterConditionTargetFound.Unknown(),
+				),
 		},
 	}, {
 		Name: "adapt container to service, service not found",
@@ -457,6 +527,19 @@ func TestAdapterReconciler(t *testing.T) {
 		ExpectTracks: []rtesting.TrackRequest{
 			rtesting.NewTrackRequest(testContainer, testAdapter, scheme),
 			rtesting.NewTrackRequest(testService, testAdapter, scheme),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testAdapter, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
+		ExpectStatusUpdates: []rtesting.Factory{
+			testAdapter.
+				StatusConditions(
+					adapterConditionBuildReady.True(),
+					adapterConditionReady.Unknown(),
+					adapterConditionTargetFound.Unknown(),
+				).
+				StatusLatestImage(testImage),
 		},
 	}, {
 		Name: "adapt container to service, service is up to date",
@@ -508,6 +591,20 @@ func TestAdapterReconciler(t *testing.T) {
 				UserContainer(func(uc *corev1.Container) {
 					uc.Image = testImage
 				}),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testAdapter, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
+		ExpectStatusUpdates: []rtesting.Factory{
+			testAdapter.
+				StatusConditions(
+					adapterConditionBuildReady.True(),
+					// TODO the update failed, we should not be reporting as ready
+					adapterConditionReady.True(),
+					adapterConditionTargetFound.True(),
+				).
+				StatusLatestImage(testImage),
 		},
 	}, {
 		Name: "adapt container to configuration",
@@ -592,6 +689,19 @@ func TestAdapterReconciler(t *testing.T) {
 			rtesting.NewTrackRequest(testContainer, testAdapter, scheme),
 			rtesting.NewTrackRequest(testConfiguration, testAdapter, scheme),
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testAdapter, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
+		ExpectStatusUpdates: []rtesting.Factory{
+			testAdapter.
+				StatusConditions(
+					adapterConditionBuildReady.True(),
+					adapterConditionReady.Unknown(),
+					adapterConditionTargetFound.Unknown(),
+				).
+				StatusLatestImage(testImage),
+		},
 	}, {
 		Name: "adapt container to configuration, configuration is up to date",
 		Key:  testKey,
@@ -643,15 +753,31 @@ func TestAdapterReconciler(t *testing.T) {
 					uc.Image = testImage
 				}),
 		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testAdapter, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
+		ExpectStatusUpdates: []rtesting.Factory{
+			testAdapter.
+				StatusConditions(
+					adapterConditionBuildReady.True(),
+					// TODO the update failed, we should not be reporting as ready
+					adapterConditionReady.True(),
+					adapterConditionTargetFound.True(),
+				).
+				StatusLatestImage(testImage),
+		},
 	}}
 
 	table.Test(t, scheme, func(t *testing.T, row *rtesting.Testcase, client client.Client, tracker tracker.Tracker, recorder record.EventRecorder, log logr.Logger) reconcile.Reconciler {
-		return &knative.AdapterReconciler{
-			Client:   client,
-			Recorder: recorder,
-			Log:      log,
-			Scheme:   scheme,
-			Tracker:  tracker,
-		}
+		return knative.AdapterReconciler(
+			controllers.Config{
+				Client:   client,
+				Recorder: recorder,
+				Log:      log,
+				Scheme:   scheme,
+				Tracker:  tracker,
+			},
+		)
 	})
 }

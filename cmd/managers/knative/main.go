@@ -77,13 +77,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&knativecontrollers.AdapterReconciler{
-		Client:   mgr.GetClient(),
-		Recorder: mgr.GetEventRecorderFor("Adapter"),
-		Log:      ctrl.Log.WithName("controllers").WithName("Adapter"),
-		Scheme:   mgr.GetScheme(),
-		Tracker:  tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("Adapter").WithName("tracker")),
-	}).SetupWithManager(mgr); err != nil {
+	if err = knativecontrollers.AdapterReconciler(
+		controllers.Config{
+			Client:   mgr.GetClient(),
+			Recorder: mgr.GetEventRecorderFor("Adapter"),
+			Log:      ctrl.Log.WithName("controllers").WithName("Adapter"),
+			Scheme:   mgr.GetScheme(),
+			Tracker:  tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("Adapter").WithName("tracker")),
+		},
+	).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Adapter")
 		os.Exit(1)
 	}
