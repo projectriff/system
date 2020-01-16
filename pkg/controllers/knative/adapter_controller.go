@@ -41,30 +41,25 @@ import (
 // +kubebuilder:rbac:groups=serving.knative.dev,resources=configurations;services,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=events,verbs=get;list;watch;create;update;patch;delete
 
-func AdapterReconciler(config controllers.Config) *controllers.ParentReconciler {
+func AdapterReconciler(c controllers.Config) *controllers.ParentReconciler {
+	c.Log = c.Log.WithName("Adapter")
+
 	return &controllers.ParentReconciler{
-		Config:     config,
 		ParentType: &knativev1alpha1.Adapter{},
 		SubReconcilers: []controllers.SubReconciler{
-			AdapterBuildReconciler(config),
-			AdapterTargetReconciler(config),
+			AdapterBuildRefReconciler(c),
+			AdapterTargetRefReconciler(c),
 		},
+
+		Config: c,
 	}
 }
 
-func AdapterBuildReconciler(config controllers.Config) controllers.SubReconciler {
-	var r *controllers.SyncReconciler
-	r = &controllers.SyncReconciler{
-		Config:     config.WithLog(config.Log.WithName("Build")),
-		ParentType: &knativev1alpha1.Adapter{},
+func AdapterBuildRefReconciler(c controllers.Config) controllers.SubReconciler {
+	c.Log = c.Log.WithName("BuildRef")
 
-		Setup: func(mgr manager.Manager, bldr *builder.Builder) error {
-			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Application{}}, controllers.EnqueueTracked(&buildv1alpha1.Application{}, r.Tracker, r.Scheme))
-			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Container{}}, controllers.EnqueueTracked(&buildv1alpha1.Container{}, r.Tracker, r.Scheme))
-			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, controllers.EnqueueTracked(&buildv1alpha1.Function{}, r.Tracker, r.Scheme))
-			return nil
-		},
-
+	return &controllers.SyncReconciler{
+		Type: &knativev1alpha1.Adapter{},
 		Sync: func(ctx context.Context, parent *knativev1alpha1.Adapter) error {
 			build := parent.Spec.Build
 
@@ -73,11 +68,11 @@ func AdapterBuildReconciler(config controllers.Config) controllers.SubReconciler
 				var application buildv1alpha1.Application
 				key := types.NamespacedName{Namespace: parent.Namespace, Name: build.ApplicationRef}
 				// track application for new images
-				r.Tracker.Track(
+				c.Tracker.Track(
 					tracker.NewKey(application.GetGroupVersionKind(), key),
 					types.NamespacedName{Namespace: parent.Namespace, Name: parent.Name},
 				)
-				if err := r.Get(ctx, types.NamespacedName{Namespace: parent.Namespace, Name: build.ApplicationRef}, &application); err != nil {
+				if err := c.Get(ctx, types.NamespacedName{Namespace: parent.Namespace, Name: build.ApplicationRef}, &application); err != nil {
 					if apierrs.IsNotFound(err) {
 						parent.Status.MarkBuildNotFound("application", build.ApplicationRef)
 						return nil
@@ -94,11 +89,11 @@ func AdapterBuildReconciler(config controllers.Config) controllers.SubReconciler
 				var container buildv1alpha1.Container
 				key := types.NamespacedName{Namespace: parent.Namespace, Name: build.ContainerRef}
 				// track container for new images
-				r.Tracker.Track(
+				c.Tracker.Track(
 					tracker.NewKey(container.GetGroupVersionKind(), key),
 					types.NamespacedName{Namespace: parent.Namespace, Name: parent.Name},
 				)
-				if err := r.Get(ctx, key, &container); err != nil {
+				if err := c.Get(ctx, key, &container); err != nil {
 					if apierrs.IsNotFound(err) {
 						parent.Status.MarkBuildNotFound("container", build.ContainerRef)
 						return nil
@@ -115,11 +110,11 @@ func AdapterBuildReconciler(config controllers.Config) controllers.SubReconciler
 				var function buildv1alpha1.Function
 				key := types.NamespacedName{Namespace: parent.Namespace, Name: build.FunctionRef}
 				// track function for new images
-				r.Tracker.Track(
+				c.Tracker.Track(
 					tracker.NewKey(function.GetGroupVersionKind(), key),
 					types.NamespacedName{Namespace: parent.Namespace, Name: parent.Name},
 				)
-				if err := r.Get(ctx, key, &function); err != nil {
+				if err := c.Get(ctx, key, &function); err != nil {
 					if apierrs.IsNotFound(err) {
 						parent.Status.MarkBuildNotFound("function", build.FunctionRef)
 						return nil
@@ -135,22 +130,22 @@ func AdapterBuildReconciler(config controllers.Config) controllers.SubReconciler
 
 			return fmt.Errorf("invalid adapter build")
 		},
-	}
-	return r
-}
 
-func AdapterTargetReconciler(config controllers.Config) controllers.SubReconciler {
-	var r *controllers.SyncReconciler
-	r = &controllers.SyncReconciler{
-		Config:     config.WithLog(config.Log.WithName("Target")),
-		ParentType: &knativev1alpha1.Adapter{},
-
+		Config: c,
 		Setup: func(mgr manager.Manager, bldr *builder.Builder) error {
-			bldr.Watches(&source.Kind{Type: &servingv1.Service{}}, controllers.EnqueueTracked(&servingv1.Service{}, r.Tracker, r.Scheme))
-			bldr.Watches(&source.Kind{Type: &servingv1.Configuration{}}, controllers.EnqueueTracked(&servingv1.Configuration{}, r.Tracker, r.Scheme))
+			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Application{}}, controllers.EnqueueTracked(&buildv1alpha1.Application{}, c.Tracker, c.Scheme))
+			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Container{}}, controllers.EnqueueTracked(&buildv1alpha1.Container{}, c.Tracker, c.Scheme))
+			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, controllers.EnqueueTracked(&buildv1alpha1.Function{}, c.Tracker, c.Scheme))
 			return nil
 		},
+	}
+}
 
+func AdapterTargetRefReconciler(c controllers.Config) controllers.SubReconciler {
+	c.Log = c.Log.WithName("TargetRef")
+
+	return &controllers.SyncReconciler{
+		Type: &knativev1alpha1.Adapter{},
 		Sync: func(ctx context.Context, parent *knativev1alpha1.Adapter) error {
 			if parent.Status.LatestImage == "" {
 				return nil
@@ -163,11 +158,11 @@ func AdapterTargetReconciler(config controllers.Config) controllers.SubReconcile
 				var actualService servingv1.Service
 				key := types.NamespacedName{Namespace: parent.Namespace, Name: target.ServiceRef}
 				// track service for changes
-				r.Tracker.Track(
+				c.Tracker.Track(
 					tracker.NewKey(actualService.GetGroupVersionKind(), key),
 					types.NamespacedName{Namespace: parent.Namespace, Name: parent.Name},
 				)
-				if err := r.Get(ctx, types.NamespacedName{Namespace: parent.Namespace, Name: target.ServiceRef}, &actualService); err != nil {
+				if err := c.Get(ctx, types.NamespacedName{Namespace: parent.Namespace, Name: target.ServiceRef}, &actualService); err != nil {
 					if errors.IsNotFound(err) {
 						parent.Status.MarkTargetNotFound("service", target.ServiceRef)
 						return nil
@@ -184,18 +179,18 @@ func AdapterTargetReconciler(config controllers.Config) controllers.SubReconcile
 				// update service
 				service := *(actualService.DeepCopy())
 				service.Spec.Template.Spec.Containers[0].Image = parent.Status.LatestImage
-				r.Log.Info("reconciling service", "diff", cmp.Diff(actualService.Spec, service.Spec))
-				return r.Update(ctx, &service)
+				c.Log.Info("reconciling service", "diff", cmp.Diff(actualService.Spec, service.Spec))
+				return c.Update(ctx, &service)
 
 			case target.ConfigurationRef != "":
 				var actualConfiguration servingv1.Configuration
 				key := types.NamespacedName{Namespace: parent.Namespace, Name: target.ConfigurationRef}
 				// track configuration for changes
-				r.Tracker.Track(
+				c.Tracker.Track(
 					tracker.NewKey(actualConfiguration.GetGroupVersionKind(), key),
 					types.NamespacedName{Namespace: parent.Namespace, Name: parent.Name},
 				)
-				if err := r.Get(ctx, key, &actualConfiguration); err != nil {
+				if err := c.Get(ctx, key, &actualConfiguration); err != nil {
 					if errors.IsNotFound(err) {
 						parent.Status.MarkTargetNotFound("configuration", target.ConfigurationRef)
 						return nil
@@ -212,13 +207,19 @@ func AdapterTargetReconciler(config controllers.Config) controllers.SubReconcile
 				// update configuration
 				configuration := *(actualConfiguration.DeepCopy())
 				configuration.Spec.Template.Spec.Containers[0].Image = parent.Status.LatestImage
-				r.Log.Info("reconciling configuration", "diff", cmp.Diff(actualConfiguration.Spec, configuration.Spec))
-				return r.Update(ctx, &configuration)
+				c.Log.Info("reconciling configuration", "diff", cmp.Diff(actualConfiguration.Spec, configuration.Spec))
+				return c.Update(ctx, &configuration)
 
 			}
 
 			return fmt.Errorf("invalid adapter target")
 		},
+
+		Config: c,
+		Setup: func(mgr manager.Manager, bldr *builder.Builder) error {
+			bldr.Watches(&source.Kind{Type: &servingv1.Service{}}, controllers.EnqueueTracked(&servingv1.Service{}, c.Tracker, c.Scheme))
+			bldr.Watches(&source.Kind{Type: &servingv1.Configuration{}}, controllers.EnqueueTracked(&servingv1.Configuration{}, c.Tracker, c.Scheme))
+			return nil
+		},
 	}
-	return r
 }

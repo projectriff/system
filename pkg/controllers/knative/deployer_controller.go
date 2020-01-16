@@ -42,125 +42,114 @@ import (
 // +kubebuilder:rbac:groups=serving.knative.dev,resources=configurations;routes,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=events,verbs=get;list;watch;create;update;patch;delete
 
-func DeployerReconciler(config controllers.Config) *controllers.ParentReconciler {
+func DeployerReconciler(c controllers.Config) *controllers.ParentReconciler {
+	c.Log = c.Log.WithName("Deployer")
+
 	return &controllers.ParentReconciler{
-		Config:     config,
 		ParentType: &knativev1alpha1.Deployer{},
 		SubReconcilers: []controllers.SubReconciler{
-			DeployerBuildReconciler(config),
-			DeployerChildConfigurationReconciler(config),
-			DeployerChildRouteReconciler(config),
+			DeployerBuildRefReconciler(c),
+			DeployerChildConfigurationReconciler(c),
+			DeployerChildRouteReconciler(c),
 		},
+
+		Config: c,
 	}
 }
 
-func DeployerBuildReconciler(config controllers.Config) controllers.SubReconciler {
-	var r *controllers.SyncReconciler
+func DeployerBuildRefReconciler(c controllers.Config) controllers.SubReconciler {
+	c.Log = c.Log.WithName("BuildRef")
 
-	resolveBuild := func(ctx context.Context, parent *knativev1alpha1.Deployer) error {
-		build := parent.Spec.Build
-		if build == nil {
-			parent.Status.LatestImage = parent.Spec.Template.Spec.Containers[0].Image
-			return nil
-		}
-
-		switch {
-		case build.ApplicationRef != "":
-			var application buildv1alpha1.Application
-			key := types.NamespacedName{Namespace: parent.Namespace, Name: build.ApplicationRef}
-			// track application for new images
-			r.Tracker.Track(
-				tracker.NewKey(application.GetGroupVersionKind(), key),
-				types.NamespacedName{Namespace: parent.Namespace, Name: parent.Name},
-			)
-			if err := r.Get(ctx, key, &application); err != nil {
-				return err
-			}
-			if application.Status.LatestImage != "" {
-				parent.Status.LatestImage = application.Status.LatestImage
-			}
-			return nil
-
-		case build.ContainerRef != "":
-			var container buildv1alpha1.Container
-			key := types.NamespacedName{Namespace: parent.Namespace, Name: build.ContainerRef}
-			// track container for new images
-			r.Tracker.Track(
-				tracker.NewKey(container.GetGroupVersionKind(), key),
-				types.NamespacedName{Namespace: parent.Namespace, Name: parent.Name},
-			)
-			if err := r.Get(ctx, key, &container); err != nil {
-				return err
-			}
-			if container.Status.LatestImage != "" {
-				parent.Status.LatestImage = container.Status.LatestImage
-			}
-			return nil
-
-		case build.FunctionRef != "":
-			var function buildv1alpha1.Function
-			key := types.NamespacedName{Namespace: parent.Namespace, Name: build.FunctionRef}
-			// track function for new images
-			r.Tracker.Track(
-				tracker.NewKey(function.GetGroupVersionKind(), key),
-				types.NamespacedName{Namespace: parent.Namespace, Name: parent.Name},
-			)
-			if err := r.Get(ctx, key, &function); err != nil {
-				return err
-			}
-			if function.Status.LatestImage != "" {
-				parent.Status.LatestImage = function.Status.LatestImage
-			}
-			return nil
-
-		}
-
-		return fmt.Errorf("invalid build")
-	}
-
-	r = &controllers.SyncReconciler{
-		Config:     config.WithLog(config.Log.WithName("Build")),
-		ParentType: &knativev1alpha1.Deployer{},
-
-		Setup: func(mgr manager.Manager, bldr *builder.Builder) error {
-			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Application{}}, controllers.EnqueueTracked(&buildv1alpha1.Application{}, r.Tracker, r.Scheme))
-			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Container{}}, controllers.EnqueueTracked(&buildv1alpha1.Container{}, r.Tracker, r.Scheme))
-			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, controllers.EnqueueTracked(&buildv1alpha1.Function{}, r.Tracker, r.Scheme))
-			return nil
-		},
-
+	return &controllers.SyncReconciler{
+		Type: &knativev1alpha1.Deployer{},
 		Sync: func(ctx context.Context, parent *knativev1alpha1.Deployer) error {
-			if err := resolveBuild(ctx, parent); err != nil {
-				if apierrs.IsNotFound(err) {
-					// we'll ignore not-found errors, since the reference build resource
-					// may not exist yet.
-					return nil
-				}
-				r.Log.Error(err, "unable to resolve image for Deployer", "deployer", parent)
-				return err
+			build := parent.Spec.Build
+			if build == nil {
+				parent.Status.LatestImage = parent.Spec.Template.Spec.Containers[0].Image
+				return nil
 			}
+
+			switch {
+			case build.ApplicationRef != "":
+				var application buildv1alpha1.Application
+				key := types.NamespacedName{Namespace: parent.Namespace, Name: build.ApplicationRef}
+				// track application for new images
+				c.Tracker.Track(
+					tracker.NewKey(application.GetGroupVersionKind(), key),
+					types.NamespacedName{Namespace: parent.Namespace, Name: parent.Name},
+				)
+				if err := c.Get(ctx, key, &application); err != nil {
+					if apierrs.IsNotFound(err) {
+						return nil
+					}
+					return err
+				}
+				if application.Status.LatestImage != "" {
+					parent.Status.LatestImage = application.Status.LatestImage
+				}
+				return nil
+
+			case build.ContainerRef != "":
+				var container buildv1alpha1.Container
+				key := types.NamespacedName{Namespace: parent.Namespace, Name: build.ContainerRef}
+				// track container for new images
+				c.Tracker.Track(
+					tracker.NewKey(container.GetGroupVersionKind(), key),
+					types.NamespacedName{Namespace: parent.Namespace, Name: parent.Name},
+				)
+				if err := c.Get(ctx, key, &container); err != nil {
+					if apierrs.IsNotFound(err) {
+						return nil
+					}
+					return err
+				}
+				if container.Status.LatestImage != "" {
+					parent.Status.LatestImage = container.Status.LatestImage
+				}
+				return nil
+
+			case build.FunctionRef != "":
+				var function buildv1alpha1.Function
+				key := types.NamespacedName{Namespace: parent.Namespace, Name: build.FunctionRef}
+				// track function for new images
+				c.Tracker.Track(
+					tracker.NewKey(function.GetGroupVersionKind(), key),
+					types.NamespacedName{Namespace: parent.Namespace, Name: parent.Name},
+				)
+				if err := c.Get(ctx, key, &function); err != nil {
+					if apierrs.IsNotFound(err) {
+						return nil
+					}
+					return err
+				}
+				if function.Status.LatestImage != "" {
+					parent.Status.LatestImage = function.Status.LatestImage
+				}
+				return nil
+
+			}
+
+			return fmt.Errorf("invalid build")
+		},
+
+		Config: c,
+		Setup: func(mgr manager.Manager, bldr *builder.Builder) error {
+			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Application{}}, controllers.EnqueueTracked(&buildv1alpha1.Application{}, c.Tracker, c.Scheme))
+			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Container{}}, controllers.EnqueueTracked(&buildv1alpha1.Container{}, c.Tracker, c.Scheme))
+			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, controllers.EnqueueTracked(&buildv1alpha1.Function{}, c.Tracker, c.Scheme))
 			return nil
 		},
 	}
-	return r
 }
 
-func DeployerChildConfigurationReconciler(config controllers.Config) controllers.SubReconciler {
-	var r *controllers.ChildReconciler
-	r = &controllers.ChildReconciler{
-		Config: config.WithLog(config.Log.WithName("Configuration")),
+func DeployerChildConfigurationReconciler(c controllers.Config) controllers.SubReconciler {
+	c.Log = c.Log.WithName("ChildConfiguration")
 
-		IndexField: ".metadata.configurationController",
-
+	return &controllers.ChildReconciler{
 		ParentType:    &knativev1alpha1.Deployer{},
 		ChildType:     &servingv1.Configuration{},
 		ChildListType: &servingv1.ConfigurationList{},
 
-		SemanticEquals: func(a1, a2 *servingv1.Configuration) bool {
-			return equality.Semantic.DeepEqual(a1.Spec, a2.Spec) &&
-				equality.Semantic.DeepEqual(a1.Labels, a2.Labels) &&
-				equality.Semantic.DeepEqual(a1.Annotations, a2.Annotations)
-		},
 		DesiredChild: func(parent *knativev1alpha1.Deployer) (*servingv1.Configuration, error) {
 			if parent.Status.LatestImage == "" {
 				return nil, nil
@@ -213,7 +202,7 @@ func DeployerChildConfigurationReconciler(config controllers.Config) controllers
 			if child == nil {
 				parent.Status.ConfigurationRef = nil
 			} else {
-				parent.Status.ConfigurationRef = refs.NewTypedLocalObjectReferenceForObject(child, r.Scheme)
+				parent.Status.ConfigurationRef = refs.NewTypedLocalObjectReferenceForObject(child, c.Scheme)
 				parent.Status.PropagateConfigurationStatus(&child.Status)
 			}
 		},
@@ -222,28 +211,28 @@ func DeployerChildConfigurationReconciler(config controllers.Config) controllers
 			current.Annotations = desired.Annotations
 			current.Spec = desired.Spec
 		},
+		SemanticEquals: func(a1, a2 *servingv1.Configuration) bool {
+			return equality.Semantic.DeepEqual(a1.Spec, a2.Spec) &&
+				equality.Semantic.DeepEqual(a1.Labels, a2.Labels) &&
+				equality.Semantic.DeepEqual(a1.Annotations, a2.Annotations)
+		},
+
+		Config:     c,
+		IndexField: ".metadata.configurationController",
 		Sanitize: func(child *servingv1.Configuration) interface{} {
 			return child.Spec
 		},
 	}
-	return r
 }
 
-func DeployerChildRouteReconciler(config controllers.Config) controllers.SubReconciler {
-	var r *controllers.ChildReconciler
-	r = &controllers.ChildReconciler{
-		Config: config.WithLog(config.Log.WithName("Route")),
+func DeployerChildRouteReconciler(c controllers.Config) controllers.SubReconciler {
+	c.Log = c.Log.WithName("ChildRoute")
 
-		IndexField: ".metadata.routeController",
-
+	return &controllers.ChildReconciler{
 		ParentType:    &knativev1alpha1.Deployer{},
 		ChildType:     &servingv1.Route{},
 		ChildListType: &servingv1.RouteList{},
 
-		SemanticEquals: func(a1, a2 *servingv1.Route) bool {
-			return equality.Semantic.DeepEqual(a1.Spec, a2.Spec) &&
-				equality.Semantic.DeepEqual(a1.Labels, a2.Labels)
-		},
 		DesiredChild: func(parent *knativev1alpha1.Deployer) (*servingv1.Route, error) {
 			if parent.Status.ConfigurationRef == nil {
 				return nil, nil
@@ -287,7 +276,7 @@ func DeployerChildRouteReconciler(config controllers.Config) controllers.SubReco
 			if child == nil {
 				parent.Status.RouteRef = nil
 			} else {
-				parent.Status.RouteRef = refs.NewTypedLocalObjectReferenceForObject(child, r.Scheme)
+				parent.Status.RouteRef = refs.NewTypedLocalObjectReferenceForObject(child, c.Scheme)
 				parent.Status.PropagateRouteStatus(&child.Status)
 			}
 		},
@@ -295,9 +284,15 @@ func DeployerChildRouteReconciler(config controllers.Config) controllers.SubReco
 			current.Labels = desired.Labels
 			current.Spec = desired.Spec
 		},
+		SemanticEquals: func(a1, a2 *servingv1.Route) bool {
+			return equality.Semantic.DeepEqual(a1.Spec, a2.Spec) &&
+				equality.Semantic.DeepEqual(a1.Labels, a2.Labels)
+		},
+
+		Config:     c,
+		IndexField: ".metadata.routeController",
 		Sanitize: func(child *servingv1.Route) interface{} {
 			return child.Spec
 		},
 	}
-	return r
 }

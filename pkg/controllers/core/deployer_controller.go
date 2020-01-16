@@ -49,125 +49,115 @@ import (
 // +kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=events,verbs=get;list;watch;create;update;patch;delete
 
-func DeployerReconciler(config controllers.Config) *controllers.ParentReconciler {
+func DeployerReconciler(c controllers.Config) *controllers.ParentReconciler {
+	c.Log = c.Log.WithName("Deployer")
+
 	return &controllers.ParentReconciler{
-		Config:     config,
 		ParentType: &corev1alpha1.Deployer{},
 		SubReconcilers: []controllers.SubReconciler{
-			DeployerBuildReconciler(config),
-			DeployerChildDeploymentReconciler(config),
-			DeployerChildServiceReconciler(config),
-			DeployerChildIngressReconciler(config),
+			DeployerBuildRefReconciler(c),
+			DeployerChildDeploymentReconciler(c),
+			DeployerChildServiceReconciler(c),
+			DeployerChildIngressReconciler(c),
 		},
+
+		Config: c,
 	}
 }
 
-func DeployerBuildReconciler(config controllers.Config) controllers.SubReconciler {
-	var r *controllers.SyncReconciler
+func DeployerBuildRefReconciler(c controllers.Config) controllers.SubReconciler {
+	c.Log = c.Log.WithName("BuildRef")
 
-	resolveBuild := func(ctx context.Context, parent *corev1alpha1.Deployer) error {
-		build := parent.Spec.Build
-		if build == nil {
-			parent.Status.LatestImage = parent.Spec.Template.Spec.Containers[0].Image
-			return nil
-		}
-
-		switch {
-		case build.ApplicationRef != "":
-			var application buildv1alpha1.Application
-			key := types.NamespacedName{Namespace: parent.Namespace, Name: build.ApplicationRef}
-			// track application for new images
-			r.Tracker.Track(
-				tracker.NewKey(application.GetGroupVersionKind(), key),
-				types.NamespacedName{Namespace: parent.Namespace, Name: parent.Name},
-			)
-			if err := r.Get(ctx, key, &application); err != nil {
-				return err
-			}
-			if application.Status.LatestImage != "" {
-				parent.Status.LatestImage = application.Status.LatestImage
-			}
-			return nil
-
-		case build.ContainerRef != "":
-			var container buildv1alpha1.Container
-			key := types.NamespacedName{Namespace: parent.Namespace, Name: build.ContainerRef}
-			// track container for new images
-			r.Tracker.Track(
-				tracker.NewKey(container.GetGroupVersionKind(), key),
-				types.NamespacedName{Namespace: parent.Namespace, Name: parent.Name},
-			)
-			if err := r.Get(ctx, key, &container); err != nil {
-				return err
-			}
-			if container.Status.LatestImage != "" {
-				parent.Status.LatestImage = container.Status.LatestImage
-			}
-			return nil
-
-		case build.FunctionRef != "":
-			var function buildv1alpha1.Function
-			key := types.NamespacedName{Namespace: parent.Namespace, Name: build.FunctionRef}
-			// track function for new images
-			r.Tracker.Track(
-				tracker.NewKey(function.GetGroupVersionKind(), key),
-				types.NamespacedName{Namespace: parent.Namespace, Name: parent.Name},
-			)
-			if err := r.Get(ctx, key, &function); err != nil {
-				return err
-			}
-			if function.Status.LatestImage != "" {
-				parent.Status.LatestImage = function.Status.LatestImage
-			}
-			return nil
-
-		}
-
-		return fmt.Errorf("invalid build")
-	}
-
-	r = &controllers.SyncReconciler{
-		Config:     config.WithLog(config.Log.WithName("Build")),
-		ParentType: &corev1alpha1.Deployer{},
-
-		Setup: func(mgr manager.Manager, bldr *builder.Builder) error {
-			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Application{}}, controllers.EnqueueTracked(&buildv1alpha1.Application{}, r.Tracker, r.Scheme))
-			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Container{}}, controllers.EnqueueTracked(&buildv1alpha1.Container{}, r.Tracker, r.Scheme))
-			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, controllers.EnqueueTracked(&buildv1alpha1.Function{}, r.Tracker, r.Scheme))
-			return nil
-		},
-
+	return &controllers.SyncReconciler{
+		Type: &corev1alpha1.Deployer{},
 		Sync: func(ctx context.Context, parent *corev1alpha1.Deployer) error {
-			if err := resolveBuild(ctx, parent); err != nil {
-				if apierrs.IsNotFound(err) {
-					// we'll ignore not-found errors, since the reference build resource
-					// may not exist yet.
-					return nil
-				}
-				r.Log.Error(err, "unable to resolve image for Deployer", "deployer", parent)
-				return err
+			build := parent.Spec.Build
+			if build == nil {
+				parent.Status.LatestImage = parent.Spec.Template.Spec.Containers[0].Image
+				return nil
 			}
+
+			switch {
+			case build.ApplicationRef != "":
+				var application buildv1alpha1.Application
+				key := types.NamespacedName{Namespace: parent.Namespace, Name: build.ApplicationRef}
+				// track application for new images
+				c.Tracker.Track(
+					tracker.NewKey(application.GetGroupVersionKind(), key),
+					types.NamespacedName{Namespace: parent.Namespace, Name: parent.Name},
+				)
+				if err := c.Get(ctx, key, &application); err != nil {
+					if apierrs.IsNotFound(err) {
+						return nil
+					}
+					return err
+				}
+				if application.Status.LatestImage != "" {
+					parent.Status.LatestImage = application.Status.LatestImage
+				}
+				return nil
+
+			case build.ContainerRef != "":
+				var container buildv1alpha1.Container
+				key := types.NamespacedName{Namespace: parent.Namespace, Name: build.ContainerRef}
+				// track container for new images
+				c.Tracker.Track(
+					tracker.NewKey(container.GetGroupVersionKind(), key),
+					types.NamespacedName{Namespace: parent.Namespace, Name: parent.Name},
+				)
+				if err := c.Get(ctx, key, &container); err != nil {
+					if apierrs.IsNotFound(err) {
+						return nil
+					}
+					return err
+				}
+				if container.Status.LatestImage != "" {
+					parent.Status.LatestImage = container.Status.LatestImage
+				}
+				return nil
+
+			case build.FunctionRef != "":
+				var function buildv1alpha1.Function
+				key := types.NamespacedName{Namespace: parent.Namespace, Name: build.FunctionRef}
+				// track function for new images
+				c.Tracker.Track(
+					tracker.NewKey(function.GetGroupVersionKind(), key),
+					types.NamespacedName{Namespace: parent.Namespace, Name: parent.Name},
+				)
+				if err := c.Get(ctx, key, &function); err != nil {
+					if apierrs.IsNotFound(err) {
+						return nil
+					}
+					return err
+				}
+				if function.Status.LatestImage != "" {
+					parent.Status.LatestImage = function.Status.LatestImage
+				}
+				return nil
+
+			}
+
+			return fmt.Errorf("invalid build")
+		},
+
+		Config: c,
+		Setup: func(mgr manager.Manager, bldr *builder.Builder) error {
+			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Application{}}, controllers.EnqueueTracked(&buildv1alpha1.Application{}, c.Tracker, c.Scheme))
+			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Container{}}, controllers.EnqueueTracked(&buildv1alpha1.Container{}, c.Tracker, c.Scheme))
+			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, controllers.EnqueueTracked(&buildv1alpha1.Function{}, c.Tracker, c.Scheme))
 			return nil
 		},
 	}
-	return r
 }
 
-func DeployerChildDeploymentReconciler(config controllers.Config) controllers.SubReconciler {
-	var r *controllers.ChildReconciler
-	r = &controllers.ChildReconciler{
-		Config: config.WithLog(config.Log.WithName("Deployment")),
+func DeployerChildDeploymentReconciler(c controllers.Config) controllers.SubReconciler {
+	c.Log = c.Log.WithName("ChildDeployment")
 
-		IndexField: ".metadata.deploymentController",
-
+	return &controllers.ChildReconciler{
 		ParentType:    &corev1alpha1.Deployer{},
 		ChildType:     &appsv1.Deployment{},
 		ChildListType: &appsv1.DeploymentList{},
 
-		SemanticEquals: func(a1, a2 *appsv1.Deployment) bool {
-			return equality.Semantic.DeepEqual(a1.Spec, a2.Spec) &&
-				equality.Semantic.DeepEqual(a1.Labels, a2.Labels)
-		},
 		DesiredChild: func(parent *corev1alpha1.Deployer) (*appsv1.Deployment, error) {
 			if parent.Status.LatestImage == "" {
 				// no image, skip
@@ -225,7 +215,7 @@ func DeployerChildDeploymentReconciler(config controllers.Config) controllers.Su
 			if child == nil {
 				parent.Status.DeploymentRef = nil
 			} else {
-				parent.Status.DeploymentRef = refs.NewTypedLocalObjectReferenceForObject(child, r.Scheme)
+				parent.Status.DeploymentRef = refs.NewTypedLocalObjectReferenceForObject(child, c.Scheme)
 				parent.Status.PropagateDeploymentStatus(&child.Status)
 			}
 		},
@@ -236,28 +226,27 @@ func DeployerChildDeploymentReconciler(config controllers.Config) controllers.Su
 			current.Labels = desired.Labels
 			current.Spec = desired.Spec
 		},
+		SemanticEquals: func(a1, a2 *appsv1.Deployment) bool {
+			return equality.Semantic.DeepEqual(a1.Spec, a2.Spec) &&
+				equality.Semantic.DeepEqual(a1.Labels, a2.Labels)
+		},
+
+		Config:     c,
+		IndexField: ".metadata.deploymentController",
 		Sanitize: func(child *appsv1.Deployment) interface{} {
 			return child.Spec
 		},
 	}
-	return r
 }
 
-func DeployerChildServiceReconciler(config controllers.Config) controllers.SubReconciler {
-	var r *controllers.ChildReconciler
-	r = &controllers.ChildReconciler{
-		Config: config.WithLog(config.Log.WithName("Service")),
+func DeployerChildServiceReconciler(c controllers.Config) controllers.SubReconciler {
+	c.Log = c.Log.WithName("ChildService")
 
-		IndexField: ".metadata.serviceController",
-
+	return &controllers.ChildReconciler{
 		ParentType:    &corev1alpha1.Deployer{},
 		ChildType:     &corev1.Service{},
 		ChildListType: &corev1.ServiceList{},
 
-		SemanticEquals: func(a1, a2 *corev1.Service) bool {
-			return equality.Semantic.DeepEqual(a1.Spec, a2.Spec) &&
-				equality.Semantic.DeepEqual(a1.Labels, a2.Labels)
-		},
 		DesiredChild: func(parent *corev1alpha1.Deployer) (*corev1.Service, error) {
 			if parent.Status.DeploymentRef == nil {
 				// no deployment, skip
@@ -299,7 +288,7 @@ func DeployerChildServiceReconciler(config controllers.Config) controllers.SubRe
 				parent.Status.ServiceRef = nil
 				parent.Status.Address = nil
 			} else {
-				parent.Status.ServiceRef = refs.NewTypedLocalObjectReferenceForObject(child, r.Scheme)
+				parent.Status.ServiceRef = refs.NewTypedLocalObjectReferenceForObject(child, c.Scheme)
 				parent.Status.Address = &apis.Addressable{URL: fmt.Sprintf("http://%s.%s.%s", child.Name, child.Namespace, "svc.cluster.local")}
 				parent.Status.PropagateServiceStatus(&child.Status)
 			}
@@ -311,32 +300,30 @@ func DeployerChildServiceReconciler(config controllers.Config) controllers.SubRe
 			current.Labels = desired.Labels
 			current.Spec = desired.Spec
 		},
+		SemanticEquals: func(a1, a2 *corev1.Service) bool {
+			return equality.Semantic.DeepEqual(a1.Spec, a2.Spec) &&
+				equality.Semantic.DeepEqual(a1.Labels, a2.Labels)
+		},
+
+		Config:     c,
+		IndexField: ".metadata.serviceController",
 		Sanitize: func(child *corev1.Service) interface{} {
 			return child.Spec
 		},
 	}
-	return r
 }
 
-func DeployerChildIngressReconciler(config controllers.Config) controllers.SubReconciler {
-	var r *controllers.ChildReconciler
-	r = &controllers.ChildReconciler{
-		Config: config.WithLog(config.Log.WithName("Ingress")),
+func DeployerChildIngressReconciler(c controllers.Config) controllers.SubReconciler {
+	c.Log = c.Log.WithName("ChildIngress")
 
-		IndexField: ".metadata.ingressController",
-
+	return &controllers.ChildReconciler{
 		ParentType:    &corev1alpha1.Deployer{},
 		ChildType:     &networkingv1beta1.Ingress{},
 		ChildListType: &networkingv1beta1.IngressList{},
 
 		Setup: func(mgr manager.Manager, bldr *builder.Builder) error {
-			bldr.Watches(&source.Kind{Type: &corev1.ConfigMap{}}, controllers.EnqueueTracked(&corev1.ConfigMap{}, r.Tracker, r.Scheme))
+			bldr.Watches(&source.Kind{Type: &corev1.ConfigMap{}}, controllers.EnqueueTracked(&corev1.ConfigMap{}, c.Tracker, c.Scheme))
 			return nil
-		},
-
-		SemanticEquals: func(a1, a2 *networkingv1beta1.Ingress) bool {
-			return equality.Semantic.DeepEqual(a1.Spec, a2.Spec) &&
-				equality.Semantic.DeepEqual(a1.Labels, a2.Labels)
 		},
 		DesiredChild: func(parent *corev1alpha1.Deployer) (*networkingv1beta1.Ingress, error) {
 			if parent.Status.ServiceRef == nil || parent.Spec.IngressPolicy == corev1alpha1.IngressPolicyClusterLocal {
@@ -348,12 +335,12 @@ func DeployerChildIngressReconciler(config controllers.Config) controllers.SubRe
 			coreSettingsKey := types.NamespacedName{Namespace: systemNamespace, Name: settingsConfigMapName}
 
 			// track config map
-			r.Tracker.Track(
+			c.Tracker.Track(
 				tracker.NewKey(schema.GroupVersionKind{Version: "v1", Kind: "ConfigMap"}, coreSettingsKey),
 				types.NamespacedName{Namespace: parent.Namespace, Name: parent.Name},
 			)
-			if err := r.Get(context.TODO(), coreSettingsKey, coreSettings); err != nil {
-				r.Log.Error(err, fmt.Sprintf("unable to fetch resource with reference: %s", coreSettingsKey.String()))
+			if err := c.Get(context.TODO(), coreSettingsKey, coreSettings); err != nil {
+				c.Log.Error(err, fmt.Sprintf("unable to fetch resource with reference: %s", coreSettingsKey.String()))
 				return nil, err
 			}
 
@@ -403,7 +390,7 @@ func DeployerChildIngressReconciler(config controllers.Config) controllers.SubRe
 					parent.Status.MarkIngressNotRequired()
 				}
 			} else {
-				parent.Status.IngressRef = refs.NewTypedLocalObjectReferenceForObject(child, r.Scheme)
+				parent.Status.IngressRef = refs.NewTypedLocalObjectReferenceForObject(child, c.Scheme)
 				parent.Status.URL = fmt.Sprintf("http://%s", child.Spec.Rules[0].Host)
 				parent.Status.PropagateIngressStatus(&child.Status)
 			}
@@ -412,9 +399,15 @@ func DeployerChildIngressReconciler(config controllers.Config) controllers.SubRe
 			current.Labels = desired.Labels
 			current.Spec = desired.Spec
 		},
+		SemanticEquals: func(a1, a2 *networkingv1beta1.Ingress) bool {
+			return equality.Semantic.DeepEqual(a1.Spec, a2.Spec) &&
+				equality.Semantic.DeepEqual(a1.Labels, a2.Labels)
+		},
+
+		Config:     c,
+		IndexField: ".metadata.ingressController",
 		Sanitize: func(child *networkingv1beta1.Ingress) interface{} {
 			return child.Spec
 		},
 	}
-	return r
 }

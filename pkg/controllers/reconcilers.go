@@ -49,16 +49,6 @@ type Config struct {
 	Tracker  tracker.Tracker
 }
 
-func (c *Config) WithLog(log logr.Logger) Config {
-	return Config{
-		Client:   c.Client,
-		Recorder: c.Recorder,
-		Log:      log,
-		Scheme:   c.Scheme,
-		Tracker:  c.Tracker,
-	}
-}
-
 type ParentReconciler struct {
 	Config
 
@@ -165,19 +155,19 @@ var (
 type SyncReconciler struct {
 	Config
 
-	ParentType apis.Object
-
-	// Sync does whatever work is necessary for the reconciler
-	//
-	// Expected function signature:
-	//     func(ctx context.Context, parent apis.Object) error
-	Sync interface{}
+	Type apis.Object
 
 	// Setup performs initialization on the manager and builder this reconciler
 	// will run with. It's common to setup field indexes and watch resources.
 	//
 	// +optional
 	Setup func(mgr ctrl.Manager, bldr *builder.Builder) error
+
+	// Sync does whatever work is necessary for the reconciler
+	//
+	// Expected function signature:
+	//     func(ctx context.Context, parent apis.Object) error
+	Sync interface{}
 }
 
 func (r *SyncReconciler) SetupWithManager(mgr ctrl.Manager, bldr *builder.Builder) error {
@@ -190,7 +180,7 @@ func (r *SyncReconciler) SetupWithManager(mgr ctrl.Manager, bldr *builder.Builde
 func (r *SyncReconciler) Reconcile(ctx context.Context, parent apis.Object) (ctrl.Result, error) {
 	err := r.sync(ctx, parent)
 	if err != nil {
-		r.Log.Error(err, "unable to sync", typeName(r.ParentType), parent)
+		r.Log.Error(err, "unable to sync", typeName(r.Type), parent)
 		return ctrl.Result{}, err
 	}
 
@@ -213,20 +203,19 @@ func (r *SyncReconciler) sync(ctx context.Context, parent apis.Object) error {
 type ChildReconciler struct {
 	Config
 
-	ParentType    apis.Object
-	ChildType     apis.Object
-	ChildListType runtime.Object
-
 	// IndexField is used to index objects of the child's type based on their
 	// controlling owner. This field needs to be unique within the manager.
 	IndexField string
 
-	// SemanticEquals compares two child resources returning true if there is a
-	// meaningful difference that should trigger an update.
+	ParentType    apis.Object
+	ChildType     apis.Object
+	ChildListType runtime.Object
+
+	// Setup performs initialization on the manager and builder this reconciler
+	// will run with. It's common to setup field indexes and watch resources.
 	//
-	// Expected function signature:
-	//     func(a1, a2 apis.Object) bool
-	SemanticEquals interface{}
+	// +optional
+	Setup func(mgr ctrl.Manager, bldr *builder.Builder) error
 
 	// DesiredChild returns the desired child object for the given parent
 	// object, or nil if the child should not exist.
@@ -261,6 +250,13 @@ type ChildReconciler struct {
 	//     func(current, desired apis.Object)
 	MergeBeforeUpdate interface{}
 
+	// SemanticEquals compares two child resources returning true if there is a
+	// meaningful difference that should trigger an update.
+	//
+	// Expected function signature:
+	//     func(a1, a2 apis.Object) bool
+	SemanticEquals interface{}
+
 	// Sanitize is called with an object before logging the value. Any value may
 	// be returned. A meaningful subset of the resource is typically returned,
 	// like the Spec.
@@ -270,12 +266,6 @@ type ChildReconciler struct {
 	//
 	// +optional
 	Sanitize interface{}
-
-	// Setup performs initialization on the manager and builder this reconciler
-	// will run with. It's common to setup field indexes and watch resources.
-	//
-	// +optional
-	Setup func(mgr ctrl.Manager, bldr *builder.Builder) error
 }
 
 func (r *ChildReconciler) SetupWithManager(mgr ctrl.Manager, bldr *builder.Builder) error {

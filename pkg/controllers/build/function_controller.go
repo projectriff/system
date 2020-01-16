@@ -36,25 +36,27 @@ import (
 // +kubebuilder:rbac:groups=build.pivotal.io,resources=images,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=events,verbs=get;list;watch;create;update;patch;delete
 
-// FunctionReconciler reconciles a Function object
-func FunctionReconciler(config controllers.Config) *controllers.ParentReconciler {
+func FunctionReconciler(c controllers.Config) *controllers.ParentReconciler {
+	c.Log = c.Log.WithName("Function")
+
 	return &controllers.ParentReconciler{
-		Config:     config,
 		ParentType: &buildv1alpha1.Function{},
 		SubReconcilers: []controllers.SubReconciler{
-			FunctionTargetImageReconciler(config),
-			FunctionChildImageReconciler(config),
+			FunctionTargetImageReconciler(c),
+			FunctionChildImageReconciler(c),
 		},
+
+		Config: c,
 	}
 }
 
-func FunctionTargetImageReconciler(config controllers.Config) controllers.SubReconciler {
-	var r *controllers.SyncReconciler
-	r = &controllers.SyncReconciler{
-		Config:     config.WithLog(config.Log.WithName("TargetImage")),
-		ParentType: &buildv1alpha1.Function{},
+func FunctionTargetImageReconciler(c controllers.Config) controllers.SubReconciler {
+	c.Log = c.Log.WithName("TargetImage")
+
+	return &controllers.SyncReconciler{
+		Type: &buildv1alpha1.Function{},
 		Sync: func(ctx context.Context, parent *buildv1alpha1.Function) error {
-			targetImage, err := resolveTargetImage(ctx, r.Client, parent)
+			targetImage, err := resolveTargetImage(ctx, c.Client, parent)
 			if err != nil {
 				if err == errMissingDefaultPrefix {
 					parent.Status.MarkImageDefaultPrefixMissing(err.Error())
@@ -67,15 +69,16 @@ func FunctionTargetImageReconciler(config controllers.Config) controllers.SubRec
 			parent.Status.TargetImage = targetImage
 			return nil
 		},
+
+		Config: c,
 	}
-	return r
 }
 
-func FunctionChildImageReconciler(config controllers.Config) controllers.SubReconciler {
-	var r *controllers.ChildReconciler
-	r = &controllers.ChildReconciler{
-		Config: config.WithLog(config.Log.WithName("Function")),
+func FunctionChildImageReconciler(c controllers.Config) controllers.SubReconciler {
+	c.Log = c.Log.WithName("ChildImage")
 
+	return &controllers.ChildReconciler{
+		Config:     c,
 		IndexField: ".metadata.functionController",
 
 		ParentType:    &buildv1alpha1.Function{},
@@ -122,21 +125,21 @@ func FunctionChildImageReconciler(config controllers.Config) controllers.SubReco
 
 			return child, nil
 		},
-		MergeBeforeUpdate: func(current, desired *kpackbuildv1alpha1.Image) {
-			current.Labels = desired.Labels
-			current.Spec = desired.Spec
-		},
 		ReflectChildStatusOnParent: func(parent *buildv1alpha1.Function, child *kpackbuildv1alpha1.Image, err error) {
 			if child == nil {
 				// TODO resolve to a digest?
 				parent.Status.LatestImage = parent.Status.TargetImage
 				parent.Status.MarkBuildNotUsed()
 			} else {
-				parent.Status.KpackImageRef = refs.NewTypedLocalObjectReferenceForObject(child, r.Scheme)
+				parent.Status.KpackImageRef = refs.NewTypedLocalObjectReferenceForObject(child, c.Scheme)
 				parent.Status.LatestImage = child.Status.LatestImage
 				parent.Status.BuildCacheRef = refs.NewTypedLocalObjectReference(child.Status.BuildCacheName, schema.GroupKind{Kind: "PersistentVolumeClaim"})
 				parent.Status.PropagateKpackImageStatus(&child.Status)
 			}
+		},
+		MergeBeforeUpdate: func(current, desired *kpackbuildv1alpha1.Image) {
+			current.Labels = desired.Labels
+			current.Spec = desired.Spec
 		},
 		SemanticEquals: func(a1, a2 *kpackbuildv1alpha1.Image) bool {
 			return equality.Semantic.DeepEqual(a1.Spec, a2.Spec) &&
@@ -146,5 +149,4 @@ func FunctionChildImageReconciler(config controllers.Config) controllers.SubReco
 			return child.Spec
 		},
 	}
-	return r
 }
