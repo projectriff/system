@@ -97,11 +97,8 @@ func (ds *DeployerStatus) MarkServiceNotOwned(name string) {
 // PropagateIngressStatus update DeployerConditionIngressReady condition
 // in DeployerStatus according to IngressStatus.
 func (ds *DeployerStatus) PropagateIngressStatus(is *networkingv1beta1.IngressStatus) {
-	if len(is.LoadBalancer.Ingress) == 0 {
-		deployerCondSet.Manage(ds).MarkUnknown(DeployerConditionIngressReady, "IngressNotConfigured", "Ingress has not yet been reconciled.")
-	} else {
-		deployerCondSet.Manage(ds).MarkTrue(DeployerConditionIngressReady)
-	}
+	// ingress status is not set reliably
+	deployerCondSet.Manage(ds).MarkTrue(DeployerConditionIngressReady)
 }
 
 func (ds *DeployerStatus) MarkIngressNotRequired() {
