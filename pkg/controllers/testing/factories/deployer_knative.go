@@ -129,6 +129,12 @@ func (f *deployerKnative) IngressPolicy(policy knativev1alpha1.IngressPolicy) *d
 	})
 }
 
+func (f *deployerKnative) ContainerConcurrency(cc int64) *deployerKnative {
+	return f.mutation(func(deployer *knativev1alpha1.Deployer) {
+		deployer.Spec.ContainerConcurrency = &cc
+	})
+}
+
 func (f *deployerKnative) MinScale(scale int32) *deployerKnative {
 	return f.mutation(func(deployer *knativev1alpha1.Deployer) {
 		deployer.Spec.Scale.Min = &scale

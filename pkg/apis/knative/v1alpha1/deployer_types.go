@@ -47,6 +47,9 @@ type DeployerSpec struct {
 	// +optional
 	Build *Build `json:"build,omitempty"`
 
+	// +optional
+	ContainerConcurrency *int64 `json:"containerConcurrency,omitempty"`
+
 	Scale Scale `json:"scale,omitempty"`
 
 	// Template pod

@@ -35,6 +35,10 @@ var (
 	_ validation.FieldValidator = &Deployer{}
 )
 
+const (
+	MaxContainerConcurrency int64 = 1000
+)
+
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 func (r *Deployer) ValidateCreate() error {
 	return r.Validate().ToAggregate()
@@ -86,6 +90,12 @@ func (s DeployerSpec) Validate() validation.FieldErrors {
 
 	if s.IngressPolicy != "" && s.IngressPolicy != IngressPolicyClusterLocal && s.IngressPolicy != IngressPolicyExternal {
 		errs = errs.Also(validation.ErrInvalidValue(s.IngressPolicy, "ingressPolicy"))
+	}
+
+	if s.ContainerConcurrency != nil && *s.ContainerConcurrency < int64(0) {
+		errs = errs.Also(validation.ErrInvalidValue(*s.ContainerConcurrency, "containerConcurrency"))
+	} else if s.ContainerConcurrency != nil && *s.ContainerConcurrency > MaxContainerConcurrency {
+		errs = errs.Also(validation.ErrInvalidValue(*s.ContainerConcurrency, "containerConcurrency"))
 	}
 
 	errs = errs.Also(s.Scale.Validate().ViaField("scale"))

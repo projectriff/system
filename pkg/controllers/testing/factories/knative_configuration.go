@@ -95,6 +95,12 @@ func (f *knativeConfiguration) PodTemplateSpec(nf func(PodTemplateSpec)) *knativ
 	})
 }
 
+func (f *knativeConfiguration) ContainerConcurrency(cc int64) *knativeConfiguration {
+	return f.mutation(func(configuration *knativeservingv1.Configuration) {
+		configuration.Spec.Template.Spec.ContainerConcurrency = &cc
+	})
+}
+
 func (f *knativeConfiguration) UserContainer(cb func(*corev1.Container)) *knativeConfiguration {
 	return f.PodTemplateSpec(func(pts PodTemplateSpec) {
 		pts.ContainerNamed("user-container", cb)

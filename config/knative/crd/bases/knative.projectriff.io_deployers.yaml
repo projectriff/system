@@ -49,6 +49,9 @@ spec:
                 functionRef:
                   type: string
               type: object
+            containerConcurrency:
+              format: int64
+              type: integer
             ingressPolicy:
               type: string
             scale:

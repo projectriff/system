@@ -181,7 +181,8 @@ func DeployerChildConfigurationReconciler(c controllers.Config) controllers.SubR
 							Annotations: annotations,
 						},
 						Spec: servingv1.RevisionSpec{
-							PodSpec: template.Spec,
+							PodSpec:              template.Spec,
+							ContainerConcurrency: parent.Spec.ContainerConcurrency,
 						},
 					},
 				},

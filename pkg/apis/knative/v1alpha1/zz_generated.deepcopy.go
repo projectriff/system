@@ -216,6 +216,11 @@ func (in *DeployerSpec) DeepCopyInto(out *DeployerSpec) {
 		*out = new(Build)
 		**out = **in
 	}
+	if in.ContainerConcurrency != nil {
+		in, out := &in.ContainerConcurrency, &out.ContainerConcurrency
+		*out = new(int64)
+		**out = **in
+	}
 	in.Scale.DeepCopyInto(&out.Scale)
 	if in.Template != nil {
 		in, out := &in.Template, &out.Template
