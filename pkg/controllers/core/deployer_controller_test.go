@@ -897,8 +897,8 @@ func TestDeployerReconciler(t *testing.T) {
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
-					deployerConditionIngressReady.Unknown().Reason("IngressNotConfigured", "Ingress has not yet been reconciled."),
-					deployerConditionReady.Unknown().Reason("IngressNotConfigured", "Ingress has not yet been reconciled."),
+					deployerConditionIngressReady.True(),
+					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.True(),
 				).
 				StatusLatestImage(testImage).
@@ -1052,8 +1052,8 @@ func TestDeployerReconciler(t *testing.T) {
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
-					deployerConditionIngressReady.Unknown().Reason("IngressNotConfigured", "Ingress has not yet been reconciled."),
-					deployerConditionReady.Unknown().Reason("IngressNotConfigured", "Ingress has not yet been reconciled."),
+					deployerConditionIngressReady.True(),
+					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.True(),
 				).
 				StatusLatestImage(testImage).
@@ -1145,8 +1145,8 @@ func TestDeployerReconciler(t *testing.T) {
 			deployerMinimal.
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
-					deployerConditionIngressReady.Unknown().Reason("IngressNotConfigured", "Ingress has not yet been reconciled."),
-					deployerConditionReady.Unknown().Reason("IngressNotConfigured", "Ingress has not yet been reconciled."),
+					deployerConditionIngressReady.True(),
+					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.True(),
 				).
 				StatusLatestImage(testImage).
@@ -1245,8 +1245,8 @@ func TestDeployerReconciler(t *testing.T) {
 				Image(testImage).
 				StatusConditions(
 					deployerConditionDeploymentReady.Unknown(),
-					deployerConditionIngressReady.Unknown().Reason("IngressNotConfigured", "Ingress has not yet been reconciled."),
-					deployerConditionReady.Unknown().Reason("IngressNotConfigured", "Ingress has not yet been reconciled."),
+					deployerConditionIngressReady.True(),
+					deployerConditionReady.Unknown(),
 					deployerConditionServiceReady.True(),
 				).
 				StatusLatestImage(testImage).
