@@ -58,11 +58,11 @@ func (s *PulsarGatewayStatus) PropagateGatewayStatus(gs *GatewayStatus) {
 	}
 	switch {
 	case sc.Status == corev1.ConditionUnknown:
-		pulsarGatewayCondSet.Manage(gs).MarkUnknown(PulsarGatewayConditionGatewayReady, sc.Reason, sc.Message)
+		pulsarGatewayCondSet.Manage(s).MarkUnknown(PulsarGatewayConditionGatewayReady, sc.Reason, sc.Message)
 	case sc.Status == corev1.ConditionTrue:
-		pulsarGatewayCondSet.Manage(gs).MarkTrue(PulsarGatewayConditionGatewayReady)
+		pulsarGatewayCondSet.Manage(s).MarkTrue(PulsarGatewayConditionGatewayReady)
 	case sc.Status == corev1.ConditionFalse:
-		pulsarGatewayCondSet.Manage(gs).MarkFalse(PulsarGatewayConditionGatewayReady, sc.Reason, sc.Message)
+		pulsarGatewayCondSet.Manage(s).MarkFalse(PulsarGatewayConditionGatewayReady, sc.Reason, sc.Message)
 	}
 }
 

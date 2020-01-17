@@ -58,11 +58,11 @@ func (s *KafkaGatewayStatus) PropagateGatewayStatus(gs *GatewayStatus) {
 	}
 	switch {
 	case sc.Status == corev1.ConditionUnknown:
-		kafkaGatewayCondSet.Manage(gs).MarkUnknown(KafkaGatewayConditionGatewayReady, sc.Reason, sc.Message)
+		kafkaGatewayCondSet.Manage(s).MarkUnknown(KafkaGatewayConditionGatewayReady, sc.Reason, sc.Message)
 	case sc.Status == corev1.ConditionTrue:
-		kafkaGatewayCondSet.Manage(gs).MarkTrue(KafkaGatewayConditionGatewayReady)
+		kafkaGatewayCondSet.Manage(s).MarkTrue(KafkaGatewayConditionGatewayReady)
 	case sc.Status == corev1.ConditionFalse:
-		kafkaGatewayCondSet.Manage(gs).MarkFalse(KafkaGatewayConditionGatewayReady, sc.Reason, sc.Message)
+		kafkaGatewayCondSet.Manage(s).MarkFalse(KafkaGatewayConditionGatewayReady, sc.Reason, sc.Message)
 	}
 }
 

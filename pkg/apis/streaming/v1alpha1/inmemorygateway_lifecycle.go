@@ -58,11 +58,11 @@ func (s *InMemoryGatewayStatus) PropagateGatewayStatus(gs *GatewayStatus) {
 	}
 	switch {
 	case sc.Status == corev1.ConditionUnknown:
-		inmemoryGatewayCondSet.Manage(gs).MarkUnknown(InMemoryGatewayConditionGatewayReady, sc.Reason, sc.Message)
+		inmemoryGatewayCondSet.Manage(s).MarkUnknown(InMemoryGatewayConditionGatewayReady, sc.Reason, sc.Message)
 	case sc.Status == corev1.ConditionTrue:
-		inmemoryGatewayCondSet.Manage(gs).MarkTrue(InMemoryGatewayConditionGatewayReady)
+		inmemoryGatewayCondSet.Manage(s).MarkTrue(InMemoryGatewayConditionGatewayReady)
 	case sc.Status == corev1.ConditionFalse:
-		inmemoryGatewayCondSet.Manage(gs).MarkFalse(InMemoryGatewayConditionGatewayReady, sc.Reason, sc.Message)
+		inmemoryGatewayCondSet.Manage(s).MarkFalse(InMemoryGatewayConditionGatewayReady, sc.Reason, sc.Message)
 	}
 }
 
