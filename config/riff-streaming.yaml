@@ -3275,6 +3275,24 @@ webhooks:
     service:
       name: riff-streaming-webhook-service
       namespace: riff-system
+      path: /mutate-streaming-projectriff-io-v1alpha1-gateway
+  failurePolicy: Fail
+  name: gateway.streaming.projectriff.io
+  rules:
+  - apiGroups:
+    - streaming.projectriff.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - gateway
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: riff-streaming-webhook-service
+      namespace: riff-system
       path: /mutate-streaming-projectriff-io-v1alpha1-inmemoryprovider
   failurePolicy: Fail
   name: inmemoryproviders.streaming.projectriff.io
@@ -3490,6 +3508,26 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - streaming.projectriff.io
+  resources:
+  - gateways
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - streaming.projectriff.io
+  resources:
+  - gateways/status
+  verbs:
+  - get
+  - patch
+  - update
 - apiGroups:
   - streaming.projectriff.io
   resources:
@@ -3883,6 +3921,24 @@ metadata:
     component: streaming.projectriff.io
   name: riff-streaming-validating-webhook-configuration
 webhooks:
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: riff-streaming-webhook-service
+      namespace: riff-system
+      path: /validate-streaming-projectriff-io-v1alpha1-gateway
+  failurePolicy: Fail
+  name: gateway.streaming.projectriff.io
+  rules:
+  - apiGroups:
+    - streaming.projectriff.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - gateway
 - clientConfig:
     caBundle: Cg==
     service:

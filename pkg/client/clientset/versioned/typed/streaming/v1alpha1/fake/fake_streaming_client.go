@@ -28,6 +28,10 @@ type FakeStreamingV1alpha1 struct {
 	*testing.Fake
 }
 
+func (c *FakeStreamingV1alpha1) Gateways(namespace string) v1alpha1.GatewayInterface {
+	return &FakeGateways{c, namespace}
+}
+
 func (c *FakeStreamingV1alpha1) InMemoryProviders(namespace string) v1alpha1.InMemoryProviderInterface {
 	return &FakeInMemoryProviders{c, namespace}
 }

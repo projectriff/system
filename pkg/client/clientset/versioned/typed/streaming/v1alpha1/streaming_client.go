@@ -26,6 +26,7 @@ import (
 
 type StreamingV1alpha1Interface interface {
 	RESTClient() rest.Interface
+	GatewaysGetter
 	InMemoryProvidersGetter
 	KafkaProvidersGetter
 	ProcessorsGetter
@@ -36,6 +37,10 @@ type StreamingV1alpha1Interface interface {
 // StreamingV1alpha1Client is used to interact with features provided by the streaming.projectriff.io group.
 type StreamingV1alpha1Client struct {
 	restClient rest.Interface
+}
+
+func (c *StreamingV1alpha1Client) Gateways(namespace string) GatewayInterface {
+	return newGateways(c, namespace)
 }
 
 func (c *StreamingV1alpha1Client) InMemoryProviders(namespace string) InMemoryProviderInterface {

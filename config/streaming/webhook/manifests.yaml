@@ -11,6 +11,24 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
+      path: /mutate-streaming-projectriff-io-v1alpha1-gateway
+  failurePolicy: Fail
+  name: gateway.streaming.projectriff.io
+  rules:
+  - apiGroups:
+    - streaming.projectriff.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - gateway
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: webhook-service
+      namespace: system
       path: /mutate-streaming-projectriff-io-v1alpha1-inmemoryprovider
   failurePolicy: Fail
   name: inmemoryproviders.streaming.projectriff.io
@@ -104,6 +122,24 @@ metadata:
   creationTimestamp: null
   name: validating-webhook-configuration
 webhooks:
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-streaming-projectriff-io-v1alpha1-gateway
+  failurePolicy: Fail
+  name: gateway.streaming.projectriff.io
+  rules:
+  - apiGroups:
+    - streaming.projectriff.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - gateway
 - clientConfig:
     caBundle: Cg==
     service:
