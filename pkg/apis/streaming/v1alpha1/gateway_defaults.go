@@ -19,7 +19,7 @@ import "sigs.k8s.io/controller-runtime/pkg/webhook"
 
 // +kubebuilder:webhook:path=/mutate-streaming-projectriff-io-v1alpha1-gateway,mutating=true,failurePolicy=fail,groups=streaming.projectriff.io,resources=gateway,verbs=create;update,versions=v1alpha1,name=gateway.streaming.projectriff.io
 
-var _ webhook.Defaulter = &KafkaProvider{}
+var _ webhook.Defaulter = &Gateway{}
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type
 func (r *Gateway) Default() {
