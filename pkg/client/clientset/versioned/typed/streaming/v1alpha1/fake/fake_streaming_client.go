@@ -36,6 +36,10 @@ func (c *FakeStreamingV1alpha1) InMemoryProviders(namespace string) v1alpha1.InM
 	return &FakeInMemoryProviders{c, namespace}
 }
 
+func (c *FakeStreamingV1alpha1) KafkaGateways(namespace string) v1alpha1.KafkaGatewayInterface {
+	return &FakeKafkaGateways{c, namespace}
+}
+
 func (c *FakeStreamingV1alpha1) KafkaProviders(namespace string) v1alpha1.KafkaProviderInterface {
 	return &FakeKafkaProviders{c, namespace}
 }

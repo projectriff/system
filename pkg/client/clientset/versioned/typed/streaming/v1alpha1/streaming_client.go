@@ -28,6 +28,7 @@ type StreamingV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	GatewaysGetter
 	InMemoryProvidersGetter
+	KafkaGatewaysGetter
 	KafkaProvidersGetter
 	ProcessorsGetter
 	PulsarProvidersGetter
@@ -45,6 +46,10 @@ func (c *StreamingV1alpha1Client) Gateways(namespace string) GatewayInterface {
 
 func (c *StreamingV1alpha1Client) InMemoryProviders(namespace string) InMemoryProviderInterface {
 	return newInMemoryProviders(c, namespace)
+}
+
+func (c *StreamingV1alpha1Client) KafkaGateways(namespace string) KafkaGatewayInterface {
+	return newKafkaGateways(c, namespace)
 }
 
 func (c *StreamingV1alpha1Client) KafkaProviders(namespace string) KafkaProviderInterface {

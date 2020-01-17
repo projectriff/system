@@ -42,11 +42,72 @@ func GatewayReconciler(c controllers.Config) *controllers.ParentReconciler {
 	return &controllers.ParentReconciler{
 		Type: &streamingv1alpha1.Gateway{},
 		SubReconcilers: []controllers.SubReconciler{
-			GatewayChildDeploymentReconciler(c),
 			GatewayChildServiceReconciler(c),
+			GatewayChildDeploymentReconciler(c),
 		},
 
 		Config: c,
+	}
+}
+
+func GatewayChildServiceReconciler(c controllers.Config) controllers.SubReconciler {
+	c.Log = c.Log.WithName("ChildService")
+
+	return &controllers.ChildReconciler{
+		ParentType:    &streamingv1alpha1.Gateway{},
+		ChildType:     &corev1.Service{},
+		ChildListType: &corev1.ServiceList{},
+
+		DesiredChild: func(parent *streamingv1alpha1.Gateway) (*corev1.Service, error) {
+			child := &corev1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: controllers.MergeMaps(parent.Labels, map[string]string{
+						streamingv1alpha1.GatewayLabelKey: parent.Name,
+					}),
+					Annotations:  make(map[string]string),
+					Namespace:    parent.Namespace,
+					GenerateName: fmt.Sprintf("%s-gateway-", parent.Name),
+				},
+				Spec: corev1.ServiceSpec{
+					Ports: parent.Spec.Ports,
+					Selector: map[string]string{
+						streamingv1alpha1.GatewayLabelKey: parent.Name,
+					},
+				},
+			}
+
+			return child, nil
+		},
+		ReflectChildStatusOnParent: func(parent *streamingv1alpha1.Gateway, child *corev1.Service, err error) {
+			if err != nil {
+				return
+			}
+			if child == nil {
+				parent.Status.ServiceRef = nil
+				parent.Status.Address = nil
+			} else {
+				parent.Status.ServiceRef = refs.NewTypedLocalObjectReferenceForObject(child, c.Scheme)
+				parent.Status.Address = &apis.Addressable{URL: fmt.Sprintf("http://%s.%s.%s", child.Name, child.Namespace, "svc.cluster.local")}
+				parent.Status.PropagateServiceStatus(&child.Status)
+			}
+		},
+		HarmonizeImmutableFields: func(current, desired *corev1.Service) {
+			desired.Spec.ClusterIP = current.Spec.ClusterIP
+		},
+		MergeBeforeUpdate: func(current, desired *corev1.Service) {
+			current.Labels = desired.Labels
+			current.Spec = desired.Spec
+		},
+		SemanticEquals: func(a1, a2 *corev1.Service) bool {
+			return equality.Semantic.DeepEqual(a1.Spec, a2.Spec) &&
+				equality.Semantic.DeepEqual(a1.Labels, a2.Labels)
+		},
+
+		Config:     c,
+		IndexField: ".metadata.serviceController",
+		Sanitize: func(child *corev1.Service) interface{} {
+			return child.Spec
+		},
 	}
 }
 
@@ -59,6 +120,11 @@ func GatewayChildDeploymentReconciler(c controllers.Config) controllers.SubRecon
 		ChildListType: &appsv1.DeploymentList{},
 
 		DesiredChild: func(parent *streamingv1alpha1.Gateway) (*appsv1.Deployment, error) {
+			if parent.Status.ServiceRef == nil {
+				// no service, skip
+				return nil, nil
+			}
+
 			labels := controllers.MergeMaps(parent.Labels, map[string]string{
 				streamingv1alpha1.GatewayLabelKey: parent.Name,
 			})
@@ -111,72 +177,6 @@ func GatewayChildDeploymentReconciler(c controllers.Config) controllers.SubRecon
 		Config:     c,
 		IndexField: ".metadata.deploymentController",
 		Sanitize: func(child *appsv1.Deployment) interface{} {
-			return child.Spec
-		},
-	}
-}
-
-func GatewayChildServiceReconciler(c controllers.Config) controllers.SubReconciler {
-	c.Log = c.Log.WithName("ChildService")
-
-	return &controllers.ChildReconciler{
-		ParentType:    &streamingv1alpha1.Gateway{},
-		ChildType:     &corev1.Service{},
-		ChildListType: &corev1.ServiceList{},
-
-		DesiredChild: func(parent *streamingv1alpha1.Gateway) (*corev1.Service, error) {
-			if parent.Status.DeploymentRef == nil {
-				// no deployment, skip
-				return nil, nil
-			}
-
-			child := &corev1.Service{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: controllers.MergeMaps(parent.Labels, map[string]string{
-						streamingv1alpha1.GatewayLabelKey: parent.Name,
-					}),
-					Annotations:  make(map[string]string),
-					Namespace:    parent.Namespace,
-					GenerateName: fmt.Sprintf("%s-gateway-", parent.Name),
-				},
-				Spec: corev1.ServiceSpec{
-					Ports: parent.Spec.Ports,
-					Selector: map[string]string{
-						streamingv1alpha1.GatewayLabelKey: parent.Name,
-					},
-				},
-			}
-
-			return child, nil
-		},
-		ReflectChildStatusOnParent: func(parent *streamingv1alpha1.Gateway, child *corev1.Service, err error) {
-			if err != nil {
-				return
-			}
-			if child == nil {
-				parent.Status.ServiceRef = nil
-				parent.Status.Address = nil
-			} else {
-				parent.Status.ServiceRef = refs.NewTypedLocalObjectReferenceForObject(child, c.Scheme)
-				parent.Status.Address = &apis.Addressable{URL: fmt.Sprintf("http://%s.%s.%s", child.Name, child.Namespace, "svc.cluster.local")}
-				parent.Status.PropagateServiceStatus(&child.Status)
-			}
-		},
-		HarmonizeImmutableFields: func(current, desired *corev1.Service) {
-			desired.Spec.ClusterIP = current.Spec.ClusterIP
-		},
-		MergeBeforeUpdate: func(current, desired *corev1.Service) {
-			current.Labels = desired.Labels
-			current.Spec = desired.Spec
-		},
-		SemanticEquals: func(a1, a2 *corev1.Service) bool {
-			return equality.Semantic.DeepEqual(a1.Spec, a2.Spec) &&
-				equality.Semantic.DeepEqual(a1.Labels, a2.Labels)
-		},
-
-		Config:     c,
-		IndexField: ".metadata.serviceController",
-		Sanitize: func(child *corev1.Service) interface{} {
 			return child.Spec
 		},
 	}

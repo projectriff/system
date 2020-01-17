@@ -65,6 +65,24 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
+      path: /mutate-streaming-projectriff-io-v1alpha1-kafkaprovider
+  failurePolicy: Fail
+  name: kafkaproviders.streaming.projectriff.io
+  rules:
+  - apiGroups:
+    - streaming.projectriff.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - kafkaproviders
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: webhook-service
+      namespace: system
       path: /mutate-streaming-projectriff-io-v1alpha1-processor
   failurePolicy: Fail
   name: processors.streaming.projectriff.io
@@ -158,6 +176,24 @@ webhooks:
     - UPDATE
     resources:
     - inmemoryproviders
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-streaming-projectriff-io-v1alpha1-kafkaprovider
+  failurePolicy: Fail
+  name: kafkaproviders.streaming.projectriff.io
+  rules:
+  - apiGroups:
+    - streaming.projectriff.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - kafkaproviders
 - clientConfig:
     caBundle: Cg==
     service:

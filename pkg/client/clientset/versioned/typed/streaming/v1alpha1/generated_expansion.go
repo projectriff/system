@@ -21,6 +21,8 @@ type GatewayExpansion interface{}
 
 type InMemoryProviderExpansion interface{}
 
+type KafkaGatewayExpansion interface{}
+
 type KafkaProviderExpansion interface{}
 
 type ProcessorExpansion interface{}

@@ -135,6 +135,26 @@ rules:
 - apiGroups:
   - streaming.projectriff.io
   resources:
+  - kafkagateways
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - streaming.projectriff.io
+  resources:
+  - kafkagateways/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - streaming.projectriff.io
+  resources:
   - kafkaproviders
   verbs:
   - create

@@ -170,6 +170,23 @@ func main() {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Gateway")
 		os.Exit(1)
 	}
+	if err = streamingcontrollers.KafkaGatewayReconciler(
+		controllers.Config{
+			Client:   mgr.GetClient(),
+			Recorder: mgr.GetEventRecorderFor("KafkaGateway"),
+			Log:      ctrl.Log.WithName("controllers").WithName("KafkaGateway"),
+			Scheme:   mgr.GetScheme(),
+			Tracker:  tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("KafkaGateway").WithName("tracker")),
+		},
+		namespace,
+	).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "KafkaGateway")
+		os.Exit(1)
+	}
+	if err = ctrl.NewWebhookManagedBy(mgr).For(&streamingv1alpha1.KafkaGateway{}).Complete(); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "KafkaGateway")
+		os.Exit(1)
+	}
 	// +kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("default", func(_ *http.Request) error { return nil }); err != nil {
