@@ -34,7 +34,7 @@ type FakeKafkaGateways struct {
 	ns   string
 }
 
-var kafkagatewaysResource = schema.GroupVersionResource{Group: "streaming.projectriff.io", Version: "v1alpha1", Resource: "kafkagateways"}
+var kafkagatewaysResource = schema.GroupVersionResource{Group: "streaming.projectriff.io", Version: "v1alpha1", Resource: "kafkagatewaies"}
 
 var kafkagatewaysKind = schema.GroupVersionKind{Group: "streaming.projectriff.io", Version: "v1alpha1", Kind: "KafkaGateway"}
 
