@@ -16,6 +16,8 @@ limitations under the License.
 
 package apis
 
+import "net/url"
+
 // Addressable provides a generic mechanism for a custom resource
 // definition to indicate a destination for message delivery.
 
@@ -25,4 +27,8 @@ package apis
 // +k8s:deepcopy-gen=true
 type Addressable struct {
 	URL string `json:"url,omitempty"`
+}
+
+func (a *Addressable) Parse() (*url.URL, error) {
+	return url.Parse(a.URL)
 }

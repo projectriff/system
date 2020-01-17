@@ -2678,9 +2678,6 @@ spec:
                   - containers
                   type: object
               type: object
-          required:
-          - ports
-          - template
           type: object
         status:
           properties:
@@ -2738,6 +2735,106 @@ spec:
               - kind
               - name
               type: object
+          type: object
+      type: object
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.2.4
+  creationTimestamp: null
+  labels:
+    component: streaming.projectriff.io
+  name: inmemorygateways.streaming.projectriff.io
+spec:
+  additionalPrinterColumns:
+  - JSONPath: .status.conditions[?(@.type=="Ready")].status
+    name: Ready
+    type: string
+  - JSONPath: .status.conditions[?(@.type=="Ready")].reason
+    name: Reason
+    type: string
+  group: streaming.projectriff.io
+  names:
+    categories:
+    - riff
+    kind: InMemoryGateway
+    listKind: InMemoryGatewayList
+    plural: inmemorygateways
+    singular: inmemorygateway
+  scope: Namespaced
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      properties:
+        apiVersion:
+          type: string
+        kind:
+          type: string
+        metadata:
+          type: object
+        spec:
+          type: object
+        status:
+          properties:
+            address:
+              properties:
+                url:
+                  type: string
+              type: object
+            conditions:
+              items:
+                properties:
+                  lastTransitionTime:
+                    type: string
+                  message:
+                    type: string
+                  reason:
+                    type: string
+                  severity:
+                    type: string
+                  status:
+                    type: string
+                  type:
+                    type: string
+                required:
+                - status
+                - type
+                type: object
+              type: array
+            gatewayImage:
+              type: string
+            gatewayRef:
+              properties:
+                apiGroup:
+                  nullable: true
+                  type: string
+                kind:
+                  type: string
+                name:
+                  type: string
+              required:
+              - kind
+              - name
+              type: object
+            observedGeneration:
+              format: int64
+              type: integer
+            provisionerImage:
+              type: string
           type: object
       type: object
   version: v1alpha1
@@ -5890,6 +5987,111 @@ metadata:
   creationTimestamp: null
   labels:
     component: streaming.projectriff.io
+  name: pulsargateways.streaming.projectriff.io
+spec:
+  additionalPrinterColumns:
+  - JSONPath: .status.conditions[?(@.type=="Ready")].status
+    name: Ready
+    type: string
+  - JSONPath: .status.conditions[?(@.type=="Ready")].reason
+    name: Reason
+    type: string
+  group: streaming.projectriff.io
+  names:
+    categories:
+    - riff
+    kind: PulsarGateway
+    listKind: PulsarGatewayList
+    plural: pulsargateways
+    singular: pulsargateway
+  scope: Namespaced
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      properties:
+        apiVersion:
+          type: string
+        kind:
+          type: string
+        metadata:
+          type: object
+        spec:
+          properties:
+            serviceURL:
+              type: string
+          required:
+          - serviceURL
+          type: object
+        status:
+          properties:
+            address:
+              properties:
+                url:
+                  type: string
+              type: object
+            conditions:
+              items:
+                properties:
+                  lastTransitionTime:
+                    type: string
+                  message:
+                    type: string
+                  reason:
+                    type: string
+                  severity:
+                    type: string
+                  status:
+                    type: string
+                  type:
+                    type: string
+                required:
+                - status
+                - type
+                type: object
+              type: array
+            gatewayImage:
+              type: string
+            gatewayRef:
+              properties:
+                apiGroup:
+                  nullable: true
+                  type: string
+                kind:
+                  type: string
+                name:
+                  type: string
+              required:
+              - kind
+              - name
+              type: object
+            observedGeneration:
+              format: int64
+              type: integer
+            provisionerImage:
+              type: string
+          type: object
+      type: object
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.2.4
+  creationTimestamp: null
+  labels:
+    component: streaming.projectriff.io
   name: pulsarproviders.streaming.projectriff.io
 spec:
   additionalPrinterColumns:
@@ -6152,6 +6354,24 @@ webhooks:
     service:
       name: riff-streaming-webhook-service
       namespace: riff-system
+      path: /mutate-streaming-projectriff-io-v1alpha1-inmemorygateway
+  failurePolicy: Fail
+  name: inmemorygateways.streaming.projectriff.io
+  rules:
+  - apiGroups:
+    - streaming.projectriff.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - inmemorygateways
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: riff-streaming-webhook-service
+      namespace: riff-system
       path: /mutate-streaming-projectriff-io-v1alpha1-inmemoryprovider
   failurePolicy: Fail
   name: inmemoryproviders.streaming.projectriff.io
@@ -6170,9 +6390,9 @@ webhooks:
     service:
       name: riff-streaming-webhook-service
       namespace: riff-system
-      path: /mutate-streaming-projectriff-io-v1alpha1-kafkaprovider
+      path: /mutate-streaming-projectriff-io-v1alpha1-kafkagateway
   failurePolicy: Fail
-  name: kafkaproviders.streaming.projectriff.io
+  name: kafkagateways.streaming.projectriff.io
   rules:
   - apiGroups:
     - streaming.projectriff.io
@@ -6182,7 +6402,7 @@ webhooks:
     - CREATE
     - UPDATE
     resources:
-    - kafkaproviders
+    - kafkagateways
 - clientConfig:
     caBundle: Cg==
     service:
@@ -6219,6 +6439,24 @@ webhooks:
     - UPDATE
     resources:
     - processors
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: riff-streaming-webhook-service
+      namespace: riff-system
+      path: /mutate-streaming-projectriff-io-v1alpha1-pulsargateway
+  failurePolicy: Fail
+  name: pulsargateways.streaming.projectriff.io
+  rules:
+  - apiGroups:
+    - streaming.projectriff.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - pulsargateways
 - clientConfig:
     caBundle: Cg==
     service:
@@ -6408,6 +6646,26 @@ rules:
 - apiGroups:
   - streaming.projectriff.io
   resources:
+  - inmemorygateways
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - streaming.projectriff.io
+  resources:
+  - inmemorygateways/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - streaming.projectriff.io
+  resources:
   - inmemoryproviders
   verbs:
   - create
@@ -6481,6 +6739,26 @@ rules:
   - streaming.projectriff.io
   resources:
   - processors/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - streaming.projectriff.io
+  resources:
+  - pulsargateways
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - streaming.projectriff.io
+  resources:
+  - pulsargateways/status
   verbs:
   - get
   - patch
@@ -6841,6 +7119,24 @@ webhooks:
     service:
       name: riff-streaming-webhook-service
       namespace: riff-system
+      path: /validate-streaming-projectriff-io-v1alpha1-inmemorygateway
+  failurePolicy: Fail
+  name: inmemorygateways.streaming.projectriff.io
+  rules:
+  - apiGroups:
+    - streaming.projectriff.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - inmemorygateways
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: riff-streaming-webhook-service
+      namespace: riff-system
       path: /validate-streaming-projectriff-io-v1alpha1-inmemoryprovider
   failurePolicy: Fail
   name: inmemoryproviders.streaming.projectriff.io
@@ -6859,9 +7155,9 @@ webhooks:
     service:
       name: riff-streaming-webhook-service
       namespace: riff-system
-      path: /validate-streaming-projectriff-io-v1alpha1-kafkaprovider
+      path: /validate-streaming-projectriff-io-v1alpha1-kafkagateway
   failurePolicy: Fail
-  name: kafkaproviders.streaming.projectriff.io
+  name: kafkagateways.streaming.projectriff.io
   rules:
   - apiGroups:
     - streaming.projectriff.io
@@ -6871,7 +7167,7 @@ webhooks:
     - CREATE
     - UPDATE
     resources:
-    - kafkaproviders
+    - kafkagateways
 - clientConfig:
     caBundle: Cg==
     service:
@@ -6908,6 +7204,24 @@ webhooks:
     - UPDATE
     resources:
     - processors
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: riff-streaming-webhook-service
+      namespace: riff-system
+      path: /validate-streaming-projectriff-io-v1alpha1-pulsargateway
+  failurePolicy: Fail
+  name: pulsargateways.streaming.projectriff.io
+  rules:
+  - apiGroups:
+    - streaming.projectriff.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - pulsargateways
 - clientConfig:
     caBundle: Cg==
     service:

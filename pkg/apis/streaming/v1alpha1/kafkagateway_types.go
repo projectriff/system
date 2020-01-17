@@ -28,7 +28,7 @@ import (
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 var (
-	KafkaGatewayLabelKey = GroupVersion.Group + "/kafka-gateway" // Identifies all resources originating from a gateway
+	KafkaGatewayLabelKey = GroupVersion.Group + "/kafka-gateway"
 )
 
 var (

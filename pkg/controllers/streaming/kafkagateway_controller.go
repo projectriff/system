@@ -95,6 +95,41 @@ func KafkaGatewayChildGatewayReconciler(c controllers.Config) controllers.SubRec
 				streamingv1alpha1.KafkaGatewayLabelKey: parent.Name,
 			})
 
+			var template *corev1.PodTemplateSpec
+			if parent.Status.Address != nil {
+				gatewayAddress, err := parent.Status.Address.Parse()
+				if err != nil {
+					return nil, err
+				}
+
+				template = &corev1.PodTemplateSpec{
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: labels,
+					},
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{
+							{
+								Name:  "gateway",
+								Image: parent.Status.GatewayImage,
+								Env: []corev1.EnvVar{
+									{Name: "kafka_bootstrapServers", Value: parent.Spec.BootstrapServers},
+									{Name: "storage_positions_type", Value: "MEMORY"},
+									{Name: "storage_records_type", Value: "KAFKA"},
+								},
+							},
+							{
+								Name:  "provisioner",
+								Image: parent.Status.ProvisionerImage,
+								Env: []corev1.EnvVar{
+									{Name: "GATEWAY", Value: fmt.Sprintf("%s:6565", gatewayAddress.Hostname())},
+									{Name: "BROKER", Value: parent.Spec.BootstrapServers},
+								},
+							},
+						},
+					},
+				}
+			}
+
 			child := &streamingv1alpha1.Gateway{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels:      labels,
@@ -103,32 +138,7 @@ func KafkaGatewayChildGatewayReconciler(c controllers.Config) controllers.SubRec
 					Namespace:   parent.Namespace,
 				},
 				Spec: streamingv1alpha1.GatewaySpec{
-					Template: corev1.PodTemplateSpec{
-						ObjectMeta: metav1.ObjectMeta{
-							Labels: labels,
-						},
-						Spec: corev1.PodSpec{
-							Containers: []corev1.Container{
-								{
-									Name:  "gateway",
-									Image: parent.Status.GatewayImage,
-									Env: []corev1.EnvVar{
-										{Name: "kafka_bootstrapServers", Value: parent.Spec.BootstrapServers},
-										{Name: "storage_positions_type", Value: "MEMORY"},
-										{Name: "storage_records_type", Value: "KAFKA"},
-									},
-								},
-								{
-									Name:  "provisioner",
-									Image: parent.Status.ProvisionerImage,
-									Env: []corev1.EnvVar{
-										{Name: "GATEWAY", Value: fmt.Sprintf("%s.%s.svc.cluster.local:6565", parent.Name, parent.Namespace)},
-										{Name: "BROKER", Value: parent.Spec.BootstrapServers},
-									},
-								},
-							},
-						},
-					},
+					Template: template,
 					Ports: []corev1.ServicePort{
 						{Name: "gateway", Port: 6565},
 						{Name: "provisioner", Port: 80, TargetPort: intstr.FromInt(8080)},
@@ -161,7 +171,7 @@ func KafkaGatewayChildGatewayReconciler(c controllers.Config) controllers.SubRec
 		},
 
 		Config:     c,
-		IndexField: ".metadata.gatewayController",
+		IndexField: ".metadata.kafkaGatewayController",
 		Sanitize: func(child *streamingv1alpha1.Gateway) interface{} {
 			return child.Spec
 		},

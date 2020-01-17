@@ -187,6 +187,40 @@ func main() {
 		setupLog.Error(err, "unable to create webhook", "webhook", "KafkaGateway")
 		os.Exit(1)
 	}
+	if err = streamingcontrollers.PulsarGatewayReconciler(
+		controllers.Config{
+			Client:   mgr.GetClient(),
+			Recorder: mgr.GetEventRecorderFor("PulsarGateway"),
+			Log:      ctrl.Log.WithName("controllers").WithName("PulsarGateway"),
+			Scheme:   mgr.GetScheme(),
+			Tracker:  tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("PulsarGateway").WithName("tracker")),
+		},
+		namespace,
+	).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "PulsarGateway")
+		os.Exit(1)
+	}
+	if err = ctrl.NewWebhookManagedBy(mgr).For(&streamingv1alpha1.PulsarGateway{}).Complete(); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "PulsarGateway")
+		os.Exit(1)
+	}
+	if err = streamingcontrollers.InMemoryGatewayReconciler(
+		controllers.Config{
+			Client:   mgr.GetClient(),
+			Recorder: mgr.GetEventRecorderFor("InMemoryGateway"),
+			Log:      ctrl.Log.WithName("controllers").WithName("InMemoryGateway"),
+			Scheme:   mgr.GetScheme(),
+			Tracker:  tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("InMemoryGateway").WithName("tracker")),
+		},
+		namespace,
+	).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "InMemoryGateway")
+		os.Exit(1)
+	}
+	if err = ctrl.NewWebhookManagedBy(mgr).For(&streamingv1alpha1.InMemoryGateway{}).Complete(); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "InMemoryGateway")
+		os.Exit(1)
+	}
 	// +kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("default", func(_ *http.Request) error { return nil }); err != nil {

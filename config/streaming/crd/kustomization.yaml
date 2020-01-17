@@ -10,7 +10,9 @@ resources:
 - bases/streaming.projectriff.io_inmemoryproviders.yaml
 # gateways
 - bases/streaming.projectriff.io_gateways.yaml
+- bases/streaming.projectriff.io_inmemorygateways.yaml
 - bases/streaming.projectriff.io_kafkagateways.yaml
+- bases/streaming.projectriff.io_pulsargateways.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patchesStrategicMerge:
@@ -19,7 +21,9 @@ patchesStrategicMerge:
 #- patches/webhook_in_streams.yaml
 #- patches/webhook_in_processors.yaml
 #- patches/webhook_in_gateways.yaml
+#- patches/webhook_in_inmemorygateways.yaml
 #- patches/webhook_in_kafkagateways.yaml
+#- patches/webhook_in_pulsargateways.yaml
 #- patches/webhook_in_inmemoryproviders.yaml
 #- patches/webhook_in_kafkaproviders.yaml
 #- patches/webhook_in_pulsarproviders.yaml
@@ -30,7 +34,9 @@ patchesStrategicMerge:
 #- patches/cainjection_in_streams.yaml
 #- patches/cainjection_in_processors.yaml
 #- patches/cainjection_in_gateways.yaml
+#- patches/cainjection_in_inmemorygateways.yaml
 #- patches/cainjection_in_kafkagateways.yaml
+#- patches/cainjection_in_pulsargateways.yaml
 #- patches/cainjection_in_inmemoryproviders.yaml
 #- patches/cainjection_in_kafkaproviders.yaml
 #- patches/cainjection_in_pulsarproviders.yaml

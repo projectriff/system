@@ -29,7 +29,7 @@ import (
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 var (
-	GatewayLabelKey = GroupVersion.Group + "/gateway" // Identifies all resources originating from a gateway
+	GatewayLabelKey = GroupVersion.Group + "/gateway"
 )
 
 var (
@@ -41,8 +41,9 @@ type GatewaySpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	Template corev1.PodTemplateSpec `json:"template"`
-	Ports    []corev1.ServicePort   `json:"ports"`
+	// +optional
+	Template *corev1.PodTemplateSpec `json:"template,omitempty"`
+	Ports    []corev1.ServicePort    `json:"ports,omitempty"`
 }
 
 // GatewayStatus defines the observed state of Gateway

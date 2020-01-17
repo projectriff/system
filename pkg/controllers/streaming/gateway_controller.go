@@ -59,6 +59,10 @@ func GatewayChildServiceReconciler(c controllers.Config) controllers.SubReconcil
 		ChildListType: &corev1.ServiceList{},
 
 		DesiredChild: func(parent *streamingv1alpha1.Gateway) (*corev1.Service, error) {
+			if len(parent.Spec.Ports) == 0 {
+				return nil, nil
+			}
+
 			child := &corev1.Service{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: controllers.MergeMaps(parent.Labels, map[string]string{
@@ -120,7 +124,7 @@ func GatewayChildDeploymentReconciler(c controllers.Config) controllers.SubRecon
 		ChildListType: &appsv1.DeploymentList{},
 
 		DesiredChild: func(parent *streamingv1alpha1.Gateway) (*appsv1.Deployment, error) {
-			if parent.Status.ServiceRef == nil {
+			if parent.Status.ServiceRef == nil || parent.Spec.Template == nil {
 				// no service, skip
 				return nil, nil
 			}

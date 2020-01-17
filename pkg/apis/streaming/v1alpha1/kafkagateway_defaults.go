@@ -17,7 +17,7 @@ package v1alpha1
 
 import "sigs.k8s.io/controller-runtime/pkg/webhook"
 
-// +kubebuilder:webhook:path=/mutate-streaming-projectriff-io-v1alpha1-kafkaprovider,mutating=true,failurePolicy=fail,groups=streaming.projectriff.io,resources=kafkaproviders,verbs=create;update,versions=v1alpha1,name=kafkaproviders.streaming.projectriff.io
+// +kubebuilder:webhook:path=/mutate-streaming-projectriff-io-v1alpha1-kafkagateway,mutating=true,failurePolicy=fail,groups=streaming.projectriff.io,resources=kafkagateways,verbs=create;update,versions=v1alpha1,name=kafkagateways.streaming.projectriff.io
 
 var _ webhook.Defaulter = &KafkaGateway{}
 

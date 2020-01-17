@@ -4,4 +4,3 @@ metadata:
   name: franz
 spec:
   bootstrapServers: kafkabroker:9092
-
