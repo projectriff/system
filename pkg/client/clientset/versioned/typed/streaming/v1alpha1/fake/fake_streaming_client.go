@@ -28,8 +28,20 @@ type FakeStreamingV1alpha1 struct {
 	*testing.Fake
 }
 
+func (c *FakeStreamingV1alpha1) Gateways(namespace string) v1alpha1.GatewayInterface {
+	return &FakeGateways{c, namespace}
+}
+
+func (c *FakeStreamingV1alpha1) InMemoryGateways(namespace string) v1alpha1.InMemoryGatewayInterface {
+	return &FakeInMemoryGateways{c, namespace}
+}
+
 func (c *FakeStreamingV1alpha1) InMemoryProviders(namespace string) v1alpha1.InMemoryProviderInterface {
 	return &FakeInMemoryProviders{c, namespace}
+}
+
+func (c *FakeStreamingV1alpha1) KafkaGateways(namespace string) v1alpha1.KafkaGatewayInterface {
+	return &FakeKafkaGateways{c, namespace}
 }
 
 func (c *FakeStreamingV1alpha1) KafkaProviders(namespace string) v1alpha1.KafkaProviderInterface {
@@ -38,6 +50,10 @@ func (c *FakeStreamingV1alpha1) KafkaProviders(namespace string) v1alpha1.KafkaP
 
 func (c *FakeStreamingV1alpha1) Processors(namespace string) v1alpha1.ProcessorInterface {
 	return &FakeProcessors{c, namespace}
+}
+
+func (c *FakeStreamingV1alpha1) PulsarGateways(namespace string) v1alpha1.PulsarGatewayInterface {
+	return &FakePulsarGateways{c, namespace}
 }
 
 func (c *FakeStreamingV1alpha1) PulsarProviders(namespace string) v1alpha1.PulsarProviderInterface {

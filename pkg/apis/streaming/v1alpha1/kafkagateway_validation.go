@@ -24,30 +24,30 @@ import (
 	"github.com/projectriff/system/pkg/validation"
 )
 
-// +kubebuilder:webhook:path=/validate-streaming-projectriff-io-v1alpha1-stream,mutating=false,failurePolicy=fail,groups=streaming.projectriff.io,resources=streams,verbs=create;update,versions=v1alpha1,name=streams.streaming.projectriff.io
+// +kubebuilder:webhook:path=/validate-streaming-projectriff-io-v1alpha1-kafkagateway,mutating=false,failurePolicy=fail,groups=streaming.projectriff.io,resources=kafkagateways,verbs=create;update,versions=v1alpha1,name=kafkagateways.streaming.projectriff.io
 
 var (
-	_ webhook.Validator         = &Stream{}
-	_ validation.FieldValidator = &Stream{}
+	_ webhook.Validator         = &KafkaGateway{}
+	_ validation.FieldValidator = &KafkaGateway{}
 )
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *Stream) ValidateCreate() error {
+func (r *KafkaGateway) ValidateCreate() error {
 	return r.Validate().ToAggregate()
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *Stream) ValidateUpdate(old runtime.Object) error {
+func (r *KafkaGateway) ValidateUpdate(old runtime.Object) error {
 	// TODO check for immutable fields
 	return r.Validate().ToAggregate()
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *Stream) ValidateDelete() error {
+func (r *KafkaGateway) ValidateDelete() error {
 	return nil
 }
 
-func (r *Stream) Validate() validation.FieldErrors {
+func (r *KafkaGateway) Validate() validation.FieldErrors {
 	errs := validation.FieldErrors{}
 
 	errs = errs.Also(r.Spec.Validate().ViaField("spec"))
@@ -55,17 +55,15 @@ func (r *Stream) Validate() validation.FieldErrors {
 	return errs
 }
 
-func (s *StreamSpec) Validate() validation.FieldErrors {
-	if equality.Semantic.DeepEqual(s, &StreamSpec{}) {
+func (s *KafkaGatewaySpec) Validate() validation.FieldErrors {
+	if equality.Semantic.DeepEqual(s, &KafkaGatewaySpec{}) {
 		return validation.ErrMissingField(validation.CurrentField)
 	}
 
 	errs := validation.FieldErrors{}
 
-	if s.DeprecatedProvider == "" && s.Gateway.Name == "" {
-		errs = errs.Also(validation.ErrMissingOneOf("provider", "gateway"))
-	} else if s.DeprecatedProvider != "" && s.Gateway.Name != "" {
-		errs = errs.Also(validation.ErrMultipleOneOf("provider", "gateway"))
+	if s.BootstrapServers == "" {
+		errs = errs.Also(validation.ErrMissingField("bootstrapServers"))
 	}
 
 	return errs

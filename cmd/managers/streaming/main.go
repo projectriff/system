@@ -32,7 +32,8 @@ import (
 
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	streamingv1alpha1 "github.com/projectriff/system/pkg/apis/streaming/v1alpha1"
-	controllers "github.com/projectriff/system/pkg/controllers/streaming"
+	"github.com/projectriff/system/pkg/controllers"
+	streamingcontrollers "github.com/projectriff/system/pkg/controllers/streaming"
 	"github.com/projectriff/system/pkg/tracker"
 	// +kubebuilder:scaffold:imports
 )
@@ -78,7 +79,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controllers.KafkaProviderReconciler{
+	if err = (&streamingcontrollers.KafkaProviderReconciler{
 		Client:    mgr.GetClient(),
 		Recorder:  mgr.GetEventRecorderFor("KafkaProvider"),
 		Log:       ctrl.Log.WithName("controllers").WithName("KafkaProvider"),
@@ -93,7 +94,7 @@ func main() {
 		setupLog.Error(err, "unable to create webhook", "webhook", "KafkaProvider")
 		os.Exit(1)
 	}
-	if err = (&controllers.PulsarProviderReconciler{
+	if err = (&streamingcontrollers.PulsarProviderReconciler{
 		Client:    mgr.GetClient(),
 		Recorder:  mgr.GetEventRecorderFor("PulsarProvider"),
 		Log:       ctrl.Log.WithName("controllers").WithName("PulsarProvider"),
@@ -108,7 +109,7 @@ func main() {
 		setupLog.Error(err, "unable to create webhook", "webhook", "PulsarProvider")
 		os.Exit(1)
 	}
-	if err = (&controllers.InMemoryProviderReconciler{
+	if err = (&streamingcontrollers.InMemoryProviderReconciler{
 		Client:    mgr.GetClient(),
 		Recorder:  mgr.GetEventRecorderFor("InMemoryProvider"),
 		Log:       ctrl.Log.WithName("controllers").WithName("InMemoryProvider"),
@@ -124,12 +125,13 @@ func main() {
 		os.Exit(1)
 	}
 	streamControllerLogger := ctrl.Log.WithName("controllers").WithName("Stream")
-	if err = (&controllers.StreamReconciler{
+	if err = (&streamingcontrollers.StreamReconciler{
 		Client:                  mgr.GetClient(),
 		Recorder:                mgr.GetEventRecorderFor("Stream"),
 		Log:                     streamControllerLogger,
 		Scheme:                  mgr.GetScheme(),
-		StreamProvisionerClient: controllers.NewStreamProvisionerClient(http.DefaultClient, streamControllerLogger),
+		Tracker:                 tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("Stream").WithName("tracker")),
+		StreamProvisionerClient: streamingcontrollers.NewStreamProvisionerClient(http.DefaultClient, streamControllerLogger),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Stream")
 		os.Exit(1)
@@ -138,7 +140,7 @@ func main() {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Stream")
 		os.Exit(1)
 	}
-	if err = (&controllers.ProcessorReconciler{
+	if err = (&streamingcontrollers.ProcessorReconciler{
 		Client:    mgr.GetClient(),
 		Recorder:  mgr.GetEventRecorderFor("Processor"),
 		Log:       ctrl.Log.WithName("controllers").WithName("Processor"),
@@ -151,6 +153,73 @@ func main() {
 	}
 	if err = ctrl.NewWebhookManagedBy(mgr).For(&streamingv1alpha1.Processor{}).Complete(); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Processor")
+		os.Exit(1)
+	}
+	if err = streamingcontrollers.GatewayReconciler(
+		controllers.Config{
+			Client:   mgr.GetClient(),
+			Recorder: mgr.GetEventRecorderFor("Gateway"),
+			Log:      ctrl.Log.WithName("controllers").WithName("Gateway"),
+			Scheme:   mgr.GetScheme(),
+			Tracker:  tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("Gateway").WithName("tracker")),
+		},
+	).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Gateway")
+		os.Exit(1)
+	}
+	if err = ctrl.NewWebhookManagedBy(mgr).For(&streamingv1alpha1.Gateway{}).Complete(); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "Gateway")
+		os.Exit(1)
+	}
+	if err = streamingcontrollers.KafkaGatewayReconciler(
+		controllers.Config{
+			Client:   mgr.GetClient(),
+			Recorder: mgr.GetEventRecorderFor("KafkaGateway"),
+			Log:      ctrl.Log.WithName("controllers").WithName("KafkaGateway"),
+			Scheme:   mgr.GetScheme(),
+			Tracker:  tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("KafkaGateway").WithName("tracker")),
+		},
+		namespace,
+	).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "KafkaGateway")
+		os.Exit(1)
+	}
+	if err = ctrl.NewWebhookManagedBy(mgr).For(&streamingv1alpha1.KafkaGateway{}).Complete(); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "KafkaGateway")
+		os.Exit(1)
+	}
+	if err = streamingcontrollers.PulsarGatewayReconciler(
+		controllers.Config{
+			Client:   mgr.GetClient(),
+			Recorder: mgr.GetEventRecorderFor("PulsarGateway"),
+			Log:      ctrl.Log.WithName("controllers").WithName("PulsarGateway"),
+			Scheme:   mgr.GetScheme(),
+			Tracker:  tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("PulsarGateway").WithName("tracker")),
+		},
+		namespace,
+	).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "PulsarGateway")
+		os.Exit(1)
+	}
+	if err = ctrl.NewWebhookManagedBy(mgr).For(&streamingv1alpha1.PulsarGateway{}).Complete(); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "PulsarGateway")
+		os.Exit(1)
+	}
+	if err = streamingcontrollers.InMemoryGatewayReconciler(
+		controllers.Config{
+			Client:   mgr.GetClient(),
+			Recorder: mgr.GetEventRecorderFor("InMemoryGateway"),
+			Log:      ctrl.Log.WithName("controllers").WithName("InMemoryGateway"),
+			Scheme:   mgr.GetScheme(),
+			Tracker:  tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("InMemoryGateway").WithName("tracker")),
+		},
+		namespace,
+	).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "InMemoryGateway")
+		os.Exit(1)
+	}
+	if err = ctrl.NewWebhookManagedBy(mgr).For(&streamingv1alpha1.InMemoryGateway{}).Complete(); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "InMemoryGateway")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder

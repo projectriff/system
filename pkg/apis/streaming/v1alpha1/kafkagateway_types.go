@@ -17,50 +17,47 @@ limitations under the License.
 package v1alpha1
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	apis "github.com/projectriff/system/pkg/apis"
+	"github.com/projectriff/system/pkg/apis"
+	"github.com/projectriff/system/pkg/refs"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 var (
-	StreamLabelKey = GroupVersion.Group + "/stream"
+	KafkaGatewayLabelKey = GroupVersion.Group + "/kafka-gateway"
 )
 
 var (
-	_ apis.Resource = (*Stream)(nil)
+	_ apis.Resource = (*KafkaGateway)(nil)
 )
 
-// StreamSpec defines the desired state of Stream
-type StreamSpec struct {
+// KafkaGatewaySpec defines the desired state of KafkaGateway
+type KafkaGatewaySpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	DeprecatedProvider string                      `json:"provider"`
-	Gateway            corev1.LocalObjectReference `json:"gateway"`
-	ContentType        string                      `json:"contentType"`
+	// BootstrapServers is a comma-separated list of host and port pairs that are the
+	// addresses of the Kafka brokers in a "bootstrap" Kafka cluster that a Kafka client
+	// connects to initially to bootstrap itself.
+	//
+	// A host and port pair uses `:` as the separator.
+	BootstrapServers string `json:"bootstrapServers"`
 }
 
-// StreamStatus defines the observed state of Stream
-type StreamStatus struct {
+// KafkaGatewayStatus defines the observed state of KafkaGateway
+type KafkaGatewayStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	apis.Status `json:",inline"`
-
-	Binding BindingReference `json:"binding,omitempty"`
-}
-
-type BindingReference struct {
-	// Metadata references a ConfigMap with the binding metadata properties
-	MetadataRef corev1.LocalObjectReference `json:"metadataRef,omitempty"`
-
-	// Secret references a Secret with the binding secret properties
-	SecretRef corev1.LocalObjectReference `json:"secretRef,omitempty"`
+	apis.Status      `json:",inline"`
+	Address          *apis.Addressable               `json:"address,omitempty"`
+	GatewayRef       *refs.TypedLocalObjectReference `json:"gatewayRef,omitempty"`
+	GatewayImage     string                          `json:"gatewayImage,omitempty"`
+	ProvisionerImage string                          `json:"provisionerImage,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -68,35 +65,34 @@ type BindingReference struct {
 // +kubebuilder:resource:categories="riff"
 // +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
 // +kubebuilder:printcolumn:name="Reason",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].reason`
-// +kubebuilder:printcolumn:name="Content-Type",type=string,JSONPath=`.spec.contentType`
 // +genclient
 
-// Stream is the Schema for the streams API
-type Stream struct {
+// KafkaGateway is the Schema for the providers API
+type KafkaGateway struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   StreamSpec   `json:"spec,omitempty"`
-	Status StreamStatus `json:"status,omitempty"`
+	Spec   KafkaGatewaySpec   `json:"spec,omitempty"`
+	Status KafkaGatewayStatus `json:"status,omitempty"`
 }
 
-func (*Stream) GetGroupVersionKind() schema.GroupVersionKind {
-	return SchemeGroupVersion.WithKind("Stream")
+func (*KafkaGateway) GetGroupVersionKind() schema.GroupVersionKind {
+	return SchemeGroupVersion.WithKind("KafkaGateway")
 }
 
-func (s *Stream) GetStatus() apis.ResourceStatus {
-	return &s.Status
+func (p *KafkaGateway) GetStatus() apis.ResourceStatus {
+	return &p.Status
 }
 
 // +kubebuilder:object:root=true
 
-// StreamList contains a list of Stream
-type StreamList struct {
+// KafkaGatewayList contains a list of KafkaGateway
+type KafkaGatewayList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Stream `json:"items"`
+	Items           []KafkaGateway `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&Stream{}, &StreamList{})
+	SchemeBuilder.Register(&KafkaGateway{}, &KafkaGatewayList{})
 }

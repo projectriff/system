@@ -6,7 +6,7 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.2.4
   creationTimestamp: null
-  name: streams.streaming.projectriff.io
+  name: kafkagateways.streaming.projectriff.io
 spec:
   additionalPrinterColumns:
   - JSONPath: .status.conditions[?(@.type=="Ready")].status
@@ -15,17 +15,14 @@ spec:
   - JSONPath: .status.conditions[?(@.type=="Ready")].reason
     name: Reason
     type: string
-  - JSONPath: .spec.contentType
-    name: Content-Type
-    type: string
   group: streaming.projectriff.io
   names:
     categories:
     - riff
-    kind: Stream
-    listKind: StreamList
-    plural: streams
-    singular: stream
+    kind: KafkaGateway
+    listKind: KafkaGatewayList
+    plural: kafkagateways
+    singular: kafkagateway
   scope: Namespaced
   subresources:
     status: {}
@@ -40,34 +37,17 @@ spec:
           type: object
         spec:
           properties:
-            contentType:
-              type: string
-            gateway:
-              properties:
-                name:
-                  type: string
-              type: object
-            provider:
+            bootstrapServers:
               type: string
           required:
-          - contentType
-          - gateway
-          - provider
+          - bootstrapServers
           type: object
         status:
           properties:
-            binding:
+            address:
               properties:
-                metadataRef:
-                  properties:
-                    name:
-                      type: string
-                  type: object
-                secretRef:
-                  properties:
-                    name:
-                      type: string
-                  type: object
+                url:
+                  type: string
               type: object
             conditions:
               items:
@@ -89,9 +69,26 @@ spec:
                 - type
                 type: object
               type: array
+            gatewayImage:
+              type: string
+            gatewayRef:
+              properties:
+                apiGroup:
+                  nullable: true
+                  type: string
+                kind:
+                  type: string
+                name:
+                  type: string
+              required:
+              - kind
+              - name
+              type: object
             observedGeneration:
               format: int64
               type: integer
+            provisionerImage:
+              type: string
           type: object
       type: object
   version: v1alpha1

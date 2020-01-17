@@ -26,9 +26,13 @@ import (
 
 type StreamingV1alpha1Interface interface {
 	RESTClient() rest.Interface
+	GatewaysGetter
+	InMemoryGatewaysGetter
 	InMemoryProvidersGetter
+	KafkaGatewaysGetter
 	KafkaProvidersGetter
 	ProcessorsGetter
+	PulsarGatewaysGetter
 	PulsarProvidersGetter
 	StreamsGetter
 }
@@ -38,8 +42,20 @@ type StreamingV1alpha1Client struct {
 	restClient rest.Interface
 }
 
+func (c *StreamingV1alpha1Client) Gateways(namespace string) GatewayInterface {
+	return newGateways(c, namespace)
+}
+
+func (c *StreamingV1alpha1Client) InMemoryGateways(namespace string) InMemoryGatewayInterface {
+	return newInMemoryGateways(c, namespace)
+}
+
 func (c *StreamingV1alpha1Client) InMemoryProviders(namespace string) InMemoryProviderInterface {
 	return newInMemoryProviders(c, namespace)
+}
+
+func (c *StreamingV1alpha1Client) KafkaGateways(namespace string) KafkaGatewayInterface {
+	return newKafkaGateways(c, namespace)
 }
 
 func (c *StreamingV1alpha1Client) KafkaProviders(namespace string) KafkaProviderInterface {
@@ -48,6 +64,10 @@ func (c *StreamingV1alpha1Client) KafkaProviders(namespace string) KafkaProvider
 
 func (c *StreamingV1alpha1Client) Processors(namespace string) ProcessorInterface {
 	return newProcessors(c, namespace)
+}
+
+func (c *StreamingV1alpha1Client) PulsarGateways(namespace string) PulsarGatewayInterface {
+	return newPulsarGateways(c, namespace)
 }
 
 func (c *StreamingV1alpha1Client) PulsarProviders(namespace string) PulsarProviderInterface {

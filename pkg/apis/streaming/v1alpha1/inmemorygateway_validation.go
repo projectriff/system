@@ -17,37 +17,36 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"k8s.io/apimachinery/pkg/api/equality"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	"github.com/projectriff/system/pkg/validation"
 )
 
-// +kubebuilder:webhook:path=/validate-streaming-projectriff-io-v1alpha1-stream,mutating=false,failurePolicy=fail,groups=streaming.projectriff.io,resources=streams,verbs=create;update,versions=v1alpha1,name=streams.streaming.projectriff.io
+// +kubebuilder:webhook:path=/validate-streaming-projectriff-io-v1alpha1-inmemorygateway,mutating=false,failurePolicy=fail,groups=streaming.projectriff.io,resources=inmemorygateways,verbs=create;update,versions=v1alpha1,name=inmemorygateways.streaming.projectriff.io
 
 var (
-	_ webhook.Validator         = &Stream{}
-	_ validation.FieldValidator = &Stream{}
+	_ webhook.Validator         = &InMemoryGateway{}
+	_ validation.FieldValidator = &InMemoryGateway{}
 )
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *Stream) ValidateCreate() error {
+func (r *InMemoryGateway) ValidateCreate() error {
 	return r.Validate().ToAggregate()
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *Stream) ValidateUpdate(old runtime.Object) error {
+func (r *InMemoryGateway) ValidateUpdate(old runtime.Object) error {
 	// TODO check for immutable fields
 	return r.Validate().ToAggregate()
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *Stream) ValidateDelete() error {
+func (r *InMemoryGateway) ValidateDelete() error {
 	return nil
 }
 
-func (r *Stream) Validate() validation.FieldErrors {
+func (r *InMemoryGateway) Validate() validation.FieldErrors {
 	errs := validation.FieldErrors{}
 
 	errs = errs.Also(r.Spec.Validate().ViaField("spec"))
@@ -55,18 +54,15 @@ func (r *Stream) Validate() validation.FieldErrors {
 	return errs
 }
 
-func (s *StreamSpec) Validate() validation.FieldErrors {
-	if equality.Semantic.DeepEqual(s, &StreamSpec{}) {
-		return validation.ErrMissingField(validation.CurrentField)
-	}
+func (s *InMemoryGatewaySpec) Validate() validation.FieldErrors {
+	// nothing to validate, uncomment when there are fields
+	// if equality.Semantic.DeepEqual(s, &InMemoryGatewaySpec{}) {
+	// 	return validation.ErrMissingField(validation.CurrentField)
+	// }
 
 	errs := validation.FieldErrors{}
 
-	if s.DeprecatedProvider == "" && s.Gateway.Name == "" {
-		errs = errs.Also(validation.ErrMissingOneOf("provider", "gateway"))
-	} else if s.DeprecatedProvider != "" && s.Gateway.Name != "" {
-		errs = errs.Also(validation.ErrMultipleOneOf("provider", "gateway"))
-	}
+	// add validation rules here
 
 	return errs
 }

@@ -1,5 +1,5 @@
 /*
-Copyright 2019 the original author or authors.
+Copyright 2020 the original author or authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -24,30 +24,30 @@ import (
 	"github.com/projectriff/system/pkg/validation"
 )
 
-// +kubebuilder:webhook:path=/validate-streaming-projectriff-io-v1alpha1-stream,mutating=false,failurePolicy=fail,groups=streaming.projectriff.io,resources=streams,verbs=create;update,versions=v1alpha1,name=streams.streaming.projectriff.io
+// +kubebuilder:webhook:path=/validate-streaming-projectriff-io-v1alpha1-gateway,mutating=false,failurePolicy=fail,groups=streaming.projectriff.io,resources=gateway,verbs=create;update,versions=v1alpha1,name=gateways.streaming.projectriff.io
 
 var (
-	_ webhook.Validator         = &Stream{}
-	_ validation.FieldValidator = &Stream{}
+	_ webhook.Validator         = &Gateway{}
+	_ validation.FieldValidator = &Gateway{}
 )
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *Stream) ValidateCreate() error {
+func (r *Gateway) ValidateCreate() error {
 	return r.Validate().ToAggregate()
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *Stream) ValidateUpdate(old runtime.Object) error {
+func (r *Gateway) ValidateUpdate(old runtime.Object) error {
 	// TODO check for immutable fields
 	return r.Validate().ToAggregate()
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *Stream) ValidateDelete() error {
+func (r *Gateway) ValidateDelete() error {
 	return nil
 }
 
-func (r *Stream) Validate() validation.FieldErrors {
+func (r *Gateway) Validate() validation.FieldErrors {
 	errs := validation.FieldErrors{}
 
 	errs = errs.Also(r.Spec.Validate().ViaField("spec"))
@@ -55,18 +55,14 @@ func (r *Stream) Validate() validation.FieldErrors {
 	return errs
 }
 
-func (s *StreamSpec) Validate() validation.FieldErrors {
-	if equality.Semantic.DeepEqual(s, &StreamSpec{}) {
+func (s *GatewaySpec) Validate() validation.FieldErrors {
+	if equality.Semantic.DeepEqual(s, &GatewaySpec{}) {
 		return validation.ErrMissingField(validation.CurrentField)
 	}
 
 	errs := validation.FieldErrors{}
 
-	if s.DeprecatedProvider == "" && s.Gateway.Name == "" {
-		errs = errs.Also(validation.ErrMissingOneOf("provider", "gateway"))
-	} else if s.DeprecatedProvider != "" && s.Gateway.Name != "" {
-		errs = errs.Also(validation.ErrMultipleOneOf("provider", "gateway"))
-	}
+	// TODO validate
 
 	return errs
 }

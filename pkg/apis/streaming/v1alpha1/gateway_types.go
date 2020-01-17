@@ -1,5 +1,5 @@
 /*
-Copyright 2019 the original author or authors.
+Copyright 2020 the original author or authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,46 +21,40 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	apis "github.com/projectriff/system/pkg/apis"
+	"github.com/projectriff/system/pkg/apis"
+	"github.com/projectriff/system/pkg/refs"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 var (
-	StreamLabelKey = GroupVersion.Group + "/stream"
+	GatewayLabelKey = GroupVersion.Group + "/gateway"
 )
 
 var (
-	_ apis.Resource = (*Stream)(nil)
+	_ apis.Resource = (*Gateway)(nil)
 )
 
-// StreamSpec defines the desired state of Stream
-type StreamSpec struct {
+// GatewaySpec defines the desired state of Gateway
+type GatewaySpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	DeprecatedProvider string                      `json:"provider"`
-	Gateway            corev1.LocalObjectReference `json:"gateway"`
-	ContentType        string                      `json:"contentType"`
+	// +optional
+	Template *corev1.PodTemplateSpec `json:"template,omitempty"`
+	Ports    []corev1.ServicePort    `json:"ports,omitempty"`
 }
 
-// StreamStatus defines the observed state of Stream
-type StreamStatus struct {
+// GatewayStatus defines the observed state of Gateway
+type GatewayStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	apis.Status `json:",inline"`
-
-	Binding BindingReference `json:"binding,omitempty"`
-}
-
-type BindingReference struct {
-	// Metadata references a ConfigMap with the binding metadata properties
-	MetadataRef corev1.LocalObjectReference `json:"metadataRef,omitempty"`
-
-	// Secret references a Secret with the binding secret properties
-	SecretRef corev1.LocalObjectReference `json:"secretRef,omitempty"`
+	apis.Status   `json:",inline"`
+	Address       *apis.Addressable               `json:"address,omitempty"`
+	DeploymentRef *refs.TypedLocalObjectReference `json:"deploymentRef,omitempty"`
+	ServiceRef    *refs.TypedLocalObjectReference `json:"serviceRef,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -68,35 +62,34 @@ type BindingReference struct {
 // +kubebuilder:resource:categories="riff"
 // +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
 // +kubebuilder:printcolumn:name="Reason",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].reason`
-// +kubebuilder:printcolumn:name="Content-Type",type=string,JSONPath=`.spec.contentType`
 // +genclient
 
-// Stream is the Schema for the streams API
-type Stream struct {
+// Gateway is the Schema for the providers API
+type Gateway struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   StreamSpec   `json:"spec,omitempty"`
-	Status StreamStatus `json:"status,omitempty"`
+	Spec   GatewaySpec   `json:"spec,omitempty"`
+	Status GatewayStatus `json:"status,omitempty"`
 }
 
-func (*Stream) GetGroupVersionKind() schema.GroupVersionKind {
-	return SchemeGroupVersion.WithKind("Stream")
+func (*Gateway) GetGroupVersionKind() schema.GroupVersionKind {
+	return SchemeGroupVersion.WithKind("Gateway")
 }
 
-func (s *Stream) GetStatus() apis.ResourceStatus {
-	return &s.Status
+func (g *Gateway) GetStatus() apis.ResourceStatus {
+	return &g.Status
 }
 
 // +kubebuilder:object:root=true
 
-// StreamList contains a list of Stream
-type StreamList struct {
+// GatewayList contains a list of Gateway
+type GatewayList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Stream `json:"items"`
+	Items           []Gateway `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&Stream{}, &StreamList{})
+	SchemeBuilder.Register(&Gateway{}, &GatewayList{})
 }

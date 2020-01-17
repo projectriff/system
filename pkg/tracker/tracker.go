@@ -119,7 +119,7 @@ func (i *impl) Lookup(ref Key) []types.NamespacedName {
 	defer i.m.Unlock()
 	s, ok := i.mapping[ref.String()]
 	if !ok {
-		i.log.V(1).Info("no tracked items found", "ref", ref.String())
+		i.log.V(2).Info("no tracked items found", "ref", ref.String())
 		return items
 	}
 
