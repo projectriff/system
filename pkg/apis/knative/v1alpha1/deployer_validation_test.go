@@ -63,6 +63,8 @@ func TestValidateDeployer(t *testing.T) {
 
 func TestValidateDeployerSpec(t *testing.T) {
 	negativeOne := int32(-1)
+	negativeNumber := int64(-1)
+	bigNumber := MaxContainerConcurrency + 1
 
 	for _, c := range []struct {
 		name     string
@@ -128,6 +130,32 @@ func TestValidateDeployerSpec(t *testing.T) {
 			IngressPolicy: "bogus",
 		},
 		expected: validation.ErrInvalidValue(IngressPolicy("bogus"), "ingressPolicy"),
+	}, {
+		name: "invalid, negative container concurrency",
+		target: &DeployerSpec{
+			Template: &corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{Image: "my-image"},
+					},
+				},
+			},
+			ContainerConcurrency: &negativeNumber,
+		},
+		expected: validation.ErrInvalidValue(negativeNumber, "containerConcurrency"),
+	}, {
+		name: "invalid, container concurrency exceeds maximum",
+		target: &DeployerSpec{
+			Template: &corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{Image: "my-image"},
+					},
+				},
+			},
+			ContainerConcurrency: &bigNumber,
+		},
+		expected: validation.ErrInvalidValue(bigNumber, "containerConcurrency"),
 	}, {
 		name: "invalid, negative minScale",
 		target: &DeployerSpec{

@@ -1003,6 +1003,37 @@ func TestDeployerReconciler(t *testing.T) {
 				StatusRouteRef(testRouteGiven.Create().GetName()),
 		},
 	}, {
+		Name: "update knative resources, with container concurrency",
+		Key:  testKey,
+		GivenObjects: []rtesting.Factory{
+			testDeployer.
+				Image(testImage).
+				ContainerConcurrency(1),
+			testConfigurationGiven,
+			testRouteGiven,
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "Updated",
+				`Updated Configuration "%s"`, testConfigurationGiven.Create().GetName()),
+			rtesting.NewEvent(testDeployer, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
+		ExpectUpdates: []rtesting.Factory{
+			testConfigurationGiven.
+				ContainerConcurrency(1),
+		},
+		ExpectStatusUpdates: []rtesting.Factory{
+			testDeployer.
+				StatusConditions(
+					deployerConditionConfigurationReady.Unknown(),
+					deployerConditionReady.Unknown(),
+					deployerConditionRouteReady.Unknown(),
+				).
+				StatusLatestImage(testImage).
+				StatusConfigurationRef(testConfigurationGiven.Create().GetName()).
+				StatusRouteRef(testRouteGiven.Create().GetName()),
+		},
+	}, {
 		Name: "update knative resources, with scale",
 		Key:  testKey,
 		GivenObjects: []rtesting.Factory{
