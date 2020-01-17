@@ -39,7 +39,7 @@ func ApplicationReconciler(c controllers.Config) *controllers.ParentReconciler {
 	c.Log = c.Log.WithName("Application")
 
 	return &controllers.ParentReconciler{
-		ParentType: &buildv1alpha1.Application{},
+		Type: &buildv1alpha1.Application{},
 		SubReconcilers: []controllers.SubReconciler{
 			ApplicationTargetImageReconciler(c),
 			ApplicationChildImageReconciler(c),
@@ -53,7 +53,6 @@ func ApplicationTargetImageReconciler(c controllers.Config) controllers.SubRecon
 	c.Log = c.Log.WithName("TargetImage")
 
 	return &controllers.SyncReconciler{
-		Type: &buildv1alpha1.Application{},
 		Sync: func(ctx context.Context, parent *buildv1alpha1.Application) error {
 			targetImage, err := resolveTargetImage(ctx, c.Client, parent)
 			if err != nil {

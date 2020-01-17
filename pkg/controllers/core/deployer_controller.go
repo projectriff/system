@@ -29,8 +29,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"sigs.k8s.io/controller-runtime/pkg/builder"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/projectriff/system/pkg/apis"
@@ -53,7 +51,7 @@ func DeployerReconciler(c controllers.Config) *controllers.ParentReconciler {
 	c.Log = c.Log.WithName("Deployer")
 
 	return &controllers.ParentReconciler{
-		ParentType: &corev1alpha1.Deployer{},
+		Type: &corev1alpha1.Deployer{},
 		SubReconcilers: []controllers.SubReconciler{
 			DeployerBuildRefReconciler(c),
 			DeployerChildDeploymentReconciler(c),
@@ -69,7 +67,6 @@ func DeployerBuildRefReconciler(c controllers.Config) controllers.SubReconciler 
 	c.Log = c.Log.WithName("BuildRef")
 
 	return &controllers.SyncReconciler{
-		Type: &corev1alpha1.Deployer{},
 		Sync: func(ctx context.Context, parent *corev1alpha1.Deployer) error {
 			build := parent.Spec.Build
 			if build == nil {
@@ -141,7 +138,7 @@ func DeployerBuildRefReconciler(c controllers.Config) controllers.SubReconciler 
 		},
 
 		Config: c,
-		Setup: func(mgr manager.Manager, bldr *builder.Builder) error {
+		Setup: func(mgr controllers.Manager, bldr *controllers.Builder) error {
 			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Application{}}, controllers.EnqueueTracked(&buildv1alpha1.Application{}, c.Tracker, c.Scheme))
 			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Container{}}, controllers.EnqueueTracked(&buildv1alpha1.Container{}, c.Tracker, c.Scheme))
 			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, controllers.EnqueueTracked(&buildv1alpha1.Function{}, c.Tracker, c.Scheme))
@@ -321,7 +318,7 @@ func DeployerChildIngressReconciler(c controllers.Config) controllers.SubReconci
 		ChildType:     &networkingv1beta1.Ingress{},
 		ChildListType: &networkingv1beta1.IngressList{},
 
-		Setup: func(mgr manager.Manager, bldr *builder.Builder) error {
+		Setup: func(mgr controllers.Manager, bldr *controllers.Builder) error {
 			bldr.Watches(&source.Kind{Type: &corev1.ConfigMap{}}, controllers.EnqueueTracked(&corev1.ConfigMap{}, c.Tracker, c.Scheme))
 			return nil
 		},

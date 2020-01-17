@@ -41,6 +41,8 @@ var (
 	_ reconcile.Reconciler = (*ParentReconciler)(nil)
 )
 
+// Config holds common resources for controllers. The configuration may be
+// passed to sub-reconcilers.
 type Config struct {
 	client.Client
 	Recorder record.EventRecorder
@@ -49,16 +51,24 @@ type Config struct {
 	Tracker  tracker.Tracker
 }
 
+// ParentReconciler is a controller-runtime reconciler that reconciles a given
+// existing resource. The ParentType resource is fetched for the reconciler
+// request and passed in turn to each SubReconciler. Finally, the reconciled
+// resource's status is compared with the original status, updating the API
+// server if needed.
 type ParentReconciler struct {
-	Config
+	// Type of resource to reconcile
+	Type runtime.Object
 
-	ParentType runtime.Object
-
+	// SubReconcilers are called in order for each reconciler request. If a sub
+	// reconciler errs, further sub reconcilers are skipped.
 	SubReconcilers []SubReconciler
+
+	Config
 }
 
 func (r *ParentReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	bldr := ctrl.NewControllerManagedBy(mgr).For(r.ParentType)
+	bldr := ctrl.NewControllerManagedBy(mgr).For(r.Type)
 	for _, reconciler := range r.SubReconcilers {
 		err := reconciler.SetupWithManager(mgr, bldr)
 		if err != nil {
@@ -72,7 +82,7 @@ func (r *ParentReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 	log := r.Log.WithValues("request", req.NamespacedName)
 
-	originalParent := r.ParentType.DeepCopyObject().(apis.Object)
+	originalParent := r.Type.DeepCopyObject().(apis.Object)
 
 	if err := r.Get(ctx, req.NamespacedName, originalParent); err != nil {
 		if apierrs.IsNotFound(err) {
@@ -102,7 +112,7 @@ func (r *ParentReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		// update status
 		log.Info("updating status", "diff", cmp.Diff(r.status(originalParent), r.status(parent)))
 		if updateErr := r.Status().Update(ctx, parent); updateErr != nil {
-			log.Error(updateErr, "unable to update status", typeName(r.ParentType), parent)
+			log.Error(updateErr, "unable to update status", typeName(r.Type), parent)
 			r.Recorder.Eventf(parent, corev1.EventTypeWarning, "StatusUpdateFailed",
 				"Failed to update status: %v", updateErr)
 			return ctrl.Result{}, updateErr
@@ -142,6 +152,9 @@ func (r *ParentReconciler) status(obj apis.Object) interface{} {
 	return reflect.ValueOf(obj).Elem().FieldByName("Status").Addr().Interface()
 }
 
+// SubReconciler are participants in a larger reconciler request. The resource
+// being reconciled is passed directly to the sub reconciler. The resource's
+// status can be mutated to reflect the current state.
 type SubReconciler interface {
 	SetupWithManager(mgr ctrl.Manager, bldr *builder.Builder) error
 	Reconcile(ctx context.Context, parent apis.Object) (ctrl.Result, error)
@@ -152,11 +165,9 @@ var (
 	_ SubReconciler = (*ChildReconciler)(nil)
 )
 
+// SyncReconciler is a sub reconciler for custom reconciliation logic. No
+// behavior is defined directly.
 type SyncReconciler struct {
-	Config
-
-	Type apis.Object
-
 	// Setup performs initialization on the manager and builder this reconciler
 	// will run with. It's common to setup field indexes and watch resources.
 	//
@@ -168,6 +179,8 @@ type SyncReconciler struct {
 	// Expected function signature:
 	//     func(ctx context.Context, parent apis.Object) error
 	Sync interface{}
+
+	Config
 }
 
 func (r *SyncReconciler) SetupWithManager(mgr ctrl.Manager, bldr *builder.Builder) error {
@@ -180,7 +193,7 @@ func (r *SyncReconciler) SetupWithManager(mgr ctrl.Manager, bldr *builder.Builde
 func (r *SyncReconciler) Reconcile(ctx context.Context, parent apis.Object) (ctrl.Result, error) {
 	err := r.sync(ctx, parent)
 	if err != nil {
-		r.Log.Error(err, "unable to sync", typeName(r.Type), parent)
+		r.Log.Error(err, "unable to sync", typeName(parent), parent)
 		return ctrl.Result{}, err
 	}
 
@@ -200,15 +213,33 @@ func (r *SyncReconciler) sync(ctx context.Context, parent apis.Object) error {
 	return err
 }
 
+// ChildReconciler is a sub reconciler that manages a single child resource for
+// a parent. The reconciler will ensure that exactly one child will match the
+// desired state by:
+// - creating a child if none exists
+// - updating an existing child
+// - removing an unneeded child
+// - removing extra children
+//
+// The flow for each reconciliation request is:
+// - DesiredChild
+// - if child is desired:
+//    - HarmonizeImmutableFields (optional)
+//    - SemanticEquals
+//    - MergeBeforeUpdate
+// - ReflectChildStatusOnParent
+//
+// During setup, the child resource type is registered to watch for changes. A
+// field indexer is configured for the owner on the IndexField.
 type ChildReconciler struct {
-	Config
-
-	// IndexField is used to index objects of the child's type based on their
-	// controlling owner. This field needs to be unique within the manager.
-	IndexField string
-
-	ParentType    apis.Object
-	ChildType     apis.Object
+	// ParentType of resource to reconcile
+	ParentType apis.Object
+	// ChildType is the resource being created/updated/deleted by the
+	// reconciler. For example, a parent Deployment would have a ReplicaSet as a
+	// child.
+	ChildType apis.Object
+	// ChildListType is the listing type for the child type. For example,
+	// PodList is the list type for Pod
 	ChildListType runtime.Object
 
 	// Setup performs initialization on the manager and builder this reconciler
@@ -266,6 +297,12 @@ type ChildReconciler struct {
 	//
 	// +optional
 	Sanitize interface{}
+
+	Config
+
+	// IndexField is used to index objects of the child's type based on their
+	// controlling owner. This field needs to be unique within the manager.
+	IndexField string
 }
 
 func (r *ChildReconciler) SetupWithManager(mgr ctrl.Manager, bldr *builder.Builder) error {
@@ -485,6 +522,8 @@ func typeName(i interface{}) string {
 	return t.Name()
 }
 
+// MergeMaps flattens a sequence of maps into a single map. Keys in latter maps
+// overwrite previous keys. None of the arguments are mutated.
 func MergeMaps(maps ...map[string]string) map[string]string {
 	out := map[string]string{}
 	for _, m := range maps {

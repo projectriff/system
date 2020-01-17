@@ -24,8 +24,6 @@ import (
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/builder"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
@@ -46,7 +44,7 @@ func DeployerReconciler(c controllers.Config) *controllers.ParentReconciler {
 	c.Log = c.Log.WithName("Deployer")
 
 	return &controllers.ParentReconciler{
-		ParentType: &knativev1alpha1.Deployer{},
+		Type: &knativev1alpha1.Deployer{},
 		SubReconcilers: []controllers.SubReconciler{
 			DeployerBuildRefReconciler(c),
 			DeployerChildConfigurationReconciler(c),
@@ -61,7 +59,6 @@ func DeployerBuildRefReconciler(c controllers.Config) controllers.SubReconciler 
 	c.Log = c.Log.WithName("BuildRef")
 
 	return &controllers.SyncReconciler{
-		Type: &knativev1alpha1.Deployer{},
 		Sync: func(ctx context.Context, parent *knativev1alpha1.Deployer) error {
 			build := parent.Spec.Build
 			if build == nil {
@@ -133,7 +130,7 @@ func DeployerBuildRefReconciler(c controllers.Config) controllers.SubReconciler 
 		},
 
 		Config: c,
-		Setup: func(mgr manager.Manager, bldr *builder.Builder) error {
+		Setup: func(mgr controllers.Manager, bldr *controllers.Builder) error {
 			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Application{}}, controllers.EnqueueTracked(&buildv1alpha1.Application{}, c.Tracker, c.Scheme))
 			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Container{}}, controllers.EnqueueTracked(&buildv1alpha1.Container{}, c.Tracker, c.Scheme))
 			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, controllers.EnqueueTracked(&buildv1alpha1.Function{}, c.Tracker, c.Scheme))

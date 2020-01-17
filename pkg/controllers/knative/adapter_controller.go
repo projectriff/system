@@ -24,8 +24,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/builder"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
@@ -45,7 +43,7 @@ func AdapterReconciler(c controllers.Config) *controllers.ParentReconciler {
 	c.Log = c.Log.WithName("Adapter")
 
 	return &controllers.ParentReconciler{
-		ParentType: &knativev1alpha1.Adapter{},
+		Type: &knativev1alpha1.Adapter{},
 		SubReconcilers: []controllers.SubReconciler{
 			AdapterBuildRefReconciler(c),
 			AdapterTargetRefReconciler(c),
@@ -59,7 +57,6 @@ func AdapterBuildRefReconciler(c controllers.Config) controllers.SubReconciler {
 	c.Log = c.Log.WithName("BuildRef")
 
 	return &controllers.SyncReconciler{
-		Type: &knativev1alpha1.Adapter{},
 		Sync: func(ctx context.Context, parent *knativev1alpha1.Adapter) error {
 			build := parent.Spec.Build
 
@@ -132,7 +129,7 @@ func AdapterBuildRefReconciler(c controllers.Config) controllers.SubReconciler {
 		},
 
 		Config: c,
-		Setup: func(mgr manager.Manager, bldr *builder.Builder) error {
+		Setup: func(mgr controllers.Manager, bldr *controllers.Builder) error {
 			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Application{}}, controllers.EnqueueTracked(&buildv1alpha1.Application{}, c.Tracker, c.Scheme))
 			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Container{}}, controllers.EnqueueTracked(&buildv1alpha1.Container{}, c.Tracker, c.Scheme))
 			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, controllers.EnqueueTracked(&buildv1alpha1.Function{}, c.Tracker, c.Scheme))
@@ -145,7 +142,6 @@ func AdapterTargetRefReconciler(c controllers.Config) controllers.SubReconciler 
 	c.Log = c.Log.WithName("TargetRef")
 
 	return &controllers.SyncReconciler{
-		Type: &knativev1alpha1.Adapter{},
 		Sync: func(ctx context.Context, parent *knativev1alpha1.Adapter) error {
 			if parent.Status.LatestImage == "" {
 				return nil
@@ -216,7 +212,7 @@ func AdapterTargetRefReconciler(c controllers.Config) controllers.SubReconciler 
 		},
 
 		Config: c,
-		Setup: func(mgr manager.Manager, bldr *builder.Builder) error {
+		Setup: func(mgr controllers.Manager, bldr *controllers.Builder) error {
 			bldr.Watches(&source.Kind{Type: &servingv1.Service{}}, controllers.EnqueueTracked(&servingv1.Service{}, c.Tracker, c.Scheme))
 			bldr.Watches(&source.Kind{Type: &servingv1.Configuration{}}, controllers.EnqueueTracked(&servingv1.Configuration{}, c.Tracker, c.Scheme))
 			return nil

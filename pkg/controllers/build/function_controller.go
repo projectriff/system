@@ -40,7 +40,7 @@ func FunctionReconciler(c controllers.Config) *controllers.ParentReconciler {
 	c.Log = c.Log.WithName("Function")
 
 	return &controllers.ParentReconciler{
-		ParentType: &buildv1alpha1.Function{},
+		Type: &buildv1alpha1.Function{},
 		SubReconcilers: []controllers.SubReconciler{
 			FunctionTargetImageReconciler(c),
 			FunctionChildImageReconciler(c),
@@ -54,7 +54,6 @@ func FunctionTargetImageReconciler(c controllers.Config) controllers.SubReconcil
 	c.Log = c.Log.WithName("TargetImage")
 
 	return &controllers.SyncReconciler{
-		Type: &buildv1alpha1.Function{},
 		Sync: func(ctx context.Context, parent *buildv1alpha1.Function) error {
 			targetImage, err := resolveTargetImage(ctx, c.Client, parent)
 			if err != nil {
