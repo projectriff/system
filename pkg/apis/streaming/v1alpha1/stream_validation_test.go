@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/projectriff/system/pkg/validation"
 )
@@ -37,7 +38,7 @@ func TestValidateStream(t *testing.T) {
 		name: "valid",
 		target: &Stream{
 			Spec: StreamSpec{
-				Provider:    "kafka",
+				Gateway:     corev1.LocalObjectReference{Name: "kafka"},
 				ContentType: "application/json",
 			},
 		},
@@ -64,23 +65,22 @@ func TestValidateStreamSpec(t *testing.T) {
 	}, {
 		name: "valid",
 		target: &StreamSpec{
-			Provider:    "kafka",
+			Gateway:     corev1.LocalObjectReference{Name: "kafka"},
 			ContentType: "video/mp4",
 		},
 		expected: validation.FieldErrors{},
 	}, {
 		name: "valid without explicit content-type",
 		target: &StreamSpec{
-			Provider: "kafka",
+			Gateway: corev1.LocalObjectReference{Name: "kafka"},
 		},
 		expected: validation.FieldErrors{},
 	}, {
-		name: "requires provider",
+		name: "requires gateway",
 		target: &StreamSpec{
-			Provider:    "",
 			ContentType: "image/*",
 		},
-		expected: validation.ErrMissingField("provider"),
+		expected: validation.ErrMissingOneOf("provider", "gateway"),
 	}} {
 		t.Run(c.name, func(t *testing.T) {
 			actual := c.target.Validate()

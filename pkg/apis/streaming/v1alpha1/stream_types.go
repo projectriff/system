@@ -40,8 +40,9 @@ type StreamSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	Provider    string `json:"provider"`
-	ContentType string `json:"contentType"`
+	DeprecatedProvider string                      `json:"provider"`
+	Gateway            corev1.LocalObjectReference `json:"gateway"`
+	ContentType        string                      `json:"contentType"`
 }
 
 // StreamStatus defines the observed state of Stream

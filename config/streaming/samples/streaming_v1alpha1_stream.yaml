@@ -4,4 +4,5 @@ metadata:
   name: in
 spec:
   contentType: application/json
-  provider: franz-kafka-provisioner
+  gateway:
+    name: dory

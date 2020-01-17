@@ -130,6 +130,7 @@ func main() {
 		Recorder:                mgr.GetEventRecorderFor("Stream"),
 		Log:                     streamControllerLogger,
 		Scheme:                  mgr.GetScheme(),
+		Tracker:                 tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("Stream").WithName("tracker")),
 		StreamProvisionerClient: streamingcontrollers.NewStreamProvisionerClient(http.DefaultClient, streamControllerLogger),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Stream")

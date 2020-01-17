@@ -29,7 +29,7 @@ import (
 )
 
 type StreamProvisionerClient interface {
-	ProvisionStream(stream *streamingv1alpha1.Stream) (*StreamAddress, error)
+	ProvisionStream(stream *streamingv1alpha1.Stream, provisionerURL string) (*StreamAddress, error)
 }
 
 type StreamAddress struct {
@@ -49,9 +49,8 @@ func NewStreamProvisionerClient(httpClient *http.Client, logger logr.Logger) Str
 	}
 }
 
-func (s *streamProvisionerRestClient) ProvisionStream(stream *streamingv1alpha1.Stream) (*StreamAddress, error) {
-	url := fmt.Sprintf("http://%s.%s.svc.cluster.local/%s/%s", stream.Spec.Provider, stream.Namespace, stream.Namespace, stream.Name)
-	req, err := http.NewRequest(http.MethodPut, url, bytes.NewReader([]byte{}))
+func (s *streamProvisionerRestClient) ProvisionStream(stream *streamingv1alpha1.Stream, provisionerURL string) (*StreamAddress, error) {
+	req, err := http.NewRequest(http.MethodPut, provisionerURL, bytes.NewReader([]byte{}))
 	if err != nil {
 		return nil, err
 	}

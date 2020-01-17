@@ -6263,10 +6263,16 @@ spec:
           properties:
             contentType:
               type: string
+            gateway:
+              properties:
+                name:
+                  type: string
+              type: object
             provider:
               type: string
           required:
           - contentType
+          - gateway
           - provider
           type: object
         status:
