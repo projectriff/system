@@ -21,4 +21,28 @@ bash "${CODEGEN_PKG}"/generate-groups.sh "client" \
   --output-base "${TMP_DIR}/src" \
   --go-header-file "${SCRIPT_ROOT}"/hack/boilerplate.go.txt
 
+# refine generated files
+
+patchClient() {
+  local find="$1"
+  local replace="$2"
+
+  find pkg/client -type f -name "*.go" -print0 | xargs -0 sed -i '' -e "s|${find}|${replace}|g"
+}
+
+# the fake client uses a naive GVK to GVR transform which doesn't use the correct pluralization. I feel bad, you should feel bad too.
+
+patchClient \
+  'schema.GroupVersionResource{Group: "streaming.projectriff.io", Version: "v1alpha1", Resource: "gateways"}' \
+  'schema.GroupVersionResource{Group: "streaming.projectriff.io", Version: "v1alpha1", Resource: "gatewaies"}'
+patchClient \
+  'schema.GroupVersionResource{Group: "streaming.projectriff.io", Version: "v1alpha1", Resource: "inmemorygateways"}' \
+  'schema.GroupVersionResource{Group: "streaming.projectriff.io", Version: "v1alpha1", Resource: "inmemorygatewaies"}'
+patchClient \
+  'schema.GroupVersionResource{Group: "streaming.projectriff.io", Version: "v1alpha1", Resource: "kafkagateways"}' \
+  'schema.GroupVersionResource{Group: "streaming.projectriff.io", Version: "v1alpha1", Resource: "kafkagatewaies"}'
+patchClient \
+  'schema.GroupVersionResource{Group: "streaming.projectriff.io", Version: "v1alpha1", Resource: "pulsargateways"}' \
+  'schema.GroupVersionResource{Group: "streaming.projectriff.io", Version: "v1alpha1", Resource: "pulsargatewaies"}'
+
 make fmt

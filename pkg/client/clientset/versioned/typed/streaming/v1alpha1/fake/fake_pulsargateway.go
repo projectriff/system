@@ -34,7 +34,7 @@ type FakePulsarGateways struct {
 	ns   string
 }
 
-var pulsargatewaysResource = schema.GroupVersionResource{Group: "streaming.projectriff.io", Version: "v1alpha1", Resource: "pulsargateways"}
+var pulsargatewaysResource = schema.GroupVersionResource{Group: "streaming.projectriff.io", Version: "v1alpha1", Resource: "pulsargatewaies"}
 
 var pulsargatewaysKind = schema.GroupVersionKind{Group: "streaming.projectriff.io", Version: "v1alpha1", Kind: "PulsarGateway"}
 

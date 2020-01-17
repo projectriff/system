@@ -34,7 +34,7 @@ type FakeInMemoryGateways struct {
 	ns   string
 }
 
-var inmemorygatewaysResource = schema.GroupVersionResource{Group: "streaming.projectriff.io", Version: "v1alpha1", Resource: "inmemorygateways"}
+var inmemorygatewaysResource = schema.GroupVersionResource{Group: "streaming.projectriff.io", Version: "v1alpha1", Resource: "inmemorygatewaies"}
 
 var inmemorygatewaysKind = schema.GroupVersionKind{Group: "streaming.projectriff.io", Version: "v1alpha1", Kind: "InMemoryGateway"}
 
