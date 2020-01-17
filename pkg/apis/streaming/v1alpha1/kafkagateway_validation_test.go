@@ -24,19 +24,19 @@ import (
 	"github.com/projectriff/system/pkg/validation"
 )
 
-func TestValidateKafkaProvider(t *testing.T) {
+func TestValidateKafkaGateway(t *testing.T) {
 	for _, c := range []struct {
 		name     string
-		target   *KafkaProvider
+		target   *KafkaGateway
 		expected validation.FieldErrors
 	}{{
 		name:     "empty",
-		target:   &KafkaProvider{},
+		target:   &KafkaGateway{},
 		expected: validation.ErrMissingField("spec"),
 	}, {
 		name: "valid",
-		target: &KafkaProvider{
-			Spec: KafkaProviderSpec{
+		target: &KafkaGateway{
+			Spec: KafkaGatewaySpec{
 				BootstrapServers: "localhost:9092",
 			},
 		},
@@ -45,24 +45,24 @@ func TestValidateKafkaProvider(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			actual := c.target.Validate()
 			if diff := cmp.Diff(c.expected, actual); diff != "" {
-				t.Errorf("validateKafkaProvider(%s) (-expected, +actual) = %v", c.name, diff)
+				t.Errorf("validateKafkaGateway(%s) (-expected, +actual) = %v", c.name, diff)
 			}
 		})
 	}
 }
 
-func TestValidateKafkaProviderSpec(t *testing.T) {
+func TestValidateKafkaGatewaySpec(t *testing.T) {
 	for _, c := range []struct {
 		name     string
-		target   *KafkaProviderSpec
+		target   *KafkaGatewaySpec
 		expected validation.FieldErrors
 	}{{
 		name:     "empty",
-		target:   &KafkaProviderSpec{},
+		target:   &KafkaGatewaySpec{},
 		expected: validation.ErrMissingField(validation.CurrentField),
 	}, {
 		name: "valid",
-		target: &KafkaProviderSpec{
+		target: &KafkaGatewaySpec{
 			BootstrapServers: "localhost:9092",
 		},
 		expected: validation.FieldErrors{},
@@ -70,7 +70,7 @@ func TestValidateKafkaProviderSpec(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			actual := c.target.Validate()
 			if diff := cmp.Diff(c.expected, actual); diff != "" {
-				t.Errorf("validateKafkaProviderSpec(%s) (-expected, +actual) = %v", c.name, diff)
+				t.Errorf("validateKafkaGatewaySpec(%s) (-expected, +actual) = %v", c.name, diff)
 			}
 		})
 	}

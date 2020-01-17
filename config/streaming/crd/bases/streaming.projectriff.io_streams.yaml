@@ -47,12 +47,9 @@ spec:
                 name:
                   type: string
               type: object
-            provider:
-              type: string
           required:
           - contentType
           - gateway
-          - provider
           type: object
         status:
           properties:

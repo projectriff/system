@@ -135,26 +135,6 @@ rules:
 - apiGroups:
   - streaming.projectriff.io
   resources:
-  - inmemoryproviders
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - streaming.projectriff.io
-  resources:
-  - inmemoryproviders/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - streaming.projectriff.io
-  resources:
   - kafkagateways
   verbs:
   - create
@@ -168,26 +148,6 @@ rules:
   - streaming.projectriff.io
   resources:
   - kafkagateways/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - streaming.projectriff.io
-  resources:
-  - kafkaproviders
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - streaming.projectriff.io
-  resources:
-  - kafkaproviders/status
   verbs:
   - get
   - patch
@@ -228,26 +188,6 @@ rules:
   - streaming.projectriff.io
   resources:
   - pulsargateways/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - streaming.projectriff.io
-  resources:
-  - pulsarproviders
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - streaming.projectriff.io
-  resources:
-  - pulsarproviders/status
   verbs:
   - get
   - patch

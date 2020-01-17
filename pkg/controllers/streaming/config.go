@@ -19,11 +19,11 @@ package streaming
 const (
 	kustomizePrefix = "riff-streaming" // kustomize adds this prefix to all our resource names
 
-	kafkaProviderImages  = kustomizePrefix + "-kafka-provider"  // contains image names for the kafka provider
-	pulsarProviderImages = kustomizePrefix + "-pulsar-provider" // contains image names for the pulsar provider
-	nopProviderImages    = kustomizePrefix + "-nop-provider"    // contains image names for the nop provider
-	gatewayImageKey      = "gatewayImage"
-	provisionerImageKey  = "provisionerImage"
+	kafkaGatewayImages    = kustomizePrefix + "-kafka-gateway"    // contains image names for the kafka gateway
+	inmemoryGatewayImages = kustomizePrefix + "-inmemory-gateway" // contains image names for the inmemory gateway
+	pulsarGatewayImages   = kustomizePrefix + "-pulsar-gateway"   // contains image names for the pulsar gateway
+	gatewayImageKey       = "gatewayImage"
+	provisionerImageKey   = "provisionerImage"
 
 	processorImages   = kustomizePrefix + "-processor" // contains image names for the streaming processor
 	processorImageKey = "processorImage"

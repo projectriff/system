@@ -80,7 +80,7 @@ func TestValidateStreamSpec(t *testing.T) {
 		target: &StreamSpec{
 			ContentType: "image/*",
 		},
-		expected: validation.ErrMissingOneOf("provider", "gateway"),
+		expected: validation.ErrMissingField("gateway"),
 	}} {
 		t.Run(c.name, func(t *testing.T) {
 			actual := c.target.Validate()

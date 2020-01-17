@@ -29,4 +29,13 @@ resources:
   kind: Processor
 - group: streaming
   version: v1alpha1
-  kind: Provider
+  kind: Gateway
+- group: streaming
+  version: v1alpha1
+  kind: KafkaGateway
+- group: streaming
+  version: v1alpha1
+  kind: InMemoryGateway
+- group: streaming
+  version: v1alpha1
+  kind: PulsarGateway

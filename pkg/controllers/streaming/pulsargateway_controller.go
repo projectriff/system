@@ -60,7 +60,7 @@ func PulsarGatewaySyncConfigReconciler(c controllers.Config, namespace string) c
 	return &controllers.SyncReconciler{
 		Sync: func(ctx context.Context, parent *streamingv1alpha1.PulsarGateway) error {
 			var config corev1.ConfigMap
-			key := types.NamespacedName{Namespace: namespace, Name: pulsarProviderImages}
+			key := types.NamespacedName{Namespace: namespace, Name: pulsarGatewayImages}
 			// track config for new images
 			c.Tracker.Track(
 				tracker.NewKey(schema.GroupVersionKind{Version: "v1", Kind: "ConfigMaps"}, key),

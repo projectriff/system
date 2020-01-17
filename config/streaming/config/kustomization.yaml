@@ -1,5 +1,5 @@
 resources:
   - bases/processor.yaml
-  - bases/kafka-provider.yaml
-  - bases/nop-provider.yaml
-  - bases/pulsar-provider.yaml
+  - bases/kafka-gateway.yaml
+  - bases/inmemory-gateway.yaml
+  - bases/pulsar-gateway.yaml

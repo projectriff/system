@@ -60,7 +60,7 @@ type InMemoryGatewayStatus struct {
 // +kubebuilder:printcolumn:name="Reason",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].reason`
 // +genclient
 
-// InMemoryGateway is the Schema for the providers API
+// InMemoryGateway is the Schema for the gateways API
 type InMemoryGateway struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

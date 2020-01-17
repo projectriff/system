@@ -79,51 +79,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&streamingcontrollers.KafkaProviderReconciler{
-		Client:    mgr.GetClient(),
-		Recorder:  mgr.GetEventRecorderFor("KafkaProvider"),
-		Log:       ctrl.Log.WithName("controllers").WithName("KafkaProvider"),
-		Scheme:    mgr.GetScheme(),
-		Tracker:   tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("KafkaProvider").WithName("tracker")),
-		Namespace: namespace,
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "KafkaProvider")
-		os.Exit(1)
-	}
-	if err = ctrl.NewWebhookManagedBy(mgr).For(&streamingv1alpha1.KafkaProvider{}).Complete(); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "KafkaProvider")
-		os.Exit(1)
-	}
-	if err = (&streamingcontrollers.PulsarProviderReconciler{
-		Client:    mgr.GetClient(),
-		Recorder:  mgr.GetEventRecorderFor("PulsarProvider"),
-		Log:       ctrl.Log.WithName("controllers").WithName("PulsarProvider"),
-		Scheme:    mgr.GetScheme(),
-		Tracker:   tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("PulsarProvider").WithName("tracker")),
-		Namespace: namespace,
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "PulsarProvider")
-		os.Exit(1)
-	}
-	if err = ctrl.NewWebhookManagedBy(mgr).For(&streamingv1alpha1.PulsarProvider{}).Complete(); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "PulsarProvider")
-		os.Exit(1)
-	}
-	if err = (&streamingcontrollers.InMemoryProviderReconciler{
-		Client:    mgr.GetClient(),
-		Recorder:  mgr.GetEventRecorderFor("InMemoryProvider"),
-		Log:       ctrl.Log.WithName("controllers").WithName("InMemoryProvider"),
-		Scheme:    mgr.GetScheme(),
-		Tracker:   tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("InMemoryProvider").WithName("tracker")),
-		Namespace: namespace,
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "InMemoryProvider")
-		os.Exit(1)
-	}
-	if err = ctrl.NewWebhookManagedBy(mgr).For(&streamingv1alpha1.InMemoryProvider{}).Complete(); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "InMemoryProvider")
-		os.Exit(1)
-	}
 	streamControllerLogger := ctrl.Log.WithName("controllers").WithName("Stream")
 	if err = (&streamingcontrollers.StreamReconciler{
 		Client:                  mgr.GetClient(),

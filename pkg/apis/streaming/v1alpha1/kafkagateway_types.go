@@ -67,7 +67,7 @@ type KafkaGatewayStatus struct {
 // +kubebuilder:printcolumn:name="Reason",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].reason`
 // +genclient
 
-// KafkaGateway is the Schema for the providers API
+// KafkaGateway is the Schema for the gateways API
 type KafkaGateway struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

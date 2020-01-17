@@ -105,36 +105,33 @@ func (r *StreamReconciler) reconcile(ctx context.Context, log logr.Logger, strea
 
 	stream.Status.InitializeConditions()
 
-	// delegate to the provider via its REST API
+	// delegate to the provisioner via its REST API
 	var provisionerURL string
-	if stream.Spec.DeprecatedProvider != "" {
-		log.Info("calling provisioner for Stream", "provisioner", stream.Spec.DeprecatedProvider)
-		provisionerURL = fmt.Sprintf("http://%s.%s.svc.cluster.local/%s/%s", stream.Spec.DeprecatedProvider, stream.Namespace, stream.Namespace, stream.Name)
-	} else {
-		var gateway streamingv1alpha1.Gateway
-		gatewayKey := types.NamespacedName{Namespace: stream.Namespace, Name: stream.Spec.Gateway.Name}
-		r.Tracker.Track(
-			tracker.NewKey(gateway.GetGroupVersionKind(), gatewayKey),
-			types.NamespacedName{Namespace: stream.Namespace, Name: stream.Name},
-		)
-		if err := r.Get(ctx, gatewayKey, &gateway); err != nil {
-			if apierrs.IsNotFound(err) {
-				stream.Status.MarkStreamProvisionFailed(fmt.Sprintf("Gateway %q not found", gatewayKey.Name))
-				return ctrl.Result{}, nil
-			}
-			stream.Status.MarkStreamProvisionFailed(err.Error())
-			return ctrl.Result{}, err
-		}
-		if gateway.Status.Address == nil || !gateway.Status.IsReady() {
-			stream.Status.MarkStreamProvisionFailed(fmt.Sprintf("Gateway %q not ready", gatewayKey.Name))
+
+	var gateway streamingv1alpha1.Gateway
+	gatewayKey := types.NamespacedName{Namespace: stream.Namespace, Name: stream.Spec.Gateway.Name}
+	r.Tracker.Track(
+		tracker.NewKey(gateway.GetGroupVersionKind(), gatewayKey),
+		types.NamespacedName{Namespace: stream.Namespace, Name: stream.Name},
+	)
+	if err := r.Get(ctx, gatewayKey, &gateway); err != nil {
+		if apierrs.IsNotFound(err) {
+			stream.Status.MarkStreamProvisionFailed(fmt.Sprintf("Gateway %q not found", gatewayKey.Name))
 			return ctrl.Result{}, nil
 		}
-		url, err := gateway.Status.Address.Parse()
-		if err != nil {
-			return ctrl.Result{}, err
-		}
-		provisionerURL = fmt.Sprintf("http://%s/%s/%s", url.Hostname(), stream.Namespace, stream.Name)
+		stream.Status.MarkStreamProvisionFailed(err.Error())
+		return ctrl.Result{}, err
 	}
+	if gateway.Status.Address == nil || !gateway.Status.IsReady() {
+		stream.Status.MarkStreamProvisionFailed(fmt.Sprintf("Gateway %q not ready", gatewayKey.Name))
+		return ctrl.Result{}, nil
+	}
+	url, err := gateway.Status.Address.Parse()
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	provisionerURL = fmt.Sprintf("http://%s/%s/%s", url.Hostname(), stream.Namespace, stream.Name)
+
 	address, err := r.StreamProvisionerClient.ProvisionStream(stream, provisionerURL)
 	if err != nil {
 		stream.Status.MarkStreamProvisionFailed(err.Error())

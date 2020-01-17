@@ -1,7 +1,0 @@
-apiVersion: streaming.projectriff.io/v1alpha1
-kind: KafkaProvider
-metadata:
-  name: franz
-spec:
-  bootstrapServers: kafkabroker:9092
-
