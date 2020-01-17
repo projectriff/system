@@ -365,10 +365,10 @@ func (r *StreamReconciler) constructBindingSecret(stream *streamingv1alpha1.Stre
 }
 
 func (r *StreamReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	if err := controllers.IndexControllersOfType(mgr, bindingMetadataIndexField, &streamingv1alpha1.Stream{}, &corev1.ConfigMap{}); err != nil {
+	if err := controllers.IndexControllersOfType(mgr, bindingMetadataIndexField, &streamingv1alpha1.Stream{}, &corev1.ConfigMap{}, r.Scheme); err != nil {
 		return err
 	}
-	if err := controllers.IndexControllersOfType(mgr, bindingSecretIndexField, &streamingv1alpha1.Stream{}, &corev1.Secret{}); err != nil {
+	if err := controllers.IndexControllersOfType(mgr, bindingSecretIndexField, &streamingv1alpha1.Stream{}, &corev1.Secret{}, r.Scheme); err != nil {
 		return err
 	}
 

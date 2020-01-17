@@ -29,7 +29,8 @@ import (
 
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	kpackbuildv1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/kpack/build/v1alpha1"
-	controllers "github.com/projectriff/system/pkg/controllers/build"
+	"github.com/projectriff/system/pkg/controllers"
+	buildcontrollers "github.com/projectriff/system/pkg/controllers/build"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -70,12 +71,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controllers.ApplicationReconciler{
-		Client:   mgr.GetClient(),
-		Recorder: mgr.GetEventRecorderFor("Application"),
-		Log:      ctrl.Log.WithName("controllers").WithName("Application"),
-		Scheme:   mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
+	if err = buildcontrollers.ApplicationReconciler(
+		controllers.Config{
+			Client:   mgr.GetClient(),
+			Recorder: mgr.GetEventRecorderFor("Application"),
+			Log:      ctrl.Log.WithName("controllers").WithName("Application"),
+			Scheme:   mgr.GetScheme(),
+		},
+	).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Application")
 		os.Exit(1)
 	}
@@ -83,7 +86,7 @@ func main() {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Application")
 		os.Exit(1)
 	}
-	if err = (&controllers.ContainerReconciler{
+	if err = (&buildcontrollers.ContainerReconciler{
 		Client:   mgr.GetClient(),
 		Recorder: mgr.GetEventRecorderFor("Container"),
 		Log:      ctrl.Log.WithName("controllers").WithName("Container"),
@@ -96,12 +99,14 @@ func main() {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Container")
 		os.Exit(1)
 	}
-	if err = (&controllers.FunctionReconciler{
-		Client:   mgr.GetClient(),
-		Recorder: mgr.GetEventRecorderFor("Function"),
-		Log:      ctrl.Log.WithName("controllers").WithName("Function"),
-		Scheme:   mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
+	if err = buildcontrollers.FunctionReconciler(
+		controllers.Config{
+			Client:   mgr.GetClient(),
+			Recorder: mgr.GetEventRecorderFor("Function"),
+			Log:      ctrl.Log.WithName("controllers").WithName("Function"),
+			Scheme:   mgr.GetScheme(),
+		},
+	).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Function")
 		os.Exit(1)
 	}
@@ -109,7 +114,7 @@ func main() {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Function")
 		os.Exit(1)
 	}
-	if err = (&controllers.CredentialReconciler{
+	if err = (&buildcontrollers.CredentialReconciler{
 		Client:   mgr.GetClient(),
 		Recorder: mgr.GetEventRecorderFor("Credential"),
 		Log:      ctrl.Log.WithName("controllers").WithName("Credentials"),
@@ -117,7 +122,7 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Credential")
 		os.Exit(1)
 	}
-	if err = (&controllers.ClusterBuilderReconciler{
+	if err = (&buildcontrollers.ClusterBuilderReconciler{
 		Client:    mgr.GetClient(),
 		Recorder:  mgr.GetEventRecorderFor("ClusterBuilder"),
 		Log:       ctrl.Log.WithName("controllers").WithName("ClusterBuilders"),

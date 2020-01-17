@@ -31,7 +31,8 @@ import (
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	knativev1alpha1 "github.com/projectriff/system/pkg/apis/knative/v1alpha1"
 	servingv1 "github.com/projectriff/system/pkg/apis/thirdparty/knative/serving/v1"
-	controllers "github.com/projectriff/system/pkg/controllers/knative"
+	"github.com/projectriff/system/pkg/controllers"
+	knativecontrollers "github.com/projectriff/system/pkg/controllers/knative"
 	"github.com/projectriff/system/pkg/tracker"
 	// +kubebuilder:scaffold:imports
 )
@@ -76,13 +77,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controllers.AdapterReconciler{
-		Client:   mgr.GetClient(),
-		Recorder: mgr.GetEventRecorderFor("Adapter"),
-		Log:      ctrl.Log.WithName("controllers").WithName("Adapter"),
-		Scheme:   mgr.GetScheme(),
-		Tracker:  tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("Adapter").WithName("tracker")),
-	}).SetupWithManager(mgr); err != nil {
+	if err = knativecontrollers.AdapterReconciler(
+		controllers.Config{
+			Client:   mgr.GetClient(),
+			Recorder: mgr.GetEventRecorderFor("Adapter"),
+			Log:      ctrl.Log.WithName("controllers").WithName("Adapter"),
+			Scheme:   mgr.GetScheme(),
+			Tracker:  tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("Adapter").WithName("tracker")),
+		},
+	).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Adapter")
 		os.Exit(1)
 	}
@@ -90,13 +93,15 @@ func main() {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Adapter")
 		os.Exit(1)
 	}
-	if err = (&controllers.DeployerReconciler{
-		Client:   mgr.GetClient(),
-		Recorder: mgr.GetEventRecorderFor("Deployer"),
-		Log:      ctrl.Log.WithName("controllers").WithName("Deployer"),
-		Scheme:   mgr.GetScheme(),
-		Tracker:  tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("Deployer").WithName("tracker")),
-	}).SetupWithManager(mgr); err != nil {
+	if err = knativecontrollers.DeployerReconciler(
+		controllers.Config{
+			Client:   mgr.GetClient(),
+			Recorder: mgr.GetEventRecorderFor("Deployer"),
+			Log:      ctrl.Log.WithName("controllers").WithName("Deployer"),
+			Scheme:   mgr.GetScheme(),
+			Tracker:  tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("Deployer").WithName("tracker")),
+		},
+	).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Deployer")
 		os.Exit(1)
 	}

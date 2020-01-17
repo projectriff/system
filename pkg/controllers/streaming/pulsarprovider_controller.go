@@ -685,10 +685,10 @@ func (r *PulsarProviderReconciler) constructProvisionerLabelsForPulsarProvider(p
 }
 
 func (r *PulsarProviderReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	if err := controllers.IndexControllersOfType(mgr, pulsarProviderDeploymentIndexField, &streamingv1alpha1.PulsarProvider{}, &appsv1.Deployment{}); err != nil {
+	if err := controllers.IndexControllersOfType(mgr, pulsarProviderDeploymentIndexField, &streamingv1alpha1.PulsarProvider{}, &appsv1.Deployment{}, r.Scheme); err != nil {
 		return err
 	}
-	if err := controllers.IndexControllersOfType(mgr, pulsarProviderServiceIndexField, &streamingv1alpha1.PulsarProvider{}, &corev1.Service{}); err != nil {
+	if err := controllers.IndexControllersOfType(mgr, pulsarProviderServiceIndexField, &streamingv1alpha1.PulsarProvider{}, &corev1.Service{}, r.Scheme); err != nil {
 		return err
 	}
 

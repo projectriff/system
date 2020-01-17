@@ -30,7 +30,8 @@ import (
 
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	corev1alpha1 "github.com/projectriff/system/pkg/apis/core/v1alpha1"
-	controllers "github.com/projectriff/system/pkg/controllers/core"
+	"github.com/projectriff/system/pkg/controllers"
+	corecontrollers "github.com/projectriff/system/pkg/controllers/core"
 	"github.com/projectriff/system/pkg/tracker"
 	// +kubebuilder:scaffold:imports
 )
@@ -74,13 +75,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controllers.DeployerReconciler{
-		Client:   mgr.GetClient(),
-		Recorder: mgr.GetEventRecorderFor("Deployer"),
-		Log:      ctrl.Log.WithName("controllers").WithName("Deployer"),
-		Scheme:   mgr.GetScheme(),
-		Tracker:  tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("Deployer").WithName("tracker")),
-	}).SetupWithManager(mgr); err != nil {
+	if err = corecontrollers.DeployerReconciler(
+		controllers.Config{
+			Client:   mgr.GetClient(),
+			Recorder: mgr.GetEventRecorderFor("Deployer"),
+			Log:      ctrl.Log.WithName("controllers").WithName("Deployer"),
+			Scheme:   mgr.GetScheme(),
+			Tracker:  tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("Deployer").WithName("tracker")),
+		},
+	).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Deployer")
 		os.Exit(1)
 	}
