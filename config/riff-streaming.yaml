@@ -6344,7 +6344,7 @@ webhooks:
       namespace: riff-system
       path: /mutate-streaming-projectriff-io-v1alpha1-gateway
   failurePolicy: Fail
-  name: gateway.streaming.projectriff.io
+  name: gateways.streaming.projectriff.io
   rules:
   - apiGroups:
     - streaming.projectriff.io
@@ -7109,7 +7109,7 @@ webhooks:
       namespace: riff-system
       path: /validate-streaming-projectriff-io-v1alpha1-gateway
   failurePolicy: Fail
-  name: gateway.streaming.projectriff.io
+  name: gateways.streaming.projectriff.io
   rules:
   - apiGroups:
     - streaming.projectriff.io

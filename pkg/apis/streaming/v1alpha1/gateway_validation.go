@@ -24,7 +24,7 @@ import (
 	"github.com/projectriff/system/pkg/validation"
 )
 
-// +kubebuilder:webhook:path=/validate-streaming-projectriff-io-v1alpha1-gateway,mutating=false,failurePolicy=fail,groups=streaming.projectriff.io,resources=gateway,verbs=create;update,versions=v1alpha1,name=gateway.streaming.projectriff.io
+// +kubebuilder:webhook:path=/validate-streaming-projectriff-io-v1alpha1-gateway,mutating=false,failurePolicy=fail,groups=streaming.projectriff.io,resources=gateway,verbs=create;update,versions=v1alpha1,name=gateways.streaming.projectriff.io
 
 var (
 	_ webhook.Validator         = &Gateway{}
