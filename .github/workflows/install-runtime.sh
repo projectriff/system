@@ -17,12 +17,12 @@ export KO_DOCKER_REPO=$(fats_image_repo '#' | cut -d '#' -f 1 | sed 's|/$||g')
 kubectl create ns apps
 
 echo "Installing Cert Manager"
-kapp deploy -n apps -a cert-manager -f https://storage.googleapis.com/projectriff/charts/uncharted/${riff_version}/cert-manager.yaml -y
+kapp deploy -n apps -a cert-manager -f https://storage.googleapis.com/projectriff/release/${riff_version}/cert-manager.yaml -y
 
 source $FATS_DIR/macros/no-resource-requests.sh
 
 echo "Installing kpack"
-kapp deploy -n apps -a kpack -f https://storage.googleapis.com/projectriff/charts/uncharted/${riff_version}/kpack.yaml -y
+kapp deploy -n apps -a kpack -f https://storage.googleapis.com/projectriff/release/${riff_version}/kpack.yaml -y
 
 echo "Installing riff Build"
 if [ $MODE = "push" ]; then
@@ -30,7 +30,7 @@ if [ $MODE = "push" ]; then
 elif [ $MODE = "pull_request" ]; then
   ko resolve -f config/riff-build.yaml | kapp deploy -n apps -a riff-build -f - -y
 fi
-kapp deploy -n apps -a riff-builders -f https://storage.googleapis.com/projectriff/charts/uncharted/${riff_version}/riff-builders.yaml -y
+kapp deploy -n apps -a riff-builders -f https://storage.googleapis.com/projectriff/release/${riff_version}/riff-builders.yaml -y
 
 if [ $RUNTIME = "core" ]; then
   echo "Installing riff Core Runtime"
@@ -42,11 +42,11 @@ if [ $RUNTIME = "core" ]; then
 
 elif [ $RUNTIME = "knative" ]; then
   echo "Installing Istio"
-  ytt -f https://storage.googleapis.com/projectriff/charts/uncharted/${riff_version}/istio.yaml -f https://storage.googleapis.com/projectriff/charts/overlays/service-$(echo ${K8S_SERVICE_TYPE} | tr '[A-Z]' '[a-z]').yaml --file-mark istio.yaml:type=yaml-plain \
+  ytt -f https://storage.googleapis.com/projectriff/release/${riff_version}/istio.yaml -f https://storage.googleapis.com/projectriff/charts/overlays/service-$(echo ${K8S_SERVICE_TYPE} | tr '[A-Z]' '[a-z]').yaml --file-mark istio.yaml:type=yaml-plain \
     | kapp deploy -n apps -a istio -f - -y
   
   echo "Installing Knative Serving"
-  kapp deploy -n apps -a knative -f https://storage.googleapis.com/projectriff/charts/uncharted/${riff_version}/knative.yaml -y
+  kapp deploy -n apps -a knative -f https://storage.googleapis.com/projectriff/release/${riff_version}/knative.yaml -y
 
   echo "Installing riff Knative Runtime"
   if [ $MODE = "push" ]; then
@@ -57,7 +57,7 @@ elif [ $RUNTIME = "knative" ]; then
 
 elif [ $RUNTIME = "streaming" ]; then
   echo "Installing KEDA"
-  kapp deploy -n apps -a keda -f https://storage.googleapis.com/projectriff/charts/uncharted/${riff_version}/keda.yaml -y
+  kapp deploy -n apps -a keda -f https://storage.googleapis.com/projectriff/release/${riff_version}/keda.yaml -y
 
   echo "Installing riff Streaming Runtime"
   if [ $MODE = "push" ]; then
@@ -67,6 +67,6 @@ elif [ $RUNTIME = "streaming" ]; then
   fi
 
   echo "Installing Kafka"
-  kapp deploy -n apps -a kafka -f https://storage.googleapis.com/projectriff/charts/uncharted/${riff_version}/kafka.yaml -y
+  kapp deploy -n apps -a kafka -f https://storage.googleapis.com/projectriff/release/${riff_version}/kafka.yaml -y
 
 fi
