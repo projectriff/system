@@ -26,19 +26,19 @@ import (
 	"github.com/projectriff/system/pkg/validation"
 )
 
-func TestValidatePulsarProvider(t *testing.T) {
+func TestValidatePulsarGateway(t *testing.T) {
 	for _, c := range []struct {
 		name     string
-		target   *PulsarProvider
+		target   *PulsarGateway
 		expected validation.FieldErrors
 	}{{
 		name:     "empty",
-		target:   &PulsarProvider{},
+		target:   &PulsarGateway{},
 		expected: validation.ErrMissingField("spec"),
 	}, {
 		name: "valid",
-		target: &PulsarProvider{
-			Spec: PulsarProviderSpec{
+		target: &PulsarGateway{
+			Spec: PulsarGatewaySpec{
 				ServiceURL: "pulsar://localhost:6650",
 			},
 		},
@@ -47,36 +47,36 @@ func TestValidatePulsarProvider(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			actual := c.target.Validate()
 			if diff := cmp.Diff(c.expected, actual); diff != "" {
-				t.Errorf("validatePulsarProvider(%s) (-expected, +actual) = %v", c.name, diff)
+				t.Errorf("validatePulsarGateway(%s) (-expected, +actual) = %v", c.name, diff)
 			}
 		})
 	}
 }
 
-func TestValidatePulsarProviderSpec(t *testing.T) {
+func TestValidatePulsarGatewaySpec(t *testing.T) {
 	for _, c := range []struct {
 		name     string
-		target   *PulsarProviderSpec
+		target   *PulsarGatewaySpec
 		expected validation.FieldErrors
 	}{{
 		name:     "empty",
-		target:   &PulsarProviderSpec{},
+		target:   &PulsarGatewaySpec{},
 		expected: validation.ErrMissingField(validation.CurrentField),
 	}, {
 		name: "valid",
-		target: &PulsarProviderSpec{
+		target: &PulsarGatewaySpec{
 			ServiceURL: "pulsar://localhost:6650",
 		},
 		expected: validation.FieldErrors{},
 	}, {
 		name: "valid+ssl",
-		target: &PulsarProviderSpec{
+		target: &PulsarGatewaySpec{
 			ServiceURL: "pulsar+ssl://localhost:6650",
 		},
 		expected: validation.FieldErrors{},
 	}, {
 		name: "wrong-scheme",
-		target: &PulsarProviderSpec{
+		target: &PulsarGatewaySpec{
 			ServiceURL: "localhost:6650",
 		},
 		expected: validation.FieldErrors{field.Invalid(field.NewPath("serviceURL"), "localhost:6650", "serviceURL must use 'pulsar://' or 'pulsar+ssl://' scheme")},
@@ -84,7 +84,7 @@ func TestValidatePulsarProviderSpec(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			actual := c.target.Validate()
 			if diff := cmp.Diff(c.expected, actual); diff != "" {
-				t.Errorf("validatePulsarProviderSpec(%s) (-expected, +actual) = %v", c.name, diff)
+				t.Errorf("validatePulsarGatewaySpec(%s) (-expected, +actual) = %v", c.name, diff)
 			}
 		})
 	}

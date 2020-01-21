@@ -40,9 +40,8 @@ type StreamSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	DeprecatedProvider string                      `json:"provider"`
-	Gateway            corev1.LocalObjectReference `json:"gateway"`
-	ContentType        string                      `json:"contentType"`
+	Gateway     corev1.LocalObjectReference `json:"gateway"`
+	ContentType string                      `json:"contentType"`
 }
 
 // StreamStatus defines the observed state of Stream
@@ -66,9 +65,10 @@ type BindingReference struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:categories="riff"
+// +kubebuilder:printcolumn:name="Gateway",type=string,JSONPath=`.spec.gateway.name`
+// +kubebuilder:printcolumn:name="Content Type",type=string,JSONPath=`.spec.contentType`
 // +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
 // +kubebuilder:printcolumn:name="Reason",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].reason`
-// +kubebuilder:printcolumn:name="Content-Type",type=string,JSONPath=`.spec.contentType`
 // +genclient
 
 // Stream is the Schema for the streams API

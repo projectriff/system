@@ -9,14 +9,17 @@ metadata:
   name: streams.streaming.projectriff.io
 spec:
   additionalPrinterColumns:
+  - JSONPath: .spec.gateway.name
+    name: Gateway
+    type: string
+  - JSONPath: .spec.contentType
+    name: Content Type
+    type: string
   - JSONPath: .status.conditions[?(@.type=="Ready")].status
     name: Ready
     type: string
   - JSONPath: .status.conditions[?(@.type=="Ready")].reason
     name: Reason
-    type: string
-  - JSONPath: .spec.contentType
-    name: Content-Type
     type: string
   group: streaming.projectriff.io
   names:
@@ -47,12 +50,9 @@ spec:
                 name:
                   type: string
               type: object
-            provider:
-              type: string
           required:
           - contentType
           - gateway
-          - provider
           type: object
         status:
           properties:

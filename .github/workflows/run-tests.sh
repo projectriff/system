@@ -58,7 +58,9 @@ if [ $RUNTIME = "core" ] || [ $RUNTIME = "knative" ]; then
   done
 
 elif [ $RUNTIME = "streaming" ]; then
-  riff streaming kafka-provider create franz --bootstrap-servers kafka.kafka.svc.cluster.local:9092 --namespace $NAMESPACE
+  echo "##[group]Create gateway"
+  riff streaming kafka-gateway create franz --bootstrap-servers kafka.kafka.svc.cluster.local:9092 --namespace $NAMESPACE --tail
+  echo "##[endgroup]"
 
   for test in node ; do
     name=system-${RUNTIME}-fn-uppercase-${test}
@@ -72,9 +74,8 @@ elif [ $RUNTIME = "streaming" ]; then
     lower_stream=${name}-lower
     upper_stream=${name}-upper
 
-    provider=$(kubectl get kafkaproviders.streaming.projectriff.io franz --namespace ${NAMESPACE} -ojsonpath='{.status.provisionerServiceRef.name}')
-    riff streaming stream create ${lower_stream} --namespace $NAMESPACE --provider ${provider} --content-type 'text/plain' --tail
-    riff streaming stream create ${upper_stream} --namespace $NAMESPACE --provider ${provider} --content-type 'text/plain' --tail
+    riff streaming stream create ${lower_stream} --namespace $NAMESPACE --gateway franz --content-type 'text/plain' --tail
+    riff streaming stream create ${upper_stream} --namespace $NAMESPACE --gateway franz --content-type 'text/plain' --tail
 
     riff streaming processor create $name --function-ref $name --namespace $NAMESPACE --input ${lower_stream} --output ${upper_stream} --tail
 
@@ -110,6 +111,6 @@ elif [ $RUNTIME = "streaming" ]; then
     echo "##[endgroup]"
   done
 
-  riff streaming kafka-provider delete franz --namespace $NAMESPACE
+  riff streaming kafka-gateway delete franz --namespace $NAMESPACE
 
 fi

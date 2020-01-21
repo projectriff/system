@@ -17,8 +17,11 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"strings"
+
 	"k8s.io/apimachinery/pkg/api/equality"
 	runtime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	"github.com/projectriff/system/pkg/validation"
@@ -64,6 +67,10 @@ func (s *PulsarGatewaySpec) Validate() validation.FieldErrors {
 
 	if s.ServiceURL == "" {
 		errs = errs.Also(validation.ErrMissingField("serviceURL"))
+	} else if !(strings.HasPrefix(s.ServiceURL, "pulsar://") || strings.HasPrefix(s.ServiceURL, "pulsar+ssl://")) {
+		errs = errs.Also(validation.FieldErrors{
+			field.Invalid(field.NewPath("serviceURL"), s.ServiceURL, "serviceURL must use 'pulsar://' or 'pulsar+ssl://' scheme"),
+		})
 	}
 
 	return errs

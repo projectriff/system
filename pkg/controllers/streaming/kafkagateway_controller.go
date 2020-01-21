@@ -60,7 +60,7 @@ func KafkaGatewaySyncConfigReconciler(c controllers.Config, namespace string) co
 	return &controllers.SyncReconciler{
 		Sync: func(ctx context.Context, parent *streamingv1alpha1.KafkaGateway) error {
 			var config corev1.ConfigMap
-			key := types.NamespacedName{Namespace: namespace, Name: kafkaProviderImages}
+			key := types.NamespacedName{Namespace: namespace, Name: kafkaGatewayImages}
 			// track config for new images
 			c.Tracker.Track(
 				tracker.NewKey(schema.GroupVersionKind{Version: "v1", Kind: "ConfigMaps"}, key),
@@ -115,6 +115,7 @@ func KafkaGatewayChildGatewayReconciler(c controllers.Config) controllers.SubRec
 									{Name: "kafka_bootstrapServers", Value: parent.Spec.BootstrapServers},
 									{Name: "storage_positions_type", Value: "MEMORY"},
 									{Name: "storage_records_type", Value: "KAFKA"},
+									{Name: "server_port", Value: "8000"},
 								},
 							},
 							{

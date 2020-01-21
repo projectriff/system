@@ -24,39 +24,39 @@ import (
 	"github.com/projectriff/system/pkg/validation"
 )
 
-func TestValidateInMemoryProvider(t *testing.T) {
+func TestValidateInMemoryGateway(t *testing.T) {
 	for _, c := range []struct {
 		name     string
-		target   *InMemoryProvider
+		target   *InMemoryGateway
 		expected validation.FieldErrors
 	}{{
 		name:     "empty",
-		target:   &InMemoryProvider{},
+		target:   &InMemoryGateway{},
 		expected: validation.FieldErrors{},
 	}} {
 		t.Run(c.name, func(t *testing.T) {
 			actual := c.target.Validate()
 			if diff := cmp.Diff(c.expected, actual); diff != "" {
-				t.Errorf("validateInMemoryProvider(%s) (-expected, +actual) = %v", c.name, diff)
+				t.Errorf("validateInMemoryGateway(%s) (-expected, +actual) = %v", c.name, diff)
 			}
 		})
 	}
 }
 
-func TestValidateInMemoryProviderSpec(t *testing.T) {
+func TestValidateInMemoryGatewaySpec(t *testing.T) {
 	for _, c := range []struct {
 		name     string
-		target   *InMemoryProviderSpec
+		target   *InMemoryGatewaySpec
 		expected validation.FieldErrors
 	}{{
 		name:     "empty",
-		target:   &InMemoryProviderSpec{},
+		target:   &InMemoryGatewaySpec{},
 		expected: validation.FieldErrors{},
 	}} {
 		t.Run(c.name, func(t *testing.T) {
 			actual := c.target.Validate()
 			if diff := cmp.Diff(c.expected, actual); diff != "" {
-				t.Errorf("validateInMemoryProviderSpec(%s) (-expected, +actual) = %v", c.name, diff)
+				t.Errorf("validateInMemoryGatewaySpec(%s) (-expected, +actual) = %v", c.name, diff)
 			}
 		})
 	}

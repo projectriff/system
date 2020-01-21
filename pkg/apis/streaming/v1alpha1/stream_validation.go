@@ -62,10 +62,8 @@ func (s *StreamSpec) Validate() validation.FieldErrors {
 
 	errs := validation.FieldErrors{}
 
-	if s.DeprecatedProvider == "" && s.Gateway.Name == "" {
-		errs = errs.Also(validation.ErrMissingOneOf("provider", "gateway"))
-	} else if s.DeprecatedProvider != "" && s.Gateway.Name != "" {
-		errs = errs.Also(validation.ErrMultipleOneOf("provider", "gateway"))
+	if s.Gateway.Name == "" {
+		errs = errs.Also(validation.ErrMissingField("gateway"))
 	}
 
 	return errs

@@ -20,7 +20,10 @@ riff System contains four API groups with CustomResourceDefinitions that are the
 - `streaming.projectriff.io/v1alpha1`
   - `Stream` - streams of messages
   - `Processor` - processors apply functions, containers or images to messages on streams
-  - `KafkaProvider` - kafka based stream provider
+  - `Gateway` - stream gateway
+  - `KafkaGateway` - kafka based stream gateway
+  - `InMemoryGateway` - in-memory stream gateway
+  - `PulsarGateway` - pulsar based stream gateway
 - `knative.projectriff.io/v1alpha1`
   - `Adapter` - adapters map applications, functions or container images into an existing Knative Service or Configuration.
   - `Deployer` - deployers map HTTP requests to applications, functions, containers or images with Knative

@@ -36,16 +36,8 @@ func (c *FakeStreamingV1alpha1) InMemoryGateways(namespace string) v1alpha1.InMe
 	return &FakeInMemoryGateways{c, namespace}
 }
 
-func (c *FakeStreamingV1alpha1) InMemoryProviders(namespace string) v1alpha1.InMemoryProviderInterface {
-	return &FakeInMemoryProviders{c, namespace}
-}
-
 func (c *FakeStreamingV1alpha1) KafkaGateways(namespace string) v1alpha1.KafkaGatewayInterface {
 	return &FakeKafkaGateways{c, namespace}
-}
-
-func (c *FakeStreamingV1alpha1) KafkaProviders(namespace string) v1alpha1.KafkaProviderInterface {
-	return &FakeKafkaProviders{c, namespace}
 }
 
 func (c *FakeStreamingV1alpha1) Processors(namespace string) v1alpha1.ProcessorInterface {
@@ -54,10 +46,6 @@ func (c *FakeStreamingV1alpha1) Processors(namespace string) v1alpha1.ProcessorI
 
 func (c *FakeStreamingV1alpha1) PulsarGateways(namespace string) v1alpha1.PulsarGatewayInterface {
 	return &FakePulsarGateways{c, namespace}
-}
-
-func (c *FakeStreamingV1alpha1) PulsarProviders(namespace string) v1alpha1.PulsarProviderInterface {
-	return &FakePulsarProviders{c, namespace}
 }
 
 func (c *FakeStreamingV1alpha1) Streams(namespace string) v1alpha1.StreamInterface {

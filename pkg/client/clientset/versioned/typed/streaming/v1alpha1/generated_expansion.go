@@ -21,16 +21,10 @@ type GatewayExpansion interface{}
 
 type InMemoryGatewayExpansion interface{}
 
-type InMemoryProviderExpansion interface{}
-
 type KafkaGatewayExpansion interface{}
-
-type KafkaProviderExpansion interface{}
 
 type ProcessorExpansion interface{}
 
 type PulsarGatewayExpansion interface{}
-
-type PulsarProviderExpansion interface{}
 
 type StreamExpansion interface{}

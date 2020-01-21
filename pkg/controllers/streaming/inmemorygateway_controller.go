@@ -60,7 +60,7 @@ func InMemoryGatewaySyncConfigReconciler(c controllers.Config, namespace string)
 	return &controllers.SyncReconciler{
 		Sync: func(ctx context.Context, parent *streamingv1alpha1.InMemoryGateway) error {
 			var config corev1.ConfigMap
-			key := types.NamespacedName{Namespace: namespace, Name: nopProviderImages}
+			key := types.NamespacedName{Namespace: namespace, Name: inmemoryGatewayImages}
 			// track config for new images
 			c.Tracker.Track(
 				tracker.NewKey(schema.GroupVersionKind{Version: "v1", Kind: "ConfigMaps"}, key),
@@ -114,6 +114,7 @@ func InMemoryGatewayChildGatewayReconciler(c controllers.Config) controllers.Sub
 								Env: []corev1.EnvVar{
 									{Name: "storage_positions_type", Value: "MEMORY"},
 									{Name: "storage_records_type", Value: "MEMORY"},
+									{Name: "server_port", Value: "8000"},
 								},
 							},
 							{
