@@ -163,39 +163,8 @@ func (tc *Testcase) Test(t *testing.T, scheme *runtime.Scheme, factory Reconcile
 		}
 	}
 
-	for i, exp := range tc.ExpectCreates {
-		if i >= len(clientWrapper.createActions) {
-			t.Errorf("Missing create: %#v", exp.Create())
-			continue
-		}
-		actual := clientWrapper.createActions[i].GetObject()
-
-		if diff := cmp.Diff(exp.Create(), actual, ignoreLastTransitionTime, safeDeployDiff, ignoreTypeMeta, cmpopts.EquateEmpty()); diff != "" {
-			t.Errorf("Unexpected create (-expected, +actual): %s", diff)
-		}
-	}
-	if actual, expected := len(clientWrapper.createActions), len(tc.ExpectCreates); actual > expected {
-		for _, extra := range clientWrapper.createActions[expected:] {
-			t.Errorf("Extra create: %#v", extra)
-		}
-	}
-
-	for i, exp := range tc.ExpectUpdates {
-		if i >= len(clientWrapper.updateActions) {
-			t.Errorf("Missing update: %#v", exp.Create())
-			continue
-		}
-		actual := clientWrapper.updateActions[i].GetObject()
-
-		if diff := cmp.Diff(exp.Create(), actual, ignoreLastTransitionTime, safeDeployDiff, ignoreTypeMeta, cmpopts.EquateEmpty()); diff != "" {
-			t.Errorf("Unexpected update (-expected, +actual): %s", diff)
-		}
-	}
-	if actual, expected := len(clientWrapper.updateActions), len(tc.ExpectUpdates); actual > expected {
-		for _, extra := range clientWrapper.updateActions[expected:] {
-			t.Errorf("Extra update: %#v", extra)
-		}
-	}
+	compareActions(t, "create", tc.ExpectCreates, clientWrapper.createActions, ignoreLastTransitionTime, safeDeployDiff, ignoreTypeMeta, cmpopts.EquateEmpty())
+	compareActions(t, "update", tc.ExpectUpdates, clientWrapper.updateActions, ignoreLastTransitionTime, safeDeployDiff, ignoreTypeMeta, cmpopts.EquateEmpty())
 
 	for i, exp := range tc.ExpectDeletes {
 		if i >= len(clientWrapper.deleteActions) {
@@ -214,26 +183,31 @@ func (tc *Testcase) Test(t *testing.T, scheme *runtime.Scheme, factory Reconcile
 		}
 	}
 
-	for i, exp := range tc.ExpectStatusUpdates {
-		if i >= len(clientWrapper.statusUpdateActions) {
-			t.Errorf("Missing status update: %#v", exp.Create())
-			continue
-		}
-		actual := clientWrapper.statusUpdateActions[i].GetObject()
-
-		if diff := cmp.Diff(exp.Create(), actual, statusSubresourceOnly, ignoreLastTransitionTime, safeDeployDiff, cmpopts.EquateEmpty()); diff != "" {
-			t.Errorf("Unexpected status update (-expected, +actual): %s", diff)
-		}
-	}
-	if actual, expected := len(clientWrapper.statusUpdateActions), len(tc.ExpectStatusUpdates); actual > expected {
-		for _, extra := range clientWrapper.statusUpdateActions[expected:] {
-			t.Errorf("Extra status update: %#v", extra)
-		}
-	}
+	compareActions(t, "status update", tc.ExpectStatusUpdates, clientWrapper.statusUpdateActions, statusSubresourceOnly, ignoreLastTransitionTime, safeDeployDiff, cmpopts.EquateEmpty())
 
 	// Validate the given objects are not mutated by reconciliation
 	if diff := cmp.Diff(originalGivenObjects, givenObjects, safeDeployDiff, cmpopts.EquateEmpty()); diff != "" {
 		t.Errorf("Given objects mutated by test %s (-expected, +actual): %v", tc.Name, diff)
+	}
+}
+
+func compareActions(t *testing.T, actionName string, expectedActionFactories []Factory, actualActions []objectAction, diffOptions ...cmp.Option) {
+	t.Helper()
+	for i, exp := range expectedActionFactories {
+		if i >= len(actualActions) {
+			t.Errorf("Missing %s: %#v", actionName, exp.Create())
+			continue
+		}
+		actual := actualActions[i].GetObject()
+
+		if diff := cmp.Diff(exp.Create(), actual, diffOptions...); diff != "" {
+			t.Errorf("Unexpected %s (-expected, +actual): %s", actionName, diff)
+		}
+	}
+	if actual, expected := len(actualActions), len(expectedActionFactories); actual > expected {
+		for _, extra := range actualActions[expected:] {
+			t.Errorf("Extra %s: %#v", actionName, extra)
+		}
 	}
 }
 

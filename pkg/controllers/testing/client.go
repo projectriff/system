@@ -33,10 +33,10 @@ import (
 type clientWrapper struct {
 	client              client.Client
 	scheme              *runtime.Scheme
-	createActions       []CreateAction
-	updateActions       []UpdateAction
+	createActions       []objectAction
+	updateActions       []objectAction
 	deleteActions       []DeleteAction
-	statusUpdateActions []UpdateAction
+	statusUpdateActions []objectAction
 	genCount            int
 	reactionChain       []Reactor
 }
@@ -47,10 +47,10 @@ func newClientWrapperWithScheme(scheme *runtime.Scheme, objs ...runtime.Object) 
 	client := &clientWrapper{
 		client:              fakeclient.NewFakeClientWithScheme(scheme, objs...),
 		scheme:              scheme,
-		createActions:       []CreateAction{},
-		updateActions:       []UpdateAction{},
+		createActions:       []objectAction{},
+		updateActions:       []objectAction{},
 		deleteActions:       []DeleteAction{},
-		statusUpdateActions: []UpdateAction{},
+		statusUpdateActions: []objectAction{},
 		genCount:            0,
 		reactionChain:       []Reactor{},
 	}
