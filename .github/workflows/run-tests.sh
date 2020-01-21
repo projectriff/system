@@ -58,7 +58,9 @@ if [ $RUNTIME = "core" ] || [ $RUNTIME = "knative" ]; then
   done
 
 elif [ $RUNTIME = "streaming" ]; then
-  riff streaming kafka-gateway create franz --bootstrap-servers kafka.kafka.svc.cluster.local:9092 --namespace $NAMESPACE
+  echo "##[group]Create gateway"
+  riff streaming kafka-gateway create franz --bootstrap-servers kafka.kafka.svc.cluster.local:9092 --namespace $NAMESPACE --tail
+  echo "##[endgroup]"
 
   for test in node ; do
     name=system-${RUNTIME}-fn-uppercase-${test}

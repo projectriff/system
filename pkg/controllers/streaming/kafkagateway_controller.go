@@ -115,6 +115,7 @@ func KafkaGatewayChildGatewayReconciler(c controllers.Config) controllers.SubRec
 									{Name: "kafka_bootstrapServers", Value: parent.Spec.BootstrapServers},
 									{Name: "storage_positions_type", Value: "MEMORY"},
 									{Name: "storage_records_type", Value: "KAFKA"},
+									{Name: "server_port", Value: "8000"},
 								},
 							},
 							{

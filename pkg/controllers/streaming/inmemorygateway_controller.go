@@ -114,6 +114,7 @@ func InMemoryGatewayChildGatewayReconciler(c controllers.Config) controllers.Sub
 								Env: []corev1.EnvVar{
 									{Name: "storage_positions_type", Value: "MEMORY"},
 									{Name: "storage_records_type", Value: "MEMORY"},
+									{Name: "server_port", Value: "8000"},
 								},
 							},
 							{

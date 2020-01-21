@@ -115,6 +115,7 @@ func PulsarGatewayChildGatewayReconciler(c controllers.Config) controllers.SubRe
 									{Name: "pulsar_serviceUrl", Value: parent.Spec.ServiceURL},
 									{Name: "storage_positions_type", Value: "MEMORY"},
 									{Name: "storage_records_type", Value: "PULSAR"},
+									{Name: "server_port", Value: "8000"},
 								},
 							},
 							{
