@@ -80,14 +80,15 @@ func main() {
 	}
 
 	streamControllerLogger := ctrl.Log.WithName("controllers").WithName("Stream")
-	if err = (&streamingcontrollers.StreamReconciler{
-		Client:                  mgr.GetClient(),
-		Recorder:                mgr.GetEventRecorderFor("Stream"),
-		Log:                     streamControllerLogger,
-		Scheme:                  mgr.GetScheme(),
-		Tracker:                 tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("Stream").WithName("tracker")),
-		StreamProvisionerClient: streamingcontrollers.NewStreamProvisionerClient(http.DefaultClient, streamControllerLogger),
-	}).SetupWithManager(mgr); err != nil {
+	if err = streamingcontrollers.StreamReconciler(
+		controllers.Config{
+			Client:   mgr.GetClient(),
+			Recorder: mgr.GetEventRecorderFor("Stream"),
+			Log:      streamControllerLogger,
+			Scheme:   mgr.GetScheme(),
+			Tracker:  tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("Stream").WithName("tracker")),
+		}, streamingcontrollers.NewStreamProvisionerClient(http.DefaultClient, streamControllerLogger),
+	).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Stream")
 		os.Exit(1)
 	}
@@ -95,14 +96,16 @@ func main() {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Stream")
 		os.Exit(1)
 	}
-	if err = (&streamingcontrollers.ProcessorReconciler{
-		Client:    mgr.GetClient(),
-		Recorder:  mgr.GetEventRecorderFor("Processor"),
-		Log:       ctrl.Log.WithName("controllers").WithName("Processor"),
-		Scheme:    mgr.GetScheme(),
-		Tracker:   tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("Processor").WithName("tracker")),
-		Namespace: namespace,
-	}).SetupWithManager(mgr); err != nil {
+	if err = streamingcontrollers.ProcessorReconciler(
+		controllers.Config{
+			Client:   mgr.GetClient(),
+			Recorder: mgr.GetEventRecorderFor("Processor"),
+			Log:      ctrl.Log.WithName("controllers").WithName("Processor"),
+			Scheme:   mgr.GetScheme(),
+			Tracker:  tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("Processor").WithName("tracker")),
+		},
+		namespace,
+	).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Processor")
 		os.Exit(1)
 	}

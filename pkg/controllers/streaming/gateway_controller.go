@@ -83,9 +83,6 @@ func GatewayChildServiceReconciler(c controllers.Config) controllers.SubReconcil
 			return child, nil
 		},
 		ReflectChildStatusOnParent: func(parent *streamingv1alpha1.Gateway, child *corev1.Service, err error) {
-			if err != nil {
-				return
-			}
 			if child == nil {
 				parent.Status.ServiceRef = nil
 				parent.Status.Address = nil
@@ -156,9 +153,6 @@ func GatewayChildDeploymentReconciler(c controllers.Config) controllers.SubRecon
 			return child, nil
 		},
 		ReflectChildStatusOnParent: func(parent *streamingv1alpha1.Gateway, child *appsv1.Deployment, err error) {
-			if err != nil {
-				return
-			}
 			if child == nil {
 				parent.Status.DeploymentRef = nil
 			} else {

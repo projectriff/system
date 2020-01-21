@@ -77,8 +77,9 @@ vet:
 generate: generate-internal fmt ## Generate code
 
 .PHONY: generate-internal
-generate-internal: controller-gen
+generate-internal: controller-gen mockery
 	$(CONTROLLER_GEN) object:headerFile=./hack/boilerplate.go.txt paths="./..."
+	$(MOCKERY) -dir ./pkg/controllers/streaming -inpkg -name StreamProvisionerClient -case snake
 
 # find or download controller-gen, download controller-gen if necessary
 controller-gen:
@@ -107,6 +108,15 @@ ifeq (, $(shell which ko))
 KO=$(GOBIN)/ko
 else
 KO=$(shell which ko)
+endif
+
+# find or download mockery, download mockery if necessary
+mockery:
+ifeq (, $(shell which mockery))
+	GO111MODULE=off go get -u  github.com/vektra/mockery/.../
+MOCKERY=$(GOBIN)/mockery
+else
+MOCKERY=$(shell which mockery)
 endif
 
 # Absolutely awesome: http://marmelab.com/blog/2016/02/29/auto-documented-makefile.html

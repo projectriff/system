@@ -21,13 +21,13 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/projectriff/system/pkg/controllers/testing"
 )
 
 type ObjectMeta interface {
-	mutate(m func(*metav1.ObjectMeta)) ObjectMeta
 	Create() metav1.ObjectMeta
 
 	Namespace(namespace string) ObjectMeta
@@ -39,6 +39,7 @@ type ObjectMeta interface {
 	ControlledBy(owner testing.Factory, scheme *runtime.Scheme) ObjectMeta
 	Created(sec int64) ObjectMeta
 	Deleted(sec int64) ObjectMeta
+	UID(uid string) ObjectMeta
 }
 
 type objectMetaImpl struct {
@@ -104,7 +105,7 @@ func (f *objectMetaImpl) Generation(generation int64) ObjectMeta {
 
 func (f *objectMetaImpl) ControlledBy(owner testing.Factory, scheme *runtime.Scheme) ObjectMeta {
 	return f.mutate(func(om *metav1.ObjectMeta) {
-		err := ctrl.SetControllerReference(owner.Create(), om, scheme)
+		err := ctrl.SetControllerReference(owner.CreateObject(), om, scheme)
 		if err != nil {
 			panic(err)
 		}
@@ -122,5 +123,11 @@ func (f *objectMetaImpl) Deleted(sec int64) ObjectMeta {
 	return f.mutate(func(om *metav1.ObjectMeta) {
 		timestamp := metav1.Unix(sec, 0)
 		om.DeletionTimestamp = &timestamp
+	})
+}
+
+func (f *objectMetaImpl) UID(uid string) ObjectMeta {
+	return f.mutate(func(om *metav1.ObjectMeta) {
+		om.UID = types.UID(uid)
 	})
 }

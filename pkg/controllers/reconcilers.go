@@ -79,7 +79,7 @@ func (r *ParentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func (r *ParentReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	ctx := context.Background()
+	ctx := WithStash(context.Background())
 	log := r.Log.WithValues("request", req.NamespacedName)
 
 	originalParent := r.Type.DeepCopyObject().(apis.Object)
@@ -253,6 +253,7 @@ type ChildReconciler struct {
 	//
 	// Expected function signature:
 	//     func(parent apis.Object) (apis.Object, error)
+	//     func(ctx context.Context, parent apis.Object) (apis.Object, error)
 	DesiredChild interface{}
 
 	// ReflectChildStatusOnParent updates the parent object's status with values
@@ -358,7 +359,7 @@ func (r *ChildReconciler) reconcile(ctx context.Context, parent apis.Object) (ap
 		}
 	}
 
-	desired, err := r.desiredChild(parent)
+	desired, err := r.desiredChild(ctx, parent)
 	if err != nil {
 		return nil, err
 	}
@@ -431,11 +432,15 @@ func (r *ChildReconciler) semanticEquals(a1, a2 apis.Object) bool {
 	return out[0].Bool()
 }
 
-func (r *ChildReconciler) desiredChild(parent apis.Object) (apis.Object, error) {
+func (r *ChildReconciler) desiredChild(ctx context.Context, parent apis.Object) (apis.Object, error) {
 	fn := reflect.ValueOf(r.DesiredChild)
-	out := fn.Call([]reflect.Value{
-		reflect.ValueOf(parent),
-	})
+	args := []reflect.Value{}
+	if fn.Type().NumIn() == 2 {
+		// optional first argument
+		args = append(args, reflect.ValueOf(ctx))
+	}
+	args = append(args, reflect.ValueOf(parent))
+	out := fn.Call(args)
 	var obj apis.Object
 	if !out[0].IsNil() {
 		obj = out[0].Interface().(apis.Object)

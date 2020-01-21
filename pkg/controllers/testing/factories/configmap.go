@@ -52,8 +52,12 @@ func (f *configMap) deepCopy() *configMap {
 	return ConfigMap(f.target.DeepCopy())
 }
 
-func (f *configMap) Create() apis.Object {
+func (f *configMap) Create() *corev1.ConfigMap {
 	return f.deepCopy().target
+}
+
+func (f *configMap) CreateObject() apis.Object {
+	return f.Create()
 }
 
 func (f *configMap) mutation(m func(*corev1.ConfigMap)) *configMap {

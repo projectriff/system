@@ -52,8 +52,12 @@ func (f *service) deepCopy() *service {
 	return Service(f.target.DeepCopy())
 }
 
-func (f *service) Create() apis.Object {
+func (f *service) Create() *corev1.Service {
 	return f.deepCopy().target
+}
+
+func (f *service) CreateObject() apis.Object {
+	return f.Create()
 }
 
 func (f *service) mutation(m func(*corev1.Service)) *service {
@@ -89,5 +93,11 @@ func (f *service) AddSelectorLabel(key, value string) *service {
 func (f *service) Ports(ports ...corev1.ServicePort) *service {
 	return f.mutation(func(service *corev1.Service) {
 		service.Spec.Ports = ports
+	})
+}
+
+func (f *service) ClusterIP(ip string) *service {
+	return f.mutation(func(service *corev1.Service) {
+		service.Spec.ClusterIP = ip
 	})
 }

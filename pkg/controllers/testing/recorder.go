@@ -36,7 +36,7 @@ type Event struct {
 }
 
 func NewEvent(factory Factory, scheme *runtime.Scheme, eventtype, reason, messageFormat string, a ...interface{}) Event {
-	obj := factory.Create()
+	obj := factory.CreateObject()
 	gvks, _, _ := scheme.ObjectKinds(obj)
 	apiVersion, kind := gvks[0].ToAPIVersionAndKind()
 

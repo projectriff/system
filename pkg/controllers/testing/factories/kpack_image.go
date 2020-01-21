@@ -55,8 +55,12 @@ func (f *kpackImage) deepCopy() *kpackImage {
 	return KpackImage(f.target.DeepCopy())
 }
 
-func (f *kpackImage) Create() apis.Object {
+func (f *kpackImage) Create() *kpackbuildv1alpha1.Image {
 	return f.deepCopy().target
+}
+
+func (f *kpackImage) CreateObject() apis.Object {
+	return f.Create()
 }
 
 func (f *kpackImage) mutation(m func(*kpackbuildv1alpha1.Image)) *kpackImage {

@@ -17,7 +17,6 @@ limitations under the License.
 package factories
 
 import (
-	"encoding/base64"
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
@@ -53,8 +52,12 @@ func (f *secret) deepCopy() *secret {
 	return Secret(f.target.DeepCopy())
 }
 
-func (f *secret) Create() apis.Object {
+func (f *secret) Create() *corev1.Secret {
 	return f.deepCopy().target
+}
+
+func (f *secret) CreateObject() apis.Object {
+	return f.Create()
 }
 
 func (f *secret) mutation(m func(*corev1.Secret)) *secret {
@@ -89,8 +92,6 @@ func (f *secret) AddData(key, value string) *secret {
 		if s.Data == nil {
 			s.Data = map[string][]byte{}
 		}
-		encoded := []byte{}
-		base64.StdEncoding.Encode(encoded, []byte(value))
-		s.Data[key] = encoded
+		s.Data[key] = []byte(value)
 	})
 }

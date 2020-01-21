@@ -51,8 +51,12 @@ func (f *kedaScaledObject) deepCopy() *kedaScaledObject {
 	return KedaScaledObject(f.target.DeepCopy())
 }
 
-func (f *kedaScaledObject) Create() apis.Object {
+func (f *kedaScaledObject) Create() *kedav1alpha1.ScaledObject {
 	return f.deepCopy().target
+}
+
+func (f *kedaScaledObject) CreateObject() apis.Object {
+	return f.Create()
 }
 
 func (f *kedaScaledObject) mutation(m func(*kedav1alpha1.ScaledObject)) *kedaScaledObject {
@@ -85,6 +89,12 @@ func (f *kedaScaledObject) Spec(spec *kedav1alpha1.ScaledObjectSpec) *kedaScaled
 func (f *kedaScaledObject) ScaleTargetRefDeployment(format string, a ...interface{}) *kedaScaledObject {
 	return f.mutation(func(s *kedav1alpha1.ScaledObject) {
 		s.Spec.ScaleTargetRef = &kedav1alpha1.ObjectReference{DeploymentName: fmt.Sprintf(format, a...)}
+	})
+}
+
+func (f *kedaScaledObject) Triggers(triggers ...kedav1alpha1.ScaleTriggers) *kedaScaledObject {
+	return f.mutation(func(s *kedav1alpha1.ScaledObject) {
+		s.Spec.Triggers = triggers
 	})
 }
 

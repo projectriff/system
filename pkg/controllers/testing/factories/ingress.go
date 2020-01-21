@@ -54,8 +54,12 @@ func (f *ingress) deepCopy() *ingress {
 	return Ingress(f.target.DeepCopy())
 }
 
-func (f *ingress) Create() apis.Object {
+func (f *ingress) Create() *networkingv1beta1.Ingress {
 	return f.deepCopy().target
+}
+
+func (f *ingress) CreateObject() apis.Object {
+	return f.Create()
 }
 
 func (f *ingress) mutation(m func(*networkingv1beta1.Ingress)) *ingress {

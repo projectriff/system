@@ -54,8 +54,12 @@ func (f *deployment) deepCopy() *deployment {
 	return Deployment(f.target.DeepCopy())
 }
 
-func (f *deployment) Create() apis.Object {
+func (f *deployment) Create() *appsv1.Deployment {
 	return f.deepCopy().target
+}
+
+func (f *deployment) CreateObject() apis.Object {
+	return f.Create()
 }
 
 func (f *deployment) mutation(m func(*appsv1.Deployment)) *deployment {

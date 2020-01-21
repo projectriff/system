@@ -51,8 +51,12 @@ func (f *adapterKnative) deepCopy() *adapterKnative {
 	return AdapterKnative(f.target.DeepCopy())
 }
 
-func (f *adapterKnative) Create() apis.Object {
+func (f *adapterKnative) Create() *knativev1alpha1.Adapter {
 	return f.deepCopy().target
+}
+
+func (f *adapterKnative) CreateObject() apis.Object {
+	return f.Create()
 }
 
 func (f *adapterKnative) mutation(m func(*knativev1alpha1.Adapter)) *adapterKnative {

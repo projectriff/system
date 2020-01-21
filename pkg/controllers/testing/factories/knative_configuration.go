@@ -53,8 +53,12 @@ func (f *knativeConfiguration) deepCopy() *knativeConfiguration {
 	return KnativeConfiguration(f.target.DeepCopy())
 }
 
-func (f *knativeConfiguration) Create() apis.Object {
+func (f *knativeConfiguration) Create() *knativeservingv1.Configuration {
 	return f.deepCopy().target
+}
+
+func (f *knativeConfiguration) CreateObject() apis.Object {
+	return f.Create()
 }
 
 func (f *knativeConfiguration) mutation(m func(*knativeservingv1.Configuration)) *knativeConfiguration {

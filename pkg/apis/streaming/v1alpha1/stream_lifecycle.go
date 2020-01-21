@@ -63,6 +63,6 @@ func (ss *StreamStatus) MarkBindingReady() {
 	streamCondSet.Manage(ss).MarkTrue(StreamConditionBindingReady)
 }
 
-func (ss *StreamStatus) MarkBindingNotReady(message string) {
-	streamCondSet.Manage(ss).MarkFalse(StreamConditionBindingReady, "BindingFailed", message)
+func (ss *StreamStatus) MarkBindingNotReady(message string, a ...interface{}) {
+	streamCondSet.Manage(ss).MarkFalse(StreamConditionBindingReady, "BindingFailed", message, a...)
 }

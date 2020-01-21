@@ -22,6 +22,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -63,7 +64,7 @@ func InMemoryGatewaySyncConfigReconciler(c controllers.Config, namespace string)
 			key := types.NamespacedName{Namespace: namespace, Name: inmemoryGatewayImages}
 			// track config for new images
 			c.Tracker.Track(
-				tracker.NewKey(schema.GroupVersionKind{Version: "v1", Kind: "ConfigMaps"}, key),
+				tracker.NewKey(schema.GroupVersionKind{Version: "v1", Kind: "ConfigMap"}, key),
 				types.NamespacedName{Namespace: parent.Namespace, Name: parent.Name},
 			)
 			if err := c.Get(ctx, key, &config); err != nil {
@@ -139,7 +140,7 @@ func InMemoryGatewayChildGatewayReconciler(c controllers.Config) controllers.Sub
 				Spec: streamingv1alpha1.GatewaySpec{
 					Template: template,
 					Ports: []corev1.ServicePort{
-						{Name: "gateway", Port: 8081},
+						{Name: "gateway", Port: 6565},
 						{Name: "provisioner", Port: 80, TargetPort: intstr.FromInt(8080)},
 					},
 				},
@@ -149,16 +150,15 @@ func InMemoryGatewayChildGatewayReconciler(c controllers.Config) controllers.Sub
 		},
 		ReflectChildStatusOnParent: func(parent *streamingv1alpha1.InMemoryGateway, child *streamingv1alpha1.Gateway, err error) {
 			if err != nil {
+				if apierrs.IsAlreadyExists(err) {
+					name := err.(apierrs.APIStatus).Status().Details.Name
+					parent.Status.MarkGatewayNotOwned(name)
+				}
 				return
 			}
-			if child == nil {
-				parent.Status.GatewayRef = nil
-				parent.Status.Address = nil
-			} else {
-				parent.Status.GatewayRef = refs.NewTypedLocalObjectReferenceForObject(child, c.Scheme)
-				parent.Status.Address = child.Status.Address
-				parent.Status.PropagateGatewayStatus(&child.Status)
-			}
+			parent.Status.GatewayRef = refs.NewTypedLocalObjectReferenceForObject(child, c.Scheme)
+			parent.Status.Address = child.Status.Address
+			parent.Status.PropagateGatewayStatus(&child.Status)
 		},
 		MergeBeforeUpdate: func(current, desired *streamingv1alpha1.Gateway) {
 			current.Labels = desired.Labels

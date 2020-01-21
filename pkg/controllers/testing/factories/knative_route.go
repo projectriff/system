@@ -51,8 +51,12 @@ func (f *knativeRoute) deepCopy() *knativeRoute {
 	return KnativeRoute(f.target.DeepCopy())
 }
 
-func (f *knativeRoute) Create() apis.Object {
+func (f *knativeRoute) Create() *knativeservingv1.Route {
 	return f.deepCopy().target
+}
+
+func (f *knativeRoute) CreateObject() apis.Object {
+	return f.Create()
 }
 
 func (f *knativeRoute) mutation(m func(*knativeservingv1.Route)) *knativeRoute {

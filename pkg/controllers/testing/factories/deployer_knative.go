@@ -54,8 +54,12 @@ func (f *deployerKnative) deepCopy() *deployerKnative {
 	return DeployerKnative(f.target.DeepCopy())
 }
 
-func (f *deployerKnative) Create() apis.Object {
+func (f *deployerKnative) Create() *knativev1alpha1.Deployer {
 	return f.deepCopy().target
+}
+
+func (f *deployerKnative) CreateObject() apis.Object {
+	return f.Create()
 }
 
 func (f *deployerKnative) mutation(m func(*knativev1alpha1.Deployer)) *deployerKnative {

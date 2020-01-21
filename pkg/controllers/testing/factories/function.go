@@ -54,8 +54,12 @@ func (f *function) deepCopy() *function {
 	return Function(f.target.DeepCopy())
 }
 
-func (f *function) Create() apis.Object {
+func (f *function) Create() *buildv1alpha1.Function {
 	return f.deepCopy().target
+}
+
+func (f *function) CreateObject() apis.Object {
+	return f.Create()
 }
 
 func (f *function) mutation(m func(*buildv1alpha1.Function)) *function {

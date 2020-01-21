@@ -52,8 +52,12 @@ func (f *serviceAccount) deepCopy() *serviceAccount {
 	return ServiceAccount(f.target.DeepCopy())
 }
 
-func (f *serviceAccount) Create() apis.Object {
+func (f *serviceAccount) Create() *corev1.ServiceAccount {
 	return f.deepCopy().target
+}
+
+func (f *serviceAccount) CreateObject() apis.Object {
+	return f.Create()
 }
 
 func (f *serviceAccount) mutation(m func(*corev1.ServiceAccount)) *serviceAccount {

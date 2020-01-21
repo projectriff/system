@@ -51,8 +51,12 @@ func (f *kpackClusterBuilder) deepCopy() *kpackClusterBuilder {
 	return KpackClusterBuilder(f.target.DeepCopy())
 }
 
-func (f *kpackClusterBuilder) Create() apis.Object {
+func (f *kpackClusterBuilder) Create() *kpackbuildv1alpha1.ClusterBuilder {
 	return f.deepCopy().target
+}
+
+func (f *kpackClusterBuilder) CreateObject() apis.Object {
+	return f.Create()
 }
 
 func (f *kpackClusterBuilder) mutation(m func(*kpackbuildv1alpha1.ClusterBuilder)) *kpackClusterBuilder {

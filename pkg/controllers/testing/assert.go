@@ -31,11 +31,15 @@ func AssertErrorEqual(expected error) VerifyFunc {
 	}
 }
 
-func AssertErrorMessagef(expected string, a ...interface{}) VerifyFunc {
+func AssertErrorMessagef(message string, a ...interface{}) VerifyFunc {
 	return func(t *testing.T, result controllerruntime.Result, err error) {
-		exp := fmt.Sprintf(expected, a...)
-		if err.Error() != exp {
-			t.Errorf("Unexpected error message: expected %v, actual %v", exp, err.Error())
+		expected := fmt.Sprintf(message, a...)
+		actual := ""
+		if err != nil {
+			actual = err.Error()
+		}
+		if actual != expected {
+			t.Errorf("Unexpected error message: expected %v, actual %v", expected, actual)
 		}
 	}
 }

@@ -51,7 +51,7 @@ func CreateTrackRequest(trackedObjGroup, trackedObjKind, trackedObjNamespace, tr
 }
 
 func NewTrackRequest(t, b Factory, scheme *runtime.Scheme) TrackRequest {
-	tracked, by := t.Create(), b.Create()
+	tracked, by := t.CreateObject(), b.CreateObject()
 	gvks, _, err := scheme.ObjectKinds(tracked)
 	if err != nil {
 		panic(err)

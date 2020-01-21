@@ -54,8 +54,12 @@ func (f *deployerCore) deepCopy() *deployerCore {
 	return DeployerCore(f.target.DeepCopy())
 }
 
-func (f *deployerCore) Create() apis.Object {
+func (f *deployerCore) Create() *corev1alpha1.Deployer {
 	return f.deepCopy().target
+}
+
+func (f *deployerCore) CreateObject() apis.Object {
+	return f.Create()
 }
 
 func (f *deployerCore) mutation(m func(*corev1alpha1.Deployer)) *deployerCore {

@@ -14,14 +14,28 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package testing
+package controllers
 
 import (
-	"github.com/projectriff/system/pkg/apis"
+	"context"
 )
 
-// Factory creates Kubernetes objects
-type Factory interface {
-	// CreateObject creates a new Kubernetes object
-	CreateObject() apis.Object
+const stashNonce string = "controller-stash-nonce"
+
+type stashMap map[StashKey]interface{}
+
+func WithStash(ctx context.Context) context.Context {
+	return context.WithValue(ctx, stashNonce, stashMap{})
+}
+
+type StashKey string
+
+func StashValue(ctx context.Context, key StashKey, value interface{}) {
+	stash := ctx.Value(stashNonce).(stashMap)
+	stash[key] = value
+}
+
+func RetrieveValue(ctx context.Context, key StashKey) interface{} {
+	stash := ctx.Value(stashNonce).(stashMap)
+	return stash[key]
 }

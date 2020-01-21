@@ -17,25 +17,23 @@ limitations under the License.
 package testing
 
 import (
-	"strings"
+	"context"
 	"testing"
 
 	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/projectriff/system/pkg/controllers"
 	"github.com/projectriff/system/pkg/tracker"
 )
 
-// Testcase holds a single row of a table test.
-type Testcase struct {
+// SubTestcase holds a single row of a table test.
+type SubTestcase struct {
 	// Name is a descriptive name for this test suitable as a first argument to t.Run()
 	Name string
 	// Focus is true if and only if only this and any other focussed tests are to be executed.
@@ -46,8 +44,10 @@ type Testcase struct {
 
 	// inputs
 
-	// Key identifies the object to be reconciled
-	Key types.NamespacedName
+	// Parent is the initial object passed to the sub reconciler
+	Parent Factory
+	// GivenStashedValues adds these items to the stash passed into the reconciler. Factories are resolved to their object.
+	GivenStashedValues map[controllers.StashKey]interface{}
 	// WithReactors installs each ReactionFunc into each fake clientset. ReactionFuncs intercept
 	// each call to the clientset providing the ability to mutate the resource or inject an error.
 	WithReactors []ReactionFunc
@@ -56,6 +56,10 @@ type Testcase struct {
 
 	// side effects
 
+	// ExpectParent is the expected parent as mutated after the sub reconciler, or nil if no modification
+	ExpectParent Factory
+	// ExpectStashedValues ensures each value is stashed. Values in the stash that are not expected are ignored. Factories are resolved to their object.
+	ExpectStashedValues map[controllers.StashKey]interface{}
 	// ExpectTracks holds the ordered list of Track calls expected during reconciliation
 	ExpectTracks []TrackRequest
 	// ExpectEvents holds the ordered list of events recorded during the reconciliation
@@ -66,8 +70,6 @@ type Testcase struct {
 	ExpectUpdates []Factory
 	// ExpectDeletes holds the ordered list of objects expected to be deleted during reconciliation
 	ExpectDeletes []DeleteRef
-	// ExpectStatusUpdates builds the ordered list of objects whose status is updated during reconciliation
-	ExpectStatusUpdates []Factory
 
 	// outputs
 
@@ -89,14 +91,11 @@ type Testcase struct {
 	CleanUp func(t *testing.T) error
 }
 
-// VerifyFunc is a verification function
-type VerifyFunc func(t *testing.T, result controllerruntime.Result, err error)
-
-// Table represents a list of Testcase tests instances.
-type Table []Testcase
+// SubTable represents a list of Testcase tests instances.
+type SubTable []SubTestcase
 
 // Test executes the test for a table row.
-func (tc *Testcase) Test(t *testing.T, scheme *runtime.Scheme, factory ReconcilerFactory) {
+func (tc *SubTestcase) Test(t *testing.T, scheme *runtime.Scheme, factory SubReconcilerFactory) {
 	t.Helper()
 	if tc.Skip {
 		t.SkipNow()
@@ -138,10 +137,18 @@ func (tc *Testcase) Test(t *testing.T, scheme *runtime.Scheme, factory Reconcile
 		}
 	}
 
+	ctx := controllers.WithStash(context.Background())
+	for k, v := range tc.GivenStashedValues {
+		if f, ok := v.(Factory); ok {
+			v = f.CreateObject()
+		}
+		controllers.StashValue(ctx, k, v)
+	}
+
+	parent := tc.Parent.CreateObject()
+
 	// Run the Reconcile we're testing.
-	result, err := c.Reconcile(reconcile.Request{
-		NamespacedName: tc.Key,
-	})
+	result, err := c.Reconcile(ctx, parent)
 
 	if (err != nil) != tc.ShouldErr {
 		t.Errorf("Reconcile() error = %v, ExpectErr %v", err, tc.ShouldErr)
@@ -155,6 +162,24 @@ func (tc *Testcase) Test(t *testing.T, scheme *runtime.Scheme, factory Reconcile
 
 	if tc.Verify != nil {
 		tc.Verify(t, result, err)
+	}
+
+	expectedParent := tc.Parent.CreateObject()
+	if tc.ExpectParent != nil {
+		expectedParent = tc.ExpectParent.CreateObject()
+	}
+	if diff := cmp.Diff(expectedParent, parent, ignoreLastTransitionTime, safeDeployDiff, ignoreTypeMeta, cmpopts.EquateEmpty()); diff != "" {
+		t.Errorf("Unexpected parent mutations(-expected, +actual): %s", diff)
+	}
+
+	for key, expected := range tc.ExpectStashedValues {
+		if f, ok := expected.(Factory); ok {
+			expected = f.CreateObject()
+		}
+		actual := controllers.RetrieveValue(ctx, key)
+		if diff := cmp.Diff(expected, actual, ignoreLastTransitionTime, safeDeployDiff, ignoreTypeMeta, cmpopts.EquateEmpty()); diff != "" {
+			t.Errorf("Unexpected stash value %q (-expected, +actual): %s", key, diff)
+		}
 	}
 
 	actualTracks := tracker.getTrackRequests()
@@ -211,55 +236,16 @@ func (tc *Testcase) Test(t *testing.T, scheme *runtime.Scheme, factory Reconcile
 		}
 	}
 
-	compareActions(t, "status update", tc.ExpectStatusUpdates, clientWrapper.statusUpdateActions, statusSubresourceOnly, ignoreLastTransitionTime, safeDeployDiff, cmpopts.EquateEmpty())
-
 	// Validate the given objects are not mutated by reconciliation
 	if diff := cmp.Diff(originalGivenObjects, givenObjects, safeDeployDiff, cmpopts.EquateEmpty()); diff != "" {
 		t.Errorf("Given objects mutated by test %s (-expected, +actual): %v", tc.Name, diff)
 	}
 }
 
-func compareActions(t *testing.T, actionName string, expectedActionFactories []Factory, actualActions []objectAction, diffOptions ...cmp.Option) {
-	t.Helper()
-	for i, exp := range expectedActionFactories {
-		if i >= len(actualActions) {
-			t.Errorf("Missing %s: %#v", actionName, exp.CreateObject())
-			continue
-		}
-		actual := actualActions[i].GetObject()
-
-		if diff := cmp.Diff(exp.CreateObject(), actual, diffOptions...); diff != "" {
-			t.Errorf("Unexpected %s (-expected, +actual): %s", actionName, diff)
-		}
-	}
-	if actual, expected := len(actualActions), len(expectedActionFactories); actual > expected {
-		for _, extra := range actualActions[expected:] {
-			t.Errorf("Extra %s: %#v", actionName, extra)
-		}
-	}
-}
-
-var (
-	ignoreLastTransitionTime = cmp.FilterPath(func(p cmp.Path) bool {
-		return strings.HasSuffix(p.String(), "LastTransitionTime.Inner.Time")
-	}, cmp.Ignore())
-	ignoreTypeMeta = cmp.FilterPath(func(p cmp.Path) bool {
-		path := p.String()
-		return strings.HasSuffix(path, "TypeMeta.APIVersion") || strings.HasSuffix(path, "TypeMeta.Kind")
-	}, cmp.Ignore())
-
-	statusSubresourceOnly = cmp.FilterPath(func(p cmp.Path) bool {
-		q := p.String()
-		return q != "" && !strings.HasPrefix(q, "Status")
-	}, cmp.Ignore())
-
-	safeDeployDiff = cmpopts.IgnoreUnexported(resource.Quantity{})
-)
-
 // Test executes the whole suite of the table tests.
-func (tb Table) Test(t *testing.T, scheme *runtime.Scheme, factory ReconcilerFactory) {
+func (tb SubTable) Test(t *testing.T, scheme *runtime.Scheme, factory SubReconcilerFactory) {
 	t.Helper()
-	focussed := Table{}
+	focussed := SubTable{}
 	for _, test := range tb {
 		if test.Focus {
 			focussed = append(focussed, test)
@@ -281,23 +267,7 @@ func (tb Table) Test(t *testing.T, scheme *runtime.Scheme, factory ReconcilerFac
 	}
 }
 
-// ReconcilerFactory returns a Reconciler.Interface to perform reconciliation in table test,
+// SubReconcilerFactory returns a Reconciler.Interface to perform reconciliation in table test,
 // ActionRecorderList/EventList to capture k8s actions/events produced during reconciliation
 // and FakeStatsReporter to capture stats.
-type ReconcilerFactory func(t *testing.T, row *Testcase, client client.Client, tracker tracker.Tracker, recorder record.EventRecorder, log logr.Logger) reconcile.Reconciler
-
-type DeleteRef struct {
-	Group     string
-	Kind      string
-	Namespace string
-	Name      string
-}
-
-func NewDeleteRef(action DeleteAction) DeleteRef {
-	return DeleteRef{
-		Group:     action.GetResource().Group,
-		Kind:      action.GetResource().Resource,
-		Namespace: action.GetNamespace(),
-		Name:      action.GetName(),
-	}
-}
+type SubReconcilerFactory func(t *testing.T, row *SubTestcase, client client.Client, tracker tracker.Tracker, recorder record.EventRecorder, log logr.Logger) controllers.SubReconciler

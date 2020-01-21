@@ -25,9 +25,7 @@ import (
 )
 
 const (
-	ProcessorConditionReady = apis.ConditionReady
-	// TODO add aggregated streams ready status
-	ProcessorConditionFunctionReady     apis.ConditionType = "FunctionReady"
+	ProcessorConditionReady                                = apis.ConditionReady
 	ProcessorConditionStreamsReady      apis.ConditionType = "StreamsReady"
 	ProcessorConditionDeploymentReady   apis.ConditionType = "DeploymentReady"
 	ProcessorConditionScaledObjectReady apis.ConditionType = "ScaledObjectReady"
