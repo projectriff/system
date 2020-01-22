@@ -110,7 +110,7 @@ jobs:
         env:
           KO_DOCKER_REPO: gcr.io/projectriff/system
 
-  fats:
+  acceptance:
     needs: stage
     # run even if the stage job was skipped
     if: "!( cancelled() || failure() )"
@@ -171,8 +171,8 @@ jobs:
       - name: 'Install runtime'
         run: .github/workflows/install-runtime.sh
         timeout-minutes: 10
-      - name: 'Run tests'
-        run: .github/workflows/run-tests.sh
+      - name: 'Run acceptance tests'
+        run: .github/workflows/acceptance.sh
         env:
           GCLOUD_CLIENT_SECRET: ${{ secrets.GCLOUD_CLIENT_SECRET }}
         timeout-minutes: 30
@@ -192,7 +192,7 @@ jobs:
         timeout-minutes: 10
 
   publish:
-    needs: fats
+    needs: acceptance
     if: |
       github.event_name == 'push' && startsWith(github.repository, 'projectriff/') && (
         github.ref == 'refs/heads/master' || (
