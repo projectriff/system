@@ -21,7 +21,7 @@ elif [ $RUNTIME = "knative" ]; then
 
 elif [ $RUNTIME = "streaming" ]; then
   echo "Cleanup Kafka"
-  kapp delete -n apps -a kafka -y
+  kapp delete -n apps -a internal-only-kafka -y
 
   echo "Cleanup riff Streaming Runtime"
   kapp delete -n apps -a riff-streaming-runtime -y

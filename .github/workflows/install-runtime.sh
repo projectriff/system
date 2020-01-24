@@ -67,6 +67,6 @@ elif [ $RUNTIME = "streaming" ]; then
   fi
 
   echo "Installing Kafka"
-  kapp deploy -n apps -a kafka -f https://storage.googleapis.com/projectriff/release/${riff_version}/kafka.yaml -y
+  kapp deploy -n apps -a internal-only-kafka -f https://storage.googleapis.com/projectriff/release/${riff_version}/internal-only-kafka.yaml -y
 
 fi
