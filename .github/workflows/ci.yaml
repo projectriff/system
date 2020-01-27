@@ -116,10 +116,16 @@ jobs:
     if: "!( cancelled() || failure() )"
     strategy:
       matrix:
-        runtime:
-        - core
-        - knative
-        - streaming
+        config:
+        - runtime: core
+        - runtime: knative
+        - runtime: streaming
+          gateway: inmemory
+        - runtime: streaming
+          gateway: kafka
+        # TODO test pulsar
+        # - runtime: streaming
+        #   gateway: pulsar
       fail-fast: false
     runs-on: ubuntu-latest
     steps:
@@ -143,9 +149,10 @@ jobs:
             echo "##[set-env name=CLUSTER]kind"
             echo "##[set-env name=REGISTRY]docker-daemon"
           fi
-          echo "##[set-env name=RUNTIME]${{ matrix.runtime }}"
-          echo "##[set-env name=CLUSTER_NAME]system-${job}-${{ matrix.runtime }}"
-          echo "##[set-env name=NAMESPACE]system-${job}-${{ matrix.runtime }}"
+          echo "##[set-env name=RUNTIME]${{ matrix.config.runtime }}"
+          echo "##[set-env name=GATEWAY]${{ matrix.config.gateway }}"
+          echo "##[set-env name=CLUSTER_NAME]system-${job}-${{ matrix.config.gateway }}-${{ matrix.config.runtime }}"
+          echo "##[set-env name=NAMESPACE]system-${job}-${{ matrix.config.gateway }}-${{ matrix.config.runtime }}"
         env:
           GCLOUD_CLIENT_SECRET: ${{ secrets.GCLOUD_CLIENT_SECRET }}
       - name: 'Fetch FATS'

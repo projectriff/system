@@ -7,8 +7,9 @@ source $FATS_DIR/macros/cleanup-user-resources.sh
 if [ $RUNTIME = "core" ]; then
   echo "Cleanup riff Core Runtime"
   kapp delete -n apps -a riff-core-runtime -y
+fi
 
-elif [ $RUNTIME = "knative" ]; then
+if [ $RUNTIME = "knative" ]; then
   echo "Cleanup riff Knative Runtime"
   kapp delete -n apps -a riff-knative-runtime -y
 
@@ -18,17 +19,23 @@ elif [ $RUNTIME = "knative" ]; then
   echo "Cleanup Istio"
   kapp delete -n apps -a istio -y
   kubectl get customresourcedefinitions.apiextensions.k8s.io -oname | grep istio.io | xargs -L1 kubectl delete
+fi
 
-elif [ $RUNTIME = "streaming" ]; then
-  echo "Cleanup Kafka"
-  kapp delete -n apps -a internal-only-kafka -y
+if [ $RUNTIME = "streaming" ]; then
+  if [ $GATEAY = "kafka" ]; then
+    echo "Cleanup Kafka"
+    kapp delete -n apps -a internal-only-kafka -y
+  fi
+  if [ $GATEAY = "pulsar" ]; then
+    echo "Cleanup Pulsar"
+    kapp delete -n apps -a internal-only-pulsar -y
+  fi
 
   echo "Cleanup riff Streaming Runtime"
   kapp delete -n apps -a riff-streaming-runtime -y
 
   echo "Cleanup KEDA"
   kapp delete -n apps -a keda -y
-
 fi
 
 echo "Cleanup riff Build"
