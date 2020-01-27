@@ -4,4 +4,4 @@ metadata:
   name: pulsar-gateway
 data:
   gatewayImage: bsideup/liiklus:0.9.0
-  provisionerImage: gcr.io/projectriff/pulsar-provisioner/provisioner-46159645f685fedb8f6279549d9d9574@sha256:718d5b69c03d8932edf81dd88a7d25cef81efc795c80056e866bfa865b5e3528
+  provisionerImage: gcr.io/projectriff/pulsar-provisioner/provisioner-46159645f685fedb8f6279549d9d9574:0.1.0-snapshot-20200127180243-f8a04d01fc5e18d6

@@ -126,6 +126,9 @@ func PulsarGatewayChildGatewayReconciler(c controllers.Config) controllers.SubRe
 								Env: []corev1.EnvVar{
 									{Name: "GATEWAY", Value: fmt.Sprintf("%s:6565", gatewayAddress.Hostname())},
 									{Name: "BROKER", Value: parent.Spec.ServiceURL},
+									// TODO make tenant and namespace configurable
+									{Name: "TENANT", Value: "public"},
+									{Name: "NAMESPACE", Value: "default"},
 								},
 							},
 						},
