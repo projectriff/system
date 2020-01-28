@@ -9,12 +9,6 @@ metadata:
   name: processors.streaming.projectriff.io
 spec:
   additionalPrinterColumns:
-  - JSONPath: .spec.inputs[*].stream
-    name: Inputs
-    type: string
-  - JSONPath: .spec.outputs[*].stream
-    name: Outputs
-    type: string
   - JSONPath: .status.conditions[?(@.type=="Ready")].status
     name: Ready
     type: string
