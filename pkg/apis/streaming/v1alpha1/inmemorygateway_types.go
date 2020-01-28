@@ -29,6 +29,7 @@ import (
 
 var (
 	InMemoryGatewayLabelKey = GroupVersion.Group + "/inmemory-gateway"
+	InMemoryGatewayType     = "inmemory"
 )
 
 var (
@@ -58,6 +59,7 @@ type InMemoryGatewayStatus struct {
 // +kubebuilder:resource:categories="riff"
 // +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
 // +kubebuilder:printcolumn:name="Reason",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].reason`
+// +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 // +genclient
 
 // InMemoryGateway is the Schema for the gateways API

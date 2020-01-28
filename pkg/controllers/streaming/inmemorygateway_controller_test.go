@@ -89,6 +89,7 @@ func TestInMemoryGatewayReconciler(t *testing.T) {
 		NamespaceName(testNamespace, testName).
 		ObjectMeta(func(om factories.ObjectMeta) {
 			om.AddLabel(streamingv1alpha1.InMemoryGatewayLabelKey, testName)
+			om.AddLabel(streamingv1alpha1.GatewayTypeLabelKey, streamingv1alpha1.InMemoryGatewayType)
 			om.ControlledBy(inMemoryGateway, scheme)
 		}).
 		Ports(
@@ -103,6 +104,7 @@ func TestInMemoryGatewayReconciler(t *testing.T) {
 	gatewayComplete := gatewayGiven.
 		PodTemplateSpec(func(pts factories.PodTemplateSpec) {
 			pts.AddLabel(streamingv1alpha1.InMemoryGatewayLabelKey, testName)
+			pts.AddLabel(streamingv1alpha1.GatewayTypeLabelKey, streamingv1alpha1.InMemoryGatewayType)
 			pts.ContainerNamed("gateway", func(c *corev1.Container) {
 				c.Image = testGatewayImage
 				c.Env = []corev1.EnvVar{

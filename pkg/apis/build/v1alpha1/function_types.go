@@ -85,8 +85,13 @@ type FunctionStatus struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:categories="riff"
+// +kubebuilder:printcolumn:name="Latest Image",type=string,JSONPath=`.status.latestImage`
+// +kubebuilder:printcolumn:name="Artifact",type=string,JSONPath=`.spec.artifact`
+// +kubebuilder:printcolumn:name="Handler",type=string,JSONPath=`.spec.handler`
+// +kubebuilder:printcolumn:name="Invoker",type=string,JSONPath=`.spec.invoker`
 // +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
 // +kubebuilder:printcolumn:name="Reason",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].reason`
+// +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 // +genclient
 
 // Function is the Schema for the functions API

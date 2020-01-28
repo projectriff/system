@@ -94,6 +94,7 @@ func PulsarGatewayChildGatewayReconciler(c controllers.Config) controllers.SubRe
 		DesiredChild: func(parent *streamingv1alpha1.PulsarGateway) (*streamingv1alpha1.Gateway, error) {
 			labels := controllers.MergeMaps(parent.Labels, map[string]string{
 				streamingv1alpha1.PulsarGatewayLabelKey: parent.Name,
+				streamingv1alpha1.GatewayTypeLabelKey:   streamingv1alpha1.PulsarGatewayType,
 			})
 
 			var template *corev1.PodTemplateSpec

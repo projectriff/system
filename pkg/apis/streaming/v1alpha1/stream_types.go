@@ -69,6 +69,7 @@ type BindingReference struct {
 // +kubebuilder:printcolumn:name="Content Type",type=string,JSONPath=`.spec.contentType`
 // +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
 // +kubebuilder:printcolumn:name="Reason",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].reason`
+// +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 // +genclient
 
 // Stream is the Schema for the streams API

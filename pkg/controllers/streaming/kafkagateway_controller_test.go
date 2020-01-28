@@ -91,6 +91,7 @@ func TestKafkaGatewayReconciler(t *testing.T) {
 		NamespaceName(testNamespace, testName).
 		ObjectMeta(func(om factories.ObjectMeta) {
 			om.AddLabel(streamingv1alpha1.KafkaGatewayLabelKey, testName)
+			om.AddLabel(streamingv1alpha1.GatewayTypeLabelKey, streamingv1alpha1.KafkaGatewayType)
 			om.ControlledBy(kafkaGateway, scheme)
 		}).
 		Ports(
@@ -105,6 +106,7 @@ func TestKafkaGatewayReconciler(t *testing.T) {
 	gatewayComplete := gatewayGiven.
 		PodTemplateSpec(func(pts factories.PodTemplateSpec) {
 			pts.AddLabel(streamingv1alpha1.KafkaGatewayLabelKey, testName)
+			pts.AddLabel(streamingv1alpha1.GatewayTypeLabelKey, streamingv1alpha1.KafkaGatewayType)
 			pts.ContainerNamed("gateway", func(c *corev1.Container) {
 				c.Image = testGatewayImage
 				c.Env = []corev1.EnvVar{

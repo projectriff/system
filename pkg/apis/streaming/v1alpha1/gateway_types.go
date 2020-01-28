@@ -29,7 +29,8 @@ import (
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 var (
-	GatewayLabelKey = GroupVersion.Group + "/gateway"
+	GatewayLabelKey     = GroupVersion.Group + "/gateway"
+	GatewayTypeLabelKey = GroupVersion.Group + "/gateway-type"
 )
 
 var (
@@ -60,8 +61,10 @@ type GatewayStatus struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:categories="riff"
+// +kubebuilder:printcolumn:name="Type",type=string,JSONPath=`.metadata.labels['streaming\.projectriff\.io/gateway-type']`
 // +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
 // +kubebuilder:printcolumn:name="Reason",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].reason`
+// +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 // +genclient
 
 // Gateway is the Schema for the gateways API
