@@ -91,6 +91,7 @@ func TestPulsarGatewayReconciler(t *testing.T) {
 		NamespaceName(testNamespace, testName).
 		ObjectMeta(func(om factories.ObjectMeta) {
 			om.AddLabel(streamingv1alpha1.PulsarGatewayLabelKey, testName)
+			om.AddLabel(streamingv1alpha1.GatewayTypeLabelKey, streamingv1alpha1.PulsarGatewayType)
 			om.ControlledBy(pulsarGateway, scheme)
 		}).
 		Ports(
@@ -105,6 +106,7 @@ func TestPulsarGatewayReconciler(t *testing.T) {
 	gatewayComplete := gatewayGiven.
 		PodTemplateSpec(func(pts factories.PodTemplateSpec) {
 			pts.AddLabel(streamingv1alpha1.PulsarGatewayLabelKey, testName)
+			pts.AddLabel(streamingv1alpha1.GatewayTypeLabelKey, streamingv1alpha1.PulsarGatewayType)
 			pts.ContainerNamed("gateway", func(c *corev1.Container) {
 				c.Image = testGatewayImage
 				c.Env = []corev1.EnvVar{

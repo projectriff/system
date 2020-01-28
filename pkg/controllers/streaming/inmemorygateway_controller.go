@@ -94,6 +94,7 @@ func InMemoryGatewayChildGatewayReconciler(c controllers.Config) controllers.Sub
 		DesiredChild: func(parent *streamingv1alpha1.InMemoryGateway) (*streamingv1alpha1.Gateway, error) {
 			labels := controllers.MergeMaps(parent.Labels, map[string]string{
 				streamingv1alpha1.InMemoryGatewayLabelKey: parent.Name,
+				streamingv1alpha1.GatewayTypeLabelKey:     streamingv1alpha1.InMemoryGatewayType,
 			})
 
 			var template *corev1.PodTemplateSpec

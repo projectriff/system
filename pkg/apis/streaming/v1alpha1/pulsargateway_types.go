@@ -29,6 +29,7 @@ import (
 
 var (
 	PulsarGatewayLabelKey = GroupVersion.Group + "/pulsar-gateway"
+	PulsarGatewayType     = "pulsar"
 )
 
 var (
@@ -59,8 +60,10 @@ type PulsarGatewayStatus struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:categories="riff"
+// +kubebuilder:printcolumn:name="Service URL",type=string,JSONPath=`.spec.serviceURL`
 // +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
 // +kubebuilder:printcolumn:name="Reason",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].reason`
+// +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 // +genclient
 
 // PulsarGateway is the Schema for the gateways API

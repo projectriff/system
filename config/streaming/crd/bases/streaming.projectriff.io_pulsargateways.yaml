@@ -9,12 +9,18 @@ metadata:
   name: pulsargateways.streaming.projectriff.io
 spec:
   additionalPrinterColumns:
+  - JSONPath: .spec.serviceURL
+    name: Service URL
+    type: string
   - JSONPath: .status.conditions[?(@.type=="Ready")].status
     name: Ready
     type: string
   - JSONPath: .status.conditions[?(@.type=="Ready")].reason
     name: Reason
     type: string
+  - JSONPath: .metadata.creationTimestamp
+    name: Age
+    type: date
   group: streaming.projectriff.io
   names:
     categories:

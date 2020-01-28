@@ -9,12 +9,18 @@ metadata:
   name: kafkagateways.streaming.projectriff.io
 spec:
   additionalPrinterColumns:
+  - JSONPath: .spec.bootstrapServers
+    name: Bootstrap Servers
+    type: string
   - JSONPath: .status.conditions[?(@.type=="Ready")].status
     name: Ready
     type: string
   - JSONPath: .status.conditions[?(@.type=="Ready")].reason
     name: Reason
     type: string
+  - JSONPath: .metadata.creationTimestamp
+    name: Age
+    type: date
   group: streaming.projectriff.io
   names:
     categories:

@@ -9,12 +9,18 @@ metadata:
   name: applications.build.projectriff.io
 spec:
   additionalPrinterColumns:
+  - JSONPath: .status.latestImage
+    name: Latest Image
+    type: string
   - JSONPath: .status.conditions[?(@.type=="Ready")].status
     name: Ready
     type: string
   - JSONPath: .status.conditions[?(@.type=="Ready")].reason
     name: Reason
     type: string
+  - JSONPath: .metadata.creationTimestamp
+    name: Age
+    type: date
   group: build.projectriff.io
   names:
     categories:

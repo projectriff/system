@@ -29,6 +29,7 @@ import (
 
 var (
 	KafkaGatewayLabelKey = GroupVersion.Group + "/kafka-gateway"
+	KafkaGatewayType     = "kafka"
 )
 
 var (
@@ -63,8 +64,10 @@ type KafkaGatewayStatus struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:categories="riff"
+// +kubebuilder:printcolumn:name="Bootstrap Servers",type=string,JSONPath=`.spec.bootstrapServers`
 // +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
 // +kubebuilder:printcolumn:name="Reason",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].reason`
+// +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 // +genclient
 
 // KafkaGateway is the Schema for the gateways API

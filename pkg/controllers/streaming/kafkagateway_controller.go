@@ -94,6 +94,7 @@ func KafkaGatewayChildGatewayReconciler(c controllers.Config) controllers.SubRec
 		DesiredChild: func(parent *streamingv1alpha1.KafkaGateway) (*streamingv1alpha1.Gateway, error) {
 			labels := controllers.MergeMaps(parent.Labels, map[string]string{
 				streamingv1alpha1.KafkaGatewayLabelKey: parent.Name,
+				streamingv1alpha1.GatewayTypeLabelKey:  streamingv1alpha1.KafkaGatewayType,
 			})
 
 			var template *corev1.PodTemplateSpec
