@@ -79,7 +79,7 @@ elif [ $RUNTIME = "streaming" ]; then
 
     riff streaming processor create $name --function-ref $name --namespace $NAMESPACE --input ${lower_stream} --output ${upper_stream} --tail
 
-    kubectl exec riff-dev -n $NAMESPACE -- subscribe ${upper_stream} -n $NAMESPACE --payload-as-string | tee result.txt &
+    kubectl exec riff-dev -n $NAMESPACE -- subscribe ${upper_stream} -n $NAMESPACE | tee result.txt &
     sleep 10
     kubectl exec riff-dev -n $NAMESPACE -- publish ${lower_stream} -n $NAMESPACE --payload "system" --content-type "text/plain"
 
@@ -90,7 +90,7 @@ elif [ $RUNTIME = "streaming" ]; then
       echo -n "."
       cnt=$((cnt+1))
 
-      actual_data=`cat result.txt | jq -r .payload`
+      actual_data=`cat result.txt | jq -r .payload | xargs -I {} sh -c 'echo {} | base64 --decode'`
       if [ "$actual_data" == "$expected_data" ]; then
         break
       fi
@@ -99,7 +99,7 @@ elif [ $RUNTIME = "streaming" ]; then
     done
     fats_assert "$expected_data" "$actual_data"
 
-    kubectl exec riff-dev -n $NAMESPACE -- sh -c 'kill $(pidof subscribe)'
+    kubectl exec riff-dev -n $NAMESPACE -- pkill subscribe
 
     riff streaming stream delete ${lower_stream} --namespace $NAMESPACE
     riff streaming stream delete ${upper_stream} --namespace $NAMESPACE
