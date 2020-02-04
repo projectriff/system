@@ -121,6 +121,8 @@ func TestPulsarGatewayReconciler(t *testing.T) {
 				c.Env = []corev1.EnvVar{
 					{Name: "GATEWAY", Value: fmt.Sprintf("%s:6565", testProvisionerHostname)},
 					{Name: "BROKER", Value: testServiceURL},
+					{Name: "TENANT", Value: "public"},
+					{Name: "NAMESPACE", Value: "default"},
 				}
 			})
 		})

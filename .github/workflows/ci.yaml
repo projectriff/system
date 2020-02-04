@@ -10,7 +10,7 @@ on:
 env:
   FATS_DIR: fats
   FATS_REPO: projectriff/fats
-  FATS_REFSPEC: fa0d71d66ad163346f3ad20d7ab55784d6a11b20 # master as of 2020-01-30
+  FATS_REFSPEC: 41932db26b9d25a1e2e9bfc17b0f6a1f750f7242 # master as of 2020-02-03
 
 jobs:
 
@@ -116,10 +116,16 @@ jobs:
     if: "!( cancelled() || failure() )"
     strategy:
       matrix:
-        runtime:
-        - core
-        - knative
-        - streaming
+        config:
+        - runtime: core
+        - runtime: knative
+        - runtime: streaming
+          gateway: inmemory
+        - runtime: streaming
+          gateway: kafka
+        # TODO restore pulsar tests
+        # - runtime: streaming
+        #   gateway: pulsar
       fail-fast: false
     runs-on: ubuntu-latest
     steps:
@@ -143,9 +149,10 @@ jobs:
             echo "##[set-env name=CLUSTER]kind"
             echo "##[set-env name=REGISTRY]docker-daemon"
           fi
-          echo "##[set-env name=RUNTIME]${{ matrix.runtime }}"
-          echo "##[set-env name=CLUSTER_NAME]system-${job}-${{ matrix.runtime }}"
-          echo "##[set-env name=NAMESPACE]system-${job}-${{ matrix.runtime }}"
+          echo "##[set-env name=RUNTIME]${{ matrix.config.runtime }}"
+          echo "##[set-env name=GATEWAY]${{ matrix.config.gateway }}"
+          echo "##[set-env name=CLUSTER_NAME]system-${job}-${{ matrix.config.gateway }}-${{ matrix.config.runtime }}"
+          echo "##[set-env name=NAMESPACE]system-${job}-${{ matrix.config.gateway }}-${{ matrix.config.runtime }}"
         env:
           GCLOUD_CLIENT_SECRET: ${{ secrets.GCLOUD_CLIENT_SECRET }}
       - name: 'Fetch FATS'

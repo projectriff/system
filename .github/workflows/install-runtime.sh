@@ -39,8 +39,9 @@ if [ $RUNTIME = "core" ]; then
   elif [ $MODE = "pull_request" ]; then
     ko resolve -f config/riff-core.yaml | kapp deploy -n apps -a riff-core-runtime -f - -y
   fi
+fi
 
-elif [ $RUNTIME = "knative" ]; then
+if [ $RUNTIME = "knative" ]; then
   echo "Installing Istio"
   ytt -f https://storage.googleapis.com/projectriff/release/${riff_version}/istio.yaml -f https://storage.googleapis.com/projectriff/charts/overlays/service-$(echo ${K8S_SERVICE_TYPE} | tr '[A-Z]' '[a-z]').yaml --file-mark istio.yaml:type=yaml-plain \
     | kapp deploy -n apps -a istio -f - -y
@@ -54,8 +55,9 @@ elif [ $RUNTIME = "knative" ]; then
   elif [ $MODE = "pull_request" ]; then
     ko resolve -f config/riff-knative.yaml | kapp deploy -n apps -a riff-knative-runtime -f - -y
   fi
+fi
 
-elif [ $RUNTIME = "streaming" ]; then
+if [ $RUNTIME = "streaming" ]; then
   echo "Installing KEDA"
   kapp deploy -n apps -a keda -f https://storage.googleapis.com/projectriff/release/${riff_version}/keda.yaml -y
 
@@ -66,7 +68,12 @@ elif [ $RUNTIME = "streaming" ]; then
     ko resolve -f config/riff-streaming.yaml | kapp deploy -n apps -a riff-streaming-runtime -f - -y
   fi
 
-  echo "Installing Kafka"
-  kapp deploy -n apps -a internal-only-kafka -f https://storage.googleapis.com/projectriff/release/${riff_version}/internal-only-kafka.yaml -y
-
+  if [ $GATEWAY = "kafka" ]; then
+    echo "Installing Kafka"
+    kapp deploy -n apps -a internal-only-kafka -f https://storage.googleapis.com/projectriff/release/${riff_version}/internal-only-kafka.yaml -y
+  fi
+  if [ $GATEWAY = "pulsar" ]; then
+    echo "Installing Pulsar"
+    kapp deploy -n apps -a internal-only-pulsar -f https://storage.googleapis.com/projectriff/release/${riff_version}/internal-only-pulsar.yaml -y
+  fi
 fi
