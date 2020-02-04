@@ -15,13 +15,18 @@ if [ $RUNTIME = "knative" ]; then
 
   echo "Cleanup Knative Serving"
   kapp delete -n apps -a knative -y
-
-  echo "Cleanup Istio"
-  kapp delete -n apps -a istio -y
-  kubectl get customresourcedefinitions.apiextensions.k8s.io -oname | grep istio.io | xargs -L1 kubectl delete
 fi
 
 if [ $RUNTIME = "streaming" ]; then
+  echo "Cleanup Kafka"
+  kapp delete -n apps -a internal-only-kafka -y
+
+  echo "Cleanup riff Streaming Runtime"
+  kapp delete -n apps -a riff-streaming-runtime -y
+
+  echo "Cleanup KEDA"
+  kapp delete -n apps -a keda -y
+
   if [ $GATEAY = "kafka" ]; then
     echo "Cleanup Kafka"
     kapp delete -n apps -a internal-only-kafka -y
@@ -30,13 +35,10 @@ if [ $RUNTIME = "streaming" ]; then
     echo "Cleanup Pulsar"
     kapp delete -n apps -a internal-only-pulsar -y
   fi
-
-  echo "Cleanup riff Streaming Runtime"
-  kapp delete -n apps -a riff-streaming-runtime -y
-
-  echo "Cleanup KEDA"
-  kapp delete -n apps -a keda -y
 fi
+
+echo "Cleanup Contour"
+kapp delete -n apps -a contour -y  
 
 echo "Cleanup riff Build"
 kapp delete -n apps -a riff-build -y

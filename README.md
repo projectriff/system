@@ -88,11 +88,11 @@ Build:
 
 Core Runtime:
 
-- [Istio](https://istio.io) (optional for ingress)
+- [Contour](https://projectcontour.io) (for ingress)
 
 Knative Runtime:
 
-- [Istio](https://istio.io)
+- [Contour](https://projectcontour.io) (for ingress)
 - [Knative Serving](https://github.com/knative/serving)
 
 Streaming Runtime:

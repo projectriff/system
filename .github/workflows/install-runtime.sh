@@ -32,6 +32,10 @@ elif [ $MODE = "pull_request" ]; then
 fi
 kapp deploy -n apps -a riff-builders -f https://storage.googleapis.com/projectriff/release/${riff_version}/riff-builders.yaml -y
 
+echo "Installing Contour"
+ytt -f https://storage.googleapis.com/projectriff/release/${riff_version}/contour.yaml -f https://storage.googleapis.com/projectriff/charts/overlays/service-$(echo ${K8S_SERVICE_TYPE} | tr '[A-Z]' '[a-z]').yaml --file-mark contour.yaml:type=yaml-plain \
+  | kapp deploy -n apps -a contour -f - -y
+
 if [ $RUNTIME = "core" ]; then
   echo "Installing riff Core Runtime"
   if [ $MODE = "push" ]; then
@@ -41,11 +45,7 @@ if [ $RUNTIME = "core" ]; then
   fi
 fi
 
-if [ $RUNTIME = "knative" ]; then
-  echo "Installing Istio"
-  ytt -f https://storage.googleapis.com/projectriff/release/${riff_version}/istio.yaml -f https://storage.googleapis.com/projectriff/charts/overlays/service-$(echo ${K8S_SERVICE_TYPE} | tr '[A-Z]' '[a-z]').yaml --file-mark istio.yaml:type=yaml-plain \
-    | kapp deploy -n apps -a istio -f - -y
-  
+if [ $RUNTIME = "knative" ]; then  
   echo "Installing Knative Serving"
   kapp deploy -n apps -a knative -f https://storage.googleapis.com/projectriff/release/${riff_version}/knative.yaml -y
 

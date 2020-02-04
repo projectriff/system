@@ -41,13 +41,10 @@ if [ $RUNTIME = "core" ] || [ $RUNTIME = "knative" ]; then
         "${curl_opts}" \
         "${expected_data}"
       # invoke External
-      # TODO also test ingress for the core runtime
-      if [ $RUNTIME = "knative" ]; then
-        source ${FATS_DIR}/macros/invoke_${RUNTIME}_deployer.sh \
-          "${name}" \
-          "${curl_opts}" \
-          "${expected_data}"
-      fi
+      source ${FATS_DIR}/macros/invoke_contour.sh \
+        "$(kubectl get deployers.${RUNTIME}.projectriff.io ${name} --namespace ${NAMESPACE} -ojsonpath='{.status.url}')" \
+        "${curl_opts}" \
+        "${expected_data}"
       riff $RUNTIME deployer delete $name --namespace $NAMESPACE
 
       riff $test delete $name --namespace $NAMESPACE
