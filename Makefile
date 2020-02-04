@@ -85,7 +85,7 @@ generate-internal: controller-gen mockery
 controller-gen:
 ifeq (, $(shell which controller-gen))
 	# avoid go.* mutations from go get
-	( cd .. && GO111MODULE=on go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.4 )
+	( cd .. && GO111MODULE=on go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.5 )
 CONTROLLER_GEN=$(GOBIN)/controller-gen
 else
 CONTROLLER_GEN=$(shell which controller-gen)
