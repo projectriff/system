@@ -326,13 +326,13 @@ func (r *ChildReconciler) Reconcile(ctx context.Context, parent apis.Object) (ct
 	child, err := r.reconcile(ctx, parent)
 	if err != nil {
 		if apierrs.IsAlreadyExists(err) {
-			// check if the failed create is owned by the parent.
+			// check if the resource blocking create is owned by the parent.
 			// the created child from a previous turn may be slow to appear in the informer cache, but shouldn't appear
 			// on the parent as being not ready.
 			apierr := err.(apierrs.APIStatus)
-			maybechild := r.ChildType.DeepCopyObject().(apis.Object)
-			_ = r.APIReader.Get(ctx, types.NamespacedName{Namespace: parent.GetNamespace(), Name: apierr.Status().Details.Name}, maybechild)
-			if metav1.IsControlledBy(maybechild, parent) {
+			conflicted := r.ChildType.DeepCopyObject().(apis.Object)
+			_ = r.APIReader.Get(ctx, types.NamespacedName{Namespace: parent.GetNamespace(), Name: apierr.Status().Details.Name}, conflicted)
+			if metav1.IsControlledBy(conflicted, parent) {
 				// skip updating the parent's status, fail and try again
 				return ctrl.Result{}, err
 			}
