@@ -73,10 +73,11 @@ func main() {
 
 	if err = buildcontrollers.ApplicationReconciler(
 		controllers.Config{
-			Client:   mgr.GetClient(),
-			Recorder: mgr.GetEventRecorderFor("Application"),
-			Log:      ctrl.Log.WithName("controllers").WithName("Application"),
-			Scheme:   mgr.GetScheme(),
+			Client:    mgr.GetClient(),
+			APIReader: mgr.GetAPIReader(),
+			Recorder:  mgr.GetEventRecorderFor("Application"),
+			Log:       ctrl.Log.WithName("controllers").WithName("Application"),
+			Scheme:    mgr.GetScheme(),
 		},
 	).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Application")
@@ -101,10 +102,11 @@ func main() {
 	}
 	if err = buildcontrollers.FunctionReconciler(
 		controllers.Config{
-			Client:   mgr.GetClient(),
-			Recorder: mgr.GetEventRecorderFor("Function"),
-			Log:      ctrl.Log.WithName("controllers").WithName("Function"),
-			Scheme:   mgr.GetScheme(),
+			Client:    mgr.GetClient(),
+			APIReader: mgr.GetAPIReader(),
+			Recorder:  mgr.GetEventRecorderFor("Function"),
+			Log:       ctrl.Log.WithName("controllers").WithName("Function"),
+			Scheme:    mgr.GetScheme(),
 		},
 	).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Function")

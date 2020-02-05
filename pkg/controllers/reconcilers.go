@@ -25,7 +25,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -45,10 +47,11 @@ var (
 // passed to sub-reconcilers.
 type Config struct {
 	client.Client
-	Recorder record.EventRecorder
-	Log      logr.Logger
-	Scheme   *runtime.Scheme
-	Tracker  tracker.Tracker
+	APIReader client.Reader
+	Recorder  record.EventRecorder
+	Log       logr.Logger
+	Scheme    *runtime.Scheme
+	Tracker   tracker.Tracker
 }
 
 // ParentReconciler is a controller-runtime reconciler that reconciles a given
@@ -323,6 +326,16 @@ func (r *ChildReconciler) Reconcile(ctx context.Context, parent apis.Object) (ct
 	child, err := r.reconcile(ctx, parent)
 	if err != nil {
 		if apierrs.IsAlreadyExists(err) {
+			// check if the resource blocking create is owned by the parent.
+			// the created child from a previous turn may be slow to appear in the informer cache, but shouldn't appear
+			// on the parent as being not ready.
+			apierr := err.(apierrs.APIStatus)
+			conflicted := r.ChildType.DeepCopyObject().(apis.Object)
+			_ = r.APIReader.Get(ctx, types.NamespacedName{Namespace: parent.GetNamespace(), Name: apierr.Status().Details.Name}, conflicted)
+			if metav1.IsControlledBy(conflicted, parent) {
+				// skip updating the parent's status, fail and try again
+				return ctrl.Result{}, err
+			}
 			r.Log.Info("unable to reconcile child, not owned", typeName(r.ParentType), parent, typeName(r.ChildType), r.sanitize(child))
 			r.reflectChildStatusOnParent(parent, child, err)
 			return ctrl.Result{}, nil

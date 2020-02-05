@@ -55,8 +55,6 @@ func TestProcessorReconciler(t *testing.T) {
 	processorConditionStreamsReady := factories.Condition().Type(streamingv1alpha1.ProcessorConditionStreamsReady)
 	deploymentConditionAvailable := factories.Condition().Type("Available")
 	deploymentConditionProgressing := factories.Condition().Type("Progressing")
-	scaledObjectConditionReady := factories.Condition().Type("Ready")
-	streamConditionReady := factories.Condition().Type(streamingv1alpha1.StreamConditionReady)
 
 	processorImages := "riff-streaming-processor"
 	processorImageKey := "processorImage"
@@ -126,14 +124,6 @@ func TestProcessorReconciler(t *testing.T) {
 		StatusLatestImage(testImage).
 		StatusDeploymentRef("%s-processor-000", testName).
 		StatusScaledObjectRef("%s-processor-000", testName)
-	processorReady := processor.
-		StatusObservedGeneration(1).
-		StatusConditions(
-			processorConditionDeploymentReady.True(),
-			processorConditionReady.True(),
-			processorConditionScaledObjectReady.True(),
-			processorConditionStreamsReady.True(),
-		)
 
 	deploymentCreate := factories.Deployment().
 		ObjectMeta(func(om factories.ObjectMeta) {
@@ -284,14 +274,15 @@ func TestProcessorReconciler(t *testing.T) {
 			},
 		}}
 
-		table.Test(t, scheme, func(t *testing.T, row *rtesting.Testcase, client client.Client, tracker tracker.Tracker, recorder record.EventRecorder, log logr.Logger) reconcile.Reconciler {
+		table.Test(t, scheme, func(t *testing.T, row *rtesting.Testcase, client client.Client, apiReader client.Reader, tracker tracker.Tracker, recorder record.EventRecorder, log logr.Logger) reconcile.Reconciler {
 			return streaming.ProcessorReconciler(
 				controllers.Config{
-					Client:   client,
-					Recorder: recorder,
-					Log:      log,
-					Scheme:   scheme,
-					Tracker:  tracker,
+					Client:    client,
+					APIReader: apiReader,
+					Recorder:  recorder,
+					Log:       log,
+					Scheme:    scheme,
+					Tracker:   tracker,
 				},
 				testSystemNamespace,
 			)
@@ -326,11 +317,12 @@ func TestProcessorReconciler(t *testing.T) {
 		table.Test(t, scheme, func(t *testing.T, row *rtesting.SubTestcase, client client.Client, tracker tracker.Tracker, recorder record.EventRecorder, log logr.Logger) controllers.SubReconciler {
 			return streaming.ProcessorSyncProcessorImages(
 				controllers.Config{
-					Client:   client,
-					Recorder: recorder,
-					Log:      log,
-					Scheme:   scheme,
-					Tracker:  tracker,
+					Client:    client,
+					APIReader: client,
+					Recorder:  recorder,
+					Log:       log,
+					Scheme:    scheme,
+					Tracker:   tracker,
 				},
 				testSystemNamespace,
 			)
@@ -420,11 +412,12 @@ func TestProcessorReconciler(t *testing.T) {
 		table.Test(t, scheme, func(t *testing.T, row *rtesting.SubTestcase, client client.Client, tracker tracker.Tracker, recorder record.EventRecorder, log logr.Logger) controllers.SubReconciler {
 			return streaming.ProcessorBuildRefReconciler(
 				controllers.Config{
-					Client:   client,
-					Recorder: recorder,
-					Log:      log,
-					Scheme:   scheme,
-					Tracker:  tracker,
+					Client:    client,
+					APIReader: client,
+					Recorder:  recorder,
+					Log:       log,
+					Scheme:    scheme,
+					Tracker:   tracker,
 				},
 			)
 		})
@@ -570,11 +563,12 @@ func TestProcessorReconciler(t *testing.T) {
 		table.Test(t, scheme, func(t *testing.T, row *rtesting.SubTestcase, client client.Client, tracker tracker.Tracker, recorder record.EventRecorder, log logr.Logger) controllers.SubReconciler {
 			return streaming.ProcessorResolveStreamsReconciler(
 				controllers.Config{
-					Client:   client,
-					Recorder: recorder,
-					Log:      log,
-					Scheme:   scheme,
-					Tracker:  tracker,
+					Client:    client,
+					APIReader: client,
+					Recorder:  recorder,
+					Log:       log,
+					Scheme:    scheme,
+					Tracker:   tracker,
 				},
 			)
 		})
@@ -879,11 +873,12 @@ func TestProcessorReconciler(t *testing.T) {
 		table.Test(t, scheme, func(t *testing.T, row *rtesting.SubTestcase, client client.Client, tracker tracker.Tracker, recorder record.EventRecorder, log logr.Logger) controllers.SubReconciler {
 			return streaming.ProcessorChildDeploymentReconciler(
 				controllers.Config{
-					Client:   client,
-					Recorder: recorder,
-					Log:      log,
-					Scheme:   scheme,
-					Tracker:  tracker,
+					Client:    client,
+					APIReader: client,
+					Recorder:  recorder,
+					Log:       log,
+					Scheme:    scheme,
+					Tracker:   tracker,
 				},
 			)
 		})
@@ -1156,23 +1151,14 @@ func TestProcessorReconciler(t *testing.T) {
 		table.Test(t, scheme, func(t *testing.T, row *rtesting.SubTestcase, client client.Client, tracker tracker.Tracker, recorder record.EventRecorder, log logr.Logger) controllers.SubReconciler {
 			return streaming.ProcessorChildScaledObjectReconciler(
 				controllers.Config{
-					Client:   client,
-					Recorder: recorder,
-					Log:      log,
-					Scheme:   scheme,
-					Tracker:  tracker,
+					Client:    client,
+					APIReader: client,
+					Recorder:  recorder,
+					Log:       log,
+					Scheme:    scheme,
+					Tracker:   tracker,
 				},
 			)
 		})
 	})
-
-	_ = testFunction
-	_ = testContainer
-	_ = processorReady
-	_ = deploymentConditionAvailable
-	_ = deploymentConditionProgressing
-	_ = scaledObjectConditionReady
-	_ = deploymentGiven
-	_ = scaledObjectGiven
-	_ = streamConditionReady
 }

@@ -82,11 +82,12 @@ func main() {
 	streamControllerLogger := ctrl.Log.WithName("controllers").WithName("Stream")
 	if err = streamingcontrollers.StreamReconciler(
 		controllers.Config{
-			Client:   mgr.GetClient(),
-			Recorder: mgr.GetEventRecorderFor("Stream"),
-			Log:      streamControllerLogger,
-			Scheme:   mgr.GetScheme(),
-			Tracker:  tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("Stream").WithName("tracker")),
+			Client:    mgr.GetClient(),
+			APIReader: mgr.GetAPIReader(),
+			Recorder:  mgr.GetEventRecorderFor("Stream"),
+			Log:       streamControllerLogger,
+			Scheme:    mgr.GetScheme(),
+			Tracker:   tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("Stream").WithName("tracker")),
 		}, streamingcontrollers.NewStreamProvisionerClient(http.DefaultClient, streamControllerLogger),
 	).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Stream")
@@ -98,11 +99,12 @@ func main() {
 	}
 	if err = streamingcontrollers.ProcessorReconciler(
 		controllers.Config{
-			Client:   mgr.GetClient(),
-			Recorder: mgr.GetEventRecorderFor("Processor"),
-			Log:      ctrl.Log.WithName("controllers").WithName("Processor"),
-			Scheme:   mgr.GetScheme(),
-			Tracker:  tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("Processor").WithName("tracker")),
+			Client:    mgr.GetClient(),
+			APIReader: mgr.GetAPIReader(),
+			Recorder:  mgr.GetEventRecorderFor("Processor"),
+			Log:       ctrl.Log.WithName("controllers").WithName("Processor"),
+			Scheme:    mgr.GetScheme(),
+			Tracker:   tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("Processor").WithName("tracker")),
 		},
 		namespace,
 	).SetupWithManager(mgr); err != nil {
@@ -115,11 +117,12 @@ func main() {
 	}
 	if err = streamingcontrollers.GatewayReconciler(
 		controllers.Config{
-			Client:   mgr.GetClient(),
-			Recorder: mgr.GetEventRecorderFor("Gateway"),
-			Log:      ctrl.Log.WithName("controllers").WithName("Gateway"),
-			Scheme:   mgr.GetScheme(),
-			Tracker:  tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("Gateway").WithName("tracker")),
+			Client:    mgr.GetClient(),
+			APIReader: mgr.GetAPIReader(),
+			Recorder:  mgr.GetEventRecorderFor("Gateway"),
+			Log:       ctrl.Log.WithName("controllers").WithName("Gateway"),
+			Scheme:    mgr.GetScheme(),
+			Tracker:   tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("Gateway").WithName("tracker")),
 		},
 	).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Gateway")
@@ -131,11 +134,12 @@ func main() {
 	}
 	if err = streamingcontrollers.KafkaGatewayReconciler(
 		controllers.Config{
-			Client:   mgr.GetClient(),
-			Recorder: mgr.GetEventRecorderFor("KafkaGateway"),
-			Log:      ctrl.Log.WithName("controllers").WithName("KafkaGateway"),
-			Scheme:   mgr.GetScheme(),
-			Tracker:  tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("KafkaGateway").WithName("tracker")),
+			Client:    mgr.GetClient(),
+			APIReader: mgr.GetAPIReader(),
+			Recorder:  mgr.GetEventRecorderFor("KafkaGateway"),
+			Log:       ctrl.Log.WithName("controllers").WithName("KafkaGateway"),
+			Scheme:    mgr.GetScheme(),
+			Tracker:   tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("KafkaGateway").WithName("tracker")),
 		},
 		namespace,
 	).SetupWithManager(mgr); err != nil {
@@ -148,11 +152,12 @@ func main() {
 	}
 	if err = streamingcontrollers.PulsarGatewayReconciler(
 		controllers.Config{
-			Client:   mgr.GetClient(),
-			Recorder: mgr.GetEventRecorderFor("PulsarGateway"),
-			Log:      ctrl.Log.WithName("controllers").WithName("PulsarGateway"),
-			Scheme:   mgr.GetScheme(),
-			Tracker:  tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("PulsarGateway").WithName("tracker")),
+			Client:    mgr.GetClient(),
+			APIReader: mgr.GetAPIReader(),
+			Recorder:  mgr.GetEventRecorderFor("PulsarGateway"),
+			Log:       ctrl.Log.WithName("controllers").WithName("PulsarGateway"),
+			Scheme:    mgr.GetScheme(),
+			Tracker:   tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("PulsarGateway").WithName("tracker")),
 		},
 		namespace,
 	).SetupWithManager(mgr); err != nil {
@@ -165,11 +170,12 @@ func main() {
 	}
 	if err = streamingcontrollers.InMemoryGatewayReconciler(
 		controllers.Config{
-			Client:   mgr.GetClient(),
-			Recorder: mgr.GetEventRecorderFor("InMemoryGateway"),
-			Log:      ctrl.Log.WithName("controllers").WithName("InMemoryGateway"),
-			Scheme:   mgr.GetScheme(),
-			Tracker:  tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("InMemoryGateway").WithName("tracker")),
+			Client:    mgr.GetClient(),
+			APIReader: mgr.GetAPIReader(),
+			Recorder:  mgr.GetEventRecorderFor("InMemoryGateway"),
+			Log:       ctrl.Log.WithName("controllers").WithName("InMemoryGateway"),
+			Scheme:    mgr.GetScheme(),
+			Tracker:   tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("InMemoryGateway").WithName("tracker")),
 		},
 		namespace,
 	).SetupWithManager(mgr); err != nil {
