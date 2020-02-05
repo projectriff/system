@@ -342,16 +342,54 @@ func TestPulsarGatewayReconciler(t *testing.T) {
 				StatusGatewayImage(testGatewayImage).
 				StatusProvisionerImage(testProvisionerImage),
 		},
+	}, {
+		Name: "conflicting gateway, owned",
+		Key:  testKey,
+		WithReactors: []rtesting.ReactionFunc{
+			rtesting.InduceFailure("create", "Gateway", rtesting.InduceFailureOpts{
+				Error: apierrs.NewAlreadyExists(schema.GroupResource{}, testName),
+			}),
+		},
+		GivenObjects: []rtesting.Factory{
+			pulsarGatewayMinimal,
+			pulsarGatewayImagesConfigMap,
+		},
+		APIGivenObjects: []rtesting.Factory{
+			gatewayGiven,
+		},
+		ShouldErr: true,
+		ExpectTracks: []rtesting.TrackRequest{
+			rtesting.NewTrackRequest(pulsarGatewayImagesConfigMap, pulsarGateway, scheme),
+		},
+		ExpectEvents: []rtesting.Event{
+			rtesting.NewEvent(pulsarGateway, scheme, corev1.EventTypeWarning, "CreationFailed",
+				`Failed to create Gateway "%s":  "%s" already exists`, testName, testName),
+			rtesting.NewEvent(pulsarGateway, scheme, corev1.EventTypeNormal, "StatusUpdated",
+				`Updated status`),
+		},
+		ExpectCreates: []rtesting.Factory{
+			gatewayCreate,
+		},
+		ExpectStatusUpdates: []rtesting.Factory{
+			pulsarGatewayMinimal.
+				StatusConditions(
+					pulsarGatewayConditionGatewayReady.Unknown(),
+					pulsarGatewayConditionReady.Unknown(),
+				).
+				StatusGatewayImage(testGatewayImage).
+				StatusProvisionerImage(testProvisionerImage),
+		},
 	}}
 
-	table.Test(t, scheme, func(t *testing.T, row *rtesting.Testcase, client client.Client, tracker tracker.Tracker, recorder record.EventRecorder, log logr.Logger) reconcile.Reconciler {
+	table.Test(t, scheme, func(t *testing.T, row *rtesting.Testcase, client client.Client, apiReader client.Reader, tracker tracker.Tracker, recorder record.EventRecorder, log logr.Logger) reconcile.Reconciler {
 		return streaming.PulsarGatewayReconciler(
 			controllers.Config{
-				Client:   client,
-				Recorder: recorder,
-				Log:      log,
-				Scheme:   scheme,
-				Tracker:  tracker,
+				Client:    client,
+				APIReader: apiReader,
+				Recorder:  recorder,
+				Log:       log,
+				Scheme:    scheme,
+				Tracker:   tracker,
 			},
 			testSystemNamespace,
 		)

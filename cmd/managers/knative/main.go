@@ -79,11 +79,12 @@ func main() {
 
 	if err = knativecontrollers.AdapterReconciler(
 		controllers.Config{
-			Client:   mgr.GetClient(),
-			Recorder: mgr.GetEventRecorderFor("Adapter"),
-			Log:      ctrl.Log.WithName("controllers").WithName("Adapter"),
-			Scheme:   mgr.GetScheme(),
-			Tracker:  tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("Adapter").WithName("tracker")),
+			Client:    mgr.GetClient(),
+			APIReader: mgr.GetAPIReader(),
+			Recorder:  mgr.GetEventRecorderFor("Adapter"),
+			Log:       ctrl.Log.WithName("controllers").WithName("Adapter"),
+			Scheme:    mgr.GetScheme(),
+			Tracker:   tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("Adapter").WithName("tracker")),
 		},
 	).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Adapter")
@@ -95,11 +96,12 @@ func main() {
 	}
 	if err = knativecontrollers.DeployerReconciler(
 		controllers.Config{
-			Client:   mgr.GetClient(),
-			Recorder: mgr.GetEventRecorderFor("Deployer"),
-			Log:      ctrl.Log.WithName("controllers").WithName("Deployer"),
-			Scheme:   mgr.GetScheme(),
-			Tracker:  tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("Deployer").WithName("tracker")),
+			Client:    mgr.GetClient(),
+			APIReader: mgr.GetAPIReader(),
+			Recorder:  mgr.GetEventRecorderFor("Deployer"),
+			Log:       ctrl.Log.WithName("controllers").WithName("Deployer"),
+			Scheme:    mgr.GetScheme(),
+			Tracker:   tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("Deployer").WithName("tracker")),
 		},
 	).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Deployer")

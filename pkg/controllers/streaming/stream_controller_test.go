@@ -465,20 +465,18 @@ func TestStreamReconciler(t *testing.T) {
 		},
 	}}
 
-	table.Test(t, scheme, func(t *testing.T, row *rtesting.Testcase, client client.Client, tracker tracker.Tracker, recorder record.EventRecorder, log logr.Logger) reconcile.Reconciler {
+	table.Test(t, scheme, func(t *testing.T, row *rtesting.Testcase, client client.Client, apiReader client.Reader, tracker tracker.Tracker, recorder record.EventRecorder, log logr.Logger) reconcile.Reconciler {
 		streamProvisioner = &streaming.MockStreamProvisionerClient{}
 		return streaming.StreamReconciler(
 			controllers.Config{
-				Client:   client,
-				Recorder: recorder,
-				Log:      log,
-				Scheme:   scheme,
-				Tracker:  tracker,
+				Client:    client,
+				APIReader: apiReader,
+				Recorder:  recorder,
+				Log:       log,
+				Scheme:    scheme,
+				Tracker:   tracker,
 			},
 			streamProvisioner,
 		)
 	})
-
-	_ = bindingMetadataGiven
-	_ = bindingSecretGiven
 }

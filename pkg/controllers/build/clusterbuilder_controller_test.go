@@ -198,7 +198,7 @@ func TestClusterBuildersReconciler(t *testing.T) {
 		ShouldErr: true,
 	}}
 
-	table.Test(t, scheme, func(t *testing.T, row *rtesting.Testcase, client client.Client, tracker tracker.Tracker, recorder record.EventRecorder, log logr.Logger) reconcile.Reconciler {
+	table.Test(t, scheme, func(t *testing.T, row *rtesting.Testcase, client client.Client, apiReader client.Reader, tracker tracker.Tracker, recorder record.EventRecorder, log logr.Logger) reconcile.Reconciler {
 		return &build.ClusterBuilderReconciler{
 			Client:    client,
 			Recorder:  recorder,

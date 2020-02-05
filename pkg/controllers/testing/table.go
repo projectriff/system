@@ -53,6 +53,8 @@ type Testcase struct {
 	WithReactors []ReactionFunc
 	// GivenObjects build the kubernetes objects which are present at the onset of reconciliation
 	GivenObjects []Factory
+	// APIGivenObjects contains objects that are only available via an API reader instead of the normal cache
+	APIGivenObjects []Factory
 
 	// side effects
 
@@ -110,6 +112,10 @@ func (tc *Testcase) Test(t *testing.T, scheme *runtime.Scheme, factory Reconcile
 		givenObjects = append(givenObjects, object.DeepCopyObject())
 		originalGivenObjects = append(originalGivenObjects, object.DeepCopyObject())
 	}
+	apiGivenObjects := make([]runtime.Object, 0, len(tc.APIGivenObjects))
+	for _, f := range tc.APIGivenObjects {
+		apiGivenObjects = append(apiGivenObjects, f.CreateObject())
+	}
 
 	clientWrapper := newClientWrapperWithScheme(scheme, givenObjects...)
 	for i := range tc.WithReactors {
@@ -117,13 +123,14 @@ func (tc *Testcase) Test(t *testing.T, scheme *runtime.Scheme, factory Reconcile
 		reactor := tc.WithReactors[len(tc.WithReactors)-1-i]
 		clientWrapper.PrependReactor("*", "*", reactor)
 	}
+	apiReader := newClientWrapperWithScheme(scheme, apiGivenObjects...)
 	tracker := createTracker()
 	recorder := &eventRecorder{
 		events: []Event{},
 		scheme: scheme,
 	}
 	log := TestLogger(t)
-	c := factory(t, tc, clientWrapper, tracker, recorder, log)
+	c := factory(t, tc, clientWrapper, apiReader, tracker, recorder, log)
 
 	if tc.CleanUp != nil {
 		defer func() {
@@ -284,7 +291,7 @@ func (tb Table) Test(t *testing.T, scheme *runtime.Scheme, factory ReconcilerFac
 // ReconcilerFactory returns a Reconciler.Interface to perform reconciliation in table test,
 // ActionRecorderList/EventList to capture k8s actions/events produced during reconciliation
 // and FakeStatsReporter to capture stats.
-type ReconcilerFactory func(t *testing.T, row *Testcase, client client.Client, tracker tracker.Tracker, recorder record.EventRecorder, log logr.Logger) reconcile.Reconciler
+type ReconcilerFactory func(t *testing.T, row *Testcase, client client.Client, apiReader client.Reader, tracker tracker.Tracker, recorder record.EventRecorder, log logr.Logger) reconcile.Reconciler
 
 type DeleteRef struct {
 	Group     string
