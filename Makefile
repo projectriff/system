@@ -119,6 +119,13 @@ else
 MOCKERY=$(shell which mockery)
 endif
 
+.PHONY: templates
+templates: ## update templated components
+	./hack/apply-template.sh config/streaming/config/bases/processor.yaml.tpl > config/streaming/config/bases/processor.yaml
+	./hack/apply-template.sh config/streaming/config/bases/inmemory-gateway.yaml.tpl > config/streaming/config/bases/inmemory-gateway.yaml
+	./hack/apply-template.sh config/streaming/config/bases/kafka-gateway.yaml.tpl > config/streaming/config/bases/kafka-gateway.yaml
+	./hack/apply-template.sh config/streaming/config/bases/pulsar-gateway.yaml.tpl > config/streaming/config/bases/pulsar-gateway.yaml
+
 # Absolutely awesome: http://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
 help: ## Print help for each make target
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'

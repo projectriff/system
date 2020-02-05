@@ -1,6 +1,7 @@
+# DO NOT EDIT - this file is the output of the 'config/streaming/config/bases/processor.yaml.tpl' template 
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: processor
 data:
-  processorImage: projectriff/streaming-processor-native:1.0.0-SNAPSHOT-20191223112938-672714499ed0c511@sha256:41ad7b6b350370b5e53cc718eb7cde49d7f9f7e22e33a3204ae0a4158f798819
+  processorImage: gcr.io/projectriff/streaming-processor/processor-native@sha256:f676fe43f5b43ef4f229abbc5bd9fb3b802a0daf6efd7157d0d0a714c28252ea

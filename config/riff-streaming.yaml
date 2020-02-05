@@ -6567,8 +6567,8 @@ subjects:
 ---
 apiVersion: v1
 data:
-  gatewayImage: bsideup/liiklus:0.9.0
-  provisionerImage: gcr.io/projectriff/nop-provisioner/provisioner-735f690b778af94ebf6fae1b426bbf1d:0.1.0-snapshot-20191217171417-f7375453aafcc28e
+  gatewayImage: bsideup/liiklus:0.9.1
+  provisionerImage: gcr.io/projectriff/nop-provisioner/provisioner@sha256:30d9b8ba21a9a8656985151c1ef84b0527fa52262392569afb5a443de3ef9288
 kind: ConfigMap
 metadata:
   labels:
@@ -6578,8 +6578,8 @@ metadata:
 ---
 apiVersion: v1
 data:
-  gatewayImage: bsideup/liiklus:0.9.0
-  provisionerImage: gcr.io/projectriff/kafka-provisioner/provisioner-97dd22e72aed3201586a126a023b55db@sha256:5c21bf354fe3804b4acbc8326f7a7820e4a0cbd427af9832fd87d264a611a8de
+  gatewayImage: bsideup/liiklus:0.9.1
+  provisionerImage: gcr.io/projectriff/kafka-provisioner/provisioner@sha256:304183dbdbc64c30dfb366b63ad4e441b212d09fb1a93c7f0fe99c83833bd366
 kind: ConfigMap
 metadata:
   labels:
@@ -6589,7 +6589,7 @@ metadata:
 ---
 apiVersion: v1
 data:
-  processorImage: projectriff/streaming-processor-native:1.0.0-SNAPSHOT-20191223112938-672714499ed0c511@sha256:41ad7b6b350370b5e53cc718eb7cde49d7f9f7e22e33a3204ae0a4158f798819
+  processorImage: gcr.io/projectriff/streaming-processor/processor-native@sha256:f676fe43f5b43ef4f229abbc5bd9fb3b802a0daf6efd7157d0d0a714c28252ea
 kind: ConfigMap
 metadata:
   labels:
@@ -6599,8 +6599,8 @@ metadata:
 ---
 apiVersion: v1
 data:
-  gatewayImage: bsideup/liiklus:0.9.0
-  provisionerImage: gcr.io/projectriff/pulsar-provisioner/provisioner-46159645f685fedb8f6279549d9d9574:0.1.0-snapshot-20200127180243-f8a04d01fc5e18d6
+  gatewayImage: bsideup/liiklus:0.9.1
+  provisionerImage: gcr.io/projectriff/pulsar-provisioner/provisioner@sha256:faf640a0ff1c0abe055c141f3bbc2339df3fd336ff4faa276908ed6f55af4ba5
 kind: ConfigMap
 metadata:
   labels:
