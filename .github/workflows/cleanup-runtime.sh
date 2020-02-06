@@ -27,11 +27,11 @@ if [ $RUNTIME = "streaming" ]; then
   echo "Cleanup KEDA"
   kapp delete -n apps -a keda -y
 
-  if [ $GATEAY = "kafka" ]; then
+  if [ $GATEWAY = "kafka" ]; then
     echo "Cleanup Kafka"
     kapp delete -n apps -a internal-only-kafka -y
   fi
-  if [ $GATEAY = "pulsar" ]; then
+  if [ $GATEWAY = "pulsar" ]; then
     echo "Cleanup Pulsar"
     kapp delete -n apps -a internal-only-pulsar -y
   fi
