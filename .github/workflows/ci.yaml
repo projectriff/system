@@ -123,9 +123,8 @@ jobs:
           gateway: inmemory
         - runtime: streaming
           gateway: kafka
-        # TODO restore pulsar tests
-        # - runtime: streaming
-        #   gateway: pulsar
+        - runtime: streaming
+          gateway: pulsar
       fail-fast: false
     runs-on: ubuntu-latest
     steps:
