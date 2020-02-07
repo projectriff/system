@@ -6461,7 +6461,7 @@ metadata:
 ---
 apiVersion: v1
 data:
-  processorImage: gcr.io/projectriff/streaming-processor/processor-native@sha256:a21eda706edd389f3574e3fd7dd4ed0f54c5b87f97b99b5792c7b1f7dc037037
+  processorImage: gcr.io/projectriff/streaming-processor/processor-native@sha256:dab46ddae272c5a8b7df33d0cd9e393923d8d5c4d19492828e0fae4595f39dad
 kind: ConfigMap
 metadata:
   labels:
