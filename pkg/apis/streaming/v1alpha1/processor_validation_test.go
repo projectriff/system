@@ -281,6 +281,27 @@ func TestValidateProcessorSpec(t *testing.T) {
 			}},
 		expected: validation.ErrDuplicateValue("my-input", "inputs[0].alias", "inputs[1].alias"),
 	}, {
+		name: "output alias collision",
+		target: &ProcessorSpec{
+			Build: &Build{
+				FunctionRef: "my-func",
+			},
+			Inputs: []InputStreamBinding{
+				{Stream: "my-stream1", Alias: "my-input"},
+			},
+			Outputs: []OutputStreamBinding{
+				{Stream: "my-output-stream1", Alias: "my-output"},
+				{Stream: "my-output-stream2", Alias: "my-output"},
+			},
+			Template: &corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{Name: "function"},
+					},
+				},
+			}},
+		expected: validation.ErrDuplicateValue("my-output", "outputs[0].alias", "outputs[1].alias"),
+	}, {
 		name: "input/output alias collision",
 		target: &ProcessorSpec{
 			Build: &Build{
