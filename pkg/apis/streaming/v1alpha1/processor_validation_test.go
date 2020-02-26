@@ -302,16 +302,16 @@ func TestValidateProcessorSpec(t *testing.T) {
 			}},
 		expected: validation.ErrDuplicateValue("my-output", "outputs[0].alias", "outputs[1].alias"),
 	}, {
-		name: "input/output alias collision",
+		name: "allow duplicates across input/output aliases",
 		target: &ProcessorSpec{
 			Build: &Build{
 				FunctionRef: "my-func",
 			},
 			Inputs: []InputStreamBinding{
-				{Stream: "my-stream1", Alias: "my-alias"},
+				{Stream: "my-stream1", Alias: "duplicate-alias"},
 			},
 			Outputs: []OutputStreamBinding{
-				{Stream: "my-stream2", Alias: "my-alias"},
+				{Stream: "my-stream2", Alias: "duplicate-alias"},
 			},
 			Template: &corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
@@ -321,7 +321,7 @@ func TestValidateProcessorSpec(t *testing.T) {
 				},
 			},
 		},
-		expected: validation.ErrDuplicateValue("my-alias", "inputs[0].alias", "outputs[0].alias"),
+		expected: validation.FieldErrors{},
 	}, {
 		name: "invalid container name",
 		target: &ProcessorSpec{

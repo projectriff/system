@@ -113,12 +113,13 @@ func (s *ProcessorSpec) Validate() validation.FieldErrors {
 		}
 	}
 
-	errs = errs.Also(s.validateStreamAliasUniqueness())
+	errs = errs.Also(s.validateStreamInputAliasUniqueness())
+	errs = errs.Also(s.validateStreamOutputAliasUniqueness())
 
 	return errs
 }
 
-func (s *ProcessorSpec) validateStreamAliasUniqueness() validation.FieldErrors {
+func (s *ProcessorSpec) validateStreamInputAliasUniqueness() validation.FieldErrors {
 	errs := validation.FieldErrors{}
 
 	aliases := []string{}
@@ -132,6 +133,21 @@ func (s *ProcessorSpec) validateStreamAliasUniqueness() validation.FieldErrors {
 		}
 		uses[alias] = append(uses[alias], fmt.Sprintf("inputs[%d].alias", i))
 	}
+	for _, alias := range aliases {
+		if len(uses[alias]) > 1 {
+			errs = errs.Also(validation.ErrDuplicateValue(alias, uses[alias]...))
+		}
+	}
+
+	return errs
+}
+
+func (s *ProcessorSpec) validateStreamOutputAliasUniqueness() validation.FieldErrors {
+	errs := validation.FieldErrors{}
+
+	aliases := []string{}
+	uses := map[string][]string{}
+
 	for i, output := range s.Outputs {
 		alias := output.Alias
 		if _, ok := uses[alias]; !ok {
