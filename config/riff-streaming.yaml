@@ -6439,7 +6439,7 @@ subjects:
 ---
 apiVersion: v1
 data:
-  gatewayImage: bsideup/liiklus:latest
+  gatewayImage: bsideup/liiklus:0.10.0-rc1
   provisionerImage: gcr.io/projectriff/nop-provisioner/provisioner@sha256:4bfa270f904a979c858d50267bb5e99df3b4ec44babe993f949193404f58f64b
 kind: ConfigMap
 metadata:
@@ -6450,7 +6450,7 @@ metadata:
 ---
 apiVersion: v1
 data:
-  gatewayImage: bsideup/liiklus:latest
+  gatewayImage: bsideup/liiklus:0.10.0-rc1
   provisionerImage: gcr.io/projectriff/kafka-provisioner/provisioner@sha256:c5917a348faae5ababb7371be200c933d50f12f2698d6635d138f047300d68a6
 kind: ConfigMap
 metadata:
@@ -6471,7 +6471,7 @@ metadata:
 ---
 apiVersion: v1
 data:
-  gatewayImage: bsideup/liiklus:latest
+  gatewayImage: bsideup/liiklus:0.10.0-rc1
   provisionerImage: gcr.io/projectriff/pulsar-provisioner/provisioner@sha256:028ec53ad146efe05f7f6122b89d97ee189f396780b744a1e348ee0fcee35ff2
 kind: ConfigMap
 metadata:
