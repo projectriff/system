@@ -4,4 +4,4 @@ kind: ConfigMap
 metadata:
   name: processor
 data:
-  processorImage: ericbottard/processor-native@sha256:c7b98621061cf91c69ff96eb0d5f88c51631cfa875382e27221126f4728b526b
+  processorImage: gcr.io/projectriff/streaming-processor/processor-native@sha256:968cf9c0b3bc17d2298c0287f3caa9460e289e2fd6363685c229ef7acafacaf8
