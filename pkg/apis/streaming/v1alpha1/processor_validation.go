@@ -162,8 +162,8 @@ func (b *Build) Validate() validation.FieldErrors {
 	}
 
 	errs := validation.FieldErrors{}
-	used := []string{}
-	unused := []string{}
+	var used []string
+	var unused []string
 
 	if b.ContainerRef != "" {
 		used = append(used, "containerRef")
