@@ -120,49 +120,39 @@ func (s *ProcessorSpec) Validate() validation.FieldErrors {
 }
 
 func (s *ProcessorSpec) validateStreamInputAliasUniqueness() validation.FieldErrors {
-	errs := validation.FieldErrors{}
-
-	aliases := []string{}
-	uses := map[string][]string{}
-
-	for i, input := range s.Inputs {
-		alias := input.Alias
-		if _, ok := uses[alias]; !ok {
-			uses[alias] = []string{}
-			aliases = append(aliases, alias)
-		}
-		uses[alias] = append(uses[alias], fmt.Sprintf("inputs[%d].alias", i))
+	var aliases []string
+	for _, input := range s.Inputs {
+		aliases = append(aliases, input.Alias)
 	}
-	for _, alias := range aliases {
-		if len(uses[alias]) > 1 {
-			errs = errs.Also(validation.ErrDuplicateValue(alias, uses[alias]...))
-		}
-	}
-
-	return errs
+	return validateAliasUniqueness(aliases, "inputs")
 }
 
 func (s *ProcessorSpec) validateStreamOutputAliasUniqueness() validation.FieldErrors {
+	var aliases []string
+	for _, output := range s.Outputs {
+		aliases = append(aliases, output.Alias)
+	}
+	return validateAliasUniqueness(aliases, "outputs")
+}
+
+func validateAliasUniqueness(allAliases []string, aliasType string) validation.FieldErrors {
 	errs := validation.FieldErrors{}
 
-	aliases := []string{}
+	var dedupedAliases []string
 	uses := map[string][]string{}
-
-	for i, output := range s.Outputs {
-		alias := output.Alias
+	for i, alias := range allAliases {
 		if _, ok := uses[alias]; !ok {
 			uses[alias] = []string{}
-			aliases = append(aliases, alias)
+			dedupedAliases = append(dedupedAliases, alias)
 		}
-		uses[alias] = append(uses[alias], fmt.Sprintf("outputs[%d].alias", i))
+		uses[alias] = append(uses[alias], fmt.Sprintf("%s[%d].alias", aliasType, i))
 	}
 
-	for _, alias := range aliases {
+	for _, alias := range dedupedAliases {
 		if len(uses[alias]) > 1 {
 			errs = errs.Also(validation.ErrDuplicateValue(alias, uses[alias]...))
 		}
 	}
-
 	return errs
 }
 
