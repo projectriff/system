@@ -17,7 +17,7 @@ mkdir -p "$(dirname "${TMP_REPO_PATH}")" && ln -s "${SCRIPT_ROOT}" "${TMP_REPO_P
 
 bash "${CODEGEN_PKG}"/generate-groups.sh "client" \
   github.com/projectriff/system/pkg/client github.com/projectriff/system/pkg/apis \
-  "build:v1alpha1 core:v1alpha1 knative:v1alpha1 streaming:v1alpha1" \
+  "bindings:v1alpha1 build:v1alpha1 core:v1alpha1 knative:v1alpha1 streaming:v1alpha1" \
   --output-base "${TMP_DIR}/src" \
   --go-header-file "${SCRIPT_ROOT}"/hack/boilerplate.go.txt
 
