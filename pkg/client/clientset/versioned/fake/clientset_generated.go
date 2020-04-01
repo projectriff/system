@@ -25,6 +25,8 @@ import (
 	"k8s.io/client-go/testing"
 
 	clientset "github.com/projectriff/system/pkg/client/clientset/versioned"
+	bindingsv1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/bindings/v1alpha1"
+	fakebindingsv1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/bindings/v1alpha1/fake"
 	buildv1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/build/v1alpha1"
 	fakebuildv1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/build/v1alpha1/fake"
 	corev1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/core/v1alpha1"
@@ -81,6 +83,11 @@ func (c *Clientset) Tracker() testing.ObjectTracker {
 }
 
 var _ clientset.Interface = &Clientset{}
+
+// BindingsV1alpha1 retrieves the BindingsV1alpha1Client
+func (c *Clientset) BindingsV1alpha1() bindingsv1alpha1.BindingsV1alpha1Interface {
+	return &fakebindingsv1alpha1.FakeBindingsV1alpha1{Fake: &c.Fake}
+}
 
 // BuildV1alpha1 retrieves the BuildV1alpha1Client
 func (c *Clientset) BuildV1alpha1() buildv1alpha1.BuildV1alpha1Interface {

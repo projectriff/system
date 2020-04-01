@@ -24,6 +24,7 @@ import (
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
 
+	bindingsv1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/bindings/v1alpha1"
 	buildv1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/build/v1alpha1"
 	corev1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/core/v1alpha1"
 	knativev1alpha1 "github.com/projectriff/system/pkg/client/clientset/versioned/typed/knative/v1alpha1"
@@ -32,6 +33,7 @@ import (
 
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
+	BindingsV1alpha1() bindingsv1alpha1.BindingsV1alpha1Interface
 	BuildV1alpha1() buildv1alpha1.BuildV1alpha1Interface
 	CoreV1alpha1() corev1alpha1.CoreV1alpha1Interface
 	KnativeV1alpha1() knativev1alpha1.KnativeV1alpha1Interface
@@ -42,10 +44,16 @@ type Interface interface {
 // version included in a Clientset.
 type Clientset struct {
 	*discovery.DiscoveryClient
+	bindingsV1alpha1  *bindingsv1alpha1.BindingsV1alpha1Client
 	buildV1alpha1     *buildv1alpha1.BuildV1alpha1Client
 	coreV1alpha1      *corev1alpha1.CoreV1alpha1Client
 	knativeV1alpha1   *knativev1alpha1.KnativeV1alpha1Client
 	streamingV1alpha1 *streamingv1alpha1.StreamingV1alpha1Client
+}
+
+// BindingsV1alpha1 retrieves the BindingsV1alpha1Client
+func (c *Clientset) BindingsV1alpha1() bindingsv1alpha1.BindingsV1alpha1Interface {
+	return c.bindingsV1alpha1
 }
 
 // BuildV1alpha1 retrieves the BuildV1alpha1Client
@@ -89,6 +97,10 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	}
 	var cs Clientset
 	var err error
+	cs.bindingsV1alpha1, err = bindingsv1alpha1.NewForConfig(&configShallowCopy)
+	if err != nil {
+		return nil, err
+	}
 	cs.buildV1alpha1, err = buildv1alpha1.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
@@ -117,6 +129,7 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 // panics if there is an error in the config.
 func NewForConfigOrDie(c *rest.Config) *Clientset {
 	var cs Clientset
+	cs.bindingsV1alpha1 = bindingsv1alpha1.NewForConfigOrDie(c)
 	cs.buildV1alpha1 = buildv1alpha1.NewForConfigOrDie(c)
 	cs.coreV1alpha1 = corev1alpha1.NewForConfigOrDie(c)
 	cs.knativeV1alpha1 = knativev1alpha1.NewForConfigOrDie(c)
@@ -129,6 +142,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 // New creates a new Clientset for the given RESTClient.
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
+	cs.bindingsV1alpha1 = bindingsv1alpha1.New(c)
 	cs.buildV1alpha1 = buildv1alpha1.New(c)
 	cs.coreV1alpha1 = corev1alpha1.New(c)
 	cs.knativeV1alpha1 = knativev1alpha1.New(c)
