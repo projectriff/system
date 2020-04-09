@@ -93,7 +93,7 @@ endif
 # find or download goimports, download goimports if necessary
 goimports:
 ifeq (, $(shell which goimports))
-	( cd .. && GO111MODULE=on go get golang.org/x/tools/cmd/goimports@release-branch.go1.13 ) # avoid go.* mutations from go get
+	( cd .. && GO111MODULE=on go get golang.org/x/tools/cmd/goimports@release-branch.go1.14 ) # avoid go.* mutations from go get
 GOIMPORTS=$(GOBIN)/goimports
 else
 GOIMPORTS=$(shell which goimports)
