@@ -9,7 +9,7 @@ readonly git_sha=$(git rev-parse HEAD)
 readonly git_timestamp=$(TZ=UTC git show --quiet --date='format-local:%Y%m%d%H%M%S' --format="%cd")
 readonly slug=${version}-${git_timestamp}-${git_sha:0:16}
 
-readonly riff_version=0.5.0-snapshot
+readonly riff_version=0.6.0-snapshot
 
 source ${FATS_DIR}/.configure.sh
 
