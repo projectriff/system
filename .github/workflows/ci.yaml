@@ -123,8 +123,9 @@ jobs:
           gateway: inmemory
         - runtime: streaming
           gateway: kafka
-        - runtime: streaming
-          gateway: pulsar
+        # TODO restore, tracking in https://github.com/projectriff/system/issues/356
+        # - runtime: streaming
+        #   gateway: pulsar
       fail-fast: false
     runs-on: ubuntu-latest
     steps:
