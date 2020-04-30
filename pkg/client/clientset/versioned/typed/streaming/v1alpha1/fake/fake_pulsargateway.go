@@ -18,6 +18,8 @@ limitations under the License.
 package fake
 
 import (
+	"context"
+
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -39,7 +41,7 @@ var pulsargatewaysResource = schema.GroupVersionResource{Group: "streaming.proje
 var pulsargatewaysKind = schema.GroupVersionKind{Group: "streaming.projectriff.io", Version: "v1alpha1", Kind: "PulsarGateway"}
 
 // Get takes name of the pulsarGateway, and returns the corresponding pulsarGateway object, and an error if there is any.
-func (c *FakePulsarGateways) Get(name string, options v1.GetOptions) (result *v1alpha1.PulsarGateway, err error) {
+func (c *FakePulsarGateways) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.PulsarGateway, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(pulsargatewaysResource, c.ns, name), &v1alpha1.PulsarGateway{})
 
@@ -50,7 +52,7 @@ func (c *FakePulsarGateways) Get(name string, options v1.GetOptions) (result *v1
 }
 
 // List takes label and field selectors, and returns the list of PulsarGateways that match those selectors.
-func (c *FakePulsarGateways) List(opts v1.ListOptions) (result *v1alpha1.PulsarGatewayList, err error) {
+func (c *FakePulsarGateways) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.PulsarGatewayList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewListAction(pulsargatewaysResource, pulsargatewaysKind, c.ns, opts), &v1alpha1.PulsarGatewayList{})
 
@@ -72,14 +74,14 @@ func (c *FakePulsarGateways) List(opts v1.ListOptions) (result *v1alpha1.PulsarG
 }
 
 // Watch returns a watch.Interface that watches the requested pulsarGateways.
-func (c *FakePulsarGateways) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakePulsarGateways) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(pulsargatewaysResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a pulsarGateway and creates it.  Returns the server's representation of the pulsarGateway, and an error, if there is any.
-func (c *FakePulsarGateways) Create(pulsarGateway *v1alpha1.PulsarGateway) (result *v1alpha1.PulsarGateway, err error) {
+func (c *FakePulsarGateways) Create(ctx context.Context, pulsarGateway *v1alpha1.PulsarGateway, opts v1.CreateOptions) (result *v1alpha1.PulsarGateway, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewCreateAction(pulsargatewaysResource, c.ns, pulsarGateway), &v1alpha1.PulsarGateway{})
 
@@ -90,7 +92,7 @@ func (c *FakePulsarGateways) Create(pulsarGateway *v1alpha1.PulsarGateway) (resu
 }
 
 // Update takes the representation of a pulsarGateway and updates it. Returns the server's representation of the pulsarGateway, and an error, if there is any.
-func (c *FakePulsarGateways) Update(pulsarGateway *v1alpha1.PulsarGateway) (result *v1alpha1.PulsarGateway, err error) {
+func (c *FakePulsarGateways) Update(ctx context.Context, pulsarGateway *v1alpha1.PulsarGateway, opts v1.UpdateOptions) (result *v1alpha1.PulsarGateway, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(pulsargatewaysResource, c.ns, pulsarGateway), &v1alpha1.PulsarGateway{})
 
@@ -102,7 +104,7 @@ func (c *FakePulsarGateways) Update(pulsarGateway *v1alpha1.PulsarGateway) (resu
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakePulsarGateways) UpdateStatus(pulsarGateway *v1alpha1.PulsarGateway) (*v1alpha1.PulsarGateway, error) {
+func (c *FakePulsarGateways) UpdateStatus(ctx context.Context, pulsarGateway *v1alpha1.PulsarGateway, opts v1.UpdateOptions) (*v1alpha1.PulsarGateway, error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateSubresourceAction(pulsargatewaysResource, "status", c.ns, pulsarGateway), &v1alpha1.PulsarGateway{})
 
@@ -113,7 +115,7 @@ func (c *FakePulsarGateways) UpdateStatus(pulsarGateway *v1alpha1.PulsarGateway)
 }
 
 // Delete takes name of the pulsarGateway and deletes it. Returns an error if one occurs.
-func (c *FakePulsarGateways) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakePulsarGateways) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewDeleteAction(pulsargatewaysResource, c.ns, name), &v1alpha1.PulsarGateway{})
 
@@ -121,15 +123,15 @@ func (c *FakePulsarGateways) Delete(name string, options *v1.DeleteOptions) erro
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakePulsarGateways) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(pulsargatewaysResource, c.ns, listOptions)
+func (c *FakePulsarGateways) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewDeleteCollectionAction(pulsargatewaysResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1alpha1.PulsarGatewayList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched pulsarGateway.
-func (c *FakePulsarGateways) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.PulsarGateway, err error) {
+func (c *FakePulsarGateways) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.PulsarGateway, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(pulsargatewaysResource, c.ns, name, pt, data, subresources...), &v1alpha1.PulsarGateway{})
 

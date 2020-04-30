@@ -17,6 +17,8 @@ limitations under the License.
 package controllers
 
 import (
+	"context"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -24,14 +26,14 @@ import (
 	"github.com/projectriff/system/pkg/apis"
 )
 
-func IndexControllersOfType(mgr ctrl.Manager, field string, owner, ownee apis.Object, scheme *runtime.Scheme) error {
+func IndexControllersOfType(ctx context.Context, mgr ctrl.Manager, field string, owner, ownee apis.Object, scheme *runtime.Scheme) error {
 	gvks, _, err := scheme.ObjectKinds(owner)
 	if err != nil {
 		return err
 	}
 	ownerAPIVersion, ownerKind := gvks[0].ToAPIVersionAndKind()
 
-	return mgr.GetFieldIndexer().IndexField(ownee, field, func(rawObj runtime.Object) []string {
+	return mgr.GetFieldIndexer().IndexField(ctx, ownee, field, func(rawObj runtime.Object) []string {
 		ownerRef := metav1.GetControllerOf(rawObj.(metav1.Object))
 		if ownerRef == nil {
 			return nil

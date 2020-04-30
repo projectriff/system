@@ -98,7 +98,7 @@ func ProcessorSyncProcessorImages(c controllers.Config, namespace string) contro
 		},
 
 		Config: c,
-		Setup: func(mgr controllers.Manager, bldr *controllers.Builder) error {
+		Setup: func(ctx context.Context, mgr controllers.Manager, bldr *controllers.Builder) error {
 			bldr.Watches(&source.Kind{Type: &corev1.ConfigMap{}}, controllers.EnqueueTracked(&corev1.ConfigMap{}, c.Tracker, c.Scheme))
 			return nil
 		},
@@ -162,7 +162,7 @@ func ProcessorBuildRefReconciler(c controllers.Config) controllers.SubReconciler
 		},
 
 		Config: c,
-		Setup: func(mgr controllers.Manager, bldr *controllers.Builder) error {
+		Setup: func(ctx context.Context, mgr controllers.Manager, bldr *controllers.Builder) error {
 			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Container{}}, controllers.EnqueueTracked(&buildv1alpha1.Container{}, c.Tracker, c.Scheme))
 			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, controllers.EnqueueTracked(&buildv1alpha1.Function{}, c.Tracker, c.Scheme))
 			return nil
@@ -235,7 +235,7 @@ func ProcessorResolveStreamsReconciler(c controllers.Config) controllers.SubReco
 		},
 
 		Config: c,
-		Setup: func(mgr controllers.Manager, bldr *controllers.Builder) error {
+		Setup: func(ctx context.Context, mgr controllers.Manager, bldr *controllers.Builder) error {
 			bldr.Watches(&source.Kind{Type: &streamingv1alpha1.Stream{}}, controllers.EnqueueTracked(&streamingv1alpha1.Stream{}, c.Tracker, c.Scheme))
 			return nil
 		},

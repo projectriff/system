@@ -18,6 +18,8 @@ limitations under the License.
 package fake
 
 import (
+	"context"
+
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -39,7 +41,7 @@ var inmemorygatewaysResource = schema.GroupVersionResource{Group: "streaming.pro
 var inmemorygatewaysKind = schema.GroupVersionKind{Group: "streaming.projectriff.io", Version: "v1alpha1", Kind: "InMemoryGateway"}
 
 // Get takes name of the inMemoryGateway, and returns the corresponding inMemoryGateway object, and an error if there is any.
-func (c *FakeInMemoryGateways) Get(name string, options v1.GetOptions) (result *v1alpha1.InMemoryGateway, err error) {
+func (c *FakeInMemoryGateways) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.InMemoryGateway, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(inmemorygatewaysResource, c.ns, name), &v1alpha1.InMemoryGateway{})
 
@@ -50,7 +52,7 @@ func (c *FakeInMemoryGateways) Get(name string, options v1.GetOptions) (result *
 }
 
 // List takes label and field selectors, and returns the list of InMemoryGateways that match those selectors.
-func (c *FakeInMemoryGateways) List(opts v1.ListOptions) (result *v1alpha1.InMemoryGatewayList, err error) {
+func (c *FakeInMemoryGateways) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.InMemoryGatewayList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewListAction(inmemorygatewaysResource, inmemorygatewaysKind, c.ns, opts), &v1alpha1.InMemoryGatewayList{})
 
@@ -72,14 +74,14 @@ func (c *FakeInMemoryGateways) List(opts v1.ListOptions) (result *v1alpha1.InMem
 }
 
 // Watch returns a watch.Interface that watches the requested inMemoryGateways.
-func (c *FakeInMemoryGateways) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeInMemoryGateways) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(inmemorygatewaysResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a inMemoryGateway and creates it.  Returns the server's representation of the inMemoryGateway, and an error, if there is any.
-func (c *FakeInMemoryGateways) Create(inMemoryGateway *v1alpha1.InMemoryGateway) (result *v1alpha1.InMemoryGateway, err error) {
+func (c *FakeInMemoryGateways) Create(ctx context.Context, inMemoryGateway *v1alpha1.InMemoryGateway, opts v1.CreateOptions) (result *v1alpha1.InMemoryGateway, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewCreateAction(inmemorygatewaysResource, c.ns, inMemoryGateway), &v1alpha1.InMemoryGateway{})
 
@@ -90,7 +92,7 @@ func (c *FakeInMemoryGateways) Create(inMemoryGateway *v1alpha1.InMemoryGateway)
 }
 
 // Update takes the representation of a inMemoryGateway and updates it. Returns the server's representation of the inMemoryGateway, and an error, if there is any.
-func (c *FakeInMemoryGateways) Update(inMemoryGateway *v1alpha1.InMemoryGateway) (result *v1alpha1.InMemoryGateway, err error) {
+func (c *FakeInMemoryGateways) Update(ctx context.Context, inMemoryGateway *v1alpha1.InMemoryGateway, opts v1.UpdateOptions) (result *v1alpha1.InMemoryGateway, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(inmemorygatewaysResource, c.ns, inMemoryGateway), &v1alpha1.InMemoryGateway{})
 
@@ -102,7 +104,7 @@ func (c *FakeInMemoryGateways) Update(inMemoryGateway *v1alpha1.InMemoryGateway)
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeInMemoryGateways) UpdateStatus(inMemoryGateway *v1alpha1.InMemoryGateway) (*v1alpha1.InMemoryGateway, error) {
+func (c *FakeInMemoryGateways) UpdateStatus(ctx context.Context, inMemoryGateway *v1alpha1.InMemoryGateway, opts v1.UpdateOptions) (*v1alpha1.InMemoryGateway, error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateSubresourceAction(inmemorygatewaysResource, "status", c.ns, inMemoryGateway), &v1alpha1.InMemoryGateway{})
 
@@ -113,7 +115,7 @@ func (c *FakeInMemoryGateways) UpdateStatus(inMemoryGateway *v1alpha1.InMemoryGa
 }
 
 // Delete takes name of the inMemoryGateway and deletes it. Returns an error if one occurs.
-func (c *FakeInMemoryGateways) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakeInMemoryGateways) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewDeleteAction(inmemorygatewaysResource, c.ns, name), &v1alpha1.InMemoryGateway{})
 
@@ -121,15 +123,15 @@ func (c *FakeInMemoryGateways) Delete(name string, options *v1.DeleteOptions) er
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeInMemoryGateways) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(inmemorygatewaysResource, c.ns, listOptions)
+func (c *FakeInMemoryGateways) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewDeleteCollectionAction(inmemorygatewaysResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1alpha1.InMemoryGatewayList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched inMemoryGateway.
-func (c *FakeInMemoryGateways) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.InMemoryGateway, err error) {
+func (c *FakeInMemoryGateways) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.InMemoryGateway, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(inmemorygatewaysResource, c.ns, name, pt, data, subresources...), &v1alpha1.InMemoryGateway{})
 

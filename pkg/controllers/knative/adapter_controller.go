@@ -129,7 +129,7 @@ func AdapterBuildRefReconciler(c controllers.Config) controllers.SubReconciler {
 		},
 
 		Config: c,
-		Setup: func(mgr controllers.Manager, bldr *controllers.Builder) error {
+		Setup: func(ctx context.Context, mgr controllers.Manager, bldr *controllers.Builder) error {
 			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Application{}}, controllers.EnqueueTracked(&buildv1alpha1.Application{}, c.Tracker, c.Scheme))
 			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Container{}}, controllers.EnqueueTracked(&buildv1alpha1.Container{}, c.Tracker, c.Scheme))
 			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, controllers.EnqueueTracked(&buildv1alpha1.Function{}, c.Tracker, c.Scheme))
@@ -212,7 +212,7 @@ func AdapterTargetRefReconciler(c controllers.Config) controllers.SubReconciler 
 		},
 
 		Config: c,
-		Setup: func(mgr controllers.Manager, bldr *controllers.Builder) error {
+		Setup: func(ctx context.Context, mgr controllers.Manager, bldr *controllers.Builder) error {
 			bldr.Watches(&source.Kind{Type: &servingv1.Service{}}, controllers.EnqueueTracked(&servingv1.Service{}, c.Tracker, c.Scheme))
 			bldr.Watches(&source.Kind{Type: &servingv1.Configuration{}}, controllers.EnqueueTracked(&servingv1.Configuration{}, c.Tracker, c.Scheme))
 			return nil

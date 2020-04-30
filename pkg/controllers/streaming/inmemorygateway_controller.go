@@ -76,7 +76,7 @@ func InMemoryGatewaySyncConfigReconciler(c controllers.Config, namespace string)
 		},
 
 		Config: c,
-		Setup: func(mgr controllers.Manager, bldr *controllers.Builder) error {
+		Setup: func(ctx context.Context, mgr controllers.Manager, bldr *controllers.Builder) error {
 			bldr.Watches(&source.Kind{Type: &corev1.ConfigMap{}}, controllers.EnqueueTracked(&corev1.ConfigMap{}, c.Tracker, c.Scheme))
 			return nil
 		},
