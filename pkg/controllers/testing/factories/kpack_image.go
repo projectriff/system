@@ -19,13 +19,13 @@ package factories
 import (
 	"fmt"
 
+	"github.com/projectriff/reconciler-runtime/apis"
+	rtesting "github.com/projectriff/reconciler-runtime/testing"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/projectriff/system/pkg/apis"
 	kpackbuildv1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/kpack/build/v1alpha1"
-	rtesting "github.com/projectriff/system/pkg/controllers/testing"
 )
 
 type kpackImage struct {
@@ -78,7 +78,7 @@ func (f *kpackImage) NamespaceName(namespace, name string) *kpackImage {
 
 func (f *kpackImage) ObjectMeta(nf func(ObjectMeta)) *kpackImage {
 	return f.mutation(func(image *kpackbuildv1alpha1.Image) {
-		omf := objectMeta(image.ObjectMeta)
+		omf := ObjectMetaFactory(image.ObjectMeta)
 		nf(omf)
 		image.ObjectMeta = omf.Create()
 	})
@@ -168,7 +168,7 @@ func (f *kpackImage) BuildCache(quantity string) *kpackImage {
 	})
 }
 
-func (f *kpackImage) StatusConditions(conditions ...*condition) *kpackImage {
+func (f *kpackImage) StatusConditions(conditions ...ConditionFactory) *kpackImage {
 	return f.mutation(func(image *kpackbuildv1alpha1.Image) {
 		c := make([]apis.Condition, len(conditions))
 		for i, cg := range conditions {

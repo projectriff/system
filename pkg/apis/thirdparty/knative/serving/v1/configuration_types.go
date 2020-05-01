@@ -17,17 +17,18 @@ limitations under the License.
 package v1
 
 import (
+	"github.com/projectriff/reconciler-runtime/apis"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	apis "github.com/projectriff/system/pkg/apis"
+	sapis "github.com/projectriff/system/pkg/apis"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 var (
-	_ apis.Resource = (*Configuration)(nil)
+	_ sapis.Resource = (*Configuration)(nil)
 )
 
 // ConfigurationSpec holds the desired state of the Configuration (from the client).
@@ -105,7 +106,7 @@ func (*Configuration) GetGroupVersionKind() schema.GroupVersionKind {
 	return GroupVersion.WithKind("Configuration")
 }
 
-func (c *Configuration) GetStatus() apis.ResourceStatus {
+func (c *Configuration) GetStatus() sapis.ResourceStatus {
 	return &c.Status
 }
 

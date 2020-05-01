@@ -17,11 +17,12 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"github.com/projectriff/reconciler-runtime/apis"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	apis "github.com/projectriff/system/pkg/apis"
+	sapis "github.com/projectriff/system/pkg/apis"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -32,7 +33,7 @@ var (
 )
 
 var (
-	_ apis.Resource = (*Application)(nil)
+	_ sapis.Resource = (*Application)(nil)
 )
 
 // ApplicationSpec defines the desired state of Application
@@ -99,7 +100,7 @@ func (*Application) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("Application")
 }
 
-func (a *Application) GetStatus() apis.ResourceStatus {
+func (a *Application) GetStatus() sapis.ResourceStatus {
 	return &a.Status
 }
 

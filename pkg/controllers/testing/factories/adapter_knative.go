@@ -19,9 +19,10 @@ package factories
 import (
 	"fmt"
 
-	"github.com/projectriff/system/pkg/apis"
+	"github.com/projectriff/reconciler-runtime/apis"
+	rtesting "github.com/projectriff/reconciler-runtime/testing"
+
 	knativev1alpha1 "github.com/projectriff/system/pkg/apis/knative/v1alpha1"
-	rtesting "github.com/projectriff/system/pkg/controllers/testing"
 )
 
 type adapterKnative struct {
@@ -74,7 +75,7 @@ func (f *adapterKnative) NamespaceName(namespace, name string) *adapterKnative {
 
 func (f *adapterKnative) ObjectMeta(nf func(ObjectMeta)) *adapterKnative {
 	return f.mutation(func(adapter *knativev1alpha1.Adapter) {
-		omf := objectMeta(adapter.ObjectMeta)
+		omf := ObjectMetaFactory(adapter.ObjectMeta)
 		nf(omf)
 		adapter.ObjectMeta = omf.Create()
 	})
@@ -120,7 +121,7 @@ func (f *adapterKnative) ServiceRef(format string, a ...interface{}) *adapterKna
 	})
 }
 
-func (f *adapterKnative) StatusConditions(conditions ...*condition) *adapterKnative {
+func (f *adapterKnative) StatusConditions(conditions ...ConditionFactory) *adapterKnative {
 	return f.mutation(func(adapter *knativev1alpha1.Adapter) {
 		c := make([]apis.Condition, len(conditions))
 		for i, cg := range conditions {

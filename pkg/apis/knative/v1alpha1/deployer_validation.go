@@ -20,12 +20,11 @@ import (
 	"fmt"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/projectriff/reconciler-runtime/validation"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
-
-	"github.com/projectriff/system/pkg/validation"
 )
 
 // +kubebuilder:webhook:path=/validate-knative-projectriff-io-v1alpha1-deployer,mutating=false,failurePolicy=fail,groups=knative.projectriff.io,resources=deployers,verbs=create;update,versions=v1alpha1,name=deployers.knative.projectriff.io

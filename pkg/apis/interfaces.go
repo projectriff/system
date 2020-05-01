@@ -17,15 +17,10 @@
 package apis
 
 import (
+	"github.com/projectriff/reconciler-runtime/apis"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
-
-type Object interface {
-	runtime.Object
-	metav1.Object
-}
 
 type Resource interface {
 	GetGroupVersionKind() schema.GroupVersionKind
@@ -35,7 +30,7 @@ type Resource interface {
 
 type ResourceStatus interface {
 	IsReady() bool
-	GetCondition(t ConditionType) *Condition
-	GetReadyConditionType() ConditionType
+	GetCondition(t apis.ConditionType) *apis.Condition
+	GetReadyConditionType() apis.ConditionType
 	GetObservedGeneration() int64
 }

@@ -19,11 +19,11 @@ package factories
 import (
 	"fmt"
 
+	"github.com/projectriff/reconciler-runtime/apis"
+	rtesting "github.com/projectriff/reconciler-runtime/testing"
 	"k8s.io/apimachinery/pkg/api/resource"
 
-	"github.com/projectriff/system/pkg/apis"
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
-	rtesting "github.com/projectriff/system/pkg/controllers/testing"
 	"github.com/projectriff/system/pkg/refs"
 )
 
@@ -77,7 +77,7 @@ func (f *application) NamespaceName(namespace, name string) *application {
 
 func (f *application) ObjectMeta(nf func(ObjectMeta)) *application {
 	return f.mutation(func(app *buildv1alpha1.Application) {
-		omf := objectMeta(app.ObjectMeta)
+		omf := ObjectMetaFactory(app.ObjectMeta)
 		nf(omf)
 		app.ObjectMeta = omf.Create()
 	})
@@ -123,7 +123,7 @@ func (f *application) BuildCache(quantity string) *application {
 	})
 }
 
-func (f *application) StatusConditions(conditions ...*condition) *application {
+func (f *application) StatusConditions(conditions ...ConditionFactory) *application {
 	return f.mutation(func(app *buildv1alpha1.Application) {
 		c := make([]apis.Condition, len(conditions))
 		for i, cg := range conditions {

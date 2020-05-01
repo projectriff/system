@@ -17,11 +17,12 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"github.com/projectriff/reconciler-runtime/apis"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/projectriff/system/pkg/apis"
+	sapis "github.com/projectriff/system/pkg/apis"
 	"github.com/projectriff/system/pkg/refs"
 )
 
@@ -34,7 +35,7 @@ var (
 )
 
 var (
-	_ apis.Resource = (*Gateway)(nil)
+	_ sapis.Resource = (*Gateway)(nil)
 )
 
 // GatewaySpec defines the desired state of Gateway
@@ -53,7 +54,7 @@ type GatewayStatus struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	apis.Status   `json:",inline"`
-	Address       *apis.Addressable               `json:"address,omitempty"`
+	Address       *sapis.Addressable              `json:"address,omitempty"`
 	DeploymentRef *refs.TypedLocalObjectReference `json:"deploymentRef,omitempty"`
 	ServiceRef    *refs.TypedLocalObjectReference `json:"serviceRef,omitempty"`
 }
@@ -80,7 +81,7 @@ func (*Gateway) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("Gateway")
 }
 
-func (g *Gateway) GetStatus() apis.ResourceStatus {
+func (g *Gateway) GetStatus() sapis.ResourceStatus {
 	return &g.Status
 }
 

@@ -19,11 +19,9 @@ package v1alpha1
 import (
 	"testing"
 
-	"k8s.io/apimachinery/pkg/util/validation/field"
-
 	"github.com/google/go-cmp/cmp"
-
-	"github.com/projectriff/system/pkg/validation"
+	"github.com/projectriff/reconciler-runtime/validation"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 )
 
 func TestValidatePulsarGateway(t *testing.T) {

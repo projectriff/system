@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/projectriff/reconciler-runtime/reconcilers"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -29,7 +30,6 @@ import (
 
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	kpackbuildv1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/kpack/build/v1alpha1"
-	"github.com/projectriff/system/pkg/controllers"
 	buildcontrollers "github.com/projectriff/system/pkg/controllers/build"
 	// +kubebuilder:scaffold:imports
 )
@@ -72,7 +72,7 @@ func main() {
 	}
 
 	if err = buildcontrollers.ApplicationReconciler(
-		controllers.Config{
+		reconcilers.Config{
 			Client:    mgr.GetClient(),
 			APIReader: mgr.GetAPIReader(),
 			Recorder:  mgr.GetEventRecorderFor("Application"),
@@ -101,7 +101,7 @@ func main() {
 		os.Exit(1)
 	}
 	if err = buildcontrollers.FunctionReconciler(
-		controllers.Config{
+		reconcilers.Config{
 			Client:    mgr.GetClient(),
 			APIReader: mgr.GetAPIReader(),
 			Recorder:  mgr.GetEventRecorderFor("Function"),

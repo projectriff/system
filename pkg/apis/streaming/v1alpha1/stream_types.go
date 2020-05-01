@@ -17,11 +17,12 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"github.com/projectriff/reconciler-runtime/apis"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	apis "github.com/projectriff/system/pkg/apis"
+	sapis "github.com/projectriff/system/pkg/apis"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -32,7 +33,7 @@ var (
 )
 
 var (
-	_ apis.Resource = (*Stream)(nil)
+	_ sapis.Resource = (*Stream)(nil)
 )
 
 // StreamSpec defines the desired state of Stream
@@ -85,7 +86,7 @@ func (*Stream) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("Stream")
 }
 
-func (s *Stream) GetStatus() apis.ResourceStatus {
+func (s *Stream) GetStatus() sapis.ResourceStatus {
 	return &s.Status
 }
 

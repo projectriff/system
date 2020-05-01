@@ -22,6 +22,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/projectriff/reconciler-runtime/reconcilers"
+	"github.com/projectriff/reconciler-runtime/tracker"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -31,9 +33,7 @@ import (
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	knativev1alpha1 "github.com/projectriff/system/pkg/apis/knative/v1alpha1"
 	servingv1 "github.com/projectriff/system/pkg/apis/thirdparty/knative/serving/v1"
-	"github.com/projectriff/system/pkg/controllers"
 	knativecontrollers "github.com/projectriff/system/pkg/controllers/knative"
-	"github.com/projectriff/system/pkg/tracker"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -78,7 +78,7 @@ func main() {
 	}
 
 	if err = knativecontrollers.AdapterReconciler(
-		controllers.Config{
+		reconcilers.Config{
 			Client:    mgr.GetClient(),
 			APIReader: mgr.GetAPIReader(),
 			Recorder:  mgr.GetEventRecorderFor("Adapter"),
@@ -95,7 +95,7 @@ func main() {
 		os.Exit(1)
 	}
 	if err = knativecontrollers.DeployerReconciler(
-		controllers.Config{
+		reconcilers.Config{
 			Client:    mgr.GetClient(),
 			APIReader: mgr.GetAPIReader(),
 			Recorder:  mgr.GetEventRecorderFor("Deployer"),

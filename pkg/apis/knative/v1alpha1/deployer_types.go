@@ -17,11 +17,12 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"github.com/projectriff/reconciler-runtime/apis"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/projectriff/system/pkg/apis"
+	sapis "github.com/projectriff/system/pkg/apis"
 	"github.com/projectriff/system/pkg/refs"
 )
 
@@ -33,7 +34,7 @@ var (
 )
 
 var (
-	_ apis.Resource = (*Deployer)(nil)
+	_ sapis.Resource = (*Deployer)(nil)
 )
 
 // DeployerSpec defines the desired state of Deployer
@@ -96,7 +97,7 @@ type DeployerStatus struct {
 	RouteRef *refs.TypedLocalObjectReference `json:"routeRef,omitempty"`
 
 	// Address to target this deployer internally
-	Address *apis.Addressable `json:"address,omitempty"`
+	Address *sapis.Addressable `json:"address,omitempty"`
 
 	// URL to target this deployer publicly
 	URL string `json:"url,omitempty"`
@@ -124,7 +125,7 @@ func (*Deployer) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("Deployer")
 }
 
-func (d *Deployer) GetStatus() apis.ResourceStatus {
+func (d *Deployer) GetStatus() sapis.ResourceStatus {
 	return &d.Status
 }
 

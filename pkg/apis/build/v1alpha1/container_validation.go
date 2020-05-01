@@ -17,11 +17,10 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"github.com/projectriff/reconciler-runtime/validation"
 	"k8s.io/apimachinery/pkg/api/equality"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
-
-	"github.com/projectriff/system/pkg/validation"
 )
 
 // +kubebuilder:webhook:path=/validate-build-projectriff-io-v1alpha1-container,mutating=false,failurePolicy=fail,groups=build.projectriff.io,resources=containers,verbs=create;update,versions=v1alpha1,name=containers.build.projectriff.io

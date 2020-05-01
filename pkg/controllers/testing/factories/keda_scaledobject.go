@@ -19,9 +19,10 @@ package factories
 import (
 	"fmt"
 
-	"github.com/projectriff/system/pkg/apis"
+	"github.com/projectriff/reconciler-runtime/apis"
+	rtesting "github.com/projectriff/reconciler-runtime/testing"
+
 	kedav1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/keda/v1alpha1"
-	rtesting "github.com/projectriff/system/pkg/controllers/testing"
 )
 
 type kedaScaledObject struct {
@@ -74,7 +75,7 @@ func (f *kedaScaledObject) NamespaceName(namespace, name string) *kedaScaledObje
 
 func (f *kedaScaledObject) ObjectMeta(nf func(ObjectMeta)) *kedaScaledObject {
 	return f.mutation(func(s *kedav1alpha1.ScaledObject) {
-		omf := objectMeta(s.ObjectMeta)
+		omf := ObjectMetaFactory(s.ObjectMeta)
 		nf(omf)
 		s.ObjectMeta = omf.Create()
 	})

@@ -17,10 +17,11 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"github.com/projectriff/reconciler-runtime/apis"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/projectriff/system/pkg/apis"
+	sapis "github.com/projectriff/system/pkg/apis"
 	"github.com/projectriff/system/pkg/refs"
 )
 
@@ -33,7 +34,7 @@ var (
 )
 
 var (
-	_ apis.Resource = (*PulsarGateway)(nil)
+	_ sapis.Resource = (*PulsarGateway)(nil)
 )
 
 // PulsarGatewaySpec defines the desired state of PulsarGateway
@@ -51,7 +52,7 @@ type PulsarGatewayStatus struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	apis.Status      `json:",inline"`
-	Address          *apis.Addressable               `json:"address,omitempty"`
+	Address          *sapis.Addressable              `json:"address,omitempty"`
 	GatewayRef       *refs.TypedLocalObjectReference `json:"gatewayRef,omitempty"`
 	GatewayImage     string                          `json:"gatewayImage,omitempty"`
 	ProvisionerImage string                          `json:"provisionerImage,omitempty"`
@@ -79,7 +80,7 @@ func (*PulsarGateway) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("PulsarGateway")
 }
 
-func (p *PulsarGateway) GetStatus() apis.ResourceStatus {
+func (p *PulsarGateway) GetStatus() sapis.ResourceStatus {
 	return &p.Status
 }
 

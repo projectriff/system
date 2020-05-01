@@ -19,11 +19,11 @@ package factories
 import (
 	"fmt"
 
+	"github.com/projectriff/reconciler-runtime/apis"
+	rtesting "github.com/projectriff/reconciler-runtime/testing"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/projectriff/system/pkg/apis"
 	streamingv1alpha1 "github.com/projectriff/system/pkg/apis/streaming/v1alpha1"
-	rtesting "github.com/projectriff/system/pkg/controllers/testing"
 )
 
 type stream struct {
@@ -91,7 +91,7 @@ func (f *stream) NamespaceName(namespace, name string) *stream {
 
 func (f *stream) ObjectMeta(nf func(ObjectMeta)) *stream {
 	return f.mutation(func(s *streamingv1alpha1.Stream) {
-		omf := objectMeta(s.ObjectMeta)
+		omf := ObjectMetaFactory(s.ObjectMeta)
 		nf(omf)
 		s.ObjectMeta = omf.Create()
 	})
@@ -109,7 +109,7 @@ func (f *stream) Gateway(name string) *stream {
 	})
 }
 
-func (f *stream) StatusConditions(conditions ...*condition) *stream {
+func (f *stream) StatusConditions(conditions ...ConditionFactory) *stream {
 	return f.mutation(func(s *streamingv1alpha1.Stream) {
 		c := make([]apis.Condition, len(conditions))
 		for i, cg := range conditions {

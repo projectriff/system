@@ -17,11 +17,12 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"github.com/projectriff/reconciler-runtime/apis"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/projectriff/system/pkg/apis"
+	sapis "github.com/projectriff/system/pkg/apis"
 	"github.com/projectriff/system/pkg/refs"
 )
 
@@ -33,7 +34,7 @@ var (
 )
 
 var (
-	_ apis.Resource = (*Processor)(nil)
+	_ sapis.Resource = (*Processor)(nil)
 )
 
 // ProcessorSpec defines the desired state of Processor
@@ -125,7 +126,7 @@ func (*Processor) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("Processor")
 }
 
-func (p *Processor) GetStatus() apis.ResourceStatus {
+func (p *Processor) GetStatus() sapis.ResourceStatus {
 	return &p.Status
 }
 
