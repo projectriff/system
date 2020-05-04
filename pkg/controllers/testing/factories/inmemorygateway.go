@@ -22,7 +22,7 @@ import (
 	"github.com/projectriff/reconciler-runtime/apis"
 	rtesting "github.com/projectriff/reconciler-runtime/testing"
 
-	sapis "github.com/projectriff/system/pkg/apis"
+	duckv1 "github.com/projectriff/system/pkg/apis/duck/v1"
 	streamingv1alpha1 "github.com/projectriff/system/pkg/apis/streaming/v1alpha1"
 	"github.com/projectriff/system/pkg/refs"
 )
@@ -117,7 +117,7 @@ func (f *inmemoryGateway) StatusGatewayRef(format string, a ...interface{}) *inm
 
 func (f *inmemoryGateway) StatusAddress(format string, a ...interface{}) *inmemoryGateway {
 	return f.mutation(func(g *streamingv1alpha1.InMemoryGateway) {
-		g.Status.Address = &sapis.Addressable{
+		g.Status.Address = &duckv1.Addressable{
 			URL: fmt.Sprintf(format, a...),
 		}
 	})

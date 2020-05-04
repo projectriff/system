@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	sapis "github.com/projectriff/system/pkg/apis"
+	duckv1 "github.com/projectriff/system/pkg/apis/duck/v1"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -131,7 +132,7 @@ type RouteStatusFields struct {
 
 	// Address holds the information needed for a Route to be the target of an event.
 	// +optional
-	Address *sapis.Addressable `json:"address,omitempty"`
+	Address *duckv1.Addressable `json:"address,omitempty"`
 
 	// Traffic holds the configured traffic distribution.
 	// These entries will always contain RevisionName references.

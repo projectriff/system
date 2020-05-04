@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	sapis "github.com/projectriff/system/pkg/apis"
+	duckv1 "github.com/projectriff/system/pkg/apis/duck/v1"
 	"github.com/projectriff/system/pkg/refs"
 )
 
@@ -56,7 +57,7 @@ type KafkaGatewayStatus struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	apis.Status      `json:",inline"`
-	Address          *sapis.Addressable              `json:"address,omitempty"`
+	Address          *duckv1.Addressable             `json:"address,omitempty"`
 	GatewayRef       *refs.TypedLocalObjectReference `json:"gatewayRef,omitempty"`
 	GatewayImage     string                          `json:"gatewayImage,omitempty"`
 	ProvisionerImage string                          `json:"provisionerImage,omitempty"`

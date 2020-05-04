@@ -23,6 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	sapis "github.com/projectriff/system/pkg/apis"
+	duckv1 "github.com/projectriff/system/pkg/apis/duck/v1"
 	"github.com/projectriff/system/pkg/refs"
 )
 
@@ -54,7 +55,7 @@ type GatewayStatus struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	apis.Status   `json:",inline"`
-	Address       *sapis.Addressable              `json:"address,omitempty"`
+	Address       *duckv1.Addressable             `json:"address,omitempty"`
 	DeploymentRef *refs.TypedLocalObjectReference `json:"deploymentRef,omitempty"`
 	ServiceRef    *refs.TypedLocalObjectReference `json:"serviceRef,omitempty"`
 }

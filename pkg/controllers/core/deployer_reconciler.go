@@ -33,9 +33,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	sapis "github.com/projectriff/system/pkg/apis"
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	corev1alpha1 "github.com/projectriff/system/pkg/apis/core/v1alpha1"
+	duckv1 "github.com/projectriff/system/pkg/apis/duck/v1"
 	"github.com/projectriff/system/pkg/refs"
 )
 
@@ -286,7 +286,7 @@ func DeployerChildServiceReconciler(c reconcilers.Config) reconcilers.SubReconci
 				parent.Status.Address = nil
 			} else {
 				parent.Status.ServiceRef = refs.NewTypedLocalObjectReferenceForObject(child, c.Scheme)
-				parent.Status.Address = &sapis.Addressable{URL: fmt.Sprintf("http://%s.%s.%s", child.Name, child.Namespace, "svc.cluster.local")}
+				parent.Status.Address = &duckv1.Addressable{URL: fmt.Sprintf("http://%s.%s.%s", child.Name, child.Namespace, "svc.cluster.local")}
 				parent.Status.PropagateServiceStatus(&child.Status)
 			}
 		},

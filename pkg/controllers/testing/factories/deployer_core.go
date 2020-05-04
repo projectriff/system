@@ -23,8 +23,8 @@ import (
 	rtesting "github.com/projectriff/reconciler-runtime/testing"
 	corev1 "k8s.io/api/core/v1"
 
-	sapis "github.com/projectriff/system/pkg/apis"
 	corev1alpha1 "github.com/projectriff/system/pkg/apis/core/v1alpha1"
+	duckv1 "github.com/projectriff/system/pkg/apis/duck/v1"
 	"github.com/projectriff/system/pkg/refs"
 )
 
@@ -192,7 +192,7 @@ func (f *deployerCore) StatusIngressRef(format string, a ...interface{}) *deploy
 
 func (f *deployerCore) StatusAddressURL(format string, a ...interface{}) *deployerCore {
 	return f.mutation(func(deployer *corev1alpha1.Deployer) {
-		deployer.Status.Address = &sapis.Addressable{
+		deployer.Status.Address = &duckv1.Addressable{
 			URL: fmt.Sprintf(format, a...),
 		}
 	})

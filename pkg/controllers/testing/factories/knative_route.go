@@ -22,7 +22,7 @@ import (
 	"github.com/projectriff/reconciler-runtime/apis"
 	rtesting "github.com/projectriff/reconciler-runtime/testing"
 
-	sapis "github.com/projectriff/system/pkg/apis"
+	duckv1 "github.com/projectriff/system/pkg/apis/duck/v1"
 	knativeservingv1 "github.com/projectriff/system/pkg/apis/thirdparty/knative/serving/v1"
 )
 
@@ -112,7 +112,7 @@ func (f *knativeRoute) StatusObservedGeneration(generation int64) *knativeRoute 
 
 func (f *knativeRoute) StatusAddressURL(url string) *knativeRoute {
 	return f.mutation(func(route *knativeservingv1.Route) {
-		route.Status.Address = &sapis.Addressable{
+		route.Status.Address = &duckv1.Addressable{
 			URL: url,
 		}
 	})

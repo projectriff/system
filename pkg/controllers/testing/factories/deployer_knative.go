@@ -23,7 +23,7 @@ import (
 	rtesting "github.com/projectriff/reconciler-runtime/testing"
 	corev1 "k8s.io/api/core/v1"
 
-	sapis "github.com/projectriff/system/pkg/apis"
+	duckv1 "github.com/projectriff/system/pkg/apis/duck/v1"
 	knativev1alpha1 "github.com/projectriff/system/pkg/apis/knative/v1alpha1"
 	"github.com/projectriff/system/pkg/refs"
 )
@@ -196,7 +196,7 @@ func (f *deployerKnative) StatusRouteRef(format string, a ...interface{}) *deplo
 
 func (f *deployerKnative) StatusAddressURL(url string) *deployerKnative {
 	return f.mutation(func(deployer *knativev1alpha1.Deployer) {
-		deployer.Status.Address = &sapis.Addressable{
+		deployer.Status.Address = &duckv1.Addressable{
 			URL: url,
 		}
 	})
