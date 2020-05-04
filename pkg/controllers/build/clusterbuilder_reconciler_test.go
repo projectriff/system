@@ -19,14 +19,11 @@ package build_test
 import (
 	"testing"
 
-	"github.com/go-logr/logr"
+	"github.com/projectriff/reconciler-runtime/reconcilers"
 	rtesting "github.com/projectriff/reconciler-runtime/testing"
-	"github.com/projectriff/reconciler-runtime/tracker"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/tools/record"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	kpackbuildv1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/kpack/build/v1alpha1"
@@ -61,7 +58,7 @@ func TestClusterBuildersReconciler(t *testing.T) {
 	testBuilders := factories.ConfigMap().
 		NamespaceName(testNamespace, testName)
 
-	table := rtesting.Table{{
+	rts := rtesting.ReconcilerTestSuite{{
 		Name: "builders configmap does not exist",
 		Key:  testKey,
 		ExpectCreates: []rtesting.Factory{
@@ -198,11 +195,11 @@ func TestClusterBuildersReconciler(t *testing.T) {
 		ShouldErr: true,
 	}}
 
-	table.Test(t, scheme, func(t *testing.T, row *rtesting.Testcase, client client.Client, apiReader client.Reader, tracker tracker.Tracker, recorder record.EventRecorder, log logr.Logger) reconcile.Reconciler {
+	rts.Test(t, scheme, func(t *testing.T, rtc *rtesting.ReconcilerTestCase, c reconcilers.Config) reconcile.Reconciler {
 		return &build.ClusterBuilderReconciler{
-			Client:    client,
-			Recorder:  recorder,
-			Log:       log,
+			Client:    c.Client,
+			Recorder:  c.Recorder,
+			Log:       c.Log,
 			Namespace: testNamespace,
 		}
 	})

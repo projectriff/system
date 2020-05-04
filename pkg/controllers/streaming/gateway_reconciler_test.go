@@ -19,17 +19,13 @@ package streaming_test
 import (
 	"testing"
 
-	"github.com/go-logr/logr"
 	"github.com/projectriff/reconciler-runtime/reconcilers"
 	rtesting "github.com/projectriff/reconciler-runtime/testing"
-	"github.com/projectriff/reconciler-runtime/tracker"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/tools/record"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	streamingv1alpha1 "github.com/projectriff/system/pkg/apis/streaming/v1alpha1"
@@ -104,7 +100,7 @@ func TestGatewayReconciler(t *testing.T) {
 			om.Created(1)
 		})
 
-	table := rtesting.Table{{
+	rts := rtesting.ReconcilerTestSuite{{
 		Name: "gateway does not exist",
 		Key:  testKey,
 	}, {
@@ -320,16 +316,7 @@ func TestGatewayReconciler(t *testing.T) {
 		},
 	}}
 
-	table.Test(t, scheme, func(t *testing.T, row *rtesting.Testcase, client client.Client, apiReader client.Reader, tracker tracker.Tracker, recorder record.EventRecorder, log logr.Logger) reconcile.Reconciler {
-		return streaming.GatewayReconciler(
-			reconcilers.Config{
-				Client:    client,
-				APIReader: apiReader,
-				Recorder:  recorder,
-				Log:       log,
-				Scheme:    scheme,
-				Tracker:   tracker,
-			},
-		)
+	rts.Test(t, scheme, func(t *testing.T, rtc *rtesting.ReconcilerTestCase, c reconcilers.Config) reconcile.Reconciler {
+		return streaming.GatewayReconciler(c)
 	})
 }

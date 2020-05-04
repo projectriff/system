@@ -20,10 +20,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/go-logr/logr"
 	"github.com/projectriff/reconciler-runtime/reconcilers"
 	rtesting "github.com/projectriff/reconciler-runtime/testing"
-	"github.com/projectriff/reconciler-runtime/tracker"
 	"github.com/stretchr/testify/mock"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -31,8 +29,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/tools/record"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/projectriff/reconciler-runtime/apis"
@@ -132,7 +128,7 @@ func TestStreamReconciler(t *testing.T) {
 		})
 	}
 
-	table := rtesting.Table{{
+	rts := rtesting.ReconcilerTestSuite{{
 		Name: "stream does not exist",
 		Key:  testKey,
 	}, {
@@ -466,18 +462,8 @@ func TestStreamReconciler(t *testing.T) {
 		},
 	}}
 
-	table.Test(t, scheme, func(t *testing.T, row *rtesting.Testcase, client client.Client, apiReader client.Reader, tracker tracker.Tracker, recorder record.EventRecorder, log logr.Logger) reconcile.Reconciler {
+	rts.Test(t, scheme, func(t *testing.T, rtc *rtesting.ReconcilerTestCase, c reconcilers.Config) reconcile.Reconciler {
 		streamProvisioner = &streaming.MockStreamProvisionerClient{}
-		return streaming.StreamReconciler(
-			reconcilers.Config{
-				Client:    client,
-				APIReader: apiReader,
-				Recorder:  recorder,
-				Log:       log,
-				Scheme:    scheme,
-				Tracker:   tracker,
-			},
-			streamProvisioner,
-		)
+		return streaming.StreamReconciler(c, streamProvisioner)
 	})
 }
