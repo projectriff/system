@@ -28,7 +28,7 @@ echo "Installing riff Build"
 if [ $MODE = "push" ]; then
   kapp deploy -n apps -a riff-build -f https://storage.googleapis.com/projectriff/riff-system/snapshots/riff-build-${slug}.yaml -y
 elif [ $MODE = "pull_request" ]; then
-  ko resolve -f config/riff-build.yaml | kapp deploy -n apps -a riff-build -f - -y
+  ko resolve --strict -f config/riff-build.yaml | kapp deploy -n apps -a riff-build -f - -y
 fi
 kapp deploy -n apps -a riff-builders -f https://storage.googleapis.com/projectriff/release/${riff_version}/riff-builders.yaml -y
 
@@ -41,7 +41,7 @@ if [ $RUNTIME = "core" ]; then
   if [ $MODE = "push" ]; then
     kapp deploy -n apps -a riff-core-runtime -f https://storage.googleapis.com/projectriff/riff-system/snapshots/riff-core-${slug}.yaml -y
   elif [ $MODE = "pull_request" ]; then
-    ko resolve -f config/riff-core.yaml | kapp deploy -n apps -a riff-core-runtime -f - -y
+    ko resolve --strict -f config/riff-core.yaml | kapp deploy -n apps -a riff-core-runtime -f - -y
   fi
 fi
 
@@ -53,7 +53,7 @@ if [ $RUNTIME = "knative" ]; then
   if [ $MODE = "push" ]; then
     kapp deploy -n apps -a riff-knative-runtime -f https://storage.googleapis.com/projectriff/riff-system/snapshots/riff-knative-${slug}.yaml -y
   elif [ $MODE = "pull_request" ]; then
-    ko resolve -f config/riff-knative.yaml | kapp deploy -n apps -a riff-knative-runtime -f - -y
+    ko resolve --strict -f config/riff-knative.yaml | kapp deploy -n apps -a riff-knative-runtime -f - -y
   fi
 fi
 
@@ -65,7 +65,7 @@ if [ $RUNTIME = "streaming" ]; then
   if [ $MODE = "push" ]; then
     kapp deploy -n apps -a riff-streaming-runtime -f https://storage.googleapis.com/projectriff/riff-system/snapshots/riff-streaming-${slug}.yaml -y
   elif [ $MODE = "pull_request" ]; then
-    ko resolve -f config/riff-streaming.yaml | kapp deploy -n apps -a riff-streaming-runtime -f - -y
+    ko resolve --strict -f config/riff-streaming.yaml | kapp deploy -n apps -a riff-streaming-runtime -f - -y
   fi
 
   if [ $GATEWAY = "kafka" ]; then
