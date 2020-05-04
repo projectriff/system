@@ -19,9 +19,10 @@ package factories
 import (
 	"fmt"
 
-	"github.com/projectriff/system/pkg/apis"
+	"github.com/projectriff/reconciler-runtime/apis"
+	rtesting "github.com/projectriff/reconciler-runtime/testing"
+
 	kpackbuildv1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/kpack/build/v1alpha1"
-	rtesting "github.com/projectriff/system/pkg/controllers/testing"
 )
 
 type kpackClusterBuilder struct {
@@ -74,7 +75,7 @@ func (f *kpackClusterBuilder) NamespaceName(namespace, name string) *kpackCluste
 
 func (f *kpackClusterBuilder) ObjectMeta(nf func(ObjectMeta)) *kpackClusterBuilder {
 	return f.mutation(func(cb *kpackbuildv1alpha1.ClusterBuilder) {
-		omf := objectMeta(cb.ObjectMeta)
+		omf := ObjectMetaFactory(cb.ObjectMeta)
 		nf(omf)
 		cb.ObjectMeta = omf.Create()
 	})
@@ -86,7 +87,7 @@ func (f *kpackClusterBuilder) Image(format string, a ...interface{}) *kpackClust
 	})
 }
 
-func (f *kpackClusterBuilder) StatusConditions(conditions ...*condition) *kpackClusterBuilder {
+func (f *kpackClusterBuilder) StatusConditions(conditions ...ConditionFactory) *kpackClusterBuilder {
 	return f.mutation(func(cb *kpackbuildv1alpha1.ClusterBuilder) {
 		c := make([]apis.Condition, len(conditions))
 		for i, cg := range conditions {

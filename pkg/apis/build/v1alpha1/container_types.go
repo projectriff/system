@@ -17,10 +17,11 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"github.com/projectriff/reconciler-runtime/apis"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	apis "github.com/projectriff/system/pkg/apis"
+	sapis "github.com/projectriff/system/pkg/apis"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -31,7 +32,7 @@ var (
 )
 
 var (
-	_ apis.Resource = (*Container)(nil)
+	_ sapis.Resource = (*Container)(nil)
 )
 
 // ContainerSpec defines the desired state of Container
@@ -80,7 +81,7 @@ func (*Container) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("Container")
 }
 
-func (c *Container) GetStatus() apis.ResourceStatus {
+func (c *Container) GetStatus() sapis.ResourceStatus {
 	return &c.Status
 }
 

@@ -19,11 +19,11 @@ package factories
 import (
 	"fmt"
 
+	"github.com/projectriff/reconciler-runtime/apis"
+	rtesting "github.com/projectriff/reconciler-runtime/testing"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/projectriff/system/pkg/apis"
 	knativeservingv1 "github.com/projectriff/system/pkg/apis/thirdparty/knative/serving/v1"
-	rtesting "github.com/projectriff/system/pkg/controllers/testing"
 )
 
 type knativeService struct {
@@ -76,7 +76,7 @@ func (f *knativeService) NamespaceName(namespace, name string) *knativeService {
 
 func (f *knativeService) ObjectMeta(nf func(ObjectMeta)) *knativeService {
 	return f.mutation(func(service *knativeservingv1.Service) {
-		omf := objectMeta(service.ObjectMeta)
+		omf := ObjectMetaFactory(service.ObjectMeta)
 		nf(omf)
 		service.ObjectMeta = omf.Create()
 	})
@@ -84,7 +84,7 @@ func (f *knativeService) ObjectMeta(nf func(ObjectMeta)) *knativeService {
 
 func (f *knativeService) PodTemplateSpec(nf func(PodTemplateSpec)) *knativeService {
 	return f.mutation(func(service *knativeservingv1.Service) {
-		ptsf := podTemplateSpec(
+		ptsf := PodTemplateSpecFactory(
 			// convert RevisionTemplateSpec into PodTemplateSpec
 			corev1.PodTemplateSpec{
 				ObjectMeta: service.Spec.Template.ObjectMeta,
@@ -105,7 +105,7 @@ func (f *knativeService) UserContainer(cb func(*corev1.Container)) *knativeServi
 	})
 }
 
-func (f *knativeService) StatusConditions(conditions ...*condition) *knativeService {
+func (f *knativeService) StatusConditions(conditions ...ConditionFactory) *knativeService {
 	return f.mutation(func(service *knativeservingv1.Service) {
 		c := make([]apis.Condition, len(conditions))
 		for i, cg := range conditions {

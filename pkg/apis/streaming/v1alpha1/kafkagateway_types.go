@@ -17,10 +17,12 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"github.com/projectriff/reconciler-runtime/apis"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/projectriff/system/pkg/apis"
+	sapis "github.com/projectriff/system/pkg/apis"
+	duckv1 "github.com/projectriff/system/pkg/apis/duck/v1"
 	"github.com/projectriff/system/pkg/refs"
 )
 
@@ -33,7 +35,7 @@ var (
 )
 
 var (
-	_ apis.Resource = (*KafkaGateway)(nil)
+	_ sapis.Resource = (*KafkaGateway)(nil)
 )
 
 // KafkaGatewaySpec defines the desired state of KafkaGateway
@@ -55,7 +57,7 @@ type KafkaGatewayStatus struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	apis.Status      `json:",inline"`
-	Address          *apis.Addressable               `json:"address,omitempty"`
+	Address          *duckv1.Addressable             `json:"address,omitempty"`
 	GatewayRef       *refs.TypedLocalObjectReference `json:"gatewayRef,omitempty"`
 	GatewayImage     string                          `json:"gatewayImage,omitempty"`
 	ProvisionerImage string                          `json:"provisionerImage,omitempty"`
@@ -83,7 +85,7 @@ func (*KafkaGateway) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("KafkaGateway")
 }
 
-func (p *KafkaGateway) GetStatus() apis.ResourceStatus {
+func (p *KafkaGateway) GetStatus() sapis.ResourceStatus {
 	return &p.Status
 }
 

@@ -19,9 +19,11 @@ package factories
 import (
 	"fmt"
 
-	"github.com/projectriff/system/pkg/apis"
+	"github.com/projectriff/reconciler-runtime/apis"
+	rtesting "github.com/projectriff/reconciler-runtime/testing"
+
+	duckv1 "github.com/projectriff/system/pkg/apis/duck/v1"
 	streamingv1alpha1 "github.com/projectriff/system/pkg/apis/streaming/v1alpha1"
-	rtesting "github.com/projectriff/system/pkg/controllers/testing"
 	"github.com/projectriff/system/pkg/refs"
 )
 
@@ -75,7 +77,7 @@ func (f *kafkaGateway) NamespaceName(namespace, name string) *kafkaGateway {
 
 func (f *kafkaGateway) ObjectMeta(nf func(ObjectMeta)) *kafkaGateway {
 	return f.mutation(func(g *streamingv1alpha1.KafkaGateway) {
-		omf := objectMeta(g.ObjectMeta)
+		omf := ObjectMetaFactory(g.ObjectMeta)
 		nf(omf)
 		g.ObjectMeta = omf.Create()
 	})
@@ -87,7 +89,7 @@ func (f *kafkaGateway) BootstrapServers(bootstrapServers string) *kafkaGateway {
 	})
 }
 
-func (f *kafkaGateway) StatusConditions(conditions ...*condition) *kafkaGateway {
+func (f *kafkaGateway) StatusConditions(conditions ...ConditionFactory) *kafkaGateway {
 	return f.mutation(func(g *streamingv1alpha1.KafkaGateway) {
 		c := make([]apis.Condition, len(conditions))
 		for i, cg := range conditions {
@@ -121,7 +123,7 @@ func (f *kafkaGateway) StatusGatewayRef(format string, a ...interface{}) *kafkaG
 
 func (f *kafkaGateway) StatusAddress(format string, a ...interface{}) *kafkaGateway {
 	return f.mutation(func(g *streamingv1alpha1.KafkaGateway) {
-		g.Status.Address = &apis.Addressable{
+		g.Status.Address = &duckv1.Addressable{
 			URL: fmt.Sprintf(format, a...),
 		}
 	})

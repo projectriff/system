@@ -19,9 +19,11 @@ package factories
 import (
 	"fmt"
 
-	"github.com/projectriff/system/pkg/apis"
+	"github.com/projectriff/reconciler-runtime/apis"
+	rtesting "github.com/projectriff/reconciler-runtime/testing"
+
+	duckv1 "github.com/projectriff/system/pkg/apis/duck/v1"
 	streamingv1alpha1 "github.com/projectriff/system/pkg/apis/streaming/v1alpha1"
-	rtesting "github.com/projectriff/system/pkg/controllers/testing"
 	"github.com/projectriff/system/pkg/refs"
 )
 
@@ -75,7 +77,7 @@ func (f *pulsarGateway) NamespaceName(namespace, name string) *pulsarGateway {
 
 func (f *pulsarGateway) ObjectMeta(nf func(ObjectMeta)) *pulsarGateway {
 	return f.mutation(func(g *streamingv1alpha1.PulsarGateway) {
-		omf := objectMeta(g.ObjectMeta)
+		omf := ObjectMetaFactory(g.ObjectMeta)
 		nf(omf)
 		g.ObjectMeta = omf.Create()
 	})
@@ -87,7 +89,7 @@ func (f *pulsarGateway) ServiceURL(url string) *pulsarGateway {
 	})
 }
 
-func (f *pulsarGateway) StatusConditions(conditions ...*condition) *pulsarGateway {
+func (f *pulsarGateway) StatusConditions(conditions ...ConditionFactory) *pulsarGateway {
 	return f.mutation(func(g *streamingv1alpha1.PulsarGateway) {
 		c := make([]apis.Condition, len(conditions))
 		for i, cg := range conditions {
@@ -121,7 +123,7 @@ func (f *pulsarGateway) StatusGatewayRef(format string, a ...interface{}) *pulsa
 
 func (f *pulsarGateway) StatusAddress(format string, a ...interface{}) *pulsarGateway {
 	return f.mutation(func(g *streamingv1alpha1.PulsarGateway) {
-		g.Status.Address = &apis.Addressable{
+		g.Status.Address = &duckv1.Addressable{
 			URL: fmt.Sprintf(format, a...),
 		}
 	})

@@ -17,9 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"github.com/projectriff/reconciler-runtime/apis"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	apis "github.com/projectriff/system/pkg/apis"
 )
 
 // +kubebuilder:object:root=true

@@ -19,11 +19,12 @@ package factories
 import (
 	"fmt"
 
+	"github.com/projectriff/reconciler-runtime/apis"
+	rtesting "github.com/projectriff/reconciler-runtime/testing"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/projectriff/system/pkg/apis"
 	corev1alpha1 "github.com/projectriff/system/pkg/apis/core/v1alpha1"
-	rtesting "github.com/projectriff/system/pkg/controllers/testing"
+	duckv1 "github.com/projectriff/system/pkg/apis/duck/v1"
 	"github.com/projectriff/system/pkg/refs"
 )
 
@@ -77,7 +78,7 @@ func (f *deployerCore) NamespaceName(namespace, name string) *deployerCore {
 
 func (f *deployerCore) ObjectMeta(nf func(ObjectMeta)) *deployerCore {
 	return f.mutation(func(deployer *corev1alpha1.Deployer) {
-		omf := objectMeta(deployer.ObjectMeta)
+		omf := ObjectMetaFactory(deployer.ObjectMeta)
 		nf(omf)
 		deployer.ObjectMeta = omf.Create()
 	})
@@ -88,7 +89,7 @@ func (f *deployerCore) PodTemplateSpec(nf func(PodTemplateSpec)) *deployerCore {
 		if deployer.Spec.Template == nil {
 			deployer.Spec.Template = &corev1.PodTemplateSpec{}
 		}
-		ptsf := podTemplateSpec(*deployer.Spec.Template)
+		ptsf := PodTemplateSpecFactory(*deployer.Spec.Template)
 		nf(ptsf)
 		template := ptsf.Create()
 		deployer.Spec.Template = &template
@@ -137,7 +138,7 @@ func (f *deployerCore) IngressPolicy(policy corev1alpha1.IngressPolicy) *deploye
 	})
 }
 
-func (f *deployerCore) StatusConditions(conditions ...*condition) *deployerCore {
+func (f *deployerCore) StatusConditions(conditions ...ConditionFactory) *deployerCore {
 	return f.mutation(func(deployer *corev1alpha1.Deployer) {
 		c := make([]apis.Condition, len(conditions))
 		for i, cg := range conditions {
@@ -191,7 +192,7 @@ func (f *deployerCore) StatusIngressRef(format string, a ...interface{}) *deploy
 
 func (f *deployerCore) StatusAddressURL(format string, a ...interface{}) *deployerCore {
 	return f.mutation(func(deployer *corev1alpha1.Deployer) {
-		deployer.Status.Address = &apis.Addressable{
+		deployer.Status.Address = &duckv1.Addressable{
 			URL: fmt.Sprintf(format, a...),
 		}
 	})

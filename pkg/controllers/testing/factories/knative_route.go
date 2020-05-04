@@ -19,9 +19,11 @@ package factories
 import (
 	"fmt"
 
-	"github.com/projectriff/system/pkg/apis"
+	"github.com/projectriff/reconciler-runtime/apis"
+	rtesting "github.com/projectriff/reconciler-runtime/testing"
+
+	duckv1 "github.com/projectriff/system/pkg/apis/duck/v1"
 	knativeservingv1 "github.com/projectriff/system/pkg/apis/thirdparty/knative/serving/v1"
-	rtesting "github.com/projectriff/system/pkg/controllers/testing"
 )
 
 type knativeRoute struct {
@@ -74,7 +76,7 @@ func (f *knativeRoute) NamespaceName(namespace, name string) *knativeRoute {
 
 func (f *knativeRoute) ObjectMeta(nf func(ObjectMeta)) *knativeRoute {
 	return f.mutation(func(route *knativeservingv1.Route) {
-		omf := objectMeta(route.ObjectMeta)
+		omf := ObjectMetaFactory(route.ObjectMeta)
 		nf(omf)
 		route.ObjectMeta = omf.Create()
 	})
@@ -86,7 +88,7 @@ func (f *knativeRoute) Traffic(traffic ...knativeservingv1.TrafficTarget) *knati
 	})
 }
 
-func (f *knativeRoute) StatusConditions(conditions ...*condition) *knativeRoute {
+func (f *knativeRoute) StatusConditions(conditions ...ConditionFactory) *knativeRoute {
 	return f.mutation(func(route *knativeservingv1.Route) {
 		c := make([]apis.Condition, len(conditions))
 		for i, cg := range conditions {
@@ -110,7 +112,7 @@ func (f *knativeRoute) StatusObservedGeneration(generation int64) *knativeRoute 
 
 func (f *knativeRoute) StatusAddressURL(url string) *knativeRoute {
 	return f.mutation(func(route *knativeservingv1.Route) {
-		route.Status.Address = &apis.Addressable{
+		route.Status.Address = &duckv1.Addressable{
 			URL: url,
 		}
 	})

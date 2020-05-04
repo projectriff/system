@@ -19,11 +19,12 @@ package factories
 import (
 	"fmt"
 
+	"github.com/projectriff/reconciler-runtime/apis"
+	rtesting "github.com/projectriff/reconciler-runtime/testing"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/projectriff/system/pkg/apis"
+	duckv1 "github.com/projectriff/system/pkg/apis/duck/v1"
 	knativev1alpha1 "github.com/projectriff/system/pkg/apis/knative/v1alpha1"
-	rtesting "github.com/projectriff/system/pkg/controllers/testing"
 	"github.com/projectriff/system/pkg/refs"
 )
 
@@ -77,7 +78,7 @@ func (f *deployerKnative) NamespaceName(namespace, name string) *deployerKnative
 
 func (f *deployerKnative) ObjectMeta(nf func(ObjectMeta)) *deployerKnative {
 	return f.mutation(func(deployer *knativev1alpha1.Deployer) {
-		omf := objectMeta(deployer.ObjectMeta)
+		omf := ObjectMetaFactory(deployer.ObjectMeta)
 		nf(omf)
 		deployer.ObjectMeta = omf.Create()
 	})
@@ -88,7 +89,7 @@ func (f *deployerKnative) PodTemplateSpec(nf func(PodTemplateSpec)) *deployerKna
 		if deployer.Spec.Template == nil {
 			deployer.Spec.Template = &corev1.PodTemplateSpec{}
 		}
-		ptsf := podTemplateSpec(*deployer.Spec.Template)
+		ptsf := PodTemplateSpecFactory(*deployer.Spec.Template)
 		nf(ptsf)
 		pts := ptsf.Create()
 		deployer.Spec.Template = &pts
@@ -120,8 +121,8 @@ func (f *deployerKnative) FunctionRef(format string, a ...interface{}) *deployer
 }
 
 func (f *deployerKnative) Image(format string, a ...interface{}) *deployerKnative {
-	return f.PodTemplateSpec(func(ptsf PodTemplateSpec) {
-		ptsf.ContainerNamed("user-container", func(container *corev1.Container) {
+	return f.PodTemplateSpec(func(pts PodTemplateSpec) {
+		pts.ContainerNamed("user-container", func(container *corev1.Container) {
 			container.Image = fmt.Sprintf(format, a...)
 		})
 	})
@@ -151,7 +152,7 @@ func (f *deployerKnative) MaxScale(scale int32) *deployerKnative {
 	})
 }
 
-func (f *deployerKnative) StatusConditions(conditions ...*condition) *deployerKnative {
+func (f *deployerKnative) StatusConditions(conditions ...ConditionFactory) *deployerKnative {
 	return f.mutation(func(deployer *knativev1alpha1.Deployer) {
 		c := make([]apis.Condition, len(conditions))
 		for i, cg := range conditions {
@@ -195,7 +196,7 @@ func (f *deployerKnative) StatusRouteRef(format string, a ...interface{}) *deplo
 
 func (f *deployerKnative) StatusAddressURL(url string) *deployerKnative {
 	return f.mutation(func(deployer *knativev1alpha1.Deployer) {
-		deployer.Status.Address = &apis.Addressable{
+		deployer.Status.Address = &duckv1.Addressable{
 			URL: url,
 		}
 	})

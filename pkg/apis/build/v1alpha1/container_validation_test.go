@@ -20,8 +20,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-
-	"github.com/projectriff/system/pkg/validation"
+	"github.com/projectriff/reconciler-runtime/validation"
 )
 
 func TestValidateContainer(t *testing.T) {

@@ -17,18 +17,19 @@ limitations under the License.
 package v1
 
 import (
+	"github.com/projectriff/reconciler-runtime/apis"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	apis "github.com/projectriff/system/pkg/apis"
+	sapis "github.com/projectriff/system/pkg/apis"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 var (
-	_ apis.Resource = (*Revision)(nil)
+	_ sapis.Resource = (*Revision)(nil)
 )
 
 // RevisionSpec holds the desired state of the Revision (from the client).
@@ -129,7 +130,7 @@ func (*Revision) GetGroupVersionKind() schema.GroupVersionKind {
 	return GroupVersion.WithKind("Revision")
 }
 
-func (r *Revision) GetStatus() apis.ResourceStatus {
+func (r *Revision) GetStatus() sapis.ResourceStatus {
 	return &r.Status
 }
 

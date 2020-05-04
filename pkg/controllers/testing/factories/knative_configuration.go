@@ -19,11 +19,11 @@ package factories
 import (
 	"fmt"
 
+	"github.com/projectriff/reconciler-runtime/apis"
+	rtesting "github.com/projectriff/reconciler-runtime/testing"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/projectriff/system/pkg/apis"
 	knativeservingv1 "github.com/projectriff/system/pkg/apis/thirdparty/knative/serving/v1"
-	rtesting "github.com/projectriff/system/pkg/controllers/testing"
 )
 
 type knativeConfiguration struct {
@@ -76,7 +76,7 @@ func (f *knativeConfiguration) NamespaceName(namespace, name string) *knativeCon
 
 func (f *knativeConfiguration) ObjectMeta(nf func(ObjectMeta)) *knativeConfiguration {
 	return f.mutation(func(configuration *knativeservingv1.Configuration) {
-		omf := objectMeta(configuration.ObjectMeta)
+		omf := ObjectMetaFactory(configuration.ObjectMeta)
 		nf(omf)
 		configuration.ObjectMeta = omf.Create()
 	})
@@ -84,7 +84,7 @@ func (f *knativeConfiguration) ObjectMeta(nf func(ObjectMeta)) *knativeConfigura
 
 func (f *knativeConfiguration) PodTemplateSpec(nf func(PodTemplateSpec)) *knativeConfiguration {
 	return f.mutation(func(configuration *knativeservingv1.Configuration) {
-		ptsf := podTemplateSpec(
+		ptsf := PodTemplateSpecFactory(
 			// convert RevisionTemplateSpec into PodTemplateSpec
 			corev1.PodTemplateSpec{
 				ObjectMeta: configuration.Spec.Template.ObjectMeta,
@@ -111,7 +111,7 @@ func (f *knativeConfiguration) UserContainer(cb func(*corev1.Container)) *knativ
 	})
 }
 
-func (f *knativeConfiguration) StatusConditions(conditions ...*condition) *knativeConfiguration {
+func (f *knativeConfiguration) StatusConditions(conditions ...ConditionFactory) *knativeConfiguration {
 	return f.mutation(func(configuration *knativeservingv1.Configuration) {
 		c := make([]apis.Condition, len(conditions))
 		for i, cg := range conditions {

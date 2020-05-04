@@ -19,9 +19,10 @@ package factories
 import (
 	"fmt"
 
-	"github.com/projectriff/system/pkg/apis"
+	"github.com/projectriff/reconciler-runtime/apis"
+	rtesting "github.com/projectriff/reconciler-runtime/testing"
+
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
-	rtesting "github.com/projectriff/system/pkg/controllers/testing"
 )
 
 type container struct {
@@ -74,7 +75,7 @@ func (f *container) NamespaceName(namespace, name string) *container {
 
 func (f *container) ObjectMeta(nf func(ObjectMeta)) *container {
 	return f.mutation(func(con *buildv1alpha1.Container) {
-		omf := objectMeta(con.ObjectMeta)
+		omf := ObjectMetaFactory(con.ObjectMeta)
 		nf(omf)
 		con.ObjectMeta = omf.Create()
 	})
@@ -86,7 +87,7 @@ func (f *container) Image(format string, a ...interface{}) *container {
 	})
 }
 
-func (f *container) StatusConditions(conditions ...*condition) *container {
+func (f *container) StatusConditions(conditions ...ConditionFactory) *container {
 	return f.mutation(func(con *buildv1alpha1.Container) {
 		c := make([]apis.Condition, len(conditions))
 		for i, cg := range conditions {

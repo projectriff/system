@@ -17,9 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"github.com/projectriff/reconciler-runtime/validation"
 	"k8s.io/apimachinery/pkg/api/equality"
-
-	"github.com/projectriff/system/pkg/validation"
 )
 
 func (s *SourceConfig) Validate() validation.FieldErrors {

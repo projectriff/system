@@ -19,11 +19,12 @@ package factories
 import (
 	"fmt"
 
+	"github.com/projectriff/reconciler-runtime/apis"
+	rtesting "github.com/projectriff/reconciler-runtime/testing"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/projectriff/system/pkg/apis"
+	duckv1 "github.com/projectriff/system/pkg/apis/duck/v1"
 	streamingv1alpha1 "github.com/projectriff/system/pkg/apis/streaming/v1alpha1"
-	rtesting "github.com/projectriff/system/pkg/controllers/testing"
 	"github.com/projectriff/system/pkg/refs"
 )
 
@@ -77,7 +78,7 @@ func (f *gateway) NamespaceName(namespace, name string) *gateway {
 
 func (f *gateway) ObjectMeta(nf func(ObjectMeta)) *gateway {
 	return f.mutation(func(g *streamingv1alpha1.Gateway) {
-		omf := objectMeta(g.ObjectMeta)
+		omf := ObjectMetaFactory(g.ObjectMeta)
 		nf(omf)
 		g.ObjectMeta = omf.Create()
 	})
@@ -88,7 +89,7 @@ func (f *gateway) PodTemplateSpec(nf func(PodTemplateSpec)) *gateway {
 		if g.Spec.Template == nil {
 			g.Spec.Template = &corev1.PodTemplateSpec{}
 		}
-		ptsf := podTemplateSpec(*g.Spec.Template)
+		ptsf := PodTemplateSpecFactory(*g.Spec.Template)
 		nf(ptsf)
 		template := ptsf.Create()
 		g.Spec.Template = &template
@@ -101,7 +102,7 @@ func (f *gateway) Ports(ports ...corev1.ServicePort) *gateway {
 	})
 }
 
-func (f *gateway) StatusConditions(conditions ...*condition) *gateway {
+func (f *gateway) StatusConditions(conditions ...ConditionFactory) *gateway {
 	return f.mutation(func(g *streamingv1alpha1.Gateway) {
 		c := make([]apis.Condition, len(conditions))
 		for i, cg := range conditions {
@@ -144,7 +145,7 @@ func (f *gateway) StatusServiceRef(format string, a ...interface{}) *gateway {
 
 func (f *gateway) StatusAddress(format string, a ...interface{}) *gateway {
 	return f.mutation(func(g *streamingv1alpha1.Gateway) {
-		g.Status.Address = &apis.Addressable{
+		g.Status.Address = &duckv1.Addressable{
 			URL: fmt.Sprintf(format, a...),
 		}
 	})

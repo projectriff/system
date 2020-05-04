@@ -22,19 +22,18 @@ import (
 	"os"
 	"time"
 
+	"github.com/projectriff/reconciler-runtime/reconcilers"
+	"github.com/projectriff/reconciler-runtime/tracker"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	kedav1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/keda/v1alpha1"
-
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	streamingv1alpha1 "github.com/projectriff/system/pkg/apis/streaming/v1alpha1"
-	"github.com/projectriff/system/pkg/controllers"
+	kedav1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/keda/v1alpha1"
 	streamingcontrollers "github.com/projectriff/system/pkg/controllers/streaming"
-	"github.com/projectriff/system/pkg/tracker"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -81,7 +80,7 @@ func main() {
 
 	streamControllerLogger := ctrl.Log.WithName("controllers").WithName("Stream")
 	if err = streamingcontrollers.StreamReconciler(
-		controllers.Config{
+		reconcilers.Config{
 			Client:    mgr.GetClient(),
 			APIReader: mgr.GetAPIReader(),
 			Recorder:  mgr.GetEventRecorderFor("Stream"),
@@ -98,7 +97,7 @@ func main() {
 		os.Exit(1)
 	}
 	if err = streamingcontrollers.ProcessorReconciler(
-		controllers.Config{
+		reconcilers.Config{
 			Client:    mgr.GetClient(),
 			APIReader: mgr.GetAPIReader(),
 			Recorder:  mgr.GetEventRecorderFor("Processor"),
@@ -116,7 +115,7 @@ func main() {
 		os.Exit(1)
 	}
 	if err = streamingcontrollers.GatewayReconciler(
-		controllers.Config{
+		reconcilers.Config{
 			Client:    mgr.GetClient(),
 			APIReader: mgr.GetAPIReader(),
 			Recorder:  mgr.GetEventRecorderFor("Gateway"),
@@ -133,7 +132,7 @@ func main() {
 		os.Exit(1)
 	}
 	if err = streamingcontrollers.KafkaGatewayReconciler(
-		controllers.Config{
+		reconcilers.Config{
 			Client:    mgr.GetClient(),
 			APIReader: mgr.GetAPIReader(),
 			Recorder:  mgr.GetEventRecorderFor("KafkaGateway"),
@@ -151,7 +150,7 @@ func main() {
 		os.Exit(1)
 	}
 	if err = streamingcontrollers.PulsarGatewayReconciler(
-		controllers.Config{
+		reconcilers.Config{
 			Client:    mgr.GetClient(),
 			APIReader: mgr.GetAPIReader(),
 			Recorder:  mgr.GetEventRecorderFor("PulsarGateway"),
@@ -169,7 +168,7 @@ func main() {
 		os.Exit(1)
 	}
 	if err = streamingcontrollers.InMemoryGatewayReconciler(
-		controllers.Config{
+		reconcilers.Config{
 			Client:    mgr.GetClient(),
 			APIReader: mgr.GetAPIReader(),
 			Recorder:  mgr.GetEventRecorderFor("InMemoryGateway"),

@@ -19,11 +19,11 @@ package factories
 import (
 	"fmt"
 
+	"github.com/projectriff/reconciler-runtime/apis"
+	rtesting "github.com/projectriff/reconciler-runtime/testing"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/projectriff/system/pkg/apis"
 	streamingv1alpha1 "github.com/projectriff/system/pkg/apis/streaming/v1alpha1"
-	rtesting "github.com/projectriff/system/pkg/controllers/testing"
 	"github.com/projectriff/system/pkg/refs"
 )
 
@@ -83,7 +83,7 @@ func (f *processor) NamespaceName(namespace, name string) *processor {
 
 func (f *processor) ObjectMeta(nf func(ObjectMeta)) *processor {
 	return f.mutation(func(s *streamingv1alpha1.Processor) {
-		omf := objectMeta(s.ObjectMeta)
+		omf := ObjectMetaFactory(s.ObjectMeta)
 		nf(omf)
 		s.ObjectMeta = omf.Create()
 	})
@@ -127,11 +127,11 @@ func (f *processor) Outputs(outputs ...streamingv1alpha1.OutputStreamBinding) *p
 
 func (f *processor) PodTemplateSpec(nf func(PodTemplateSpec)) *processor {
 	return f.mutation(func(processor *streamingv1alpha1.Processor) {
-		var ptsf *podTemplateSpecImpl
+		var ptsf PodTemplateSpec
 		if processor.Spec.Template != nil {
-			ptsf = podTemplateSpec(*processor.Spec.Template)
+			ptsf = PodTemplateSpecFactory(*processor.Spec.Template)
 		} else {
-			ptsf = podTemplateSpec(corev1.PodTemplateSpec{})
+			ptsf = PodTemplateSpecFactory(corev1.PodTemplateSpec{})
 		}
 		nf(ptsf)
 		templateSpec := ptsf.Create()
@@ -139,7 +139,7 @@ func (f *processor) PodTemplateSpec(nf func(PodTemplateSpec)) *processor {
 	})
 }
 
-func (f *processor) StatusConditions(conditions ...*condition) *processor {
+func (f *processor) StatusConditions(conditions ...ConditionFactory) *processor {
 	return f.mutation(func(processor *streamingv1alpha1.Processor) {
 		c := make([]apis.Condition, len(conditions))
 		for i, cg := range conditions {

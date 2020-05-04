@@ -17,17 +17,19 @@ limitations under the License.
 package v1
 
 import (
+	"github.com/projectriff/reconciler-runtime/apis"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	apis "github.com/projectriff/system/pkg/apis"
+	sapis "github.com/projectriff/system/pkg/apis"
+	duckv1 "github.com/projectriff/system/pkg/apis/duck/v1"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 var (
-	_ apis.Resource = (*Route)(nil)
+	_ sapis.Resource = (*Route)(nil)
 )
 
 // RouteSpec holds the desired state of the Route (from the client).
@@ -130,7 +132,7 @@ type RouteStatusFields struct {
 
 	// Address holds the information needed for a Route to be the target of an event.
 	// +optional
-	Address *apis.Addressable `json:"address,omitempty"`
+	Address *duckv1.Addressable `json:"address,omitempty"`
 
 	// Traffic holds the configured traffic distribution.
 	// These entries will always contain RevisionName references.
@@ -160,7 +162,7 @@ func (*Route) GetGroupVersionKind() schema.GroupVersionKind {
 	return GroupVersion.WithKind("Route")
 }
 
-func (r *Route) GetStatus() apis.ResourceStatus {
+func (r *Route) GetStatus() sapis.ResourceStatus {
 	return &r.Status
 }
 

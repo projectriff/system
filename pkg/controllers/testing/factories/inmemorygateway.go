@@ -19,9 +19,11 @@ package factories
 import (
 	"fmt"
 
-	"github.com/projectriff/system/pkg/apis"
+	"github.com/projectriff/reconciler-runtime/apis"
+	rtesting "github.com/projectriff/reconciler-runtime/testing"
+
+	duckv1 "github.com/projectriff/system/pkg/apis/duck/v1"
 	streamingv1alpha1 "github.com/projectriff/system/pkg/apis/streaming/v1alpha1"
-	rtesting "github.com/projectriff/system/pkg/controllers/testing"
 	"github.com/projectriff/system/pkg/refs"
 )
 
@@ -75,13 +77,13 @@ func (f *inmemoryGateway) NamespaceName(namespace, name string) *inmemoryGateway
 
 func (f *inmemoryGateway) ObjectMeta(nf func(ObjectMeta)) *inmemoryGateway {
 	return f.mutation(func(g *streamingv1alpha1.InMemoryGateway) {
-		omf := objectMeta(g.ObjectMeta)
+		omf := ObjectMetaFactory(g.ObjectMeta)
 		nf(omf)
 		g.ObjectMeta = omf.Create()
 	})
 }
 
-func (f *inmemoryGateway) StatusConditions(conditions ...*condition) *inmemoryGateway {
+func (f *inmemoryGateway) StatusConditions(conditions ...ConditionFactory) *inmemoryGateway {
 	return f.mutation(func(g *streamingv1alpha1.InMemoryGateway) {
 		c := make([]apis.Condition, len(conditions))
 		for i, cg := range conditions {
@@ -115,7 +117,7 @@ func (f *inmemoryGateway) StatusGatewayRef(format string, a ...interface{}) *inm
 
 func (f *inmemoryGateway) StatusAddress(format string, a ...interface{}) *inmemoryGateway {
 	return f.mutation(func(g *streamingv1alpha1.InMemoryGateway) {
-		g.Status.Address = &apis.Addressable{
+		g.Status.Address = &duckv1.Addressable{
 			URL: fmt.Sprintf(format, a...),
 		}
 	})

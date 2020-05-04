@@ -19,10 +19,9 @@ package refs
 import (
 	"fmt"
 
+	"github.com/projectriff/reconciler-runtime/apis"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-
-	"github.com/projectriff/system/pkg/apis"
 )
 
 func NewTypedLocalObjectReference(name string, gk schema.GroupKind) *TypedLocalObjectReference {

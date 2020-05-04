@@ -17,10 +17,9 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"github.com/projectriff/reconciler-runtime/validation"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
-
-	"github.com/projectriff/system/pkg/validation"
 )
 
 // +kubebuilder:webhook:path=/validate-streaming-projectriff-io-v1alpha1-inmemorygateway,mutating=false,failurePolicy=fail,groups=streaming.projectriff.io,resources=inmemorygateways,verbs=create;update,versions=v1alpha1,name=inmemorygateways.streaming.projectriff.io
