@@ -118,7 +118,8 @@ jobs:
       matrix:
         config:
         - runtime: core
-        - runtime: knative
+        # TODO restore, tracking in https://github.com/projectriff/release/issues/170
+        # - runtime: knative
         - runtime: streaming
           gateway: inmemory
         - runtime: streaming
