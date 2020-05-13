@@ -16,7 +16,7 @@ stageComponent() {
   echo "# Stage riff System: ${component}"
   echo ""
   ko resolve --strict -P -t ${slug} -f config/riff-${component}.yaml > bin/riff-${component}.yaml
-  gsutil cp -a public-read bin/riff-${component}.yaml gs://projectriff/riff-system/snapshots/riff-${component}-${slug}.yaml
+  gsutil cp bin/riff-${component}.yaml gs://projectriff/riff-system/snapshots/riff-${component}-${slug}.yaml
 }
 
 mkdir bin
