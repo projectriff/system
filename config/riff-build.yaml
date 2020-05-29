@@ -613,71 +613,6 @@ status:
   conditions: []
   storedVersions: []
 ---
-apiVersion: admissionregistration.k8s.io/v1beta1
-kind: MutatingWebhookConfiguration
-metadata:
-  annotations:
-    cert-manager.io/inject-ca-from: riff-system/riff-build-serving-cert
-  creationTimestamp: null
-  labels:
-    component: build.projectriff.io
-  name: riff-build-mutating-webhook-configuration
-webhooks:
-- clientConfig:
-    caBundle: Cg==
-    service:
-      name: riff-build-webhook-service
-      namespace: riff-system
-      path: /mutate-build-projectriff-io-v1alpha1-application
-  failurePolicy: Fail
-  name: applications.build.projectriff.io
-  rules:
-  - apiGroups:
-    - build.projectriff.io
-    apiVersions:
-    - v1alpha1
-    operations:
-    - CREATE
-    - UPDATE
-    resources:
-    - applications
-- clientConfig:
-    caBundle: Cg==
-    service:
-      name: riff-build-webhook-service
-      namespace: riff-system
-      path: /mutate-build-projectriff-io-v1alpha1-container
-  failurePolicy: Fail
-  name: containers.build.projectriff.io
-  rules:
-  - apiGroups:
-    - build.projectriff.io
-    apiVersions:
-    - v1alpha1
-    operations:
-    - CREATE
-    - UPDATE
-    resources:
-    - containers
-- clientConfig:
-    caBundle: Cg==
-    service:
-      name: riff-build-webhook-service
-      namespace: riff-system
-      path: /mutate-build-projectriff-io-v1alpha1-function
-  failurePolicy: Fail
-  name: functions.build.projectriff.io
-  rules:
-  - apiGroups:
-    - build.projectriff.io
-    apiVersions:
-    - v1alpha1
-    operations:
-    - CREATE
-    - UPDATE
-    resources:
-    - functions
----
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -1126,6 +1061,71 @@ metadata:
   namespace: riff-system
 spec:
   selfSigned: {}
+---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingWebhookConfiguration
+metadata:
+  annotations:
+    cert-manager.io/inject-ca-from: riff-system/riff-build-serving-cert
+  creationTimestamp: null
+  labels:
+    component: build.projectriff.io
+  name: riff-build-mutating-webhook-configuration
+webhooks:
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: riff-build-webhook-service
+      namespace: riff-system
+      path: /mutate-build-projectriff-io-v1alpha1-application
+  failurePolicy: Fail
+  name: applications.build.projectriff.io
+  rules:
+  - apiGroups:
+    - build.projectriff.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - applications
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: riff-build-webhook-service
+      namespace: riff-system
+      path: /mutate-build-projectriff-io-v1alpha1-container
+  failurePolicy: Fail
+  name: containers.build.projectriff.io
+  rules:
+  - apiGroups:
+    - build.projectriff.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - containers
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: riff-build-webhook-service
+      namespace: riff-system
+      path: /mutate-build-projectriff-io-v1alpha1-function
+  failurePolicy: Fail
+  name: functions.build.projectriff.io
+  rules:
+  - apiGroups:
+    - build.projectriff.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - functions
 ---
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: ValidatingWebhookConfiguration

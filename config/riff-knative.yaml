@@ -2863,53 +2863,6 @@ status:
   conditions: []
   storedVersions: []
 ---
-apiVersion: admissionregistration.k8s.io/v1beta1
-kind: MutatingWebhookConfiguration
-metadata:
-  annotations:
-    cert-manager.io/inject-ca-from: riff-system/riff-knative-serving-cert
-  creationTimestamp: null
-  labels:
-    component: knative.projectriff.io
-  name: riff-knative-mutating-webhook-configuration
-webhooks:
-- clientConfig:
-    caBundle: Cg==
-    service:
-      name: riff-knative-webhook-service
-      namespace: riff-system
-      path: /mutate-knative-projectriff-io-v1alpha1-adapter
-  failurePolicy: Fail
-  name: adapters.knative.projectriff.io
-  rules:
-  - apiGroups:
-    - knative.projectriff.io
-    apiVersions:
-    - v1alpha1
-    operations:
-    - CREATE
-    - UPDATE
-    resources:
-    - adapters
-- clientConfig:
-    caBundle: Cg==
-    service:
-      name: riff-knative-webhook-service
-      namespace: riff-system
-      path: /mutate-knative-projectriff-io-v1alpha1-deployer
-  failurePolicy: Fail
-  name: deployers.knative.projectriff.io
-  rules:
-  - apiGroups:
-    - knative.projectriff.io
-    apiVersions:
-    - v1alpha1
-    operations:
-    - CREATE
-    - UPDATE
-    resources:
-    - deployers
----
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -3275,6 +3228,53 @@ metadata:
   namespace: riff-system
 spec:
   selfSigned: {}
+---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingWebhookConfiguration
+metadata:
+  annotations:
+    cert-manager.io/inject-ca-from: riff-system/riff-knative-serving-cert
+  creationTimestamp: null
+  labels:
+    component: knative.projectriff.io
+  name: riff-knative-mutating-webhook-configuration
+webhooks:
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: riff-knative-webhook-service
+      namespace: riff-system
+      path: /mutate-knative-projectriff-io-v1alpha1-adapter
+  failurePolicy: Fail
+  name: adapters.knative.projectriff.io
+  rules:
+  - apiGroups:
+    - knative.projectriff.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - adapters
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: riff-knative-webhook-service
+      namespace: riff-system
+      path: /mutate-knative-projectriff-io-v1alpha1-deployer
+  failurePolicy: Fail
+  name: deployers.knative.projectriff.io
+  rules:
+  - apiGroups:
+    - knative.projectriff.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - deployers
 ---
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: ValidatingWebhookConfiguration
