@@ -1,0 +1,27 @@
+version: 2
+updates:
+- package-ecosystem: gomod
+  directory: "/"
+  schedule:
+    interval: daily
+  open-pull-requests-limit: 10
+  reviewers:
+  - scothis
+  ignore:
+  - dependency-name: k8s.io/api
+    versions:
+    - ">= 0.18.a, < 0.19"
+  - dependency-name: k8s.io/apimachinery
+    versions:
+    - ">= 0.18.a, < 0.19"
+  - dependency-name: k8s.io/client-go
+    versions:
+    - ">= 0.18.a, < 0.19"
+  - dependency-name: k8s.io/code-generator
+    versions:
+    - ">= 0.18.a, < 0.19"
+- package-ecosystem: github-actions
+  directory: "/"
+  schedule:
+    interval: daily
+  open-pull-requests-limit: 10
