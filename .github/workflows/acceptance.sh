@@ -23,7 +23,7 @@ if [ $RUNTIME = "core" ] || [ $RUNTIME = "knative" ]; then
         riff $test create $name --image $image --namespace $NAMESPACE --tail \
           --git-repo https://github.com/${FATS_REPO}.git --git-revision ${FATS_REFSPEC} --sub-path ${test}s/uppercase/node &
       else
-        riff $test create $name --image $image --namespace $NAMESPACE --tail \
+        riff $test create $name --image $image --namespace $NAMESPACE --docker-network host --tail \
           --local-path ${FATS_DIR}/${test}s/uppercase/node
       fi
 
