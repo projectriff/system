@@ -29,7 +29,7 @@ test: generate fmt vet manifests ## Run tests
 	go test ./... -coverprofile cover.out
 
 .PHONY: compile
-compile: prepare ko ## Compile target binaries
+compile: prepare ## Compile target binaries
 	$(KO) resolve -L -f config/ > /dev/null
 
 .PHONY: prepare
