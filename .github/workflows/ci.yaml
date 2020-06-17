@@ -10,7 +10,7 @@ on:
 env:
   FATS_DIR: fats
   FATS_REPO: projectriff/fats
-  FATS_REFSPEC: 833b7c4d6fb565b46e3fec304d10aaf1fd8ba58d # master as of 2020-04-16
+  FATS_REFSPEC: 833b7c4d6fb565b46e3fec304d10aaf1fd8ba58d # main as of 2020-04-16
 
 jobs:
 
@@ -203,7 +203,7 @@ jobs:
     needs: acceptance
     if: |
       github.event_name == 'push' && startsWith(github.repository, 'projectriff/') && (
-        github.ref == 'refs/heads/master' || (
+        github.ref == 'refs/heads/main' || (
           startsWith(github.ref, 'refs/heads/v') && endsWith(github.ref, 'x')
         )
       )

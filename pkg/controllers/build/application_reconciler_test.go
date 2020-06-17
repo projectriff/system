@@ -40,7 +40,7 @@ func TestApplicationReconciler(t *testing.T) {
 	testKey := types.NamespacedName{Namespace: testNamespace, Name: testName}
 	testImagePrefix := "example.com/repo"
 	testGitUrl := "git@example.com:repo.git"
-	testGitRevision := "master"
+	testGitRevision := "main"
 	testSha256 := "cf8b4c69d5460f88530e1c80b8856a70801f31c50b191c8413043ba9b160a43e"
 	testConditionReason := "TestReason"
 	testConditionMessage := "meaningful, yet concise"

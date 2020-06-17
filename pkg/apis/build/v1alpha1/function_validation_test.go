@@ -40,7 +40,7 @@ func TestValidateFunction(t *testing.T) {
 				Source: &Source{
 					Git: &Git{
 						URL:      "https://example.com/repo.git",
-						Revision: "master",
+						Revision: "main",
 					},
 				},
 			},
@@ -72,7 +72,7 @@ func TestValidateFunctionSpec(t *testing.T) {
 			Source: &Source{
 				Git: &Git{
 					URL:      "https://example.com/repo.git",
-					Revision: "master",
+					Revision: "main",
 				},
 			},
 		},
@@ -83,7 +83,7 @@ func TestValidateFunctionSpec(t *testing.T) {
 			Source: &Source{
 				Git: &Git{
 					URL:      "https://example.com/repo.git",
-					Revision: "master",
+					Revision: "main",
 				},
 			},
 		},
