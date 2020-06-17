@@ -12,6 +12,11 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
+MOCKERY ?= go run -modfile hack/go.mod github.com/vektra/mockery/cmd/mockery
+CONTROLLER_GEN ?= go run -modfile hack/go.mod sigs.k8s.io/controller-tools/cmd/controller-gen
+KO ?= go run -modfile hack/go.mod github.com/google/ko/cmd/ko
+GOIMPORTS ?= go run -modfile hack/go.mod golang.org/x/tools/cmd/goimports
+
 .PHONY: all
 all: prepare test
 
@@ -24,7 +29,7 @@ test: generate fmt vet manifests ## Run tests
 	go test ./... -coverprofile cover.out
 
 .PHONY: compile
-compile: prepare ko ## Compile target binaries
+compile: prepare ## Compile target binaries
 	$(KO) resolve -L -f config/ > /dev/null
 
 .PHONY: prepare
@@ -65,7 +70,7 @@ manifests:
 
 # Run go fmt against code
 .PHONY: fmt
-fmt: goimports
+fmt:
 	$(GOIMPORTS) --local github.com/projectriff/system -w pkg/ cmd/
 
 # Run go vet against code
@@ -77,45 +82,9 @@ vet:
 generate: generate-internal fmt ## Generate code
 
 .PHONY: generate-internal
-generate-internal: controller-gen mockery
+generate-internal:
 	$(CONTROLLER_GEN) object:headerFile=./hack/boilerplate.go.txt paths="./..."
 	$(MOCKERY) -dir ./pkg/controllers/streaming -inpkg -name StreamProvisionerClient -case snake
-
-# find or download controller-gen, download controller-gen if necessary
-controller-gen:
-ifeq (, $(shell which controller-gen))
-	( cd .. && GO111MODULE=on go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.4 ) # avoid go.* mutations from go get
-CONTROLLER_GEN=$(GOBIN)/controller-gen
-else
-CONTROLLER_GEN=$(shell which controller-gen)
-endif
-
-# find or download goimports, download goimports if necessary
-goimports:
-ifeq (, $(shell which goimports))
-	( cd .. && GO111MODULE=on go get golang.org/x/tools/cmd/goimports@release-branch.go1.14 ) # avoid go.* mutations from go get
-GOIMPORTS=$(GOBIN)/goimports
-else
-GOIMPORTS=$(shell which goimports)
-endif
-
-# find or download ko, download ko if necessary
-ko:
-ifeq (, $(shell which ko))
-	GO111MODULE=off go get github.com/google/ko/cmd/ko
-KO=$(GOBIN)/ko
-else
-KO=$(shell which ko)
-endif
-
-# find or download mockery, download mockery if necessary
-mockery:
-ifeq (, $(shell which mockery))
-	GO111MODULE=off go get -u  github.com/vektra/mockery/.../
-MOCKERY=$(GOBIN)/mockery
-else
-MOCKERY=$(shell which mockery)
-endif
 
 .PHONY: templates
 templates: ## update templated components
