@@ -6,7 +6,7 @@ set -o pipefail
 
 SCRIPT_ROOT=$(cd $(dirname "${BASH_SOURCE[0]}")/.. && pwd)
 
-CODEGEN_PKG=${CODEGEN_PKG:-$(go mod download -json 2>/dev/null | jq -r 'select(.Path == "k8s.io/code-generator").Dir')}
+CODEGEN_PKG=${CODEGEN_PKG:-$(go mod download -modfile hack/go.mod -json 2>/dev/null | jq -r 'select(.Path == "k8s.io/code-generator").Dir')}
 
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf ${TMP_DIR}' EXIT

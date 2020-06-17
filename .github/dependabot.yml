@@ -20,6 +20,13 @@ updates:
   - dependency-name: k8s.io/code-generator
     versions:
     - ">= 0.18.a, < 0.19"
+- package-ecosystem: gomod
+  directory: "/hack"
+  schedule:
+    interval: daily
+  open-pull-requests-limit: 10
+  reviewers:
+  - scothis
 - package-ecosystem: github-actions
   directory: "/"
   schedule:
