@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/projectriff/reconciler-runtime/apis"
+	"github.com/vmware-labs/reconciler-runtime/apis"
 
 	"github.com/projectriff/system/pkg/refs"
 )

@@ -22,9 +22,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/projectriff/reconciler-runtime/apis"
-	"github.com/projectriff/reconciler-runtime/reconcilers"
-	"github.com/projectriff/reconciler-runtime/tracker"
+	"github.com/vmware-labs/reconciler-runtime/apis"
+	"github.com/vmware-labs/reconciler-runtime/reconcilers"
+	"github.com/vmware-labs/reconciler-runtime/tracker"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"

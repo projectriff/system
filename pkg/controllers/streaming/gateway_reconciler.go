@@ -19,7 +19,7 @@ package streaming
 import (
 	"fmt"
 
-	"github.com/projectriff/reconciler-runtime/reconcilers"
+	"github.com/vmware-labs/reconciler-runtime/reconcilers"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"

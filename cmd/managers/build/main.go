@@ -21,7 +21,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/projectriff/reconciler-runtime/reconcilers"
+	"github.com/vmware-labs/reconciler-runtime/reconcilers"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"

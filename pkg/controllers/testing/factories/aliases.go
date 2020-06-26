@@ -17,7 +17,7 @@ limitations under the License.
 package factories
 
 import (
-	"github.com/projectriff/reconciler-runtime/testing/factories"
+	"github.com/vmware-labs/reconciler-runtime/testing/factories"
 )
 
 type ConditionFactory = factories.ConditionFactory

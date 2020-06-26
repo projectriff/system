@@ -20,9 +20,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/projectriff/reconciler-runtime/reconcilers"
-	rtesting "github.com/projectriff/reconciler-runtime/testing"
 	"github.com/stretchr/testify/mock"
+	"github.com/vmware-labs/reconciler-runtime/reconcilers"
+	rtesting "github.com/vmware-labs/reconciler-runtime/testing"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -31,7 +31,7 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/projectriff/reconciler-runtime/apis"
+	"github.com/vmware-labs/reconciler-runtime/apis"
 
 	streamingv1alpha1 "github.com/projectriff/system/pkg/apis/streaming/v1alpha1"
 	"github.com/projectriff/system/pkg/controllers/streaming"

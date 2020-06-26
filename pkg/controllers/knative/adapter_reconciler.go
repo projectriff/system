@@ -21,8 +21,8 @@ import (
 	"fmt"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/projectriff/reconciler-runtime/reconcilers"
-	"github.com/projectriff/reconciler-runtime/tracker"
+	"github.com/vmware-labs/reconciler-runtime/reconcilers"
+	"github.com/vmware-labs/reconciler-runtime/tracker"
 	"k8s.io/apimachinery/pkg/api/errors"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"

@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/projectriff/reconciler-runtime/reconcilers"
-	rtesting "github.com/projectriff/reconciler-runtime/testing"
+	"github.com/vmware-labs/reconciler-runtime/reconcilers"
+	rtesting "github.com/vmware-labs/reconciler-runtime/testing"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"

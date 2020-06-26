@@ -20,8 +20,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/projectriff/reconciler-runtime/reconcilers"
-	"github.com/projectriff/reconciler-runtime/tracker"
+	"github.com/vmware-labs/reconciler-runtime/reconcilers"
+	"github.com/vmware-labs/reconciler-runtime/tracker"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
