@@ -17,7 +17,7 @@
 package apis
 
 import (
-	"github.com/projectriff/reconciler-runtime/apis"
+	"github.com/vmware-labs/reconciler-runtime/apis"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )

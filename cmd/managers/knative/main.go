@@ -22,8 +22,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/projectriff/reconciler-runtime/reconcilers"
-	"github.com/projectriff/reconciler-runtime/tracker"
+	"github.com/vmware-labs/reconciler-runtime/reconcilers"
+	"github.com/vmware-labs/reconciler-runtime/tracker"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"

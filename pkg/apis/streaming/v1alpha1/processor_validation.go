@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/projectriff/reconciler-runtime/validation"
+	"github.com/vmware-labs/reconciler-runtime/validation"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	runtime "k8s.io/apimachinery/pkg/runtime"

@@ -19,7 +19,7 @@ package refs
 import (
 	"fmt"
 
-	"github.com/projectriff/reconciler-runtime/apis"
+	"github.com/vmware-labs/reconciler-runtime/apis"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )

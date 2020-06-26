@@ -19,7 +19,7 @@ package v1alpha1
 import (
 	"strings"
 
-	"github.com/projectriff/reconciler-runtime/validation"
+	"github.com/vmware-labs/reconciler-runtime/validation"
 	"k8s.io/apimachinery/pkg/api/equality"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"

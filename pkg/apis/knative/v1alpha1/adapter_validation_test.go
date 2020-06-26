@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/projectriff/reconciler-runtime/validation"
+	"github.com/vmware-labs/reconciler-runtime/validation"
 )
 
 func TestValidateAdapter(t *testing.T) {

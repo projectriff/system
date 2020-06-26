@@ -19,8 +19,8 @@ package build_test
 import (
 	"testing"
 
-	"github.com/projectriff/reconciler-runtime/reconcilers"
-	rtesting "github.com/projectriff/reconciler-runtime/testing"
+	"github.com/vmware-labs/reconciler-runtime/reconcilers"
+	rtesting "github.com/vmware-labs/reconciler-runtime/testing"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"

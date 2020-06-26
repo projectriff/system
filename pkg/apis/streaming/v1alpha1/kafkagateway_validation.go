@@ -17,7 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"github.com/projectriff/reconciler-runtime/validation"
+	"github.com/vmware-labs/reconciler-runtime/validation"
 	"k8s.io/apimachinery/pkg/api/equality"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"

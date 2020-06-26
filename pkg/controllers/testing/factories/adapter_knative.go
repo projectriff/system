@@ -19,8 +19,8 @@ package factories
 import (
 	"fmt"
 
-	"github.com/projectriff/reconciler-runtime/apis"
-	rtesting "github.com/projectriff/reconciler-runtime/testing"
+	"github.com/vmware-labs/reconciler-runtime/apis"
+	rtesting "github.com/vmware-labs/reconciler-runtime/testing"
 
 	knativev1alpha1 "github.com/projectriff/system/pkg/apis/knative/v1alpha1"
 )

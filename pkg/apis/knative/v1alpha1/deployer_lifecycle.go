@@ -17,7 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"github.com/projectriff/reconciler-runtime/apis"
+	"github.com/vmware-labs/reconciler-runtime/apis"
 	corev1 "k8s.io/api/core/v1"
 
 	servingv1 "github.com/projectriff/system/pkg/apis/thirdparty/knative/serving/v1"

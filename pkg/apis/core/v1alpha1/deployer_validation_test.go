@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/projectriff/reconciler-runtime/validation"
+	"github.com/vmware-labs/reconciler-runtime/validation"
 	corev1 "k8s.io/api/core/v1"
 )
 

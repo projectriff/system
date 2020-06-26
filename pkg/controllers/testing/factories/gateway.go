@@ -19,8 +19,8 @@ package factories
 import (
 	"fmt"
 
-	"github.com/projectriff/reconciler-runtime/apis"
-	rtesting "github.com/projectriff/reconciler-runtime/testing"
+	"github.com/vmware-labs/reconciler-runtime/apis"
+	rtesting "github.com/vmware-labs/reconciler-runtime/testing"
 	corev1 "k8s.io/api/core/v1"
 
 	duckv1 "github.com/projectriff/system/pkg/apis/duck/v1"
