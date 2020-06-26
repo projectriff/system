@@ -27,6 +27,13 @@ updates:
   open-pull-requests-limit: 10
   reviewers:
   - scothis
+- package-ecosystem: gomod
+  directory: "/hack/ko"
+  schedule:
+    interval: daily
+  open-pull-requests-limit: 10
+  reviewers:
+  - scothis
 - package-ecosystem: github-actions
   directory: "/"
   schedule:
