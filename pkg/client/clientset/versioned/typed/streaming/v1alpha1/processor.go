@@ -18,6 +18,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"context"
 	"time"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -37,15 +38,15 @@ type ProcessorsGetter interface {
 
 // ProcessorInterface has methods to work with Processor resources.
 type ProcessorInterface interface {
-	Create(*v1alpha1.Processor) (*v1alpha1.Processor, error)
-	Update(*v1alpha1.Processor) (*v1alpha1.Processor, error)
-	UpdateStatus(*v1alpha1.Processor) (*v1alpha1.Processor, error)
-	Delete(name string, options *v1.DeleteOptions) error
-	DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error
-	Get(name string, options v1.GetOptions) (*v1alpha1.Processor, error)
-	List(opts v1.ListOptions) (*v1alpha1.ProcessorList, error)
-	Watch(opts v1.ListOptions) (watch.Interface, error)
-	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.Processor, err error)
+	Create(ctx context.Context, processor *v1alpha1.Processor, opts v1.CreateOptions) (*v1alpha1.Processor, error)
+	Update(ctx context.Context, processor *v1alpha1.Processor, opts v1.UpdateOptions) (*v1alpha1.Processor, error)
+	UpdateStatus(ctx context.Context, processor *v1alpha1.Processor, opts v1.UpdateOptions) (*v1alpha1.Processor, error)
+	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
+	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
+	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha1.Processor, error)
+	List(ctx context.Context, opts v1.ListOptions) (*v1alpha1.ProcessorList, error)
+	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.Processor, err error)
 	ProcessorExpansion
 }
 
@@ -64,20 +65,20 @@ func newProcessors(c *StreamingV1alpha1Client, namespace string) *processors {
 }
 
 // Get takes name of the processor, and returns the corresponding processor object, and an error if there is any.
-func (c *processors) Get(name string, options v1.GetOptions) (result *v1alpha1.Processor, err error) {
+func (c *processors) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.Processor, err error) {
 	result = &v1alpha1.Processor{}
 	err = c.client.Get().
 		Namespace(c.ns).
 		Resource("processors").
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // List takes label and field selectors, and returns the list of Processors that match those selectors.
-func (c *processors) List(opts v1.ListOptions) (result *v1alpha1.ProcessorList, err error) {
+func (c *processors) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.ProcessorList, err error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -88,13 +89,13 @@ func (c *processors) List(opts v1.ListOptions) (result *v1alpha1.ProcessorList, 
 		Resource("processors").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Watch returns a watch.Interface that watches the requested processors.
-func (c *processors) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *processors) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -105,87 +106,90 @@ func (c *processors) Watch(opts v1.ListOptions) (watch.Interface, error) {
 		Resource("processors").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Watch()
+		Watch(ctx)
 }
 
 // Create takes the representation of a processor and creates it.  Returns the server's representation of the processor, and an error, if there is any.
-func (c *processors) Create(processor *v1alpha1.Processor) (result *v1alpha1.Processor, err error) {
+func (c *processors) Create(ctx context.Context, processor *v1alpha1.Processor, opts v1.CreateOptions) (result *v1alpha1.Processor, err error) {
 	result = &v1alpha1.Processor{}
 	err = c.client.Post().
 		Namespace(c.ns).
 		Resource("processors").
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(processor).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Update takes the representation of a processor and updates it. Returns the server's representation of the processor, and an error, if there is any.
-func (c *processors) Update(processor *v1alpha1.Processor) (result *v1alpha1.Processor, err error) {
+func (c *processors) Update(ctx context.Context, processor *v1alpha1.Processor, opts v1.UpdateOptions) (result *v1alpha1.Processor, err error) {
 	result = &v1alpha1.Processor{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("processors").
 		Name(processor.Name).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(processor).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-
-func (c *processors) UpdateStatus(processor *v1alpha1.Processor) (result *v1alpha1.Processor, err error) {
+func (c *processors) UpdateStatus(ctx context.Context, processor *v1alpha1.Processor, opts v1.UpdateOptions) (result *v1alpha1.Processor, err error) {
 	result = &v1alpha1.Processor{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("processors").
 		Name(processor.Name).
 		SubResource("status").
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(processor).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Delete takes name of the processor and deletes it. Returns an error if one occurs.
-func (c *processors) Delete(name string, options *v1.DeleteOptions) error {
+func (c *processors) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("processors").
 		Name(name).
-		Body(options).
-		Do().
+		Body(&opts).
+		Do(ctx).
 		Error()
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *processors) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
+func (c *processors) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
 	var timeout time.Duration
-	if listOptions.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOptions.TimeoutSeconds) * time.Second
+	if listOpts.TimeoutSeconds != nil {
+		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
 	}
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("processors").
-		VersionedParams(&listOptions, scheme.ParameterCodec).
+		VersionedParams(&listOpts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Body(options).
-		Do().
+		Body(&opts).
+		Do(ctx).
 		Error()
 }
 
 // Patch applies the patch and returns the patched processor.
-func (c *processors) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.Processor, err error) {
+func (c *processors) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.Processor, err error) {
 	result = &v1alpha1.Processor{}
 	err = c.client.Patch(pt).
 		Namespace(c.ns).
 		Resource("processors").
-		SubResource(subresources...).
 		Name(name).
+		SubResource(subresources...).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(data).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }

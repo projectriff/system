@@ -18,6 +18,8 @@ limitations under the License.
 package fake
 
 import (
+	"context"
+
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -39,7 +41,7 @@ var kafkagatewaysResource = schema.GroupVersionResource{Group: "streaming.projec
 var kafkagatewaysKind = schema.GroupVersionKind{Group: "streaming.projectriff.io", Version: "v1alpha1", Kind: "KafkaGateway"}
 
 // Get takes name of the kafkaGateway, and returns the corresponding kafkaGateway object, and an error if there is any.
-func (c *FakeKafkaGateways) Get(name string, options v1.GetOptions) (result *v1alpha1.KafkaGateway, err error) {
+func (c *FakeKafkaGateways) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.KafkaGateway, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(kafkagatewaysResource, c.ns, name), &v1alpha1.KafkaGateway{})
 
@@ -50,7 +52,7 @@ func (c *FakeKafkaGateways) Get(name string, options v1.GetOptions) (result *v1a
 }
 
 // List takes label and field selectors, and returns the list of KafkaGateways that match those selectors.
-func (c *FakeKafkaGateways) List(opts v1.ListOptions) (result *v1alpha1.KafkaGatewayList, err error) {
+func (c *FakeKafkaGateways) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.KafkaGatewayList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewListAction(kafkagatewaysResource, kafkagatewaysKind, c.ns, opts), &v1alpha1.KafkaGatewayList{})
 
@@ -72,14 +74,14 @@ func (c *FakeKafkaGateways) List(opts v1.ListOptions) (result *v1alpha1.KafkaGat
 }
 
 // Watch returns a watch.Interface that watches the requested kafkaGateways.
-func (c *FakeKafkaGateways) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeKafkaGateways) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(kafkagatewaysResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a kafkaGateway and creates it.  Returns the server's representation of the kafkaGateway, and an error, if there is any.
-func (c *FakeKafkaGateways) Create(kafkaGateway *v1alpha1.KafkaGateway) (result *v1alpha1.KafkaGateway, err error) {
+func (c *FakeKafkaGateways) Create(ctx context.Context, kafkaGateway *v1alpha1.KafkaGateway, opts v1.CreateOptions) (result *v1alpha1.KafkaGateway, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewCreateAction(kafkagatewaysResource, c.ns, kafkaGateway), &v1alpha1.KafkaGateway{})
 
@@ -90,7 +92,7 @@ func (c *FakeKafkaGateways) Create(kafkaGateway *v1alpha1.KafkaGateway) (result 
 }
 
 // Update takes the representation of a kafkaGateway and updates it. Returns the server's representation of the kafkaGateway, and an error, if there is any.
-func (c *FakeKafkaGateways) Update(kafkaGateway *v1alpha1.KafkaGateway) (result *v1alpha1.KafkaGateway, err error) {
+func (c *FakeKafkaGateways) Update(ctx context.Context, kafkaGateway *v1alpha1.KafkaGateway, opts v1.UpdateOptions) (result *v1alpha1.KafkaGateway, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(kafkagatewaysResource, c.ns, kafkaGateway), &v1alpha1.KafkaGateway{})
 
@@ -102,7 +104,7 @@ func (c *FakeKafkaGateways) Update(kafkaGateway *v1alpha1.KafkaGateway) (result 
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeKafkaGateways) UpdateStatus(kafkaGateway *v1alpha1.KafkaGateway) (*v1alpha1.KafkaGateway, error) {
+func (c *FakeKafkaGateways) UpdateStatus(ctx context.Context, kafkaGateway *v1alpha1.KafkaGateway, opts v1.UpdateOptions) (*v1alpha1.KafkaGateway, error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateSubresourceAction(kafkagatewaysResource, "status", c.ns, kafkaGateway), &v1alpha1.KafkaGateway{})
 
@@ -113,7 +115,7 @@ func (c *FakeKafkaGateways) UpdateStatus(kafkaGateway *v1alpha1.KafkaGateway) (*
 }
 
 // Delete takes name of the kafkaGateway and deletes it. Returns an error if one occurs.
-func (c *FakeKafkaGateways) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakeKafkaGateways) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewDeleteAction(kafkagatewaysResource, c.ns, name), &v1alpha1.KafkaGateway{})
 
@@ -121,15 +123,15 @@ func (c *FakeKafkaGateways) Delete(name string, options *v1.DeleteOptions) error
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeKafkaGateways) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(kafkagatewaysResource, c.ns, listOptions)
+func (c *FakeKafkaGateways) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewDeleteCollectionAction(kafkagatewaysResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1alpha1.KafkaGatewayList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched kafkaGateway.
-func (c *FakeKafkaGateways) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.KafkaGateway, err error) {
+func (c *FakeKafkaGateways) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.KafkaGateway, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(kafkagatewaysResource, c.ns, name, pt, data, subresources...), &v1alpha1.KafkaGateway{})
 

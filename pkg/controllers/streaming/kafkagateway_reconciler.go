@@ -76,7 +76,7 @@ func KafkaGatewaySyncConfigReconciler(c reconcilers.Config, namespace string) re
 		},
 
 		Config: c,
-		Setup: func(mgr reconcilers.Manager, bldr *reconcilers.Builder) error {
+		Setup: func(ctx context.Context, mgr reconcilers.Manager, bldr *reconcilers.Builder) error {
 			bldr.Watches(&source.Kind{Type: &corev1.ConfigMap{}}, reconcilers.EnqueueTracked(&corev1.ConfigMap{}, c.Tracker, c.Scheme))
 			return nil
 		},

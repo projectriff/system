@@ -98,7 +98,7 @@ func ProcessorSyncProcessorImages(c reconcilers.Config, namespace string) reconc
 		},
 
 		Config: c,
-		Setup: func(mgr reconcilers.Manager, bldr *reconcilers.Builder) error {
+		Setup: func(ctx context.Context, mgr reconcilers.Manager, bldr *reconcilers.Builder) error {
 			bldr.Watches(&source.Kind{Type: &corev1.ConfigMap{}}, reconcilers.EnqueueTracked(&corev1.ConfigMap{}, c.Tracker, c.Scheme))
 			return nil
 		},
@@ -162,7 +162,7 @@ func ProcessorBuildRefReconciler(c reconcilers.Config) reconcilers.SubReconciler
 		},
 
 		Config: c,
-		Setup: func(mgr reconcilers.Manager, bldr *reconcilers.Builder) error {
+		Setup: func(ctx context.Context, mgr reconcilers.Manager, bldr *reconcilers.Builder) error {
 			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Container{}}, reconcilers.EnqueueTracked(&buildv1alpha1.Container{}, c.Tracker, c.Scheme))
 			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, reconcilers.EnqueueTracked(&buildv1alpha1.Function{}, c.Tracker, c.Scheme))
 			return nil
@@ -235,7 +235,7 @@ func ProcessorResolveStreamsReconciler(c reconcilers.Config) reconcilers.SubReco
 		},
 
 		Config: c,
-		Setup: func(mgr reconcilers.Manager, bldr *reconcilers.Builder) error {
+		Setup: func(ctx context.Context, mgr reconcilers.Manager, bldr *reconcilers.Builder) error {
 			bldr.Watches(&source.Kind{Type: &streamingv1alpha1.Stream{}}, reconcilers.EnqueueTracked(&streamingv1alpha1.Stream{}, c.Tracker, c.Scheme))
 			return nil
 		},
@@ -594,7 +594,7 @@ func ProcessorChildScaledObjectReconciler(c reconcilers.Config) reconcilers.SubR
 		Sanitize: func(child *kedav1alpha1.ScaledObject) interface{} {
 			return child.Spec
 		},
-		Setup: func(mgr reconcilers.Manager, bldr *reconcilers.Builder) error {
+		Setup: func(ctx context.Context, mgr reconcilers.Manager, bldr *reconcilers.Builder) error {
 			bldr.Watches(&source.Kind{Type: &corev1.Secret{}}, reconcilers.EnqueueTracked(&corev1.Secret{}, c.Tracker, c.Scheme))
 			return nil
 		},

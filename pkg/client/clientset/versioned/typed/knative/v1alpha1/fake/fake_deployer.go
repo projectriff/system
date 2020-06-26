@@ -18,6 +18,8 @@ limitations under the License.
 package fake
 
 import (
+	"context"
+
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -39,7 +41,7 @@ var deployersResource = schema.GroupVersionResource{Group: "knative.projectriff.
 var deployersKind = schema.GroupVersionKind{Group: "knative.projectriff.io", Version: "v1alpha1", Kind: "Deployer"}
 
 // Get takes name of the deployer, and returns the corresponding deployer object, and an error if there is any.
-func (c *FakeDeployers) Get(name string, options v1.GetOptions) (result *v1alpha1.Deployer, err error) {
+func (c *FakeDeployers) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.Deployer, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(deployersResource, c.ns, name), &v1alpha1.Deployer{})
 
@@ -50,7 +52,7 @@ func (c *FakeDeployers) Get(name string, options v1.GetOptions) (result *v1alpha
 }
 
 // List takes label and field selectors, and returns the list of Deployers that match those selectors.
-func (c *FakeDeployers) List(opts v1.ListOptions) (result *v1alpha1.DeployerList, err error) {
+func (c *FakeDeployers) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.DeployerList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewListAction(deployersResource, deployersKind, c.ns, opts), &v1alpha1.DeployerList{})
 
@@ -72,14 +74,14 @@ func (c *FakeDeployers) List(opts v1.ListOptions) (result *v1alpha1.DeployerList
 }
 
 // Watch returns a watch.Interface that watches the requested deployers.
-func (c *FakeDeployers) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeDeployers) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(deployersResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a deployer and creates it.  Returns the server's representation of the deployer, and an error, if there is any.
-func (c *FakeDeployers) Create(deployer *v1alpha1.Deployer) (result *v1alpha1.Deployer, err error) {
+func (c *FakeDeployers) Create(ctx context.Context, deployer *v1alpha1.Deployer, opts v1.CreateOptions) (result *v1alpha1.Deployer, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewCreateAction(deployersResource, c.ns, deployer), &v1alpha1.Deployer{})
 
@@ -90,7 +92,7 @@ func (c *FakeDeployers) Create(deployer *v1alpha1.Deployer) (result *v1alpha1.De
 }
 
 // Update takes the representation of a deployer and updates it. Returns the server's representation of the deployer, and an error, if there is any.
-func (c *FakeDeployers) Update(deployer *v1alpha1.Deployer) (result *v1alpha1.Deployer, err error) {
+func (c *FakeDeployers) Update(ctx context.Context, deployer *v1alpha1.Deployer, opts v1.UpdateOptions) (result *v1alpha1.Deployer, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(deployersResource, c.ns, deployer), &v1alpha1.Deployer{})
 
@@ -102,7 +104,7 @@ func (c *FakeDeployers) Update(deployer *v1alpha1.Deployer) (result *v1alpha1.De
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeDeployers) UpdateStatus(deployer *v1alpha1.Deployer) (*v1alpha1.Deployer, error) {
+func (c *FakeDeployers) UpdateStatus(ctx context.Context, deployer *v1alpha1.Deployer, opts v1.UpdateOptions) (*v1alpha1.Deployer, error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateSubresourceAction(deployersResource, "status", c.ns, deployer), &v1alpha1.Deployer{})
 
@@ -113,7 +115,7 @@ func (c *FakeDeployers) UpdateStatus(deployer *v1alpha1.Deployer) (*v1alpha1.Dep
 }
 
 // Delete takes name of the deployer and deletes it. Returns an error if one occurs.
-func (c *FakeDeployers) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakeDeployers) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewDeleteAction(deployersResource, c.ns, name), &v1alpha1.Deployer{})
 
@@ -121,15 +123,15 @@ func (c *FakeDeployers) Delete(name string, options *v1.DeleteOptions) error {
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeDeployers) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(deployersResource, c.ns, listOptions)
+func (c *FakeDeployers) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewDeleteCollectionAction(deployersResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1alpha1.DeployerList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched deployer.
-func (c *FakeDeployers) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.Deployer, err error) {
+func (c *FakeDeployers) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.Deployer, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(deployersResource, c.ns, name, pt, data, subresources...), &v1alpha1.Deployer{})
 

@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"flag"
 	"net/http"
 	"os"
@@ -54,6 +55,8 @@ func init() {
 }
 
 func main() {
+	ctx := context.Background()
+
 	var metricsAddr string
 	var probesAddr string
 	var enableLeaderElection bool
@@ -88,7 +91,7 @@ func main() {
 			Scheme:    mgr.GetScheme(),
 			Tracker:   tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("Stream").WithName("tracker")),
 		}, streamingcontrollers.NewStreamProvisionerClient(http.DefaultClient, streamControllerLogger),
-	).SetupWithManager(mgr); err != nil {
+	).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Stream")
 		os.Exit(1)
 	}
@@ -106,7 +109,7 @@ func main() {
 			Tracker:   tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("Processor").WithName("tracker")),
 		},
 		namespace,
-	).SetupWithManager(mgr); err != nil {
+	).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Processor")
 		os.Exit(1)
 	}
@@ -123,7 +126,7 @@ func main() {
 			Scheme:    mgr.GetScheme(),
 			Tracker:   tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("Gateway").WithName("tracker")),
 		},
-	).SetupWithManager(mgr); err != nil {
+	).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Gateway")
 		os.Exit(1)
 	}
@@ -141,7 +144,7 @@ func main() {
 			Tracker:   tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("KafkaGateway").WithName("tracker")),
 		},
 		namespace,
-	).SetupWithManager(mgr); err != nil {
+	).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "KafkaGateway")
 		os.Exit(1)
 	}
@@ -159,7 +162,7 @@ func main() {
 			Tracker:   tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("PulsarGateway").WithName("tracker")),
 		},
 		namespace,
-	).SetupWithManager(mgr); err != nil {
+	).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "PulsarGateway")
 		os.Exit(1)
 	}
@@ -177,7 +180,7 @@ func main() {
 			Tracker:   tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("InMemoryGateway").WithName("tracker")),
 		},
 		namespace,
-	).SetupWithManager(mgr); err != nil {
+	).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "InMemoryGateway")
 		os.Exit(1)
 	}

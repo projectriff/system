@@ -18,6 +18,8 @@ limitations under the License.
 package fake
 
 import (
+	"context"
+
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -39,7 +41,7 @@ var processorsResource = schema.GroupVersionResource{Group: "streaming.projectri
 var processorsKind = schema.GroupVersionKind{Group: "streaming.projectriff.io", Version: "v1alpha1", Kind: "Processor"}
 
 // Get takes name of the processor, and returns the corresponding processor object, and an error if there is any.
-func (c *FakeProcessors) Get(name string, options v1.GetOptions) (result *v1alpha1.Processor, err error) {
+func (c *FakeProcessors) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.Processor, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(processorsResource, c.ns, name), &v1alpha1.Processor{})
 
@@ -50,7 +52,7 @@ func (c *FakeProcessors) Get(name string, options v1.GetOptions) (result *v1alph
 }
 
 // List takes label and field selectors, and returns the list of Processors that match those selectors.
-func (c *FakeProcessors) List(opts v1.ListOptions) (result *v1alpha1.ProcessorList, err error) {
+func (c *FakeProcessors) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.ProcessorList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewListAction(processorsResource, processorsKind, c.ns, opts), &v1alpha1.ProcessorList{})
 
@@ -72,14 +74,14 @@ func (c *FakeProcessors) List(opts v1.ListOptions) (result *v1alpha1.ProcessorLi
 }
 
 // Watch returns a watch.Interface that watches the requested processors.
-func (c *FakeProcessors) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeProcessors) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(processorsResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a processor and creates it.  Returns the server's representation of the processor, and an error, if there is any.
-func (c *FakeProcessors) Create(processor *v1alpha1.Processor) (result *v1alpha1.Processor, err error) {
+func (c *FakeProcessors) Create(ctx context.Context, processor *v1alpha1.Processor, opts v1.CreateOptions) (result *v1alpha1.Processor, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewCreateAction(processorsResource, c.ns, processor), &v1alpha1.Processor{})
 
@@ -90,7 +92,7 @@ func (c *FakeProcessors) Create(processor *v1alpha1.Processor) (result *v1alpha1
 }
 
 // Update takes the representation of a processor and updates it. Returns the server's representation of the processor, and an error, if there is any.
-func (c *FakeProcessors) Update(processor *v1alpha1.Processor) (result *v1alpha1.Processor, err error) {
+func (c *FakeProcessors) Update(ctx context.Context, processor *v1alpha1.Processor, opts v1.UpdateOptions) (result *v1alpha1.Processor, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(processorsResource, c.ns, processor), &v1alpha1.Processor{})
 
@@ -102,7 +104,7 @@ func (c *FakeProcessors) Update(processor *v1alpha1.Processor) (result *v1alpha1
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeProcessors) UpdateStatus(processor *v1alpha1.Processor) (*v1alpha1.Processor, error) {
+func (c *FakeProcessors) UpdateStatus(ctx context.Context, processor *v1alpha1.Processor, opts v1.UpdateOptions) (*v1alpha1.Processor, error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateSubresourceAction(processorsResource, "status", c.ns, processor), &v1alpha1.Processor{})
 
@@ -113,7 +115,7 @@ func (c *FakeProcessors) UpdateStatus(processor *v1alpha1.Processor) (*v1alpha1.
 }
 
 // Delete takes name of the processor and deletes it. Returns an error if one occurs.
-func (c *FakeProcessors) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakeProcessors) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewDeleteAction(processorsResource, c.ns, name), &v1alpha1.Processor{})
 
@@ -121,15 +123,15 @@ func (c *FakeProcessors) Delete(name string, options *v1.DeleteOptions) error {
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeProcessors) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(processorsResource, c.ns, listOptions)
+func (c *FakeProcessors) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewDeleteCollectionAction(processorsResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1alpha1.ProcessorList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched processor.
-func (c *FakeProcessors) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.Processor, err error) {
+func (c *FakeProcessors) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.Processor, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(processorsResource, c.ns, name, pt, data, subresources...), &v1alpha1.Processor{})
 

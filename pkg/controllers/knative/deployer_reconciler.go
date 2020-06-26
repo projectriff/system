@@ -130,7 +130,7 @@ func DeployerBuildRefReconciler(c reconcilers.Config) reconcilers.SubReconciler 
 		},
 
 		Config: c,
-		Setup: func(mgr reconcilers.Manager, bldr *reconcilers.Builder) error {
+		Setup: func(ctx context.Context, mgr reconcilers.Manager, bldr *reconcilers.Builder) error {
 			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Application{}}, reconcilers.EnqueueTracked(&buildv1alpha1.Application{}, c.Tracker, c.Scheme))
 			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Container{}}, reconcilers.EnqueueTracked(&buildv1alpha1.Container{}, c.Tracker, c.Scheme))
 			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, reconcilers.EnqueueTracked(&buildv1alpha1.Function{}, c.Tracker, c.Scheme))

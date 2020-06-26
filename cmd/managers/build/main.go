@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"flag"
 	"net/http"
 	"os"
@@ -48,6 +49,8 @@ func init() {
 }
 
 func main() {
+	ctx := context.Background()
+
 	var metricsAddr string
 	var probesAddr string
 	var enableLeaderElection bool
@@ -79,7 +82,7 @@ func main() {
 			Log:       ctrl.Log.WithName("controllers").WithName("Application"),
 			Scheme:    mgr.GetScheme(),
 		},
-	).SetupWithManager(mgr); err != nil {
+	).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Application")
 		os.Exit(1)
 	}
@@ -108,7 +111,7 @@ func main() {
 			Log:       ctrl.Log.WithName("controllers").WithName("Function"),
 			Scheme:    mgr.GetScheme(),
 		},
-	).SetupWithManager(mgr); err != nil {
+	).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Function")
 		os.Exit(1)
 	}
