@@ -49,7 +49,7 @@ jobs:
     - name: Build & Test
       run: make compile test
     - name: Check generated code is up to date
-      run: git diff --exit-code .
+      run: git diff --exit-code . ':(exclude,glob)**/go.sum'
     - name: Report coverage
       run: bash <(curl -s https://codecov.io/bash)
       env:
