@@ -8,8 +8,8 @@ require (
 	github.com/google/go-containerregistry v0.0.0-20191002200252-ff1ac7f97758
 	github.com/stretchr/testify v1.6.1
 	github.com/vmware-labs/reconciler-runtime v0.0.0-20200625194853-966cffdf5cfc
-	k8s.io/api v0.17.4
-	k8s.io/apimachinery v0.17.4
-	k8s.io/client-go v0.17.4
-	sigs.k8s.io/controller-runtime v0.5.2
+	k8s.io/api v0.18.4
+	k8s.io/apimachinery v0.18.4
+	k8s.io/client-go v0.18.4
+	sigs.k8s.io/controller-runtime v0.6.1
 )
