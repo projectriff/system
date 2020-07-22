@@ -4,7 +4,7 @@ go 1.14
 
 require (
 	github.com/go-logr/logr v0.1.0
-	github.com/google/go-cmp v0.5.0
+	github.com/google/go-cmp v0.5.1
 	github.com/google/go-containerregistry v0.0.0-20191002200252-ff1ac7f97758
 	github.com/stretchr/testify v1.6.1
 	github.com/vmware-labs/reconciler-runtime v0.0.0-20200625194853-966cffdf5cfc
