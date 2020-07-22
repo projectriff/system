@@ -3158,16 +3158,6 @@ spec:
     spec:
       containers:
       - args:
-        - --secure-listen-address=0.0.0.0:8443
-        - --upstream=http://127.0.0.1:8080/
-        - --logtostderr=true
-        - --v=10
-        image: gcr.io/kubebuilder/kube-rbac-proxy:v0.4.0
-        name: kube-rbac-proxy
-        ports:
-        - containerPort: 8443
-          name: https
-      - args:
         - --metrics-addr=127.0.0.1:8080
         - --enable-leader-election
         image: ko://github.com/projectriff/system/cmd/managers/knative
@@ -3195,6 +3185,16 @@ spec:
         - mountPath: /tmp/k8s-webhook-server/serving-certs
           name: cert
           readOnly: true
+      - args:
+        - --secure-listen-address=0.0.0.0:8443
+        - --upstream=http://127.0.0.1:8080/
+        - --logtostderr=true
+        - --v=10
+        image: gcr.io/kubebuilder/kube-rbac-proxy:v0.4.0
+        name: kube-rbac-proxy
+        ports:
+        - containerPort: 8443
+          name: https
       terminationGracePeriodSeconds: 10
       volumes:
       - name: cert
@@ -3234,7 +3234,6 @@ kind: MutatingWebhookConfiguration
 metadata:
   annotations:
     cert-manager.io/inject-ca-from: riff-system/riff-knative-serving-cert
-  creationTimestamp: null
   labels:
     component: knative.projectriff.io
   name: riff-knative-mutating-webhook-configuration
@@ -3281,7 +3280,6 @@ kind: ValidatingWebhookConfiguration
 metadata:
   annotations:
     cert-manager.io/inject-ca-from: riff-system/riff-knative-serving-cert
-  creationTimestamp: null
   labels:
     component: knative.projectriff.io
   name: riff-knative-validating-webhook-configuration
