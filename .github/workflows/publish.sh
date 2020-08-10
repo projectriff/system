@@ -23,8 +23,9 @@ publishComponent knative
 publishComponent streaming
 
 echo "Publishing version references"
-gsutil -h 'Content-Type: text/plain' -h 'Cache-Control: private' cp <(echo "${slug}") gs://projectriff/riff-system/snapshots/versions/${git_branch}
-gsutil -h 'Content-Type: text/plain' -h 'Cache-Control: private' cp <(echo "${slug}") gs://projectriff/riff-system/snapshots/versions/${version}
+echo "${slug}" > slug.txt
+gsutil -h 'Content-Type: text/plain' -h 'Cache-Control: private' cp slug.txt gs://projectriff/riff-system/snapshots/versions/${git_branch}
+gsutil -h 'Content-Type: text/plain' -h 'Cache-Control: private' cp slug.txt gs://projectriff/riff-system/snapshots/versions/${version}
 if [[ ${version} != *"-snapshot" ]] ; then
-  gsutil -h 'Content-Type: text/plain' -h 'Cache-Control: private' cp <(echo "${version}") gs://projectriff/riff-system/versions/releases/${git_branch}
+  gsutil -h 'Content-Type: text/plain' -h 'Cache-Control: private' cp slug.txt gs://projectriff/riff-system/versions/releases/${git_branch}
 fi
