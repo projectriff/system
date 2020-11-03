@@ -3,7 +3,7 @@ module github.com/projectriff/system
 go 1.14
 
 require (
-	github.com/go-logr/logr v0.1.0
+	github.com/go-logr/logr v0.3.0
 	github.com/google/go-cmp v0.5.2
 	github.com/google/go-containerregistry v0.0.0-20191002200252-ff1ac7f97758
 	github.com/stretchr/testify v1.6.1
