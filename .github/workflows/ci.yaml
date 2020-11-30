@@ -33,18 +33,19 @@ jobs:
         # move to a long-term location and put it on your path
         # (you'll need to set the KUBEBUILDER_ASSETS env var if you put it somewhere else)
         sudo mv /tmp/kubebuilder_2.0.0_${os}_${arch} /usr/local/kubebuilder
-        echo "##[add-path]/usr/local/kubebuilder/bin"
+        echo "/usr/local/kubebuilder/bin" >> $GITHUB_PATH
     - name: Install kustomize
       run: |
-        opsys=`go env GOOS`
+        os=`go env GOOS`
+        arch=`go env GOARCH`
         curl -s https://api.github.com/repos/kubernetes-sigs/kustomize/releases |\
           grep browser_download |\
-          grep $opsys |\
+          grep "${os}_${arch}" |\
           cut -d '"' -f 4 |\
           grep /kustomize/v |\
           sort | tail -n 1 |\
           xargs curl -O -L
-        tar xzf ./kustomize_v*_${opsys}_amd64.tar.gz
+        tar xzf ./kustomize_v*_${os}_${arch}.tar.gz
         sudo mv kustomize /usr/local/bin/
     - name: Build & Test
       run: make compile test
@@ -76,7 +77,8 @@ jobs:
           # move to a long-term location and put it on your path
           # (you'll need to set the KUBEBUILDER_ASSETS env var if you put it somewhere else)
           sudo mv /tmp/kubebuilder_2.0.0_${os}_${arch} /usr/local/kubebuilder
-          echo "##[add-path]/usr/local/kubebuilder/bin"
+          echo "/usr/local/kubebuilder/bin" >> $GITHUB_PATH
+
       - name: Install kustomize
         run: |
           opsys=`go env GOOS`
@@ -92,7 +94,7 @@ jobs:
       - name: Install ko
         run: |
           go get github.com/google/ko/cmd/ko
-          echo "##[add-path]$(go env GOPATH)/bin"
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
         env:
           GO111MODULE: "off"
       - name: gcloud auth
@@ -139,21 +141,21 @@ jobs:
           job=$(date +%s) # TODO can use something that is assigned by CI to guarantee uniqueness
           echo "JOB_ID=${job}"
           if [ '${{ github.event_name }}' = 'push' ] && [ '${{ github.repository }}' = projectriff/* ]; then
-            echo "##[set-env name=MODE]push"
+            echo "MODE=push" >> $GITHUB_ENV
           else 
-            echo "##[set-env name=MODE]pull_request"
+            echo "MODE=pull_request" >> $GITHUB_ENV
           fi
           if [ ! -z "$GCLOUD_CLIENT_SECRET" ] && [ "${MODE}" = 'push' ] ; then
-            echo "##[set-env name=CLUSTER]gke"
-            echo "##[set-env name=REGISTRY]gcr"
+            echo "CLUSTER=gke" >> $GITHUB_ENV
+            echo "REGISTRY=gcr" >> $GITHUB_ENV
           else
-            echo "##[set-env name=CLUSTER]kind"
-            echo "##[set-env name=REGISTRY]docker-daemon"
+            echo "CLUSTER=kind" >> $GITHUB_ENV
+            echo "REGISTRY=docker-daemon" >> $GITHUB_ENV
           fi
-          echo "##[set-env name=RUNTIME]${{ matrix.config.runtime }}"
-          echo "##[set-env name=GATEWAY]${{ matrix.config.gateway }}"
-          echo "##[set-env name=CLUSTER_NAME]system-${job}-${{ matrix.config.gateway }}-${{ matrix.config.runtime }}"
-          echo "##[set-env name=NAMESPACE]system-${job}-${{ matrix.config.gateway }}-${{ matrix.config.runtime }}"
+          echo "RUNTIME=${{ matrix.config.runtime }}" >> $GITHUB_ENV
+          echo "GATEWAY=${{ matrix.config.gateway }}" >> $GITHUB_ENV
+          echo "CLUSTER_NAME=system-${job}-${{ matrix.config.gateway }}-${{ matrix.config.runtime }}" >> $GITHUB_ENV
+          echo "NAMESPACE=system-${job}-${{ matrix.config.gateway }}-${{ matrix.config.runtime }}" >> $GITHUB_ENV
         env:
           GCLOUD_CLIENT_SECRET: ${{ secrets.GCLOUD_CLIENT_SECRET }}
       - name: 'Fetch FATS'
@@ -169,7 +171,7 @@ jobs:
             ${FATS_DIR}/install.sh gcloud
           fi
           GO111MODULE=off go get github.com/google/ko/cmd/ko
-          echo "##[add-path]$(go env GOPATH)/bin"
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
         env:
           GCLOUD_CLIENT_SECRET: ${{ secrets.GCLOUD_CLIENT_SECRET }}
         timeout-minutes: 5
