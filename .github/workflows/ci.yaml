@@ -81,15 +81,16 @@ jobs:
 
       - name: Install kustomize
         run: |
-          opsys=`go env GOOS`
+          os=`go env GOOS`
+          arch=`go env GOARCH`
           curl -s https://api.github.com/repos/kubernetes-sigs/kustomize/releases |\
             grep browser_download |\
-            grep $opsys |\
+            grep "${os}_${arch}" |\
             cut -d '"' -f 4 |\
             grep /kustomize/v |\
             sort | tail -n 1 |\
             xargs curl -O -L
-          tar xzf ./kustomize_v*_${opsys}_amd64.tar.gz
+          tar xzf ./kustomize_v*_${os}_${arch}.tar.gz
           sudo mv kustomize /usr/local/bin/
       - name: Install ko
         run: |
