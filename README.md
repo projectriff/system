@@ -66,13 +66,13 @@ make test
 To deploy to a development cluster with [ko](https://github.com/google/ko):
 
 ```sh
-ko apply --strict -f config/
+ko apply -f config/
 ```
 
 or install a single component:
 
 ```sh
-ko apply --strict -f config/riff-${component}.yaml
+ko apply -f config/riff-${component}.yaml
 ```
 
 ### Dependencies
