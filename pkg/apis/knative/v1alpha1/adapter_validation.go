@@ -23,7 +23,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
-// +kubebuilder:webhook:path=/validate-knative-projectriff-io-v1alpha1-adapter,mutating=false,failurePolicy=fail,groups=knative.projectriff.io,resources=adapters,verbs=create;update,versions=v1alpha1,name=adapters.knative.projectriff.io
+// +kubebuilder:webhook:path=/validate-knative-projectriff-io-v1alpha1-adapter,mutating=false,failurePolicy=fail,sideEffects=none,admissionReviewVersions=v1beta1,groups=knative.projectriff.io,resources=adapters,verbs=create;update,versions=v1alpha1,name=adapters.knative.projectriff.io
 
 var (
 	_ webhook.Validator         = &Adapter{}

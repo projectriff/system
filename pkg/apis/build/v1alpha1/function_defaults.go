@@ -18,7 +18,7 @@ package v1alpha1
 
 import "sigs.k8s.io/controller-runtime/pkg/webhook"
 
-// +kubebuilder:webhook:path=/mutate-build-projectriff-io-v1alpha1-function,mutating=true,failurePolicy=fail,groups=build.projectriff.io,resources=functions,verbs=create;update,versions=v1alpha1,name=functions.build.projectriff.io
+// +kubebuilder:webhook:path=/mutate-build-projectriff-io-v1alpha1-function,mutating=true,failurePolicy=fail,sideEffects=none,admissionReviewVersions=v1beta1,groups=build.projectriff.io,resources=functions,verbs=create;update,versions=v1alpha1,name=functions.build.projectriff.io
 
 var _ webhook.Defaulter = &Function{}
 

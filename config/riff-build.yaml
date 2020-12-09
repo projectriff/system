@@ -6,29 +6,16 @@ metadata:
     control-plane: controller-manager
   name: riff-system
 ---
-apiVersion: apiextensions.k8s.io/v1beta1
+apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.2.4
+    controller-gen.kubebuilder.io/version: v0.4.1
   creationTimestamp: null
   labels:
     component: build.projectriff.io
   name: applications.build.projectriff.io
 spec:
-  additionalPrinterColumns:
-  - JSONPath: .status.latestImage
-    name: Latest Image
-    type: string
-  - JSONPath: .status.conditions[?(@.type=="Ready")].status
-    name: Ready
-    type: string
-  - JSONPath: .status.conditions[?(@.type=="Ready")].reason
-    name: Reason
-    type: string
-  - JSONPath: .metadata.creationTimestamp
-    name: Age
-    type: date
   group: build.projectriff.io
   names:
     categories:
@@ -38,204 +25,232 @@ spec:
     plural: applications
     singular: application
   scope: Namespaced
-  subresources:
-    status: {}
-  validation:
-    openAPIV3Schema:
-      properties:
-        apiVersion:
-          type: string
-        kind:
-          type: string
-        metadata:
-          type: object
-        spec:
-          properties:
-            build:
-              properties:
-                env:
-                  items:
-                    properties:
-                      name:
-                        type: string
-                      value:
-                        type: string
-                      valueFrom:
-                        properties:
-                          configMapKeyRef:
-                            properties:
-                              key:
-                                type: string
-                              name:
-                                type: string
-                              optional:
-                                type: boolean
-                            required:
-                            - key
-                            type: object
-                          fieldRef:
-                            properties:
-                              apiVersion:
-                                type: string
-                              fieldPath:
-                                type: string
-                            required:
-                            - fieldPath
-                            type: object
-                          resourceFieldRef:
-                            properties:
-                              containerName:
-                                type: string
-                              divisor:
-                                type: string
-                              resource:
-                                type: string
-                            required:
-                            - resource
-                            type: object
-                          secretKeyRef:
-                            properties:
-                              key:
-                                type: string
-                              name:
-                                type: string
-                              optional:
-                                type: boolean
-                            required:
-                            - key
-                            type: object
-                        type: object
-                    required:
-                    - name
-                    type: object
-                  type: array
-                resources:
-                  properties:
-                    limits:
-                      additionalProperties:
-                        type: string
-                      type: object
-                    requests:
-                      additionalProperties:
-                        type: string
-                      type: object
-                  type: object
-              type: object
-            cacheSize:
-              type: string
-            failedBuildHistoryLimit:
-              format: int64
-              nullable: true
-              type: integer
-            image:
-              type: string
-            imageTaggingStrategy:
-              type: string
-            source:
-              properties:
-                blob:
-                  properties:
-                    url:
-                      type: string
-                  required:
-                  - url
-                  type: object
-                git:
-                  properties:
-                    revision:
-                      type: string
-                    url:
-                      type: string
-                  required:
-                  - revision
-                  - url
-                  type: object
-                registry:
-                  properties:
-                    image:
-                      type: string
-                    imagePullSecrets:
-                      items:
-                        properties:
-                          name:
-                            type: string
-                        type: object
-                      type: array
-                  required:
-                  - image
-                  type: object
-                subPath:
-                  type: string
-              type: object
-            successBuildHistoryLimit:
-              format: int64
-              nullable: true
-              type: integer
-          required:
-          - image
-          type: object
-        status:
-          properties:
-            buildCacheRef:
-              properties:
-                apiGroup:
-                  nullable: true
-                  type: string
-                kind:
-                  type: string
-                name:
-                  type: string
-              required:
-              - kind
-              - name
-              type: object
-            conditions:
-              items:
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.latestImage
+      name: Latest Image
+      type: string
+    - jsonPath: .status.conditions[?(@.type=="Ready")].status
+      name: Ready
+      type: string
+    - jsonPath: .status.conditions[?(@.type=="Ready")].reason
+      name: Reason
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            type: string
+          kind:
+            type: string
+          metadata:
+            type: object
+          spec:
+            properties:
+              build:
                 properties:
-                  lastTransitionTime:
+                  env:
+                    items:
+                      properties:
+                        name:
+                          type: string
+                        value:
+                          type: string
+                        valueFrom:
+                          properties:
+                            configMapKeyRef:
+                              properties:
+                                key:
+                                  type: string
+                                name:
+                                  type: string
+                                optional:
+                                  type: boolean
+                              required:
+                              - key
+                              type: object
+                            fieldRef:
+                              properties:
+                                apiVersion:
+                                  type: string
+                                fieldPath:
+                                  type: string
+                              required:
+                              - fieldPath
+                              type: object
+                            resourceFieldRef:
+                              properties:
+                                containerName:
+                                  type: string
+                                divisor:
+                                  anyOf:
+                                  - type: integer
+                                  - type: string
+                                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                  x-kubernetes-int-or-string: true
+                                resource:
+                                  type: string
+                              required:
+                              - resource
+                              type: object
+                            secretKeyRef:
+                              properties:
+                                key:
+                                  type: string
+                                name:
+                                  type: string
+                                optional:
+                                  type: boolean
+                              required:
+                              - key
+                              type: object
+                          type: object
+                      required:
+                      - name
+                      type: object
+                    type: array
+                  resources:
+                    properties:
+                      limits:
+                        additionalProperties:
+                          anyOf:
+                          - type: integer
+                          - type: string
+                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                          x-kubernetes-int-or-string: true
+                        type: object
+                      requests:
+                        additionalProperties:
+                          anyOf:
+                          - type: integer
+                          - type: string
+                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                          x-kubernetes-int-or-string: true
+                        type: object
+                    type: object
+                type: object
+              cacheSize:
+                anyOf:
+                - type: integer
+                - type: string
+                pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                x-kubernetes-int-or-string: true
+              failedBuildHistoryLimit:
+                format: int64
+                nullable: true
+                type: integer
+              image:
+                type: string
+              imageTaggingStrategy:
+                type: string
+              source:
+                properties:
+                  blob:
+                    properties:
+                      url:
+                        type: string
+                    required:
+                    - url
+                    type: object
+                  git:
+                    properties:
+                      revision:
+                        type: string
+                      url:
+                        type: string
+                    required:
+                    - revision
+                    - url
+                    type: object
+                  registry:
+                    properties:
+                      image:
+                        type: string
+                      imagePullSecrets:
+                        items:
+                          properties:
+                            name:
+                              type: string
+                          type: object
+                        type: array
+                    required:
+                    - image
+                    type: object
+                  subPath:
                     type: string
-                  message:
+                type: object
+              successBuildHistoryLimit:
+                format: int64
+                nullable: true
+                type: integer
+            required:
+            - image
+            type: object
+          status:
+            properties:
+              buildCacheRef:
+                properties:
+                  apiGroup:
+                    nullable: true
                     type: string
-                  reason:
+                  kind:
                     type: string
-                  severity:
-                    type: string
-                  status:
-                    type: string
-                  type:
+                  name:
                     type: string
                 required:
-                - status
-                - type
+                - kind
+                - name
                 type: object
-              type: array
-            kpackImageRef:
-              properties:
-                apiGroup:
-                  nullable: true
-                  type: string
-                kind:
-                  type: string
-                name:
-                  type: string
-              required:
-              - kind
-              - name
-              type: object
-            latestImage:
-              type: string
-            observedGeneration:
-              format: int64
-              type: integer
-            targetImage:
-              type: string
-          type: object
-      type: object
-  version: v1alpha1
-  versions:
-  - name: v1alpha1
+              conditions:
+                items:
+                  properties:
+                    lastTransitionTime:
+                      type: string
+                    message:
+                      type: string
+                    reason:
+                      type: string
+                    severity:
+                      type: string
+                    status:
+                      type: string
+                    type:
+                      type: string
+                  required:
+                  - status
+                  - type
+                  type: object
+                type: array
+              kpackImageRef:
+                properties:
+                  apiGroup:
+                    nullable: true
+                    type: string
+                  kind:
+                    type: string
+                  name:
+                    type: string
+                required:
+                - kind
+                - name
+                type: object
+              latestImage:
+                type: string
+              observedGeneration:
+                format: int64
+                type: integer
+              targetImage:
+                type: string
+            type: object
+        type: object
     served: true
     storage: true
+    subresources:
+      status: {}
 status:
   acceptedNames:
     kind: ""
@@ -243,29 +258,16 @@ status:
   conditions: []
   storedVersions: []
 ---
-apiVersion: apiextensions.k8s.io/v1beta1
+apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.2.4
+    controller-gen.kubebuilder.io/version: v0.4.1
   creationTimestamp: null
   labels:
     component: build.projectriff.io
   name: containers.build.projectriff.io
 spec:
-  additionalPrinterColumns:
-  - JSONPath: .status.latestImage
-    name: Latest Image
-    type: string
-  - JSONPath: .status.conditions[?(@.type=="Ready")].status
-    name: Ready
-    type: string
-  - JSONPath: .status.conditions[?(@.type=="Ready")].reason
-    name: Reason
-    type: string
-  - JSONPath: .metadata.creationTimestamp
-    name: Age
-    type: date
   group: build.projectriff.io
   names:
     categories:
@@ -275,86 +277,98 @@ spec:
     plural: containers
     singular: container
   scope: Namespaced
-  subresources:
-    status: {}
-  validation:
-    openAPIV3Schema:
-      properties:
-        apiVersion:
-          type: string
-        kind:
-          type: string
-        metadata:
-          type: object
-        spec:
-          properties:
-            image:
-              type: string
-          required:
-          - image
-          type: object
-        status:
-          properties:
-            buildCacheRef:
-              properties:
-                apiGroup:
-                  nullable: true
-                  type: string
-                kind:
-                  type: string
-                name:
-                  type: string
-              required:
-              - kind
-              - name
-              type: object
-            conditions:
-              items:
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.latestImage
+      name: Latest Image
+      type: string
+    - jsonPath: .status.conditions[?(@.type=="Ready")].status
+      name: Ready
+      type: string
+    - jsonPath: .status.conditions[?(@.type=="Ready")].reason
+      name: Reason
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            type: string
+          kind:
+            type: string
+          metadata:
+            type: object
+          spec:
+            properties:
+              image:
+                type: string
+            required:
+            - image
+            type: object
+          status:
+            properties:
+              buildCacheRef:
                 properties:
-                  lastTransitionTime:
+                  apiGroup:
+                    nullable: true
                     type: string
-                  message:
+                  kind:
                     type: string
-                  reason:
-                    type: string
-                  severity:
-                    type: string
-                  status:
-                    type: string
-                  type:
+                  name:
                     type: string
                 required:
-                - status
-                - type
+                - kind
+                - name
                 type: object
-              type: array
-            kpackImageRef:
-              properties:
-                apiGroup:
-                  nullable: true
-                  type: string
-                kind:
-                  type: string
-                name:
-                  type: string
-              required:
-              - kind
-              - name
-              type: object
-            latestImage:
-              type: string
-            observedGeneration:
-              format: int64
-              type: integer
-            targetImage:
-              type: string
-          type: object
-      type: object
-  version: v1alpha1
-  versions:
-  - name: v1alpha1
+              conditions:
+                items:
+                  properties:
+                    lastTransitionTime:
+                      type: string
+                    message:
+                      type: string
+                    reason:
+                      type: string
+                    severity:
+                      type: string
+                    status:
+                      type: string
+                    type:
+                      type: string
+                  required:
+                  - status
+                  - type
+                  type: object
+                type: array
+              kpackImageRef:
+                properties:
+                  apiGroup:
+                    nullable: true
+                    type: string
+                  kind:
+                    type: string
+                  name:
+                    type: string
+                required:
+                - kind
+                - name
+                type: object
+              latestImage:
+                type: string
+              observedGeneration:
+                format: int64
+                type: integer
+              targetImage:
+                type: string
+            type: object
+        type: object
     served: true
     storage: true
+    subresources:
+      status: {}
 status:
   acceptedNames:
     kind: ""
@@ -362,38 +376,16 @@ status:
   conditions: []
   storedVersions: []
 ---
-apiVersion: apiextensions.k8s.io/v1beta1
+apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.2.4
+    controller-gen.kubebuilder.io/version: v0.4.1
   creationTimestamp: null
   labels:
     component: build.projectriff.io
   name: functions.build.projectriff.io
 spec:
-  additionalPrinterColumns:
-  - JSONPath: .status.latestImage
-    name: Latest Image
-    type: string
-  - JSONPath: .spec.artifact
-    name: Artifact
-    type: string
-  - JSONPath: .spec.handler
-    name: Handler
-    type: string
-  - JSONPath: .spec.invoker
-    name: Invoker
-    type: string
-  - JSONPath: .status.conditions[?(@.type=="Ready")].status
-    name: Ready
-    type: string
-  - JSONPath: .status.conditions[?(@.type=="Ready")].reason
-    name: Reason
-    type: string
-  - JSONPath: .metadata.creationTimestamp
-    name: Age
-    type: date
   group: build.projectriff.io
   names:
     categories:
@@ -403,210 +395,247 @@ spec:
     plural: functions
     singular: function
   scope: Namespaced
-  subresources:
-    status: {}
-  validation:
-    openAPIV3Schema:
-      properties:
-        apiVersion:
-          type: string
-        kind:
-          type: string
-        metadata:
-          type: object
-        spec:
-          properties:
-            artifact:
-              type: string
-            build:
-              properties:
-                env:
-                  items:
-                    properties:
-                      name:
-                        type: string
-                      value:
-                        type: string
-                      valueFrom:
-                        properties:
-                          configMapKeyRef:
-                            properties:
-                              key:
-                                type: string
-                              name:
-                                type: string
-                              optional:
-                                type: boolean
-                            required:
-                            - key
-                            type: object
-                          fieldRef:
-                            properties:
-                              apiVersion:
-                                type: string
-                              fieldPath:
-                                type: string
-                            required:
-                            - fieldPath
-                            type: object
-                          resourceFieldRef:
-                            properties:
-                              containerName:
-                                type: string
-                              divisor:
-                                type: string
-                              resource:
-                                type: string
-                            required:
-                            - resource
-                            type: object
-                          secretKeyRef:
-                            properties:
-                              key:
-                                type: string
-                              name:
-                                type: string
-                              optional:
-                                type: boolean
-                            required:
-                            - key
-                            type: object
-                        type: object
-                    required:
-                    - name
-                    type: object
-                  type: array
-                resources:
-                  properties:
-                    limits:
-                      additionalProperties:
-                        type: string
-                      type: object
-                    requests:
-                      additionalProperties:
-                        type: string
-                      type: object
-                  type: object
-              type: object
-            cacheSize:
-              type: string
-            failedBuildHistoryLimit:
-              format: int64
-              nullable: true
-              type: integer
-            handler:
-              type: string
-            image:
-              type: string
-            imageTaggingStrategy:
-              type: string
-            invoker:
-              type: string
-            source:
-              properties:
-                blob:
-                  properties:
-                    url:
-                      type: string
-                  required:
-                  - url
-                  type: object
-                git:
-                  properties:
-                    revision:
-                      type: string
-                    url:
-                      type: string
-                  required:
-                  - revision
-                  - url
-                  type: object
-                registry:
-                  properties:
-                    image:
-                      type: string
-                    imagePullSecrets:
-                      items:
-                        properties:
-                          name:
-                            type: string
-                        type: object
-                      type: array
-                  required:
-                  - image
-                  type: object
-                subPath:
-                  type: string
-              type: object
-            successBuildHistoryLimit:
-              format: int64
-              nullable: true
-              type: integer
-          required:
-          - image
-          type: object
-        status:
-          properties:
-            buildCacheRef:
-              properties:
-                apiGroup:
-                  nullable: true
-                  type: string
-                kind:
-                  type: string
-                name:
-                  type: string
-              required:
-              - kind
-              - name
-              type: object
-            conditions:
-              items:
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.latestImage
+      name: Latest Image
+      type: string
+    - jsonPath: .spec.artifact
+      name: Artifact
+      type: string
+    - jsonPath: .spec.handler
+      name: Handler
+      type: string
+    - jsonPath: .spec.invoker
+      name: Invoker
+      type: string
+    - jsonPath: .status.conditions[?(@.type=="Ready")].status
+      name: Ready
+      type: string
+    - jsonPath: .status.conditions[?(@.type=="Ready")].reason
+      name: Reason
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            type: string
+          kind:
+            type: string
+          metadata:
+            type: object
+          spec:
+            properties:
+              artifact:
+                type: string
+              build:
                 properties:
-                  lastTransitionTime:
+                  env:
+                    items:
+                      properties:
+                        name:
+                          type: string
+                        value:
+                          type: string
+                        valueFrom:
+                          properties:
+                            configMapKeyRef:
+                              properties:
+                                key:
+                                  type: string
+                                name:
+                                  type: string
+                                optional:
+                                  type: boolean
+                              required:
+                              - key
+                              type: object
+                            fieldRef:
+                              properties:
+                                apiVersion:
+                                  type: string
+                                fieldPath:
+                                  type: string
+                              required:
+                              - fieldPath
+                              type: object
+                            resourceFieldRef:
+                              properties:
+                                containerName:
+                                  type: string
+                                divisor:
+                                  anyOf:
+                                  - type: integer
+                                  - type: string
+                                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                  x-kubernetes-int-or-string: true
+                                resource:
+                                  type: string
+                              required:
+                              - resource
+                              type: object
+                            secretKeyRef:
+                              properties:
+                                key:
+                                  type: string
+                                name:
+                                  type: string
+                                optional:
+                                  type: boolean
+                              required:
+                              - key
+                              type: object
+                          type: object
+                      required:
+                      - name
+                      type: object
+                    type: array
+                  resources:
+                    properties:
+                      limits:
+                        additionalProperties:
+                          anyOf:
+                          - type: integer
+                          - type: string
+                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                          x-kubernetes-int-or-string: true
+                        type: object
+                      requests:
+                        additionalProperties:
+                          anyOf:
+                          - type: integer
+                          - type: string
+                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                          x-kubernetes-int-or-string: true
+                        type: object
+                    type: object
+                type: object
+              cacheSize:
+                anyOf:
+                - type: integer
+                - type: string
+                pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                x-kubernetes-int-or-string: true
+              failedBuildHistoryLimit:
+                format: int64
+                nullable: true
+                type: integer
+              handler:
+                type: string
+              image:
+                type: string
+              imageTaggingStrategy:
+                type: string
+              invoker:
+                type: string
+              source:
+                properties:
+                  blob:
+                    properties:
+                      url:
+                        type: string
+                    required:
+                    - url
+                    type: object
+                  git:
+                    properties:
+                      revision:
+                        type: string
+                      url:
+                        type: string
+                    required:
+                    - revision
+                    - url
+                    type: object
+                  registry:
+                    properties:
+                      image:
+                        type: string
+                      imagePullSecrets:
+                        items:
+                          properties:
+                            name:
+                              type: string
+                          type: object
+                        type: array
+                    required:
+                    - image
+                    type: object
+                  subPath:
                     type: string
-                  message:
+                type: object
+              successBuildHistoryLimit:
+                format: int64
+                nullable: true
+                type: integer
+            required:
+            - image
+            type: object
+          status:
+            properties:
+              buildCacheRef:
+                properties:
+                  apiGroup:
+                    nullable: true
                     type: string
-                  reason:
+                  kind:
                     type: string
-                  severity:
-                    type: string
-                  status:
-                    type: string
-                  type:
+                  name:
                     type: string
                 required:
-                - status
-                - type
+                - kind
+                - name
                 type: object
-              type: array
-            kpackImageRef:
-              properties:
-                apiGroup:
-                  nullable: true
-                  type: string
-                kind:
-                  type: string
-                name:
-                  type: string
-              required:
-              - kind
-              - name
-              type: object
-            latestImage:
-              type: string
-            observedGeneration:
-              format: int64
-              type: integer
-            targetImage:
-              type: string
-          type: object
-      type: object
-  version: v1alpha1
-  versions:
-  - name: v1alpha1
+              conditions:
+                items:
+                  properties:
+                    lastTransitionTime:
+                      type: string
+                    message:
+                      type: string
+                    reason:
+                      type: string
+                    severity:
+                      type: string
+                    status:
+                      type: string
+                    type:
+                      type: string
+                  required:
+                  - status
+                  - type
+                  type: object
+                type: array
+              kpackImageRef:
+                properties:
+                  apiGroup:
+                    nullable: true
+                    type: string
+                  kind:
+                    type: string
+                  name:
+                    type: string
+                required:
+                - kind
+                - name
+                type: object
+              latestImage:
+                type: string
+              observedGeneration:
+                format: int64
+                type: integer
+              targetImage:
+                type: string
+            type: object
+        type: object
     served: true
     storage: true
+    subresources:
+      status: {}
 status:
   acceptedNames:
     kind: ""
@@ -1063,7 +1092,7 @@ metadata:
 spec:
   selfSigned: {}
 ---
-apiVersion: admissionregistration.k8s.io/v1beta1
+apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
 metadata:
   annotations:
@@ -1072,8 +1101,9 @@ metadata:
     component: build.projectriff.io
   name: riff-build-mutating-webhook-configuration
 webhooks:
-- clientConfig:
-    caBundle: Cg==
+- admissionReviewVersions:
+  - v1beta1
+  clientConfig:
     service:
       name: riff-build-webhook-service
       namespace: riff-system
@@ -1090,8 +1120,10 @@ webhooks:
     - UPDATE
     resources:
     - applications
-- clientConfig:
-    caBundle: Cg==
+  sideEffects: None
+- admissionReviewVersions:
+  - v1beta1
+  clientConfig:
     service:
       name: riff-build-webhook-service
       namespace: riff-system
@@ -1108,8 +1140,10 @@ webhooks:
     - UPDATE
     resources:
     - containers
-- clientConfig:
-    caBundle: Cg==
+  sideEffects: None
+- admissionReviewVersions:
+  - v1beta1
+  clientConfig:
     service:
       name: riff-build-webhook-service
       namespace: riff-system
@@ -1126,8 +1160,9 @@ webhooks:
     - UPDATE
     resources:
     - functions
+  sideEffects: None
 ---
-apiVersion: admissionregistration.k8s.io/v1beta1
+apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
 metadata:
   annotations:
@@ -1136,8 +1171,9 @@ metadata:
     component: build.projectriff.io
   name: riff-build-validating-webhook-configuration
 webhooks:
-- clientConfig:
-    caBundle: Cg==
+- admissionReviewVersions:
+  - v1beta1
+  clientConfig:
     service:
       name: riff-build-webhook-service
       namespace: riff-system
@@ -1154,8 +1190,10 @@ webhooks:
     - UPDATE
     resources:
     - applications
-- clientConfig:
-    caBundle: Cg==
+  sideEffects: None
+- admissionReviewVersions:
+  - v1beta1
+  clientConfig:
     service:
       name: riff-build-webhook-service
       namespace: riff-system
@@ -1172,8 +1210,10 @@ webhooks:
     - UPDATE
     resources:
     - containers
-- clientConfig:
-    caBundle: Cg==
+  sideEffects: None
+- admissionReviewVersions:
+  - v1beta1
+  clientConfig:
     service:
       name: riff-build-webhook-service
       namespace: riff-system
@@ -1190,3 +1230,4 @@ webhooks:
     - UPDATE
     resources:
     - functions
+  sideEffects: None

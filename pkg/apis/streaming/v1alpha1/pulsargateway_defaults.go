@@ -17,7 +17,7 @@ package v1alpha1
 
 import "sigs.k8s.io/controller-runtime/pkg/webhook"
 
-// +kubebuilder:webhook:path=/mutate-streaming-projectriff-io-v1alpha1-pulsargateway,mutating=true,failurePolicy=fail,groups=streaming.projectriff.io,resources=pulsargateways,verbs=create;update,versions=v1alpha1,name=pulsargateways.streaming.projectriff.io
+// +kubebuilder:webhook:path=/mutate-streaming-projectriff-io-v1alpha1-pulsargateway,mutating=true,failurePolicy=fail,sideEffects=none,admissionReviewVersions=v1beta1,groups=streaming.projectriff.io,resources=pulsargateways,verbs=create;update,versions=v1alpha1,name=pulsargateways.streaming.projectriff.io
 
 var _ webhook.Defaulter = &PulsarGateway{}
 
