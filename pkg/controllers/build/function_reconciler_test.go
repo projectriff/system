@@ -713,12 +713,6 @@ func TestFunctionReconciler(t *testing.T) {
 	}}
 
 	rts.Test(t, scheme, func(t *testing.T, rtc *rtesting.ReconcilerTestCase, c reconcilers.Config) reconcile.Reconciler {
-		return build.FunctionReconciler(reconcilers.Config{
-			Client:    c.Client,
-			APIReader: c.APIReader,
-			Recorder:  c.Recorder,
-			Scheme:    c.Scheme,
-			Log:       c.Log,
-		})
+		return build.FunctionReconciler(c)
 	})
 }

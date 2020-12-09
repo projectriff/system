@@ -144,7 +144,7 @@ func isTargetClusterBuilder(name string) bool {
 	return strings.HasPrefix(name, "riff-")
 }
 
-func (r *ClusterBuilderReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *ClusterBuilderReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager) error {
 	enqueueConfigMap := &handler.EnqueueRequestsFromMapFunc{
 		ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
 			if !isTargetClusterBuilder(a.Meta.GetName()) {

@@ -45,7 +45,7 @@ func DeployerReconciler(c reconcilers.Config) *reconcilers.ParentReconciler {
 
 	return &reconcilers.ParentReconciler{
 		Type: &knativev1alpha1.Deployer{},
-		SubReconcilers: []reconcilers.SubReconciler{
+		Reconciler: reconcilers.Sequence{
 			DeployerBuildRefReconciler(c),
 			DeployerChildConfigurationReconciler(c),
 			DeployerChildRouteReconciler(c),
@@ -130,7 +130,7 @@ func DeployerBuildRefReconciler(c reconcilers.Config) reconcilers.SubReconciler 
 		},
 
 		Config: c,
-		Setup: func(mgr reconcilers.Manager, bldr *reconcilers.Builder) error {
+		Setup: func(ctx context.Context, mgr reconcilers.Manager, bldr *reconcilers.Builder) error {
 			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Application{}}, reconcilers.EnqueueTracked(&buildv1alpha1.Application{}, c.Tracker, c.Scheme))
 			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Container{}}, reconcilers.EnqueueTracked(&buildv1alpha1.Container{}, c.Tracker, c.Scheme))
 			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, reconcilers.EnqueueTracked(&buildv1alpha1.Function{}, c.Tracker, c.Scheme))
@@ -143,11 +143,10 @@ func DeployerChildConfigurationReconciler(c reconcilers.Config) reconcilers.SubR
 	c.Log = c.Log.WithName("ChildConfiguration")
 
 	return &reconcilers.ChildReconciler{
-		ParentType:    &knativev1alpha1.Deployer{},
 		ChildType:     &servingv1.Configuration{},
 		ChildListType: &servingv1.ConfigurationList{},
 
-		DesiredChild: func(parent *knativev1alpha1.Deployer) (*servingv1.Configuration, error) {
+		DesiredChild: func(ctx context.Context, parent *knativev1alpha1.Deployer) (*servingv1.Configuration, error) {
 			if parent.Status.LatestImage == "" {
 				return nil, nil
 			}
@@ -227,11 +226,10 @@ func DeployerChildRouteReconciler(c reconcilers.Config) reconcilers.SubReconcile
 	c.Log = c.Log.WithName("ChildRoute")
 
 	return &reconcilers.ChildReconciler{
-		ParentType:    &knativev1alpha1.Deployer{},
 		ChildType:     &servingv1.Route{},
 		ChildListType: &servingv1.RouteList{},
 
-		DesiredChild: func(parent *knativev1alpha1.Deployer) (*servingv1.Route, error) {
+		DesiredChild: func(ctx context.Context, parent *knativev1alpha1.Deployer) (*servingv1.Route, error) {
 			if parent.Status.ConfigurationRef == nil {
 				return nil, nil
 			}

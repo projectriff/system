@@ -234,7 +234,7 @@ func (r *ContainerReconciler) fetchSecrets(serviceAccount corev1.ServiceAccount,
 	return secrets, nil
 }
 
-func (r *ContainerReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *ContainerReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&buildv1alpha1.Container{}).
 		Watches(&source.Kind{Type: &corev1.Secret{}}, handler.Funcs{}).

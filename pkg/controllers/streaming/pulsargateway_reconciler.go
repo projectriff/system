@@ -46,7 +46,7 @@ func PulsarGatewayReconciler(c reconcilers.Config, namespace string) *reconciler
 
 	return &reconcilers.ParentReconciler{
 		Type: &streamingv1alpha1.PulsarGateway{},
-		SubReconcilers: []reconcilers.SubReconciler{
+		Reconciler: reconcilers.Sequence{
 			PulsarGatewaySyncConfigReconciler(c, namespace),
 			PulsarGatewayChildGatewayReconciler(c),
 		},
@@ -76,7 +76,7 @@ func PulsarGatewaySyncConfigReconciler(c reconcilers.Config, namespace string) r
 		},
 
 		Config: c,
-		Setup: func(mgr reconcilers.Manager, bldr *reconcilers.Builder) error {
+		Setup: func(ctx context.Context, mgr reconcilers.Manager, bldr *reconcilers.Builder) error {
 			bldr.Watches(&source.Kind{Type: &corev1.ConfigMap{}}, reconcilers.EnqueueTracked(&corev1.ConfigMap{}, c.Tracker, c.Scheme))
 			return nil
 		},
@@ -87,11 +87,10 @@ func PulsarGatewayChildGatewayReconciler(c reconcilers.Config) reconcilers.SubRe
 	c.Log = c.Log.WithName("ChildGateway")
 
 	return &reconcilers.ChildReconciler{
-		ParentType:    &streamingv1alpha1.PulsarGateway{},
 		ChildType:     &streamingv1alpha1.Gateway{},
 		ChildListType: &streamingv1alpha1.GatewayList{},
 
-		DesiredChild: func(parent *streamingv1alpha1.PulsarGateway) (*streamingv1alpha1.Gateway, error) {
+		DesiredChild: func(ctx context.Context, parent *streamingv1alpha1.PulsarGateway) (*streamingv1alpha1.Gateway, error) {
 			labels := reconcilers.MergeMaps(parent.Labels, map[string]string{
 				streamingv1alpha1.PulsarGatewayLabelKey: parent.Name,
 				streamingv1alpha1.GatewayTypeLabelKey:   streamingv1alpha1.PulsarGatewayType,

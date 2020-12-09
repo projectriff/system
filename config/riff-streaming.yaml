@@ -46,6 +46,8 @@ spec:
             ports:
               items:
                 properties:
+                  appProtocol:
+                    type: string
                   name:
                     type: string
                   nodePort:
@@ -735,6 +737,15 @@ spec:
                                   user:
                                     type: string
                                 type: object
+                              seccompProfile:
+                                properties:
+                                  localhostProfile:
+                                    type: string
+                                  type:
+                                    type: string
+                                required:
+                                - type
+                                type: object
                               windowsOptions:
                                 properties:
                                   gmsaCredentialSpec:
@@ -1278,6 +1289,15 @@ spec:
                                     type: string
                                   user:
                                     type: string
+                                type: object
+                              seccompProfile:
+                                properties:
+                                  localhostProfile:
+                                    type: string
+                                  type:
+                                    type: string
+                                required:
+                                - type
                                 type: object
                               windowsOptions:
                                 properties:
@@ -1827,6 +1847,15 @@ spec:
                                   user:
                                     type: string
                                 type: object
+                              seccompProfile:
+                                properties:
+                                  localhostProfile:
+                                    type: string
+                                  type:
+                                    type: string
+                                required:
+                                - type
+                                type: object
                               windowsOptions:
                                 properties:
                                   gmsaCredentialSpec:
@@ -1987,6 +2016,8 @@ spec:
                         fsGroup:
                           format: int64
                           type: integer
+                        fsGroupChangePolicy:
+                          type: string
                         runAsGroup:
                           format: int64
                           type: integer
@@ -2005,6 +2036,15 @@ spec:
                               type: string
                             user:
                               type: string
+                          type: object
+                        seccompProfile:
+                          properties:
+                            localhostProfile:
+                              type: string
+                            type:
+                              type: string
+                          required:
+                          - type
                           type: object
                         supplementalGroups:
                           items:
@@ -2037,6 +2077,8 @@ spec:
                       type: string
                     serviceAccountName:
                       type: string
+                    setHostnameAsFQDN:
+                      type: boolean
                     shareProcessNamespace:
                       type: boolean
                     subdomain:
@@ -2273,6 +2315,77 @@ spec:
                                 type: string
                               sizeLimit:
                                 type: string
+                            type: object
+                          ephemeral:
+                            properties:
+                              readOnly:
+                                type: boolean
+                              volumeClaimTemplate:
+                                properties:
+                                  metadata:
+                                    type: object
+                                  spec:
+                                    properties:
+                                      accessModes:
+                                        items:
+                                          type: string
+                                        type: array
+                                      dataSource:
+                                        properties:
+                                          apiGroup:
+                                            type: string
+                                          kind:
+                                            type: string
+                                          name:
+                                            type: string
+                                        required:
+                                        - kind
+                                        - name
+                                        type: object
+                                      resources:
+                                        properties:
+                                          limits:
+                                            additionalProperties:
+                                              type: string
+                                            type: object
+                                          requests:
+                                            additionalProperties:
+                                              type: string
+                                            type: object
+                                        type: object
+                                      selector:
+                                        properties:
+                                          matchExpressions:
+                                            items:
+                                              properties:
+                                                key:
+                                                  type: string
+                                                operator:
+                                                  type: string
+                                                values:
+                                                  items:
+                                                    type: string
+                                                  type: array
+                                              required:
+                                              - key
+                                              - operator
+                                              type: object
+                                            type: array
+                                          matchLabels:
+                                            additionalProperties:
+                                              type: string
+                                            type: object
+                                        type: object
+                                      storageClassName:
+                                        type: string
+                                      volumeMode:
+                                        type: string
+                                      volumeName:
+                                        type: string
+                                    type: object
+                                required:
+                                - spec
+                                type: object
                             type: object
                           fc:
                             properties:
@@ -2544,8 +2657,6 @@ spec:
                                       type: object
                                   type: object
                                 type: array
-                            required:
-                            - sources
                             type: object
                           quobyte:
                             properties:
@@ -3713,6 +3824,15 @@ spec:
                                   user:
                                     type: string
                                 type: object
+                              seccompProfile:
+                                properties:
+                                  localhostProfile:
+                                    type: string
+                                  type:
+                                    type: string
+                                required:
+                                - type
+                                type: object
                               windowsOptions:
                                 properties:
                                   gmsaCredentialSpec:
@@ -4256,6 +4376,15 @@ spec:
                                     type: string
                                   user:
                                     type: string
+                                type: object
+                              seccompProfile:
+                                properties:
+                                  localhostProfile:
+                                    type: string
+                                  type:
+                                    type: string
+                                required:
+                                - type
                                 type: object
                               windowsOptions:
                                 properties:
@@ -4805,6 +4934,15 @@ spec:
                                   user:
                                     type: string
                                 type: object
+                              seccompProfile:
+                                properties:
+                                  localhostProfile:
+                                    type: string
+                                  type:
+                                    type: string
+                                required:
+                                - type
+                                type: object
                               windowsOptions:
                                 properties:
                                   gmsaCredentialSpec:
@@ -4965,6 +5103,8 @@ spec:
                         fsGroup:
                           format: int64
                           type: integer
+                        fsGroupChangePolicy:
+                          type: string
                         runAsGroup:
                           format: int64
                           type: integer
@@ -4983,6 +5123,15 @@ spec:
                               type: string
                             user:
                               type: string
+                          type: object
+                        seccompProfile:
+                          properties:
+                            localhostProfile:
+                              type: string
+                            type:
+                              type: string
+                          required:
+                          - type
                           type: object
                         supplementalGroups:
                           items:
@@ -5015,6 +5164,8 @@ spec:
                       type: string
                     serviceAccountName:
                       type: string
+                    setHostnameAsFQDN:
+                      type: boolean
                     shareProcessNamespace:
                       type: boolean
                     subdomain:
@@ -5251,6 +5402,77 @@ spec:
                                 type: string
                               sizeLimit:
                                 type: string
+                            type: object
+                          ephemeral:
+                            properties:
+                              readOnly:
+                                type: boolean
+                              volumeClaimTemplate:
+                                properties:
+                                  metadata:
+                                    type: object
+                                  spec:
+                                    properties:
+                                      accessModes:
+                                        items:
+                                          type: string
+                                        type: array
+                                      dataSource:
+                                        properties:
+                                          apiGroup:
+                                            type: string
+                                          kind:
+                                            type: string
+                                          name:
+                                            type: string
+                                        required:
+                                        - kind
+                                        - name
+                                        type: object
+                                      resources:
+                                        properties:
+                                          limits:
+                                            additionalProperties:
+                                              type: string
+                                            type: object
+                                          requests:
+                                            additionalProperties:
+                                              type: string
+                                            type: object
+                                        type: object
+                                      selector:
+                                        properties:
+                                          matchExpressions:
+                                            items:
+                                              properties:
+                                                key:
+                                                  type: string
+                                                operator:
+                                                  type: string
+                                                values:
+                                                  items:
+                                                    type: string
+                                                  type: array
+                                              required:
+                                              - key
+                                              - operator
+                                              type: object
+                                            type: array
+                                          matchLabels:
+                                            additionalProperties:
+                                              type: string
+                                            type: object
+                                        type: object
+                                      storageClassName:
+                                        type: string
+                                      volumeMode:
+                                        type: string
+                                      volumeName:
+                                        type: string
+                                    type: object
+                                required:
+                                - spec
+                                type: object
                             type: object
                           fc:
                             properties:
@@ -5522,8 +5744,6 @@ spec:
                                       type: object
                                   type: object
                                 type: array
-                            required:
-                            - sources
                             type: object
                           quobyte:
                             properties:

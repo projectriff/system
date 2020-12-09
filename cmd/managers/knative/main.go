@@ -17,13 +17,13 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"flag"
 	"net/http"
 	"os"
 	"time"
 
 	"github.com/vmware-labs/reconciler-runtime/reconcilers"
-	"github.com/vmware-labs/reconciler-runtime/tracker"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -53,6 +53,12 @@ func init() {
 }
 
 func main() {
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		<-ctrl.SetupSignalHandler()
+		cancel()
+	}()
+
 	var metricsAddr string
 	var probesAddr string
 	var enableLeaderElection bool
@@ -78,15 +84,8 @@ func main() {
 	}
 
 	if err = knativecontrollers.AdapterReconciler(
-		reconcilers.Config{
-			Client:    mgr.GetClient(),
-			APIReader: mgr.GetAPIReader(),
-			Recorder:  mgr.GetEventRecorderFor("Adapter"),
-			Log:       ctrl.Log.WithName("controllers").WithName("Adapter"),
-			Scheme:    mgr.GetScheme(),
-			Tracker:   tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("Adapter").WithName("tracker")),
-		},
-	).SetupWithManager(mgr); err != nil {
+		reconcilers.NewConfig(mgr, &knativev1alpha1.Adapter{}, syncPeriod),
+	).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Adapter")
 		os.Exit(1)
 	}
@@ -95,15 +94,8 @@ func main() {
 		os.Exit(1)
 	}
 	if err = knativecontrollers.DeployerReconciler(
-		reconcilers.Config{
-			Client:    mgr.GetClient(),
-			APIReader: mgr.GetAPIReader(),
-			Recorder:  mgr.GetEventRecorderFor("Deployer"),
-			Log:       ctrl.Log.WithName("controllers").WithName("Deployer"),
-			Scheme:    mgr.GetScheme(),
-			Tracker:   tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("Deployer").WithName("tracker")),
-		},
-	).SetupWithManager(mgr); err != nil {
+		reconcilers.NewConfig(mgr, &knativev1alpha1.Deployer{}, syncPeriod),
+	).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Deployer")
 		os.Exit(1)
 	}
@@ -123,7 +115,7 @@ func main() {
 	}
 
 	setupLog.Info("starting manager")
-	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+	if err := mgr.Start(ctx.Done()); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}

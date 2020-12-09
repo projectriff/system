@@ -17,13 +17,13 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"flag"
 	"net/http"
 	"os"
 	"time"
 
 	"github.com/vmware-labs/reconciler-runtime/reconcilers"
-	"github.com/vmware-labs/reconciler-runtime/tracker"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -54,6 +54,12 @@ func init() {
 }
 
 func main() {
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		<-ctrl.SetupSignalHandler()
+		cancel()
+	}()
+
 	var metricsAddr string
 	var probesAddr string
 	var enableLeaderElection bool
@@ -80,15 +86,9 @@ func main() {
 
 	streamControllerLogger := ctrl.Log.WithName("controllers").WithName("Stream")
 	if err = streamingcontrollers.StreamReconciler(
-		reconcilers.Config{
-			Client:    mgr.GetClient(),
-			APIReader: mgr.GetAPIReader(),
-			Recorder:  mgr.GetEventRecorderFor("Stream"),
-			Log:       streamControllerLogger,
-			Scheme:    mgr.GetScheme(),
-			Tracker:   tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("Stream").WithName("tracker")),
-		}, streamingcontrollers.NewStreamProvisionerClient(http.DefaultClient, streamControllerLogger),
-	).SetupWithManager(mgr); err != nil {
+		reconcilers.NewConfig(mgr, &streamingv1alpha1.Stream{}, syncPeriod),
+		streamingcontrollers.NewStreamProvisionerClient(http.DefaultClient, streamControllerLogger),
+	).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Stream")
 		os.Exit(1)
 	}
@@ -97,16 +97,9 @@ func main() {
 		os.Exit(1)
 	}
 	if err = streamingcontrollers.ProcessorReconciler(
-		reconcilers.Config{
-			Client:    mgr.GetClient(),
-			APIReader: mgr.GetAPIReader(),
-			Recorder:  mgr.GetEventRecorderFor("Processor"),
-			Log:       ctrl.Log.WithName("controllers").WithName("Processor"),
-			Scheme:    mgr.GetScheme(),
-			Tracker:   tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("Processor").WithName("tracker")),
-		},
+		reconcilers.NewConfig(mgr, &streamingv1alpha1.Processor{}, syncPeriod),
 		namespace,
-	).SetupWithManager(mgr); err != nil {
+	).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Processor")
 		os.Exit(1)
 	}
@@ -115,15 +108,8 @@ func main() {
 		os.Exit(1)
 	}
 	if err = streamingcontrollers.GatewayReconciler(
-		reconcilers.Config{
-			Client:    mgr.GetClient(),
-			APIReader: mgr.GetAPIReader(),
-			Recorder:  mgr.GetEventRecorderFor("Gateway"),
-			Log:       ctrl.Log.WithName("controllers").WithName("Gateway"),
-			Scheme:    mgr.GetScheme(),
-			Tracker:   tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("Gateway").WithName("tracker")),
-		},
-	).SetupWithManager(mgr); err != nil {
+		reconcilers.NewConfig(mgr, &streamingv1alpha1.Gateway{}, syncPeriod),
+	).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Gateway")
 		os.Exit(1)
 	}
@@ -132,16 +118,9 @@ func main() {
 		os.Exit(1)
 	}
 	if err = streamingcontrollers.KafkaGatewayReconciler(
-		reconcilers.Config{
-			Client:    mgr.GetClient(),
-			APIReader: mgr.GetAPIReader(),
-			Recorder:  mgr.GetEventRecorderFor("KafkaGateway"),
-			Log:       ctrl.Log.WithName("controllers").WithName("KafkaGateway"),
-			Scheme:    mgr.GetScheme(),
-			Tracker:   tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("KafkaGateway").WithName("tracker")),
-		},
+		reconcilers.NewConfig(mgr, &streamingv1alpha1.KafkaGateway{}, syncPeriod),
 		namespace,
-	).SetupWithManager(mgr); err != nil {
+	).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "KafkaGateway")
 		os.Exit(1)
 	}
@@ -150,16 +129,9 @@ func main() {
 		os.Exit(1)
 	}
 	if err = streamingcontrollers.PulsarGatewayReconciler(
-		reconcilers.Config{
-			Client:    mgr.GetClient(),
-			APIReader: mgr.GetAPIReader(),
-			Recorder:  mgr.GetEventRecorderFor("PulsarGateway"),
-			Log:       ctrl.Log.WithName("controllers").WithName("PulsarGateway"),
-			Scheme:    mgr.GetScheme(),
-			Tracker:   tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("PulsarGateway").WithName("tracker")),
-		},
+		reconcilers.NewConfig(mgr, &streamingv1alpha1.PulsarGateway{}, syncPeriod),
 		namespace,
-	).SetupWithManager(mgr); err != nil {
+	).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "PulsarGateway")
 		os.Exit(1)
 	}
@@ -168,16 +140,9 @@ func main() {
 		os.Exit(1)
 	}
 	if err = streamingcontrollers.InMemoryGatewayReconciler(
-		reconcilers.Config{
-			Client:    mgr.GetClient(),
-			APIReader: mgr.GetAPIReader(),
-			Recorder:  mgr.GetEventRecorderFor("InMemoryGateway"),
-			Log:       ctrl.Log.WithName("controllers").WithName("InMemoryGateway"),
-			Scheme:    mgr.GetScheme(),
-			Tracker:   tracker.New(syncPeriod, ctrl.Log.WithName("controllers").WithName("InMemoryGateway").WithName("tracker")),
-		},
+		reconcilers.NewConfig(mgr, &streamingv1alpha1.InMemoryGateway{}, syncPeriod),
 		namespace,
-	).SetupWithManager(mgr); err != nil {
+	).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "InMemoryGateway")
 		os.Exit(1)
 	}
@@ -197,7 +162,7 @@ func main() {
 	}
 
 	setupLog.Info("starting manager")
-	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+	if err := mgr.Start(ctx.Done()); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}

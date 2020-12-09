@@ -52,7 +52,7 @@ func DeployerReconciler(c reconcilers.Config) *reconcilers.ParentReconciler {
 
 	return &reconcilers.ParentReconciler{
 		Type: &corev1alpha1.Deployer{},
-		SubReconcilers: []reconcilers.SubReconciler{
+		Reconciler: reconcilers.Sequence{
 			DeployerBuildRefReconciler(c),
 			DeployerChildDeploymentReconciler(c),
 			DeployerChildServiceReconciler(c),
@@ -138,7 +138,7 @@ func DeployerBuildRefReconciler(c reconcilers.Config) reconcilers.SubReconciler 
 		},
 
 		Config: c,
-		Setup: func(mgr reconcilers.Manager, bldr *reconcilers.Builder) error {
+		Setup: func(ctx context.Context, mgr reconcilers.Manager, bldr *reconcilers.Builder) error {
 			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Application{}}, reconcilers.EnqueueTracked(&buildv1alpha1.Application{}, c.Tracker, c.Scheme))
 			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Container{}}, reconcilers.EnqueueTracked(&buildv1alpha1.Container{}, c.Tracker, c.Scheme))
 			bldr.Watches(&source.Kind{Type: &buildv1alpha1.Function{}}, reconcilers.EnqueueTracked(&buildv1alpha1.Function{}, c.Tracker, c.Scheme))
@@ -151,11 +151,10 @@ func DeployerChildDeploymentReconciler(c reconcilers.Config) reconcilers.SubReco
 	c.Log = c.Log.WithName("ChildDeployment")
 
 	return &reconcilers.ChildReconciler{
-		ParentType:    &corev1alpha1.Deployer{},
 		ChildType:     &appsv1.Deployment{},
 		ChildListType: &appsv1.DeploymentList{},
 
-		DesiredChild: func(parent *corev1alpha1.Deployer) (*appsv1.Deployment, error) {
+		DesiredChild: func(ctx context.Context, parent *corev1alpha1.Deployer) (*appsv1.Deployment, error) {
 			if parent.Status.LatestImage == "" {
 				// no image, skip
 				return nil, nil
@@ -240,11 +239,10 @@ func DeployerChildServiceReconciler(c reconcilers.Config) reconcilers.SubReconci
 	c.Log = c.Log.WithName("ChildService")
 
 	return &reconcilers.ChildReconciler{
-		ParentType:    &corev1alpha1.Deployer{},
 		ChildType:     &corev1.Service{},
 		ChildListType: &corev1.ServiceList{},
 
-		DesiredChild: func(parent *corev1alpha1.Deployer) (*corev1.Service, error) {
+		DesiredChild: func(ctx context.Context, parent *corev1alpha1.Deployer) (*corev1.Service, error) {
 			if parent.Status.DeploymentRef == nil {
 				// no deployment, skip
 				return nil, nil
@@ -314,15 +312,14 @@ func DeployerChildIngressReconciler(c reconcilers.Config) reconcilers.SubReconci
 	c.Log = c.Log.WithName("ChildIngress")
 
 	return &reconcilers.ChildReconciler{
-		ParentType:    &corev1alpha1.Deployer{},
 		ChildType:     &networkingv1beta1.Ingress{},
 		ChildListType: &networkingv1beta1.IngressList{},
 
-		Setup: func(mgr reconcilers.Manager, bldr *reconcilers.Builder) error {
+		Setup: func(ctx context.Context, mgr reconcilers.Manager, bldr *reconcilers.Builder) error {
 			bldr.Watches(&source.Kind{Type: &corev1.ConfigMap{}}, reconcilers.EnqueueTracked(&corev1.ConfigMap{}, c.Tracker, c.Scheme))
 			return nil
 		},
-		DesiredChild: func(parent *corev1alpha1.Deployer) (*networkingv1beta1.Ingress, error) {
+		DesiredChild: func(ctx context.Context, parent *corev1alpha1.Deployer) (*networkingv1beta1.Ingress, error) {
 			if parent.Status.ServiceRef == nil || parent.Spec.IngressPolicy == corev1alpha1.IngressPolicyClusterLocal {
 				// no service, skip
 				return nil, nil
