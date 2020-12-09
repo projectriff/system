@@ -14,7 +14,7 @@ endif
 
 MOCKERY ?= go run -modfile hack/go.mod github.com/vektra/mockery/cmd/mockery
 CONTROLLER_GEN ?= go run -modfile hack/go.mod sigs.k8s.io/controller-tools/cmd/controller-gen
-KO ?= go run -modfile hack/go.mod github.com/google/ko/cmd/ko
+KO ?= go run -modfile hack/ko/go.mod github.com/google/ko/cmd/ko
 GOIMPORTS ?= go run -modfile hack/go.mod golang.org/x/tools/cmd/goimports
 
 .PHONY: all

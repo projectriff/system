@@ -3,7 +3,6 @@ module github.com/projectriff/system/tools
 go 1.14
 
 require (
-	github.com/google/ko v0.6.2
 	github.com/vektra/mockery v1.1.2
 	// branch release-branch.go1.14
 	golang.org/x/tools v0.0.0-20200924205911-8a9a89368bd3
