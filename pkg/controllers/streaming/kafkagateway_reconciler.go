@@ -46,7 +46,7 @@ func KafkaGatewayReconciler(c reconcilers.Config, namespace string) *reconcilers
 
 	return &reconcilers.ParentReconciler{
 		Type: &streamingv1alpha1.KafkaGateway{},
-		SubReconcilers: []reconcilers.SubReconciler{
+		Reconciler: reconcilers.Sequence{
 			KafkaGatewaySyncConfigReconciler(c, namespace),
 			KafkaGatewayChildGatewayReconciler(c),
 		},
@@ -76,7 +76,7 @@ func KafkaGatewaySyncConfigReconciler(c reconcilers.Config, namespace string) re
 		},
 
 		Config: c,
-		Setup: func(mgr reconcilers.Manager, bldr *reconcilers.Builder) error {
+		Setup: func(ctx context.Context, mgr reconcilers.Manager, bldr *reconcilers.Builder) error {
 			bldr.Watches(&source.Kind{Type: &corev1.ConfigMap{}}, reconcilers.EnqueueTracked(&corev1.ConfigMap{}, c.Tracker, c.Scheme))
 			return nil
 		},
@@ -87,11 +87,10 @@ func KafkaGatewayChildGatewayReconciler(c reconcilers.Config) reconcilers.SubRec
 	c.Log = c.Log.WithName("ChildGateway")
 
 	return &reconcilers.ChildReconciler{
-		ParentType:    &streamingv1alpha1.KafkaGateway{},
 		ChildType:     &streamingv1alpha1.Gateway{},
 		ChildListType: &streamingv1alpha1.GatewayList{},
 
-		DesiredChild: func(parent *streamingv1alpha1.KafkaGateway) (*streamingv1alpha1.Gateway, error) {
+		DesiredChild: func(ctx context.Context, parent *streamingv1alpha1.KafkaGateway) (*streamingv1alpha1.Gateway, error) {
 			labels := reconcilers.MergeMaps(parent.Labels, map[string]string{
 				streamingv1alpha1.KafkaGatewayLabelKey: parent.Name,
 				streamingv1alpha1.GatewayTypeLabelKey:  streamingv1alpha1.KafkaGatewayType,

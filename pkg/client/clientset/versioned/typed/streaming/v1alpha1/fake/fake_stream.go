@@ -18,6 +18,8 @@ limitations under the License.
 package fake
 
 import (
+	"context"
+
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -39,7 +41,7 @@ var streamsResource = schema.GroupVersionResource{Group: "streaming.projectriff.
 var streamsKind = schema.GroupVersionKind{Group: "streaming.projectriff.io", Version: "v1alpha1", Kind: "Stream"}
 
 // Get takes name of the stream, and returns the corresponding stream object, and an error if there is any.
-func (c *FakeStreams) Get(name string, options v1.GetOptions) (result *v1alpha1.Stream, err error) {
+func (c *FakeStreams) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.Stream, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(streamsResource, c.ns, name), &v1alpha1.Stream{})
 
@@ -50,7 +52,7 @@ func (c *FakeStreams) Get(name string, options v1.GetOptions) (result *v1alpha1.
 }
 
 // List takes label and field selectors, and returns the list of Streams that match those selectors.
-func (c *FakeStreams) List(opts v1.ListOptions) (result *v1alpha1.StreamList, err error) {
+func (c *FakeStreams) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.StreamList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewListAction(streamsResource, streamsKind, c.ns, opts), &v1alpha1.StreamList{})
 
@@ -72,14 +74,14 @@ func (c *FakeStreams) List(opts v1.ListOptions) (result *v1alpha1.StreamList, er
 }
 
 // Watch returns a watch.Interface that watches the requested streams.
-func (c *FakeStreams) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeStreams) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(streamsResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a stream and creates it.  Returns the server's representation of the stream, and an error, if there is any.
-func (c *FakeStreams) Create(stream *v1alpha1.Stream) (result *v1alpha1.Stream, err error) {
+func (c *FakeStreams) Create(ctx context.Context, stream *v1alpha1.Stream, opts v1.CreateOptions) (result *v1alpha1.Stream, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewCreateAction(streamsResource, c.ns, stream), &v1alpha1.Stream{})
 
@@ -90,7 +92,7 @@ func (c *FakeStreams) Create(stream *v1alpha1.Stream) (result *v1alpha1.Stream, 
 }
 
 // Update takes the representation of a stream and updates it. Returns the server's representation of the stream, and an error, if there is any.
-func (c *FakeStreams) Update(stream *v1alpha1.Stream) (result *v1alpha1.Stream, err error) {
+func (c *FakeStreams) Update(ctx context.Context, stream *v1alpha1.Stream, opts v1.UpdateOptions) (result *v1alpha1.Stream, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(streamsResource, c.ns, stream), &v1alpha1.Stream{})
 
@@ -102,7 +104,7 @@ func (c *FakeStreams) Update(stream *v1alpha1.Stream) (result *v1alpha1.Stream, 
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeStreams) UpdateStatus(stream *v1alpha1.Stream) (*v1alpha1.Stream, error) {
+func (c *FakeStreams) UpdateStatus(ctx context.Context, stream *v1alpha1.Stream, opts v1.UpdateOptions) (*v1alpha1.Stream, error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateSubresourceAction(streamsResource, "status", c.ns, stream), &v1alpha1.Stream{})
 
@@ -113,7 +115,7 @@ func (c *FakeStreams) UpdateStatus(stream *v1alpha1.Stream) (*v1alpha1.Stream, e
 }
 
 // Delete takes name of the stream and deletes it. Returns an error if one occurs.
-func (c *FakeStreams) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakeStreams) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewDeleteAction(streamsResource, c.ns, name), &v1alpha1.Stream{})
 
@@ -121,15 +123,15 @@ func (c *FakeStreams) Delete(name string, options *v1.DeleteOptions) error {
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeStreams) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(streamsResource, c.ns, listOptions)
+func (c *FakeStreams) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewDeleteCollectionAction(streamsResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1alpha1.StreamList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched stream.
-func (c *FakeStreams) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.Stream, err error) {
+func (c *FakeStreams) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.Stream, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(streamsResource, c.ns, name, pt, data, subresources...), &v1alpha1.Stream{})
 

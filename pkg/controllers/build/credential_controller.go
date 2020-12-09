@@ -201,7 +201,7 @@ func (m MatchingLabels) ApplyToList(opts *client.ListOptions) {
 	opts.LabelSelector = sel
 }
 
-func (r *CredentialReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *CredentialReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager) error {
 	enqueueServiceAccountForCredential := &handler.EnqueueRequestsFromMapFunc{
 		ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
 			if _, ok := a.Meta.GetLabels()[buildv1alpha1.CredentialLabelKey]; !ok {

@@ -18,6 +18,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"context"
 	"time"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -37,15 +38,15 @@ type StreamsGetter interface {
 
 // StreamInterface has methods to work with Stream resources.
 type StreamInterface interface {
-	Create(*v1alpha1.Stream) (*v1alpha1.Stream, error)
-	Update(*v1alpha1.Stream) (*v1alpha1.Stream, error)
-	UpdateStatus(*v1alpha1.Stream) (*v1alpha1.Stream, error)
-	Delete(name string, options *v1.DeleteOptions) error
-	DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error
-	Get(name string, options v1.GetOptions) (*v1alpha1.Stream, error)
-	List(opts v1.ListOptions) (*v1alpha1.StreamList, error)
-	Watch(opts v1.ListOptions) (watch.Interface, error)
-	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.Stream, err error)
+	Create(ctx context.Context, stream *v1alpha1.Stream, opts v1.CreateOptions) (*v1alpha1.Stream, error)
+	Update(ctx context.Context, stream *v1alpha1.Stream, opts v1.UpdateOptions) (*v1alpha1.Stream, error)
+	UpdateStatus(ctx context.Context, stream *v1alpha1.Stream, opts v1.UpdateOptions) (*v1alpha1.Stream, error)
+	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
+	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
+	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha1.Stream, error)
+	List(ctx context.Context, opts v1.ListOptions) (*v1alpha1.StreamList, error)
+	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.Stream, err error)
 	StreamExpansion
 }
 
@@ -64,20 +65,20 @@ func newStreams(c *StreamingV1alpha1Client, namespace string) *streams {
 }
 
 // Get takes name of the stream, and returns the corresponding stream object, and an error if there is any.
-func (c *streams) Get(name string, options v1.GetOptions) (result *v1alpha1.Stream, err error) {
+func (c *streams) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.Stream, err error) {
 	result = &v1alpha1.Stream{}
 	err = c.client.Get().
 		Namespace(c.ns).
 		Resource("streams").
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // List takes label and field selectors, and returns the list of Streams that match those selectors.
-func (c *streams) List(opts v1.ListOptions) (result *v1alpha1.StreamList, err error) {
+func (c *streams) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.StreamList, err error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -88,13 +89,13 @@ func (c *streams) List(opts v1.ListOptions) (result *v1alpha1.StreamList, err er
 		Resource("streams").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Watch returns a watch.Interface that watches the requested streams.
-func (c *streams) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *streams) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -105,87 +106,90 @@ func (c *streams) Watch(opts v1.ListOptions) (watch.Interface, error) {
 		Resource("streams").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Watch()
+		Watch(ctx)
 }
 
 // Create takes the representation of a stream and creates it.  Returns the server's representation of the stream, and an error, if there is any.
-func (c *streams) Create(stream *v1alpha1.Stream) (result *v1alpha1.Stream, err error) {
+func (c *streams) Create(ctx context.Context, stream *v1alpha1.Stream, opts v1.CreateOptions) (result *v1alpha1.Stream, err error) {
 	result = &v1alpha1.Stream{}
 	err = c.client.Post().
 		Namespace(c.ns).
 		Resource("streams").
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(stream).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Update takes the representation of a stream and updates it. Returns the server's representation of the stream, and an error, if there is any.
-func (c *streams) Update(stream *v1alpha1.Stream) (result *v1alpha1.Stream, err error) {
+func (c *streams) Update(ctx context.Context, stream *v1alpha1.Stream, opts v1.UpdateOptions) (result *v1alpha1.Stream, err error) {
 	result = &v1alpha1.Stream{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("streams").
 		Name(stream.Name).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(stream).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-
-func (c *streams) UpdateStatus(stream *v1alpha1.Stream) (result *v1alpha1.Stream, err error) {
+func (c *streams) UpdateStatus(ctx context.Context, stream *v1alpha1.Stream, opts v1.UpdateOptions) (result *v1alpha1.Stream, err error) {
 	result = &v1alpha1.Stream{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("streams").
 		Name(stream.Name).
 		SubResource("status").
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(stream).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Delete takes name of the stream and deletes it. Returns an error if one occurs.
-func (c *streams) Delete(name string, options *v1.DeleteOptions) error {
+func (c *streams) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("streams").
 		Name(name).
-		Body(options).
-		Do().
+		Body(&opts).
+		Do(ctx).
 		Error()
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *streams) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
+func (c *streams) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
 	var timeout time.Duration
-	if listOptions.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOptions.TimeoutSeconds) * time.Second
+	if listOpts.TimeoutSeconds != nil {
+		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
 	}
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("streams").
-		VersionedParams(&listOptions, scheme.ParameterCodec).
+		VersionedParams(&listOpts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Body(options).
-		Do().
+		Body(&opts).
+		Do(ctx).
 		Error()
 }
 
 // Patch applies the patch and returns the patched stream.
-func (c *streams) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.Stream, err error) {
+func (c *streams) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.Stream, err error) {
 	result = &v1alpha1.Stream{}
 	err = c.client.Patch(pt).
 		Namespace(c.ns).
 		Resource("streams").
-		SubResource(subresources...).
 		Name(name).
+		SubResource(subresources...).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(data).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }

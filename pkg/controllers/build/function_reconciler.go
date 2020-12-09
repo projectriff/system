@@ -41,7 +41,7 @@ func FunctionReconciler(c reconcilers.Config) *reconcilers.ParentReconciler {
 
 	return &reconcilers.ParentReconciler{
 		Type: &buildv1alpha1.Function{},
-		SubReconcilers: []reconcilers.SubReconciler{
+		Reconciler: reconcilers.Sequence{
 			FunctionTargetImageReconciler(c),
 			FunctionChildImageReconciler(c),
 		},
@@ -80,11 +80,10 @@ func FunctionChildImageReconciler(c reconcilers.Config) reconcilers.SubReconcile
 		Config:     c,
 		IndexField: ".metadata.functionController",
 
-		ParentType:    &buildv1alpha1.Function{},
 		ChildType:     &kpackbuildv1alpha1.Image{},
 		ChildListType: &kpackbuildv1alpha1.ImageList{},
 
-		DesiredChild: func(parent *buildv1alpha1.Function) (*kpackbuildv1alpha1.Image, error) {
+		DesiredChild: func(ctx context.Context, parent *buildv1alpha1.Function) (*kpackbuildv1alpha1.Image, error) {
 			if parent.Spec.Source == nil {
 				return nil, nil
 			}

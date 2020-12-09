@@ -23,7 +23,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
-// +kubebuilder:webhook:path=/validate-streaming-projectriff-io-v1alpha1-kafkagateway,mutating=false,failurePolicy=fail,groups=streaming.projectriff.io,resources=kafkagateways,verbs=create;update,versions=v1alpha1,name=kafkagateways.streaming.projectriff.io
+// +kubebuilder:webhook:path=/validate-streaming-projectriff-io-v1alpha1-kafkagateway,mutating=false,failurePolicy=fail,sideEffects=none,admissionReviewVersions=v1beta1,groups=streaming.projectriff.io,resources=kafkagateways,verbs=create;update,versions=v1alpha1,name=kafkagateways.streaming.projectriff.io
 
 var (
 	_ webhook.Validator         = &KafkaGateway{}

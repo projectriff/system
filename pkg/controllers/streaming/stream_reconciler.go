@@ -44,7 +44,7 @@ func StreamReconciler(c reconcilers.Config, provisioner StreamProvisionerClient)
 
 	return &reconcilers.ParentReconciler{
 		Type: &streamingv1alpha1.Stream{},
-		SubReconcilers: []reconcilers.SubReconciler{
+		Reconciler: reconcilers.Sequence{
 			StreamProvisionReconciler(c, provisioner),
 			StreamChildBindingMetadataReconciler(c),
 			StreamChildBindingSecretReconciler(c),
@@ -106,7 +106,6 @@ func StreamChildBindingMetadataReconciler(c reconcilers.Config) reconcilers.SubR
 	c.Log = c.Log.WithName("ChildBindingMetadata")
 
 	return &reconcilers.ChildReconciler{
-		ParentType:    &streamingv1alpha1.Stream{},
 		ChildType:     &corev1.ConfigMap{},
 		ChildListType: &corev1.ConfigMapList{},
 
@@ -175,7 +174,6 @@ func StreamChildBindingSecretReconciler(c reconcilers.Config) reconcilers.SubRec
 	c.Log = c.Log.WithName("ChildBindingSecret")
 
 	return &reconcilers.ChildReconciler{
-		ParentType:    &streamingv1alpha1.Stream{},
 		ChildType:     &corev1.Secret{},
 		ChildListType: &corev1.SecretList{},
 

@@ -17,9 +17,11 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"flag"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/vmware-labs/reconciler-runtime/reconcilers"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -35,9 +37,10 @@ import (
 )
 
 var (
-	scheme    = runtime.NewScheme()
-	setupLog  = ctrl.Log.WithName("setup")
-	namespace = os.Getenv("SYSTEM_NAMESPACE")
+	scheme     = runtime.NewScheme()
+	setupLog   = ctrl.Log.WithName("setup")
+	syncPeriod = 10 * time.Hour
+	namespace  = os.Getenv("SYSTEM_NAMESPACE")
 )
 
 func init() {
@@ -48,6 +51,12 @@ func init() {
 }
 
 func main() {
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		<-ctrl.SetupSignalHandler()
+		cancel()
+	}()
+
 	var metricsAddr string
 	var probesAddr string
 	var enableLeaderElection bool
@@ -65,6 +74,7 @@ func main() {
 		HealthProbeBindAddress: probesAddr,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       "controller-leader-election-helper-build",
+		SyncPeriod:             &syncPeriod,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
@@ -72,14 +82,8 @@ func main() {
 	}
 
 	if err = buildcontrollers.ApplicationReconciler(
-		reconcilers.Config{
-			Client:    mgr.GetClient(),
-			APIReader: mgr.GetAPIReader(),
-			Recorder:  mgr.GetEventRecorderFor("Application"),
-			Log:       ctrl.Log.WithName("controllers").WithName("Application"),
-			Scheme:    mgr.GetScheme(),
-		},
-	).SetupWithManager(mgr); err != nil {
+		reconcilers.NewConfig(mgr, &buildv1alpha1.Application{}, syncPeriod),
+	).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Application")
 		os.Exit(1)
 	}
@@ -92,7 +96,7 @@ func main() {
 		Recorder: mgr.GetEventRecorderFor("Container"),
 		Log:      ctrl.Log.WithName("controllers").WithName("Container"),
 		Scheme:   mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
+	}).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Container")
 		os.Exit(1)
 	}
@@ -101,14 +105,8 @@ func main() {
 		os.Exit(1)
 	}
 	if err = buildcontrollers.FunctionReconciler(
-		reconcilers.Config{
-			Client:    mgr.GetClient(),
-			APIReader: mgr.GetAPIReader(),
-			Recorder:  mgr.GetEventRecorderFor("Function"),
-			Log:       ctrl.Log.WithName("controllers").WithName("Function"),
-			Scheme:    mgr.GetScheme(),
-		},
-	).SetupWithManager(mgr); err != nil {
+		reconcilers.NewConfig(mgr, &buildv1alpha1.Function{}, syncPeriod),
+	).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Function")
 		os.Exit(1)
 	}
@@ -120,7 +118,7 @@ func main() {
 		Client:   mgr.GetClient(),
 		Recorder: mgr.GetEventRecorderFor("Credential"),
 		Log:      ctrl.Log.WithName("controllers").WithName("Credentials"),
-	}).SetupWithManager(mgr); err != nil {
+	}).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Credential")
 		os.Exit(1)
 	}
@@ -129,7 +127,7 @@ func main() {
 		Recorder:  mgr.GetEventRecorderFor("ClusterBuilder"),
 		Log:       ctrl.Log.WithName("controllers").WithName("ClusterBuilders"),
 		Namespace: namespace,
-	}).SetupWithManager(mgr); err != nil {
+	}).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ClusterBuilder")
 		os.Exit(1)
 	}
@@ -145,7 +143,7 @@ func main() {
 	}
 
 	setupLog.Info("starting manager")
-	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+	if err := mgr.Start(ctx.Done()); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}

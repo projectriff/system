@@ -129,7 +129,9 @@ func (in *GatewaySpec) DeepCopyInto(out *GatewaySpec) {
 	if in.Ports != nil {
 		in, out := &in.Ports, &out.Ports
 		*out = make([]v1.ServicePort, len(*in))
-		copy(*out, *in)
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
 	}
 }
 

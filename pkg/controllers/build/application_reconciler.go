@@ -40,7 +40,7 @@ func ApplicationReconciler(c reconcilers.Config) *reconcilers.ParentReconciler {
 
 	return &reconcilers.ParentReconciler{
 		Type: &buildv1alpha1.Application{},
-		SubReconcilers: []reconcilers.SubReconciler{
+		Reconciler: reconcilers.Sequence{
 			ApplicationTargetImageReconciler(c),
 			ApplicationChildImageReconciler(c),
 		},
@@ -76,11 +76,10 @@ func ApplicationChildImageReconciler(c reconcilers.Config) reconcilers.SubReconc
 	c.Log = c.Log.WithName("ChildImage")
 
 	return &reconcilers.ChildReconciler{
-		ParentType:    &buildv1alpha1.Application{},
 		ChildType:     &kpackbuildv1alpha1.Image{},
 		ChildListType: &kpackbuildv1alpha1.ImageList{},
 
-		DesiredChild: func(parent *buildv1alpha1.Application) (*kpackbuildv1alpha1.Image, error) {
+		DesiredChild: func(ctx context.Context, parent *buildv1alpha1.Application) (*kpackbuildv1alpha1.Image, error) {
 			if parent.Spec.Source == nil {
 				return nil, nil
 			}

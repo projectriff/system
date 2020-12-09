@@ -3,13 +3,14 @@ module github.com/projectriff/system
 go 1.14
 
 require (
-	github.com/go-logr/logr v0.1.0
+	github.com/go-logr/logr v0.3.0
+	github.com/go-logr/zapr v0.3.0 // indirect
 	github.com/google/go-cmp v0.5.4
-	github.com/google/go-containerregistry v0.0.0-20191002200252-ff1ac7f97758
+	github.com/google/go-containerregistry v0.2.1
 	github.com/stretchr/testify v1.6.1
-	github.com/vmware-labs/reconciler-runtime v0.0.0-20200625194853-966cffdf5cfc
-	k8s.io/api v0.17.4
-	k8s.io/apimachinery v0.17.4
-	k8s.io/client-go v0.17.4
-	sigs.k8s.io/controller-runtime v0.5.2
+	github.com/vmware-labs/reconciler-runtime v0.2.0
+	k8s.io/api v0.20.0
+	k8s.io/apimachinery v0.20.0
+	k8s.io/client-go v0.20.0
+	sigs.k8s.io/controller-runtime v0.6.4
 )

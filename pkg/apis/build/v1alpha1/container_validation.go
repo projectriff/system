@@ -23,7 +23,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
-// +kubebuilder:webhook:path=/validate-build-projectriff-io-v1alpha1-container,mutating=false,failurePolicy=fail,groups=build.projectriff.io,resources=containers,verbs=create;update,versions=v1alpha1,name=containers.build.projectriff.io
+// +kubebuilder:webhook:path=/validate-build-projectriff-io-v1alpha1-container,mutating=false,failurePolicy=fail,sideEffects=none,admissionReviewVersions=v1beta1,groups=build.projectriff.io,resources=containers,verbs=create;update,versions=v1alpha1,name=containers.build.projectriff.io
 
 var (
 	_ webhook.Validator         = &Container{}

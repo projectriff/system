@@ -18,6 +18,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"context"
 	"time"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -37,15 +38,15 @@ type ImageBindingsGetter interface {
 
 // ImageBindingInterface has methods to work with ImageBinding resources.
 type ImageBindingInterface interface {
-	Create(*v1alpha1.ImageBinding) (*v1alpha1.ImageBinding, error)
-	Update(*v1alpha1.ImageBinding) (*v1alpha1.ImageBinding, error)
-	UpdateStatus(*v1alpha1.ImageBinding) (*v1alpha1.ImageBinding, error)
-	Delete(name string, options *v1.DeleteOptions) error
-	DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error
-	Get(name string, options v1.GetOptions) (*v1alpha1.ImageBinding, error)
-	List(opts v1.ListOptions) (*v1alpha1.ImageBindingList, error)
-	Watch(opts v1.ListOptions) (watch.Interface, error)
-	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.ImageBinding, err error)
+	Create(ctx context.Context, imageBinding *v1alpha1.ImageBinding, opts v1.CreateOptions) (*v1alpha1.ImageBinding, error)
+	Update(ctx context.Context, imageBinding *v1alpha1.ImageBinding, opts v1.UpdateOptions) (*v1alpha1.ImageBinding, error)
+	UpdateStatus(ctx context.Context, imageBinding *v1alpha1.ImageBinding, opts v1.UpdateOptions) (*v1alpha1.ImageBinding, error)
+	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
+	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
+	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha1.ImageBinding, error)
+	List(ctx context.Context, opts v1.ListOptions) (*v1alpha1.ImageBindingList, error)
+	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.ImageBinding, err error)
 	ImageBindingExpansion
 }
 
@@ -64,20 +65,20 @@ func newImageBindings(c *BindingsV1alpha1Client, namespace string) *imageBinding
 }
 
 // Get takes name of the imageBinding, and returns the corresponding imageBinding object, and an error if there is any.
-func (c *imageBindings) Get(name string, options v1.GetOptions) (result *v1alpha1.ImageBinding, err error) {
+func (c *imageBindings) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.ImageBinding, err error) {
 	result = &v1alpha1.ImageBinding{}
 	err = c.client.Get().
 		Namespace(c.ns).
 		Resource("imagebindings").
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // List takes label and field selectors, and returns the list of ImageBindings that match those selectors.
-func (c *imageBindings) List(opts v1.ListOptions) (result *v1alpha1.ImageBindingList, err error) {
+func (c *imageBindings) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.ImageBindingList, err error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -88,13 +89,13 @@ func (c *imageBindings) List(opts v1.ListOptions) (result *v1alpha1.ImageBinding
 		Resource("imagebindings").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Watch returns a watch.Interface that watches the requested imageBindings.
-func (c *imageBindings) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *imageBindings) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -105,87 +106,90 @@ func (c *imageBindings) Watch(opts v1.ListOptions) (watch.Interface, error) {
 		Resource("imagebindings").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Watch()
+		Watch(ctx)
 }
 
 // Create takes the representation of a imageBinding and creates it.  Returns the server's representation of the imageBinding, and an error, if there is any.
-func (c *imageBindings) Create(imageBinding *v1alpha1.ImageBinding) (result *v1alpha1.ImageBinding, err error) {
+func (c *imageBindings) Create(ctx context.Context, imageBinding *v1alpha1.ImageBinding, opts v1.CreateOptions) (result *v1alpha1.ImageBinding, err error) {
 	result = &v1alpha1.ImageBinding{}
 	err = c.client.Post().
 		Namespace(c.ns).
 		Resource("imagebindings").
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(imageBinding).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Update takes the representation of a imageBinding and updates it. Returns the server's representation of the imageBinding, and an error, if there is any.
-func (c *imageBindings) Update(imageBinding *v1alpha1.ImageBinding) (result *v1alpha1.ImageBinding, err error) {
+func (c *imageBindings) Update(ctx context.Context, imageBinding *v1alpha1.ImageBinding, opts v1.UpdateOptions) (result *v1alpha1.ImageBinding, err error) {
 	result = &v1alpha1.ImageBinding{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("imagebindings").
 		Name(imageBinding.Name).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(imageBinding).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-
-func (c *imageBindings) UpdateStatus(imageBinding *v1alpha1.ImageBinding) (result *v1alpha1.ImageBinding, err error) {
+func (c *imageBindings) UpdateStatus(ctx context.Context, imageBinding *v1alpha1.ImageBinding, opts v1.UpdateOptions) (result *v1alpha1.ImageBinding, err error) {
 	result = &v1alpha1.ImageBinding{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("imagebindings").
 		Name(imageBinding.Name).
 		SubResource("status").
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(imageBinding).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Delete takes name of the imageBinding and deletes it. Returns an error if one occurs.
-func (c *imageBindings) Delete(name string, options *v1.DeleteOptions) error {
+func (c *imageBindings) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("imagebindings").
 		Name(name).
-		Body(options).
-		Do().
+		Body(&opts).
+		Do(ctx).
 		Error()
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *imageBindings) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
+func (c *imageBindings) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
 	var timeout time.Duration
-	if listOptions.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOptions.TimeoutSeconds) * time.Second
+	if listOpts.TimeoutSeconds != nil {
+		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
 	}
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("imagebindings").
-		VersionedParams(&listOptions, scheme.ParameterCodec).
+		VersionedParams(&listOpts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Body(options).
-		Do().
+		Body(&opts).
+		Do(ctx).
 		Error()
 }
 
 // Patch applies the patch and returns the patched imageBinding.
-func (c *imageBindings) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.ImageBinding, err error) {
+func (c *imageBindings) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.ImageBinding, err error) {
 	result = &v1alpha1.ImageBinding{}
 	err = c.client.Patch(pt).
 		Namespace(c.ns).
 		Resource("imagebindings").
-		SubResource(subresources...).
 		Name(name).
+		SubResource(subresources...).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(data).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }

@@ -18,6 +18,8 @@ limitations under the License.
 package fake
 
 import (
+	"context"
+
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -39,7 +41,7 @@ var adaptersResource = schema.GroupVersionResource{Group: "knative.projectriff.i
 var adaptersKind = schema.GroupVersionKind{Group: "knative.projectriff.io", Version: "v1alpha1", Kind: "Adapter"}
 
 // Get takes name of the adapter, and returns the corresponding adapter object, and an error if there is any.
-func (c *FakeAdapters) Get(name string, options v1.GetOptions) (result *v1alpha1.Adapter, err error) {
+func (c *FakeAdapters) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.Adapter, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(adaptersResource, c.ns, name), &v1alpha1.Adapter{})
 
@@ -50,7 +52,7 @@ func (c *FakeAdapters) Get(name string, options v1.GetOptions) (result *v1alpha1
 }
 
 // List takes label and field selectors, and returns the list of Adapters that match those selectors.
-func (c *FakeAdapters) List(opts v1.ListOptions) (result *v1alpha1.AdapterList, err error) {
+func (c *FakeAdapters) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.AdapterList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewListAction(adaptersResource, adaptersKind, c.ns, opts), &v1alpha1.AdapterList{})
 
@@ -72,14 +74,14 @@ func (c *FakeAdapters) List(opts v1.ListOptions) (result *v1alpha1.AdapterList, 
 }
 
 // Watch returns a watch.Interface that watches the requested adapters.
-func (c *FakeAdapters) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeAdapters) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(adaptersResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a adapter and creates it.  Returns the server's representation of the adapter, and an error, if there is any.
-func (c *FakeAdapters) Create(adapter *v1alpha1.Adapter) (result *v1alpha1.Adapter, err error) {
+func (c *FakeAdapters) Create(ctx context.Context, adapter *v1alpha1.Adapter, opts v1.CreateOptions) (result *v1alpha1.Adapter, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewCreateAction(adaptersResource, c.ns, adapter), &v1alpha1.Adapter{})
 
@@ -90,7 +92,7 @@ func (c *FakeAdapters) Create(adapter *v1alpha1.Adapter) (result *v1alpha1.Adapt
 }
 
 // Update takes the representation of a adapter and updates it. Returns the server's representation of the adapter, and an error, if there is any.
-func (c *FakeAdapters) Update(adapter *v1alpha1.Adapter) (result *v1alpha1.Adapter, err error) {
+func (c *FakeAdapters) Update(ctx context.Context, adapter *v1alpha1.Adapter, opts v1.UpdateOptions) (result *v1alpha1.Adapter, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(adaptersResource, c.ns, adapter), &v1alpha1.Adapter{})
 
@@ -102,7 +104,7 @@ func (c *FakeAdapters) Update(adapter *v1alpha1.Adapter) (result *v1alpha1.Adapt
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeAdapters) UpdateStatus(adapter *v1alpha1.Adapter) (*v1alpha1.Adapter, error) {
+func (c *FakeAdapters) UpdateStatus(ctx context.Context, adapter *v1alpha1.Adapter, opts v1.UpdateOptions) (*v1alpha1.Adapter, error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateSubresourceAction(adaptersResource, "status", c.ns, adapter), &v1alpha1.Adapter{})
 
@@ -113,7 +115,7 @@ func (c *FakeAdapters) UpdateStatus(adapter *v1alpha1.Adapter) (*v1alpha1.Adapte
 }
 
 // Delete takes name of the adapter and deletes it. Returns an error if one occurs.
-func (c *FakeAdapters) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakeAdapters) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewDeleteAction(adaptersResource, c.ns, name), &v1alpha1.Adapter{})
 
@@ -121,15 +123,15 @@ func (c *FakeAdapters) Delete(name string, options *v1.DeleteOptions) error {
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeAdapters) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(adaptersResource, c.ns, listOptions)
+func (c *FakeAdapters) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewDeleteCollectionAction(adaptersResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1alpha1.AdapterList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched adapter.
-func (c *FakeAdapters) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.Adapter, err error) {
+func (c *FakeAdapters) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.Adapter, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(adaptersResource, c.ns, name, pt, data, subresources...), &v1alpha1.Adapter{})
 

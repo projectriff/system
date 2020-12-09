@@ -17,6 +17,7 @@ limitations under the License.
 package streaming
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/vmware-labs/reconciler-runtime/reconcilers"
@@ -41,7 +42,7 @@ func GatewayReconciler(c reconcilers.Config) *reconcilers.ParentReconciler {
 
 	return &reconcilers.ParentReconciler{
 		Type: &streamingv1alpha1.Gateway{},
-		SubReconcilers: []reconcilers.SubReconciler{
+		Reconciler: reconcilers.Sequence{
 			GatewayChildServiceReconciler(c),
 			GatewayChildDeploymentReconciler(c),
 		},
@@ -54,11 +55,10 @@ func GatewayChildServiceReconciler(c reconcilers.Config) reconcilers.SubReconcil
 	c.Log = c.Log.WithName("ChildService")
 
 	return &reconcilers.ChildReconciler{
-		ParentType:    &streamingv1alpha1.Gateway{},
 		ChildType:     &corev1.Service{},
 		ChildListType: &corev1.ServiceList{},
 
-		DesiredChild: func(parent *streamingv1alpha1.Gateway) (*corev1.Service, error) {
+		DesiredChild: func(ctx context.Context, parent *streamingv1alpha1.Gateway) (*corev1.Service, error) {
 			if len(parent.Spec.Ports) == 0 {
 				return nil, nil
 			}
@@ -116,11 +116,10 @@ func GatewayChildDeploymentReconciler(c reconcilers.Config) reconcilers.SubRecon
 	c.Log = c.Log.WithName("ChildDeployment")
 
 	return &reconcilers.ChildReconciler{
-		ParentType:    &streamingv1alpha1.Gateway{},
 		ChildType:     &appsv1.Deployment{},
 		ChildListType: &appsv1.DeploymentList{},
 
-		DesiredChild: func(parent *streamingv1alpha1.Gateway) (*appsv1.Deployment, error) {
+		DesiredChild: func(ctx context.Context, parent *streamingv1alpha1.Gateway) (*appsv1.Deployment, error) {
 			if parent.Status.ServiceRef == nil || parent.Spec.Template == nil {
 				// no service, skip
 				return nil, nil
