@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/vmware-labs/reconciler-runtime/apis"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/projectriff/system/pkg/refs"
 )
@@ -49,7 +49,7 @@ type BuildStatus struct {
 
 // +k8s:deepcopy-gen=false
 type ImageResource interface {
-	apis.Object
+	client.Object
 	GetImage() string
 }
 

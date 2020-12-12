@@ -21,6 +21,7 @@ import (
 
 	"github.com/vmware-labs/reconciler-runtime/apis"
 	rtesting "github.com/vmware-labs/reconciler-runtime/testing"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	kpackbuildv1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/kpack/build/v1alpha1"
 )
@@ -56,7 +57,7 @@ func (f *kpackClusterBuilder) Create() *kpackbuildv1alpha1.ClusterBuilder {
 	return f.deepCopy().target
 }
 
-func (f *kpackClusterBuilder) CreateObject() apis.Object {
+func (f *kpackClusterBuilder) CreateObject() client.Object {
 	return f.Create()
 }
 

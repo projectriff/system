@@ -21,6 +21,7 @@ import (
 
 	"github.com/vmware-labs/reconciler-runtime/apis"
 	rtesting "github.com/vmware-labs/reconciler-runtime/testing"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	duckv1 "github.com/projectriff/system/pkg/apis/duck/v1"
 	streamingv1alpha1 "github.com/projectriff/system/pkg/apis/streaming/v1alpha1"
@@ -58,7 +59,7 @@ func (f *kafkaGateway) Create() *streamingv1alpha1.KafkaGateway {
 	return f.deepCopy().target
 }
 
-func (f *kafkaGateway) CreateObject() apis.Object {
+func (f *kafkaGateway) CreateObject() client.Object {
 	return f.Create()
 }
 

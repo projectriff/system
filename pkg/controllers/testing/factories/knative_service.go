@@ -22,6 +22,7 @@ import (
 	"github.com/vmware-labs/reconciler-runtime/apis"
 	rtesting "github.com/vmware-labs/reconciler-runtime/testing"
 	corev1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	knativeservingv1 "github.com/projectriff/system/pkg/apis/thirdparty/knative/serving/v1"
 )
@@ -57,7 +58,7 @@ func (f *knativeService) Create() *knativeservingv1.Service {
 	return f.deepCopy().target
 }
 
-func (f *knativeService) CreateObject() apis.Object {
+func (f *knativeService) CreateObject() client.Object {
 	return f.Create()
 }
 

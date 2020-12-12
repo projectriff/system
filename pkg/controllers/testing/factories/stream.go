@@ -22,6 +22,7 @@ import (
 	"github.com/vmware-labs/reconciler-runtime/apis"
 	rtesting "github.com/vmware-labs/reconciler-runtime/testing"
 	corev1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	streamingv1alpha1 "github.com/projectriff/system/pkg/apis/streaming/v1alpha1"
 )
@@ -57,7 +58,7 @@ func (f *stream) Create() *streamingv1alpha1.Stream {
 	return f.deepCopy().target
 }
 
-func (f *stream) CreateObject() apis.Object {
+func (f *stream) CreateObject() client.Object {
 	return f.Create()
 }
 

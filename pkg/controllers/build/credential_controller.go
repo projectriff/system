@@ -53,8 +53,7 @@ type CredentialReconciler struct {
 // +kubebuilder:rbac:groups=build.projectriff.io,resources=applications;functions,verbs=get;list;watch
 // +kubebuilder:rbac:groups=core,resources=events,verbs=get;list;watch;create;update;patch;delete
 
-func (r *CredentialReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	ctx := context.Background()
+func (r *CredentialReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("serviceaccount", req.NamespacedName)
 
 	if req.Name != riffBuildServiceAccount {
@@ -202,35 +201,35 @@ func (m MatchingLabels) ApplyToList(opts *client.ListOptions) {
 }
 
 func (r *CredentialReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager) error {
-	enqueueServiceAccountForCredential := &handler.EnqueueRequestsFromMapFunc{
-		ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
-			if _, ok := a.Meta.GetLabels()[buildv1alpha1.CredentialLabelKey]; !ok {
+	enqueueServiceAccountForCredential := handler.EnqueueRequestsFromMapFunc(
+		func(a client.Object) []reconcile.Request {
+			if _, ok := a.GetLabels()[buildv1alpha1.CredentialLabelKey]; !ok {
 				// not all secrets are credentials
 				return []reconcile.Request{}
 			}
 			return []reconcile.Request{
 				{
 					NamespacedName: types.NamespacedName{
-						Namespace: a.Meta.GetNamespace(),
+						Namespace: a.GetNamespace(),
 						Name:      riffBuildServiceAccount,
 					},
 				},
 			}
-		}),
-	}
+		},
+	)
 
-	enqueueServiceAccountForBuild := &handler.EnqueueRequestsFromMapFunc{
-		ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
+	enqueueServiceAccountForBuild := handler.EnqueueRequestsFromMapFunc(
+		func(a client.Object) []reconcile.Request {
 			return []reconcile.Request{
 				{
 					NamespacedName: types.NamespacedName{
-						Namespace: a.Meta.GetNamespace(),
+						Namespace: a.GetNamespace(),
 						Name:      riffBuildServiceAccount,
 					},
 				},
 			}
-		}),
-	}
+		},
+	)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1.ServiceAccount{}).

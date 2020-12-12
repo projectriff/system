@@ -3313,7 +3313,7 @@ metadata:
 spec:
   ports:
   - port: 443
-    targetPort: 443
+    targetPort: 9443
   selector:
     component: knative.projectriff.io
     control-plane: controller-manager

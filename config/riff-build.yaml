@@ -989,7 +989,7 @@ metadata:
 spec:
   ports:
   - port: 443
-    targetPort: 443
+    targetPort: 9443
   selector:
     component: build.projectriff.io
     control-plane: controller-manager

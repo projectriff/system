@@ -29,9 +29,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	"github.com/vmware-labs/reconciler-runtime/apis"
 
 	streamingv1alpha1 "github.com/projectriff/system/pkg/apis/streaming/v1alpha1"
 	"github.com/projectriff/system/pkg/controllers/streaming"
@@ -120,7 +119,7 @@ func TestStreamReconciler(t *testing.T) {
 		StatusAddress(testProvisionerURL)
 
 	matchedByObject := func(expectedFactory rtesting.Factory) interface{} {
-		return mock.MatchedBy(func(actual apis.Object) bool {
+		return mock.MatchedBy(func(actual client.Object) bool {
 			expected := expectedFactory.CreateObject()
 
 			return expected.GetNamespace() == actual.GetNamespace() &&

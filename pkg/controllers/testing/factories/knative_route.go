@@ -21,6 +21,7 @@ import (
 
 	"github.com/vmware-labs/reconciler-runtime/apis"
 	rtesting "github.com/vmware-labs/reconciler-runtime/testing"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	duckv1 "github.com/projectriff/system/pkg/apis/duck/v1"
 	knativeservingv1 "github.com/projectriff/system/pkg/apis/thirdparty/knative/serving/v1"
@@ -57,7 +58,7 @@ func (f *knativeRoute) Create() *knativeservingv1.Route {
 	return f.deepCopy().target
 }
 
-func (f *knativeRoute) CreateObject() apis.Object {
+func (f *knativeRoute) CreateObject() client.Object {
 	return f.Create()
 }
 
