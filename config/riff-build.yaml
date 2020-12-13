@@ -652,9 +652,9 @@ metadata:
   namespace: riff-system
 rules:
 - apiGroups:
-  - ""
+  - coordination.k8s.io
   resources:
-  - configmaps
+  - leases
   verbs:
   - get
   - list
@@ -666,7 +666,7 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - configmaps/status
+  - leases/status
   verbs:
   - get
   - update
