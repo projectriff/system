@@ -19,8 +19,8 @@ package factories
 import (
 	"fmt"
 
-	"github.com/vmware-labs/reconciler-runtime/apis"
 	rtesting "github.com/vmware-labs/reconciler-runtime/testing"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	kedav1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/keda/v1alpha1"
 )
@@ -56,7 +56,7 @@ func (f *kedaScaledObject) Create() *kedav1alpha1.ScaledObject {
 	return f.deepCopy().target
 }
 
-func (f *kedaScaledObject) CreateObject() apis.Object {
+func (f *kedaScaledObject) CreateObject() client.Object {
 	return f.Create()
 }
 

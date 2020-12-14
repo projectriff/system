@@ -22,6 +22,7 @@ import (
 	"github.com/vmware-labs/reconciler-runtime/apis"
 	rtesting "github.com/vmware-labs/reconciler-runtime/testing"
 	corev1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	corev1alpha1 "github.com/projectriff/system/pkg/apis/core/v1alpha1"
 	duckv1 "github.com/projectriff/system/pkg/apis/duck/v1"
@@ -59,7 +60,7 @@ func (f *deployerCore) Create() *corev1alpha1.Deployer {
 	return f.deepCopy().target
 }
 
-func (f *deployerCore) CreateObject() apis.Object {
+func (f *deployerCore) CreateObject() client.Object {
 	return f.Create()
 }
 

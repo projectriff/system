@@ -53,8 +53,7 @@ type ClusterBuilderReconciler struct {
 // +kubebuilder:rbac:groups=build.pivotal.io,resources=clusterbuilders,verbs=get;list;watch
 // +kubebuilder:rbac:groups=core,resources=events,verbs=get;list;watch;create;update;patch;delete
 
-func (r *ClusterBuilderReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	ctx := context.Background()
+func (r *ClusterBuilderReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("configmap", req.NamespacedName)
 
 	if req.Namespace != r.Namespace || req.Name != buildersConfigMap {
@@ -145,9 +144,9 @@ func isTargetClusterBuilder(name string) bool {
 }
 
 func (r *ClusterBuilderReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager) error {
-	enqueueConfigMap := &handler.EnqueueRequestsFromMapFunc{
-		ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
-			if !isTargetClusterBuilder(a.Meta.GetName()) {
+	enqueueConfigMap := handler.EnqueueRequestsFromMapFunc(
+		func(a client.Object) []reconcile.Request {
+			if !isTargetClusterBuilder(a.GetName()) {
 				return []reconcile.Request{}
 			}
 			return []reconcile.Request{
@@ -158,8 +157,8 @@ func (r *ClusterBuilderReconciler) SetupWithManager(ctx context.Context, mgr ctr
 					},
 				},
 			}
-		}),
-	}
+		},
+	)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1.ConfigMap{}).

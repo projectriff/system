@@ -22,6 +22,7 @@ import (
 	"github.com/vmware-labs/reconciler-runtime/apis"
 	rtesting "github.com/vmware-labs/reconciler-runtime/testing"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	buildv1alpha1 "github.com/projectriff/system/pkg/apis/build/v1alpha1"
 	"github.com/projectriff/system/pkg/refs"
@@ -58,7 +59,7 @@ func (f *function) Create() *buildv1alpha1.Function {
 	return f.deepCopy().target
 }
 
-func (f *function) CreateObject() apis.Object {
+func (f *function) CreateObject() client.Object {
 	return f.Create()
 }
 

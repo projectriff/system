@@ -6328,9 +6328,9 @@ metadata:
   namespace: riff-system
 rules:
 - apiGroups:
-  - ""
+  - coordination.k8s.io
   resources:
-  - configmaps
+  - leases
   verbs:
   - get
   - list
@@ -6342,7 +6342,7 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - configmaps/status
+  - leases/status
   verbs:
   - get
   - update
@@ -6757,7 +6757,7 @@ metadata:
 spec:
   ports:
   - port: 443
-    targetPort: 443
+    targetPort: 9443
   selector:
     component: streaming.projectriff.io
     control-plane: controller-manager

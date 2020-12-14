@@ -24,6 +24,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	kpackbuildv1alpha1 "github.com/projectriff/system/pkg/apis/thirdparty/kpack/build/v1alpha1"
 )
@@ -59,7 +60,7 @@ func (f *kpackImage) Create() *kpackbuildv1alpha1.Image {
 	return f.deepCopy().target
 }
 
-func (f *kpackImage) CreateObject() apis.Object {
+func (f *kpackImage) CreateObject() client.Object {
 	return f.Create()
 }
 

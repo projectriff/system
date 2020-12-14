@@ -21,6 +21,7 @@ import (
 
 	"github.com/vmware-labs/reconciler-runtime/apis"
 	rtesting "github.com/vmware-labs/reconciler-runtime/testing"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	knativev1alpha1 "github.com/projectriff/system/pkg/apis/knative/v1alpha1"
 )
@@ -56,7 +57,7 @@ func (f *adapterKnative) Create() *knativev1alpha1.Adapter {
 	return f.deepCopy().target
 }
 
-func (f *adapterKnative) CreateObject() apis.Object {
+func (f *adapterKnative) CreateObject() client.Object {
 	return f.Create()
 }
 

@@ -19,9 +19,9 @@ package refs
 import (
 	"fmt"
 
-	"github.com/vmware-labs/reconciler-runtime/apis"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func NewTypedLocalObjectReference(name string, gk schema.GroupKind) *TypedLocalObjectReference {
@@ -39,7 +39,7 @@ func NewTypedLocalObjectReference(name string, gk schema.GroupKind) *TypedLocalO
 	return ref
 }
 
-func NewTypedLocalObjectReferenceForObject(obj apis.Object, scheme *runtime.Scheme) *TypedLocalObjectReference {
+func NewTypedLocalObjectReferenceForObject(obj client.Object, scheme *runtime.Scheme) *TypedLocalObjectReference {
 	if obj == nil {
 		return nil
 	}
