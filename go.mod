@@ -3,7 +3,7 @@ module github.com/projectriff/system
 go 1.14
 
 require (
-	github.com/go-logr/logr v0.3.0
+	github.com/go-logr/logr v0.4.0
 	github.com/go-logr/zapr v0.3.0 // indirect
 	github.com/google/go-cmp v0.5.4
 	github.com/google/go-containerregistry v0.4.0
