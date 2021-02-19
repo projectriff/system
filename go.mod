@@ -10,7 +10,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/vmware-labs/reconciler-runtime v0.2.1-0.20201213193933-5ad8e546c9fa
 	k8s.io/api v0.20.2
-	k8s.io/apimachinery v0.20.2
+	k8s.io/apimachinery v0.20.4
 	k8s.io/client-go v0.20.2
 	sigs.k8s.io/controller-runtime v0.7.0
 )
